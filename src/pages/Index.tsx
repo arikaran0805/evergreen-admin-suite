@@ -11,11 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
+  const [siteName, setSiteName] = useState("BlogHub");
+  const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
     document.title = "BlogHub - Home";
     fetchFeaturedCourses();
     fetchFooterCategories();
+    fetchSiteSettings();
   }, []);
 
   const fetchFeaturedCourses = async () => {
@@ -51,6 +54,19 @@ const Index = () => {
 
     if (!error && data) {
       setFooterCategories(data);
+    }
+  };
+
+  const fetchSiteSettings = async () => {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('site_name, logo_url')
+      .limit(1)
+      .maybeSingle();
+    
+    if (data) {
+      setSiteName(data.site_name || "BlogHub");
+      setLogoUrl(data.logo_url || "");
     }
   };
 
@@ -156,10 +172,18 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow">
-                    <span className="text-xl font-bold text-primary-foreground">B</span>
-                  </div>
-                  <span className="text-xl font-bold text-primary">BlogHub</span>
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={siteName} className="h-10 w-auto" />
+                  ) : (
+                    <>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow">
+                        <span className="text-xl font-bold text-primary-foreground">
+                          {siteName.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-xl font-bold text-primary">{siteName}</span>
+                    </>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Inspiring stories and ideas for curious minds.
@@ -197,7 +221,7 @@ const Index = () => {
             </div>
 
             <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-              <p>&copy; 2025 BlogHub. All rights reserved.</p>
+              <p>&copy; 2025 {siteName}. All rights reserved.</p>
             </div>
           </div>
         </footer>

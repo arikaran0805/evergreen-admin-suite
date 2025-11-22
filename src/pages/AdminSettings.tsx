@@ -11,16 +11,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Globe, Mail, Shield, Database, Zap } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload } from "lucide-react";
 
 const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
   
   // General Settings
   const [siteName, setSiteName] = useState("BlogHub");
   const [siteDescription, setSiteDescription] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   
   // Email Settings
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -57,15 +61,98 @@ const AdminSettings = () => {
       return;
     }
 
+    await loadSettings();
     setLoading(false);
+  };
+
+  const loadSettings = async () => {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading settings:", error);
+      return;
+    }
+
+    if (data) {
+      setSettingsId(data.id);
+      setSiteName(data.site_name || "BlogHub");
+      setSiteDescription(data.site_description || "");
+      setSiteUrl(data.site_url || "");
+      setLogoUrl(data.logo_url || "");
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLogoFile(file);
+    setUploadingLogo(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(filePath);
+
+      setLogoUrl(publicUrl);
+      toast({ title: "Logo uploaded successfully" });
+    } catch (error: any) {
+      toast({
+        title: "Error uploading logo",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const handleSaveGeneral = async () => {
     setSaving(true);
     try {
-      // Here you would save settings to your database
-      // For now, we'll simulate a save
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (settingsId) {
+        // Update existing settings
+        const { error } = await supabase
+          .from("site_settings")
+          .update({
+            site_name: siteName,
+            site_description: siteDescription,
+            site_url: siteUrl,
+            logo_url: logoUrl,
+          })
+          .eq("id", settingsId);
+
+        if (error) throw error;
+      } else {
+        // Insert new settings
+        const { data, error } = await supabase
+          .from("site_settings")
+          .insert({
+            site_name: siteName,
+            site_description: siteDescription,
+            site_url: siteUrl,
+            logo_url: logoUrl,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (data) setSettingsId(data.id);
+      }
       
       toast({ title: "Settings saved successfully" });
     } catch (error: any) {
@@ -188,6 +275,38 @@ const AdminSettings = () => {
                     placeholder="https://yourdomain.com"
                     type="url"
                   />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="logo">Site Logo</Label>
+                  {logoUrl && (
+                    <div className="mb-4">
+                      <img src={logoUrl} alt="Site Logo" className="h-16 w-auto rounded-lg" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="logo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      disabled={uploadingLogo}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      disabled={uploadingLogo}
+                      onClick={() => document.getElementById('logo')?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingLogo ? "Uploading..." : "Upload"}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Upload a logo image for your site (recommended: 200x50px)
+                  </p>
                 </div>
 
                 <Button onClick={handleSaveGeneral} disabled={saving} className="bg-primary">

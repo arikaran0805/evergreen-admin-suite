@@ -16,10 +16,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
+interface SiteSettings {
+  site_name: string;
+  logo_url?: string;
+}
+
 const Header = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({ site_name: "BlogHub" });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,6 +48,22 @@ const Header = () => {
       }
     });
 
+    // Fetch site settings
+    const fetchSiteSettings = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('site_name, logo_url')
+        .limit(1)
+        .maybeSingle();
+      
+      if (data) {
+        setSiteSettings({
+          site_name: data.site_name || "BlogHub",
+          logo_url: data.logo_url || undefined
+        });
+      }
+    };
+
     // Fetch categories
     const fetchCourses = async () => {
       const { data, error } = await supabase
@@ -55,6 +77,7 @@ const Header = () => {
       }
     };
 
+    fetchSiteSettings();
     fetchCourses();
 
     return () => subscription.unsubscribe();
@@ -95,12 +118,24 @@ const Header = () => {
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo and Brand */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow transition-transform group-hover:scale-105">
-            <span className="text-xl font-bold text-primary-foreground">B</span>
-          </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent hidden sm:inline">
-            BlogHub
-          </span>
+          {siteSettings.logo_url ? (
+            <img 
+              src={siteSettings.logo_url} 
+              alt={siteSettings.site_name} 
+              className="h-10 w-auto transition-transform group-hover:scale-105" 
+            />
+          ) : (
+            <>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow transition-transform group-hover:scale-105">
+                <span className="text-xl font-bold text-primary-foreground">
+                  {siteSettings.site_name.charAt(0)}
+                </span>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent hidden sm:inline">
+                {siteSettings.site_name}
+              </span>
+            </>
+          )}
         </Link>
 
         {/* Desktop Navigation */}
