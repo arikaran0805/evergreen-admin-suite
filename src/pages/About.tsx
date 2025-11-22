@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Header from "@/components/Header";
+import SEOHead from "@/components/SEOHead";
 
 const About = () => {
   useEffect(() => {
@@ -8,6 +9,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SEOHead 
+        title="About Us - Our Story and Mission"
+        description="Learn about BlogHub's mission to democratize knowledge and inspire curious minds. Discover our values, team, and commitment to quality content."
+        keywords="about us, our mission, our story, company values, team"
+      />
       <Header />
 
       <main className="container px-4 py-16">

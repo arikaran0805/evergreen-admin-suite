@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Header from "@/components/Header";
+import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 
 const Privacy = () => {
@@ -9,6 +10,11 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SEOHead 
+        title="Privacy Policy - How We Protect Your Data"
+        description="Learn how BlogHub collects, uses, and protects your personal information. Read our comprehensive Privacy Policy to understand your data rights."
+        keywords="privacy policy, data protection, personal information, privacy rights, GDPR"
+      />
       <Header />
       
       <main className="container px-4 py-16 max-w-4xl mx-auto">

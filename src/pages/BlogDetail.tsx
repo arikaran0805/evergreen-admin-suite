@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { trackPostView } from "@/lib/analytics";
 import Header from "@/components/Header";
+import SEOHead from "@/components/SEOHead";
 import { Calendar, User, MessageSquare, ArrowLeft, BookOpen, Mail, Tag } from "lucide-react";
 import { format } from "date-fns";
 
@@ -265,6 +266,14 @@ const BlogDetail = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SEOHead 
+        title={post.title}
+        description={post.excerpt || `Read ${post.title} on BlogHub. ${post.categories?.name || 'Article'} by ${post.profiles?.full_name || 'Anonymous'}`}
+        keywords={`${post.categories?.name || 'blog'}, ${post.title}, article`}
+        ogImage={post.featured_image || undefined}
+        ogTitle={post.title}
+        ogDescription={post.excerpt || undefined}
+      />
       <Header />
       
       {/* Large Poster Banner */}

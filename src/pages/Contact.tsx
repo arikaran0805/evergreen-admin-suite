@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Header from "@/components/Header";
+import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,11 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SEOHead 
+        title="Contact Us - Get In Touch"
+        description="Have a question or want to work together? Contact BlogHub team through email, phone, or our contact form. We'd love to hear from you."
+        keywords="contact, get in touch, email, support, help"
+      />
       <Header />
 
       <main className="container px-4 py-16">
