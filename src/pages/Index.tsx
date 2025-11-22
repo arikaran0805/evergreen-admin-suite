@@ -179,7 +179,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/about">
-                <Button size="lg" variant="outline" className="border-2 border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/20 backdrop-blur-sm">
+                <Button size="lg" variant="secondary" className="shadow-lg">
                   Learn More
                 </Button>
               </Link>
