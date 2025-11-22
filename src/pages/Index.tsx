@@ -17,7 +17,8 @@ const Index = () => {
       readTime: 45,
       views: 3542,
       image: "/placeholder.svg",
-      date: "Beginner to Advanced"
+      date: "Beginner to Advanced",
+      author: "BlogHub Team"
     },
     {
       id: "2",
@@ -27,7 +28,8 @@ const Index = () => {
       readTime: 32,
       views: 2891,
       image: "/placeholder.svg",
-      date: "Beginner to Intermediate"
+      date: "Beginner to Intermediate",
+      author: "BlogHub Team"
     },
     {
       id: "3",
@@ -37,7 +39,8 @@ const Index = () => {
       readTime: 60,
       views: 4127,
       image: "/placeholder.svg",
-      date: "Intermediate"
+      date: "Intermediate",
+      author: "BlogHub Team"
     },
     {
       id: "4",
@@ -47,7 +50,8 @@ const Index = () => {
       readTime: 75,
       views: 3654,
       image: "/placeholder.svg",
-      date: "Advanced"
+      date: "Advanced",
+      author: "BlogHub Team"
     },
     {
       id: "5",
@@ -57,7 +61,8 @@ const Index = () => {
       readTime: 40,
       views: 2943,
       image: "/placeholder.svg",
-      date: "Beginner to Intermediate"
+      date: "Beginner to Intermediate",
+      author: "BlogHub Team"
     }
   ];
 
