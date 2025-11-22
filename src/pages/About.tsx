@@ -1,6 +1,11 @@
+import { useEffect } from "react";
 import Header from "@/components/Header";
 
 const About = () => {
+  useEffect(() => {
+    document.title = "BlogHub - About Us";
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />

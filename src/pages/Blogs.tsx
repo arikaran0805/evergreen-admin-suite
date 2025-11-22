@@ -39,6 +39,10 @@ const Blogs = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    document.title = "BlogHub - All Blogs";
+  }, []);
+
+  useEffect(() => {
     fetchCategories();
     fetchPosts();
   }, [selectedCategory, searchQuery]);
