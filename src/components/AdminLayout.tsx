@@ -29,7 +29,6 @@ const adminMenuItems = [
   { icon: Key, label: "API Keys", path: "/admin/api-keys" },
   { icon: Webhook, label: "Webhooks", path: "/admin/webhooks" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
-  { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
@@ -83,7 +82,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </Button>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="h-[calc(100vh-200px)]">
           <nav className="p-2">
             {adminMenuItems.map((item) => (
               <Link key={item.path} to={item.path}>
@@ -100,6 +99,24 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 </Button>
               </Link>
             ))}
+            
+            {/* Settings - Less Prominent */}
+            <div className="mt-6 pt-4 border-t border-sidebar-border/50">
+              <Link to="/admin/settings">
+                <Button
+                  variant={isActive("/admin/settings") ? "default" : "ghost"}
+                  size="sm"
+                  className={`w-full justify-start ${
+                    isActive("/admin/settings")
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`}
+                >
+                  <Settings className={`${sidebarOpen ? "mr-2" : ""} h-4 w-4`} />
+                  {sidebarOpen && <span className="text-xs">Settings</span>}
+                </Button>
+              </Link>
+            </div>
           </nav>
         </ScrollArea>
 
