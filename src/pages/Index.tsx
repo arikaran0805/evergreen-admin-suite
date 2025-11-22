@@ -7,6 +7,7 @@ import BlogCard from "@/components/BlogCard";
 import EmojiBackground from "@/components/EmojiBackground";
 import { ArrowRight, TrendingUp, Sparkles, Twitter, Facebook, Instagram, Linkedin, Youtube, Github } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 
 const Index = () => {
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
@@ -235,6 +236,7 @@ const Index = () => {
                       href={socialLinks.twitter} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={() => trackSocialMediaClick("twitter")}
                       className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Twitter"
                     >
@@ -246,6 +248,7 @@ const Index = () => {
                       href={socialLinks.facebook} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={() => trackSocialMediaClick("facebook")}
                       className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Facebook"
                     >
@@ -257,6 +260,7 @@ const Index = () => {
                       href={socialLinks.instagram} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={() => trackSocialMediaClick("instagram")}
                       className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Instagram"
                     >
@@ -268,6 +272,7 @@ const Index = () => {
                       href={socialLinks.linkedin} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={() => trackSocialMediaClick("linkedin")}
                       className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="LinkedIn"
                     >
@@ -279,6 +284,7 @@ const Index = () => {
                       href={socialLinks.youtube} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={() => trackSocialMediaClick("youtube")}
                       className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="YouTube"
                     >
@@ -290,6 +296,7 @@ const Index = () => {
                       href={socialLinks.github} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={() => trackSocialMediaClick("github")}
                       className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="GitHub"
                     >
