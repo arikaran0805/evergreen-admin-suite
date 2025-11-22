@@ -11,12 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye } from "lucide-react";
 
 const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   
   // General Settings
   const [siteName, setSiteName] = useState("BlogHub");
@@ -309,9 +311,15 @@ const AdminSettings = () => {
                   />
                 </div>
 
-                <Button onClick={handleSaveGeneral} disabled={saving} className="bg-primary">
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => setPreviewOpen(true)} variant="outline" className="flex-1">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview Changes
+                  </Button>
+                  <Button onClick={handleSaveGeneral} disabled={saving} className="bg-primary flex-1">
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -461,6 +469,140 @@ const AdminSettings = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview Changes</DialogTitle>
+            <DialogDescription>
+              This is how your site will look with the new settings
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-8">
+            {/* Preview Header */}
+            <div>
+              <h3 className="text-sm font-semibold mb-4 text-muted-foreground">Header Preview</h3>
+              <div className="border rounded-lg p-4 bg-background">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {logoUrl ? (
+                      <img 
+                        src={logoUrl} 
+                        alt={siteName} 
+                        className="h-10 w-auto" 
+                      />
+                    ) : (
+                      <>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow">
+                          <span className="text-xl font-bold text-primary-foreground">
+                            {siteName.charAt(0)}
+                          </span>
+                        </div>
+                        <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                          {siteName}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm">Menu</Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview Hero Section */}
+            <div>
+              <h3 className="text-sm font-semibold mb-4 text-muted-foreground">Hero Section Preview</h3>
+              <div className="border rounded-lg p-8 bg-gradient-subtle">
+                <div className="text-center max-w-2xl mx-auto">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                    <span className="text-sm font-medium text-primary">Welcome to {siteName}</span>
+                  </div>
+                  <h1 className="text-3xl font-bold mb-3">
+                    Discover <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Stories</span> That Inspire
+                  </h1>
+                  {siteDescription && (
+                    <p className="text-muted-foreground">{siteDescription}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Preview Footer */}
+            <div>
+              <h3 className="text-sm font-semibold mb-4 text-muted-foreground">Footer Preview</h3>
+              <div className="border rounded-lg p-6 bg-card">
+                <div className="flex items-center gap-2 mb-4">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={siteName} className="h-10 w-auto" />
+                  ) : (
+                    <>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow">
+                        <span className="text-xl font-bold text-primary-foreground">
+                          {siteName.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-xl font-bold text-primary">{siteName}</span>
+                    </>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {siteDescription || "Inspiring stories and ideas for curious minds."}
+                </p>
+                <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+                  <p>&copy; 2025 {siteName}. All rights reserved.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Site Info */}
+            {siteUrl && (
+              <div>
+                <h3 className="text-sm font-semibold mb-4 text-muted-foreground">Site Information</h3>
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Site Name:</span>
+                      <span className="font-medium">{siteName}</span>
+                    </div>
+                    {siteUrl && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Site URL:</span>
+                        <span className="font-medium">{siteUrl}</span>
+                      </div>
+                    )}
+                    {logoUrl && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Logo:</span>
+                        <span className="font-medium text-green-600">Uploaded ✓</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-6">
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="flex-1">
+              Close Preview
+            </Button>
+            <Button 
+              onClick={() => {
+                setPreviewOpen(false);
+                handleSaveGeneral();
+              }} 
+              disabled={saving}
+              className="bg-primary flex-1"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
