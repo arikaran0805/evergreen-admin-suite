@@ -14,6 +14,7 @@ const Index = () => {
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [siteName, setSiteName] = useState("BlogHub");
   const [logoUrl, setLogoUrl] = useState("");
+  const [siteDescription, setSiteDescription] = useState("Inspiring stories and ideas for curious minds.");
   const [socialLinks, setSocialLinks] = useState({
     twitter: "",
     facebook: "",
@@ -69,12 +70,13 @@ const Index = () => {
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, logo_url, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
+      .select('site_name, site_description, logo_url, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
       .limit(1)
       .maybeSingle();
     
     if (data) {
       setSiteName(data.site_name || "BlogHub");
+      setSiteDescription(data.site_description || "Inspiring stories and ideas for curious minds.");
       setLogoUrl(data.logo_url || "");
       setSocialLinks({
         twitter: data.twitter_url || "",
@@ -175,7 +177,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/about">
-                <Button size="lg" variant="outline" className="border-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button size="lg" variant="outline" className="border-2 border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/20 backdrop-blur-sm">
                   Learn More
                 </Button>
               </Link>
@@ -203,7 +205,7 @@ const Index = () => {
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Inspiring stories and ideas for curious minds.
+                  {siteDescription}
                 </p>
               </div>
               
