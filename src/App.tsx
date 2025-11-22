@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
@@ -35,12 +35,24 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   usePageTracking();
   const location = useLocation();
+  const prevLocationRef = useRef(location.pathname);
   
-  // Only scroll to top for non-admin pages
+  // Prevent scroll to top when navigating between admin pages
   useEffect(() => {
-    if (!location.pathname.startsWith('/admin')) {
+    const prevPath = prevLocationRef.current;
+    const currentPath = location.pathname;
+    
+    // Only scroll to top if:
+    // 1. Moving from non-admin to non-admin page
+    // 2. Moving from admin to non-admin page
+    // Don't scroll if both previous and current are admin pages
+    const bothAreAdmin = prevPath.startsWith('/admin') && currentPath.startsWith('/admin');
+    
+    if (!bothAreAdmin && !currentPath.startsWith('/admin')) {
       window.scrollTo(0, 0);
     }
+    
+    prevLocationRef.current = currentPath;
   }, [location.pathname]);
   
   return (
