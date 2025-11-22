@@ -10,10 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
+  const [footerCategories, setFooterCategories] = useState<any[]>([]);
 
   useEffect(() => {
     document.title = "BlogHub - Home";
     fetchFeaturedCourses();
+    fetchFooterCategories();
   }, []);
 
   const fetchFeaturedCourses = async () => {
@@ -37,6 +39,18 @@ const Index = () => {
         slug: category.slug
       }));
       setFeaturedCourses(formattedCourses);
+    }
+  };
+
+  const fetchFooterCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('name, slug')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (!error && data) {
+      setFooterCategories(data);
     }
   };
 
@@ -155,9 +169,13 @@ const Index = () => {
               <div>
                 <h3 className="font-semibold mb-4">Categories</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><Link to="/category/technology" className="hover:text-primary">Technology</Link></li>
-                  <li><Link to="/category/lifestyle" className="hover:text-primary">Lifestyle</Link></li>
-                  <li><Link to="/category/business" className="hover:text-primary">Business</Link></li>
+                  {footerCategories.map((category) => (
+                    <li key={category.slug}>
+                      <Link to={`/category/${category.slug}`} className="hover:text-primary">
+                        {category.name}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
