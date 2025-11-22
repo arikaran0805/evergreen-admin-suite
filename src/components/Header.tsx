@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
 const Header = () => {
-  const categories = ["Technology", "Lifestyle", "Business", "Education", "Health"];
+  const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,6 +31,22 @@ const Header = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
+
+    // Fetch courses
+    const fetchCourses = async () => {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('id, title, slug')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setCourses(data);
+      }
+    };
+
+    fetchCourses();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -67,13 +83,13 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {categories.map((category) => (
+          {courses.map((course) => (
             <Link
-              key={category}
-              to={`/category/${category.toLowerCase()}`}
+              key={course.id}
+              to={`/blog/${course.slug}`}
               className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
             >
-              {category}
+              {course.title.length > 20 ? `${course.title.substring(0, 20)}...` : course.title}
             </Link>
           ))}
         </nav>
@@ -123,13 +139,13 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-64">
               <nav className="flex flex-col gap-4 mt-8">
-                {categories.map((category) => (
+                {courses.map((course) => (
                   <Link
-                    key={category}
-                    to={`/category/${category.toLowerCase()}`}
+                    key={course.id}
+                    to={`/blog/${course.slug}`}
                     className="text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
                   >
-                    {category}
+                    {course.title}
                   </Link>
                 ))}
                 <div className="border-t pt-4 mt-4">
