@@ -7,37 +7,57 @@ import EmojiBackground from "@/components/EmojiBackground";
 import { ArrowRight, TrendingUp, Sparkles } from "lucide-react";
 
 const Index = () => {
-  // Mock blog data
-  const featuredBlogs = [
+  // Featured courses data
+  const featuredCourses = [
     {
       id: "1",
-      title: "Getting Started with Modern Web Development",
-      excerpt: "Learn the fundamentals of modern web development with React, TypeScript, and Tailwind CSS. A comprehensive guide for beginners.",
-      category: "Technology",
-      readTime: 8,
-      views: 1234,
+      title: "Python Programming Masterclass",
+      excerpt: "Master Python from basics to advanced concepts. Learn data structures, OOP, file handling, and build real-world projects.",
+      category: "Programming",
+      readTime: 45,
+      views: 3542,
       image: "/placeholder.svg",
-      date: "Nov 20, 2025"
+      date: "Beginner to Advanced"
     },
     {
       id: "2",
-      title: "10 Productivity Hacks for Remote Workers",
-      excerpt: "Discover proven strategies to boost your productivity while working from home. From time management to workspace optimization.",
-      category: "Lifestyle",
-      readTime: 6,
-      views: 892,
+      title: "SQL Database Complete Guide",
+      excerpt: "Learn SQL from scratch. Master queries, joins, database design, optimization, and work with real databases.",
+      category: "Database",
+      readTime: 32,
+      views: 2891,
       image: "/placeholder.svg",
-      date: "Nov 18, 2025"
+      date: "Beginner to Intermediate"
     },
     {
       id: "3",
-      title: "The Future of Artificial Intelligence",
-      excerpt: "Exploring how AI is transforming industries and what it means for the future of work, creativity, and human potential.",
-      category: "Technology",
-      readTime: 10,
-      views: 2156,
+      title: "Machine Learning Fundamentals",
+      excerpt: "Dive into ML algorithms, supervised and unsupervised learning, model evaluation, and hands-on projects with scikit-learn.",
+      category: "AI & ML",
+      readTime: 60,
+      views: 4127,
       image: "/placeholder.svg",
-      date: "Nov 15, 2025"
+      date: "Intermediate"
+    },
+    {
+      id: "4",
+      title: "Deep Learning with Neural Networks",
+      excerpt: "Build and train neural networks, CNNs, RNNs, and transformers. Master TensorFlow and PyTorch frameworks.",
+      category: "AI & ML",
+      readTime: 75,
+      views: 3654,
+      image: "/placeholder.svg",
+      date: "Advanced"
+    },
+    {
+      id: "5",
+      title: "Statistics for Data Science",
+      excerpt: "Essential statistics concepts for data analysis. Learn probability, hypothesis testing, regression, and statistical inference.",
+      category: "Data Science",
+      readTime: 40,
+      views: 2943,
+      image: "/placeholder.svg",
+      date: "Beginner to Intermediate"
     }
   ];
 
@@ -90,23 +110,23 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Featured Posts */}
+        {/* Featured Courses */}
         <section className="container px-4 py-16">
           <div className="flex items-center gap-2 mb-8">
             <TrendingUp className="h-6 w-6 text-primary" />
-            <h2 className="text-3xl font-bold">Trending Now</h2>
+            <h2 className="text-3xl font-bold">Featured Courses</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredBlogs.map((blog) => (
-              <BlogCard key={blog.id} {...blog} />
+            {featuredCourses.map((course) => (
+              <BlogCard key={course.id} {...course} />
             ))}
           </div>
 
           <div className="text-center mt-12">
             <Link to="/blogs">
               <Button size="lg" className="bg-gradient-primary shadow-elegant hover:shadow-glow">
-                View All Articles
+                View All Courses
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
