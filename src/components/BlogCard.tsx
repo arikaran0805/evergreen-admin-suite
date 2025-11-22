@@ -10,10 +10,11 @@ interface BlogCardProps {
   image: string;
   date: string;
   author: string;
+  slug?: string;
 }
 
-const BlogCard = ({ title, excerpt, category, image, date, author }: BlogCardProps) => {
-  return (
+const BlogCard = ({ title, excerpt, category, image, date, author, slug }: BlogCardProps) => {
+  const CardContent = (
     <Card className="group overflow-hidden border-2 border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-glow bg-card">
       {/* Image */}
       <div className="relative overflow-hidden aspect-video">
@@ -48,6 +49,16 @@ const BlogCard = ({ title, excerpt, category, image, date, author }: BlogCardPro
       </div>
     </Card>
   );
+
+  if (slug) {
+    return (
+      <Link to={`/blog/${slug}`} className="block">
+        {CardContent}
+      </Link>
+    );
+  }
+
+  return CardContent;
 };
 
 export default BlogCard;

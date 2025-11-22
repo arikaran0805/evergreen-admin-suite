@@ -1,75 +1,58 @@
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import BlogCard from "@/components/BlogCard";
 import EmojiBackground from "@/components/EmojiBackground";
 import { ArrowRight, TrendingUp, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
+
   useEffect(() => {
     document.title = "BlogHub - Home";
+    fetchFeaturedCourses();
   }, []);
 
-  // Featured courses data
-  const featuredCourses = [
-    {
-      id: "1",
-      title: "Python Programming Masterclass",
-      excerpt: "Master Python from basics to advanced concepts. Learn data structures, OOP, file handling, and build real-world projects.",
-      category: "Programming",
-      readTime: 45,
-      views: 3542,
-      image: "/placeholder.svg",
-      date: "Beginner to Advanced",
-      author: "BlogHub Team"
-    },
-    {
-      id: "2",
-      title: "SQL Database Complete Guide",
-      excerpt: "Learn SQL from scratch. Master queries, joins, database design, optimization, and work with real databases.",
-      category: "Database",
-      readTime: 32,
-      views: 2891,
-      image: "/placeholder.svg",
-      date: "Beginner to Intermediate",
-      author: "BlogHub Team"
-    },
-    {
-      id: "3",
-      title: "Machine Learning Fundamentals",
-      excerpt: "Dive into ML algorithms, supervised and unsupervised learning, model evaluation, and hands-on projects with scikit-learn.",
-      category: "AI & ML",
-      readTime: 60,
-      views: 4127,
-      image: "/placeholder.svg",
-      date: "Intermediate",
-      author: "BlogHub Team"
-    },
-    {
-      id: "4",
-      title: "Deep Learning with Neural Networks",
-      excerpt: "Build and train neural networks, CNNs, RNNs, and transformers. Master TensorFlow and PyTorch frameworks.",
-      category: "AI & ML",
-      readTime: 75,
-      views: 3654,
-      image: "/placeholder.svg",
-      date: "Advanced",
-      author: "BlogHub Team"
-    },
-    {
-      id: "5",
-      title: "Statistics for Data Science",
-      excerpt: "Essential statistics concepts for data analysis. Learn probability, hypothesis testing, regression, and statistical inference.",
-      category: "Data Science",
-      readTime: 40,
-      views: 2943,
-      image: "/placeholder.svg",
-      date: "Beginner to Intermediate",
-      author: "BlogHub Team"
+  const fetchFeaturedCourses = async () => {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        id,
+        title,
+        excerpt,
+        slug,
+        featured_image,
+        published_at,
+        categories(name),
+        profiles(full_name)
+      `)
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(6);
+
+    if (!error && data) {
+      const formattedCourses = data.map((post: any) => ({
+        id: post.id,
+        title: post.title,
+        excerpt: post.excerpt || '',
+        category: post.categories?.name || 'Uncategorized',
+        readTime: Math.ceil((post.excerpt?.length || 100) / 5),
+        views: 0,
+        image: post.featured_image || '/placeholder.svg',
+        date: new Date(post.published_at).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        author: post.profiles?.full_name || 'BlogHub Team',
+        slug: post.slug
+      }));
+      setFeaturedCourses(formattedCourses);
     }
-  ];
+  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
