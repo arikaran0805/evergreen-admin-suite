@@ -1,11 +1,56 @@
-import { Link } from "react-router-dom";
-import { Search, Menu } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 const Header = () => {
   const categories = ["Technology", "Lifestyle", "Business", "Education", "Health"];
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Logged out",
+        description: "You've been successfully logged out",
+      });
+      navigate("/");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -33,11 +78,41 @@ const Header = () => {
           ))}
         </nav>
 
-        {/* Search and Mobile Menu */}
+        {/* Search, User Menu and Mobile Menu */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="hover:bg-secondary">
             <Search className="h-5 w-5" />
           </Button>
+
+          {/* User Menu - Desktop */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="hidden md:flex">
+                <Button variant="ghost" size="icon" className="hover:bg-secondary">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild variant="default" className="hidden md:flex">
+              <Link to="/auth">Login</Link>
+            </Button>
+          )}
 
           {/* Mobile Menu */}
           <Sheet>
@@ -57,6 +132,33 @@ const Header = () => {
                     {category}
                   </Link>
                 ))}
+                <div className="border-t pt-4 mt-4">
+                  {user ? (
+                    <>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-2 text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
+                      >
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2 w-full text-left"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      to="/auth"
+                      className="text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2 block"
+                    >
+                      Login
+                    </Link>
+                  )}
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
