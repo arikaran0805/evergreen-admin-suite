@@ -3,7 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
@@ -33,6 +34,14 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   usePageTracking();
+  const location = useLocation();
+  
+  // Prevent scroll to top for admin navigation
+  useEffect(() => {
+    if (!location.pathname.startsWith('/admin')) {
+      window.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
   
   return (
     <>
