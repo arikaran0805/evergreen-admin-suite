@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import BlogCard from "@/components/BlogCard";
 import EmojiBackground from "@/components/EmojiBackground";
-import { ArrowRight, TrendingUp, Sparkles } from "lucide-react";
+import { ArrowRight, TrendingUp, Sparkles, Twitter, Facebook, Instagram, Linkedin, Youtube, Github } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
@@ -13,6 +13,14 @@ const Index = () => {
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [siteName, setSiteName] = useState("BlogHub");
   const [logoUrl, setLogoUrl] = useState("");
+  const [socialLinks, setSocialLinks] = useState({
+    twitter: "",
+    facebook: "",
+    instagram: "",
+    linkedin: "",
+    youtube: "",
+    github: "",
+  });
 
   useEffect(() => {
     document.title = "BlogHub - Home";
@@ -60,13 +68,21 @@ const Index = () => {
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, logo_url')
+      .select('site_name, logo_url, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
       .limit(1)
       .maybeSingle();
     
     if (data) {
       setSiteName(data.site_name || "BlogHub");
       setLogoUrl(data.logo_url || "");
+      setSocialLinks({
+        twitter: data.twitter_url || "",
+        facebook: data.facebook_url || "",
+        instagram: data.instagram_url || "",
+        linkedin: data.linkedin_url || "",
+        youtube: data.youtube_url || "",
+        github: data.github_url || "",
+      });
     }
   };
 
@@ -212,11 +228,75 @@ const Index = () => {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-4">Legal</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><Link to="/privacy" className="hover:text-primary">Privacy Policy</Link></li>
-                  <li><Link to="/terms" className="hover:text-primary">Terms of Service</Link></li>
-                </ul>
+                <h3 className="font-semibold mb-4">Connect</h3>
+                <div className="flex gap-3">
+                  {socialLinks.twitter && (
+                    <a 
+                      href={socialLinks.twitter} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="Twitter"
+                    >
+                      <Twitter className="h-5 w-5" />
+                    </a>
+                  )}
+                  {socialLinks.facebook && (
+                    <a 
+                      href={socialLinks.facebook} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="Facebook"
+                    >
+                      <Facebook className="h-5 w-5" />
+                    </a>
+                  )}
+                  {socialLinks.instagram && (
+                    <a 
+                      href={socialLinks.instagram} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="Instagram"
+                    >
+                      <Instagram className="h-5 w-5" />
+                    </a>
+                  )}
+                  {socialLinks.linkedin && (
+                    <a 
+                      href={socialLinks.linkedin} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="LinkedIn"
+                    >
+                      <Linkedin className="h-5 w-5" />
+                    </a>
+                  )}
+                  {socialLinks.youtube && (
+                    <a 
+                      href={socialLinks.youtube} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="YouTube"
+                    >
+                      <Youtube className="h-5 w-5" />
+                    </a>
+                  )}
+                  {socialLinks.github && (
+                    <a 
+                      href={socialLinks.github} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="GitHub"
+                    >
+                      <Github className="h-5 w-5" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 

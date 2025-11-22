@@ -12,7 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github } from "lucide-react";
+import { z } from "zod";
+
+const urlSchema = z.string().url().optional().or(z.literal(""));
 
 const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
@@ -27,6 +30,14 @@ const AdminSettings = () => {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  
+  // Social Media Links
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
   
   // Email Settings
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -85,6 +96,12 @@ const AdminSettings = () => {
       setSiteDescription(data.site_description || "");
       setSiteUrl(data.site_url || "");
       setLogoUrl(data.logo_url || "");
+      setTwitterUrl(data.twitter_url || "");
+      setFacebookUrl(data.facebook_url || "");
+      setInstagramUrl(data.instagram_url || "");
+      setLinkedinUrl(data.linkedin_url || "");
+      setYoutubeUrl(data.youtube_url || "");
+      setGithubUrl(data.github_url || "");
     }
   };
 
@@ -126,6 +143,30 @@ const AdminSettings = () => {
   const handleSaveGeneral = async () => {
     setSaving(true);
     try {
+      // Validate URLs
+      const validation = {
+        siteUrl: urlSchema.safeParse(siteUrl),
+        twitterUrl: urlSchema.safeParse(twitterUrl),
+        facebookUrl: urlSchema.safeParse(facebookUrl),
+        instagramUrl: urlSchema.safeParse(instagramUrl),
+        linkedinUrl: urlSchema.safeParse(linkedinUrl),
+        youtubeUrl: urlSchema.safeParse(youtubeUrl),
+        githubUrl: urlSchema.safeParse(githubUrl),
+      };
+
+      const errors = Object.entries(validation)
+        .filter(([_, result]) => !result.success)
+        .map(([field]) => field);
+
+      if (errors.length > 0) {
+        toast({
+          title: "Invalid URLs",
+          description: `Please check: ${errors.join(", ")}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       if (settingsId) {
         // Update existing settings
         const { error } = await supabase
@@ -135,6 +176,12 @@ const AdminSettings = () => {
             site_description: siteDescription,
             site_url: siteUrl,
             logo_url: logoUrl,
+            twitter_url: twitterUrl || null,
+            facebook_url: facebookUrl || null,
+            instagram_url: instagramUrl || null,
+            linkedin_url: linkedinUrl || null,
+            youtube_url: youtubeUrl || null,
+            github_url: githubUrl || null,
           })
           .eq("id", settingsId);
 
@@ -148,6 +195,12 @@ const AdminSettings = () => {
             site_description: siteDescription,
             site_url: siteUrl,
             logo_url: logoUrl,
+            twitter_url: twitterUrl || null,
+            facebook_url: facebookUrl || null,
+            instagram_url: instagramUrl || null,
+            linkedin_url: linkedinUrl || null,
+            youtube_url: youtubeUrl || null,
+            github_url: githubUrl || null,
           })
           .select()
           .single();
@@ -309,6 +362,100 @@ const AdminSettings = () => {
                     placeholder="https://yourdomain.com"
                     type="url"
                   />
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Social Media Links</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Add your social media profile URLs (optional)
+                  </p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="twitter" className="flex items-center gap-2">
+                        <Twitter className="h-4 w-4" />
+                        Twitter / X
+                      </Label>
+                      <Input
+                        id="twitter"
+                        value={twitterUrl}
+                        onChange={(e) => setTwitterUrl(e.target.value)}
+                        placeholder="https://twitter.com/yourusername"
+                        type="url"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="facebook" className="flex items-center gap-2">
+                        <Facebook className="h-4 w-4" />
+                        Facebook
+                      </Label>
+                      <Input
+                        id="facebook"
+                        value={facebookUrl}
+                        onChange={(e) => setFacebookUrl(e.target.value)}
+                        placeholder="https://facebook.com/yourpage"
+                        type="url"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram" className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4" />
+                        Instagram
+                      </Label>
+                      <Input
+                        id="instagram"
+                        value={instagramUrl}
+                        onChange={(e) => setInstagramUrl(e.target.value)}
+                        placeholder="https://instagram.com/yourusername"
+                        type="url"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="linkedin" className="flex items-center gap-2">
+                        <Linkedin className="h-4 w-4" />
+                        LinkedIn
+                      </Label>
+                      <Input
+                        id="linkedin"
+                        value={linkedinUrl}
+                        onChange={(e) => setLinkedinUrl(e.target.value)}
+                        placeholder="https://linkedin.com/company/yourcompany"
+                        type="url"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="youtube" className="flex items-center gap-2">
+                        <Youtube className="h-4 w-4" />
+                        YouTube
+                      </Label>
+                      <Input
+                        id="youtube"
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                        placeholder="https://youtube.com/@yourchannel"
+                        type="url"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="github" className="flex items-center gap-2">
+                        <Github className="h-4 w-4" />
+                        GitHub
+                      </Label>
+                      <Input
+                        id="github"
+                        value={githubUrl}
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                        placeholder="https://github.com/yourusername"
+                        type="url"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -579,6 +726,47 @@ const AdminSettings = () => {
                         <span className="text-muted-foreground">Logo:</span>
                         <span className="font-medium text-green-600">Uploaded ✓</span>
                       </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Social Media Preview */}
+            {(twitterUrl || facebookUrl || instagramUrl || linkedinUrl || youtubeUrl || githubUrl) && (
+              <div>
+                <h3 className="text-sm font-semibold mb-4 text-muted-foreground">Social Media Links</h3>
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex gap-4 flex-wrap">
+                    {twitterUrl && (
+                      <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        <Twitter className="h-5 w-5" />
+                      </a>
+                    )}
+                    {facebookUrl && (
+                      <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        <Facebook className="h-5 w-5" />
+                      </a>
+                    )}
+                    {instagramUrl && (
+                      <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        <Instagram className="h-5 w-5" />
+                      </a>
+                    )}
+                    {linkedinUrl && (
+                      <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        <Linkedin className="h-5 w-5" />
+                      </a>
+                    )}
+                    {youtubeUrl && (
+                      <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        <Youtube className="h-5 w-5" />
+                      </a>
+                    )}
+                    {githubUrl && (
+                      <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        <Github className="h-5 w-5" />
+                      </a>
                     )}
                   </div>
                 </div>
