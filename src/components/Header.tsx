@@ -32,12 +32,11 @@ const Header = () => {
       setUser(session?.user ?? null);
     });
 
-    // Fetch courses
+    // Fetch categories
     const fetchCourses = async () => {
       const { data, error } = await supabase
-        .from('posts')
-        .select('id, title, slug')
-        .eq('status', 'published')
+        .from('categories')
+        .select('id, name, slug')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -86,10 +85,10 @@ const Header = () => {
           {courses.map((course) => (
             <Link
               key={course.id}
-              to={`/blog/${course.slug}`}
+              to={`/category/${course.slug}`}
               className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
             >
-              {course.title.length > 20 ? `${course.title.substring(0, 20)}...` : course.title}
+              {course.name}
             </Link>
           ))}
         </nav>
@@ -142,10 +141,10 @@ const Header = () => {
                 {courses.map((course) => (
                   <Link
                     key={course.id}
-                    to={`/blog/${course.slug}`}
+                    to={`/category/${course.slug}`}
                     className="text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
                   >
-                    {course.title}
+                    {course.name}
                   </Link>
                 ))}
                 <div className="border-t pt-4 mt-4">
