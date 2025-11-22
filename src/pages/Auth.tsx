@@ -38,19 +38,37 @@ const Auth = () => {
 
   const checkAdminAndRedirect = async (userId: string) => {
     try {
-      const { data: roleData } = await supabase
+      console.log("Checking admin role for user:", userId);
+      
+      const { data: roleData, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
         .eq("role", "admin")
         .maybeSingle();
 
+      console.log("Role check result:", { roleData, error });
+
+      if (error) {
+        console.error("Error checking role:", error);
+        toast({
+          title: "Role Check Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        navigate("/");
+        return;
+      }
+
       if (roleData) {
+        console.log("User is admin, redirecting to /admin");
         navigate("/admin");
       } else {
+        console.log("User is not admin, redirecting to /");
         navigate("/");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Exception checking admin role:", error);
       navigate("/");
     }
   };
