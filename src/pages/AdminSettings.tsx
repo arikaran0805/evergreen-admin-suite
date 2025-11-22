@@ -256,30 +256,6 @@ const AdminSettings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="siteDescription">Site Description</Label>
-                  <Textarea
-                    id="siteDescription"
-                    value={siteDescription}
-                    onChange={(e) => setSiteDescription(e.target.value)}
-                    placeholder="Inspiring stories and ideas for curious minds"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="siteUrl">Site URL</Label>
-                  <Input
-                    id="siteUrl"
-                    value={siteUrl}
-                    onChange={(e) => setSiteUrl(e.target.value)}
-                    placeholder="https://yourdomain.com"
-                    type="url"
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
                   <Label htmlFor="logo">Site Logo</Label>
                   {logoUrl && (
                     <div className="mb-4">
@@ -307,6 +283,30 @@ const AdminSettings = () => {
                   <p className="text-sm text-muted-foreground">
                     Upload a logo image for your site (recommended: 200x50px)
                   </p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="siteDescription">Site Description</Label>
+                  <Textarea
+                    id="siteDescription"
+                    value={siteDescription}
+                    onChange={(e) => setSiteDescription(e.target.value)}
+                    placeholder="Inspiring stories and ideas for curious minds"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="siteUrl">Site URL</Label>
+                  <Input
+                    id="siteUrl"
+                    value={siteUrl}
+                    onChange={(e) => setSiteUrl(e.target.value)}
+                    placeholder="https://yourdomain.com"
+                    type="url"
+                  />
                 </div>
 
                 <Button onClick={handleSaveGeneral} disabled={saving} className="bg-primary">
