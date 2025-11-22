@@ -23,6 +23,7 @@ import AdminPlaceholder from "./pages/AdminPlaceholder";
 import AdminAuthors from "./pages/AdminAuthors";
 import AdminSettings from "./pages/AdminSettings";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const AppContent = () => {
         <Route path="/admin/api-keys" element={<AdminPlaceholder title="API Keys & Tokens" description="Generate, revoke, and manage API access." />} />
         <Route path="/admin/webhooks" element={<AdminPlaceholder title="Webhooks" description="Create webhooks and trigger events." />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
+        <Route path="/admin/social-analytics" element={<AdminSocialAnalytics />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

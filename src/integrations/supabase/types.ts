@@ -383,6 +383,30 @@ export type Database = {
         }
         Relationships: []
       }
+      social_media_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          platform: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          platform: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          platform?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
