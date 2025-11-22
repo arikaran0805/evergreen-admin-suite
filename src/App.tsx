@@ -12,6 +12,11 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AdminPosts from "./pages/AdminPosts";
+import AdminPages from "./pages/AdminPages";
+import AdminCategories from "./pages/AdminCategories";
+import AdminComments from "./pages/AdminComments";
+import AdminUsers from "./pages/AdminUsers";
+import AdminPlaceholder from "./pages/AdminPlaceholder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +37,19 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/posts" element={<AdminPosts />} />
+          <Route path="/admin/pages" element={<AdminPages />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/comments" element={<AdminComments />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/tags" element={<AdminPlaceholder title="Tags Management" description="Manage blog tags, create bulk operations, and enable auto-suggestions." />} />
+          <Route path="/admin/authors" element={<AdminPlaceholder title="Authors & Admins" description="Manage author accounts, roles, and permissions." />} />
+          <Route path="/admin/media" element={<AdminPlaceholder title="Media Library" description="Upload, rename, compress, and manage media files." />} />
+          <Route path="/admin/monetization" element={<AdminPlaceholder title="Monetization" description="Manage ads, placements, and rotation rules." />} />
+          <Route path="/admin/redirects" element={<AdminPlaceholder title="Redirect Rules" description="Create and manage 301/302 redirects." />} />
+          <Route path="/admin/api-keys" element={<AdminPlaceholder title="API Keys & Tokens" description="Generate, revoke, and manage API access." />} />
+          <Route path="/admin/webhooks" element={<AdminPlaceholder title="Webhooks" description="Create webhooks and trigger events." />} />
+          <Route path="/admin/analytics" element={<AdminPlaceholder title="Analytics & Revenue" description="View traffic analytics, search analytics, and revenue reports." />} />
+          <Route path="/admin/settings" element={<AdminPlaceholder title="Settings" description="Configure system settings, DNS, SSL, CDN, and more." />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
