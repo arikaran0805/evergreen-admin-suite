@@ -22,26 +22,45 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        checkAdminAndRedirect(session.user.id);
       }
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session && event === "SIGNED_IN") {
-        navigate("/");
+        await checkAdminAndRedirect(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const checkAdminAndRedirect = async (userId: string) => {
+    try {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (roleData) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+    } catch (error) {
+      navigate("/");
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -52,13 +71,17 @@ const Auth = () => {
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
+
+      // Check if user is admin and redirect accordingly
+      if (data.user) {
+        await checkAdminAndRedirect(data.user.id);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to sign in. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -78,7 +101,7 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -95,13 +118,20 @@ const Auth = () => {
         title: "Account created!",
         description: "You've successfully signed up and are now logged in.",
       });
+
+      // Check if user is admin and redirect accordingly
+      if (data.user) {
+        // Give the trigger time to create the profile
+        setTimeout(async () => {
+          await checkAdminAndRedirect(data.user!.id);
+        }, 500);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to create account. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
