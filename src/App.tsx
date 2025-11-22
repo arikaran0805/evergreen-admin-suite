@@ -17,6 +17,7 @@ import AdminCategories from "./pages/AdminCategories";
 import AdminComments from "./pages/AdminComments";
 import AdminUsers from "./pages/AdminUsers";
 import AdminPlaceholder from "./pages/AdminPlaceholder";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,7 +49,7 @@ const App = () => (
           <Route path="/admin/redirects" element={<AdminPlaceholder title="Redirect Rules" description="Create and manage 301/302 redirects." />} />
           <Route path="/admin/api-keys" element={<AdminPlaceholder title="API Keys & Tokens" description="Generate, revoke, and manage API access." />} />
           <Route path="/admin/webhooks" element={<AdminPlaceholder title="Webhooks" description="Create webhooks and trigger events." />} />
-          <Route path="/admin/analytics" element={<AdminPlaceholder title="Analytics & Revenue" description="View traffic analytics, search analytics, and revenue reports." />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/settings" element={<AdminPlaceholder title="Settings" description="Configure system settings, DNS, SSL, CDN, and more." />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
