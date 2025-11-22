@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -155,32 +156,27 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Management Tabs */}
+        {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Content Management</CardTitle>
-            <CardDescription>Manage your blog content and settings</CardDescription>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Manage your blog content</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="posts" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="posts">Posts</TabsTrigger>
-                <TabsTrigger value="comments">Comments</TabsTrigger>
-                <TabsTrigger value="users">Users</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="posts" className="py-4">
-                <p className="text-muted-foreground">Post management interface coming soon...</p>
-              </TabsContent>
-              
-              <TabsContent value="comments" className="py-4">
-                <p className="text-muted-foreground">Comment moderation interface coming soon...</p>
-              </TabsContent>
-              
-              <TabsContent value="users" className="py-4">
-                <p className="text-muted-foreground">User management interface coming soon...</p>
-              </TabsContent>
-            </Tabs>
+            <div className="flex flex-col gap-3">
+              <Link to="/admin/posts">
+                <Button className="w-full justify-start" variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Manage Posts
+                </Button>
+              </Link>
+              <Link to="/blogs">
+                <Button className="w-full justify-start" variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  View All Posts
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </main>
