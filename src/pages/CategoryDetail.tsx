@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
+import SEOHead from "@/components/SEOHead";
 import { ArrowLeft, BookOpen, Users, Mail, Tag, Play } from "lucide-react";
 
 interface Category {
@@ -160,6 +161,13 @@ const CategoryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead 
+        title={`${category.name} - Course Category`}
+        description={category.description || `Explore ${category.name} courses and lessons. Join ${formattedLearners} learners in this comprehensive learning path.`}
+        keywords={`${category.name}, course, learning, tutorial, lessons`}
+        ogTitle={`${category.name} Course`}
+        ogDescription={category.description || `Learn ${category.name} with our comprehensive course materials`}
+      />
       <Header />
       
       {/* Large Poster Banner */}

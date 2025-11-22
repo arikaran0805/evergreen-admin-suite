@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import BlogCard from "@/components/BlogCard";
+import SEOHead from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -103,6 +104,11 @@ const Blogs = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead 
+        title="Blog Posts - Browse All Articles"
+        description="Explore our collection of blog posts covering technology, lifestyle, business, education, and more. Find inspiring stories and insightful articles."
+        keywords="blog posts, articles, technology, lifestyle, business"
+      />
       <Header />
       
       <main className="container mx-auto px-4 py-8">

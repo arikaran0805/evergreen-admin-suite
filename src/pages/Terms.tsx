@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Header from "@/components/Header";
+import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 
 const Terms = () => {
@@ -9,6 +10,11 @@ const Terms = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SEOHead 
+        title="Terms of Service - Legal Agreement"
+        description="Read BlogHub's Terms of Service. Understand the legal agreement between you and BlogHub regarding the use of our platform and services."
+        keywords="terms of service, legal agreement, terms and conditions, user agreement"
+      />
       <Header />
       
       <main className="container px-4 py-16 max-w-4xl mx-auto">
