@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import BlogCard from "@/components/BlogCard";
 import EmojiBackground from "@/components/EmojiBackground";
+import SEOHead from "@/components/SEOHead";
 import { ArrowRight, TrendingUp, Sparkles, Twitter, Facebook, Instagram, Linkedin, Youtube, Github } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
@@ -91,6 +92,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SEOHead />
       <EmojiBackground />
       
       <div className="relative z-10">

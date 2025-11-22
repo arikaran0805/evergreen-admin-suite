@@ -344,9 +344,17 @@ export type Database = {
           instagram_url: string | null
           linkedin_url: string | null
           logo_url: string | null
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
+          og_description: string | null
+          og_image: string | null
+          og_title: string | null
           site_description: string | null
           site_name: string
           site_url: string | null
+          twitter_card_type: string | null
+          twitter_site: string | null
           twitter_url: string | null
           updated_at: string
           youtube_url: string | null
@@ -359,9 +367,17 @@ export type Database = {
           instagram_url?: string | null
           linkedin_url?: string | null
           logo_url?: string | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null
+          twitter_card_type?: string | null
+          twitter_site?: string | null
           twitter_url?: string | null
           updated_at?: string
           youtube_url?: string | null
@@ -374,9 +390,17 @@ export type Database = {
           instagram_url?: string | null
           linkedin_url?: string | null
           logo_url?: string | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null
+          twitter_card_type?: string | null
+          twitter_site?: string | null
           twitter_url?: string | null
           updated_at?: string
           youtube_url?: string | null

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, FileText, FolderTree, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Webhook, 
-  Settings, BarChart3, Share2, Menu, X, LogOut, Home
+  Settings, BarChart3, Share2, Menu, X, LogOut, Home, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ const adminMenuItems = [
   { icon: Webhook, label: "Webhooks", path: "/admin/webhooks" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" },
+  { icon: Search, label: "SEO Settings", path: "/admin/seo" },
 ];
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
