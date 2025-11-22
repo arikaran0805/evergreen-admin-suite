@@ -338,30 +338,48 @@ export type Database = {
       site_settings: {
         Row: {
           created_at: string
+          facebook_url: string | null
+          github_url: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
           logo_url: string | null
           site_description: string | null
           site_name: string
           site_url: string | null
+          twitter_url: string | null
           updated_at: string
+          youtube_url: string | null
         }
         Insert: {
           created_at?: string
+          facebook_url?: string | null
+          github_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           logo_url?: string | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          youtube_url?: string | null
         }
         Update: {
           created_at?: string
+          facebook_url?: string | null
+          github_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           logo_url?: string | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          youtube_url?: string | null
         }
         Relationships: []
       }
