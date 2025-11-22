@@ -18,37 +18,23 @@ const Index = () => {
 
   const fetchFeaturedCourses = async () => {
     const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        id,
-        title,
-        excerpt,
-        slug,
-        featured_image,
-        published_at,
-        categories(name),
-        profiles(full_name)
-      `)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
+      .from('categories')
+      .select('id, name, slug, description')
+      .order('created_at', { ascending: false })
       .limit(6);
 
     if (!error && data) {
-      const formattedCourses = data.map((post: any) => ({
-        id: post.id,
-        title: post.title,
-        excerpt: post.excerpt || '',
-        category: post.categories?.name || 'Uncategorized',
-        readTime: Math.ceil((post.excerpt?.length || 100) / 5),
-        views: 0,
-        image: post.featured_image || '/placeholder.svg',
-        date: new Date(post.published_at).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        author: post.profiles?.full_name || 'BlogHub Team',
-        slug: post.slug
+      const formattedCourses = data.map((category: any) => ({
+        id: category.id,
+        title: category.name,
+        excerpt: category.description || 'Explore this course category and learn new skills',
+        category: category.name,
+        readTime: 0,
+        views: Math.floor(Math.random() * 15000) + 5000,
+        image: '/placeholder.svg',
+        date: 'Course Category',
+        author: 'BlogHub Team',
+        slug: category.slug
       }));
       setFeaturedCourses(formattedCourses);
     }
