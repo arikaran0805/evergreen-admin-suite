@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 const Contact = () => {
+  useEffect(() => {
+    document.title = "BlogHub - Contact Us";
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />

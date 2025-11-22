@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
@@ -7,6 +8,10 @@ import EmojiBackground from "@/components/EmojiBackground";
 import { ArrowRight, TrendingUp, Sparkles } from "lucide-react";
 
 const Index = () => {
+  useEffect(() => {
+    document.title = "BlogHub - Home";
+  }, []);
+
   // Featured courses data
   const featuredCourses = [
     {

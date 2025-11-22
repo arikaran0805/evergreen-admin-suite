@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { trackPostView } from "@/lib/analytics";
 import Header from "@/components/Header";
 import { Calendar, User, MessageSquare, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
@@ -51,6 +52,10 @@ const BlogDetail = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    document.title = post ? `${post.title} - BlogHub` : "BlogHub - Blog Post";
+  }, [post]);
+
+  useEffect(() => {
     checkUser();
     fetchPost();
     fetchComments();
@@ -76,6 +81,11 @@ const BlogDetail = () => {
 
       if (error) throw error;
       setPost(data);
+      
+      // Track post view
+      if (id) {
+        trackPostView(id);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
