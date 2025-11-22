@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { trackPostView } from "@/lib/analytics";
 import Header from "@/components/Header";
-import { Calendar, User, MessageSquare, ArrowLeft } from "lucide-react";
+import { Calendar, User, MessageSquare, ArrowLeft, BookOpen, Mail, Tag } from "lucide-react";
 import { format } from "date-fns";
 
 interface Post {
@@ -21,11 +22,13 @@ interface Post {
   featured_image: string | null;
   published_at: string | null;
   author_id: string;
+  category_id: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
   };
   categories: {
+    id: string;
     name: string;
   } | null;
 }
@@ -41,24 +44,36 @@ interface Comment {
   };
 }
 
+interface RelatedPost {
+  id: string;
+  title: string;
+  slug: string;
+}
+
 const BlogDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([]);
+  const [recentCourses, setRecentCourses] = useState<any[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [email, setEmail] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
-    document.title = post ? `${post.title} - BlogHub` : "BlogHub - Blog Post";
+    document.title = post ? `${post.title} - BlogHub` : "BlogHub - Course";
   }, [post]);
 
   useEffect(() => {
     checkUser();
     fetchPost();
     fetchComments();
+    fetchRecentCourses();
+    fetchTags();
   }, [id]);
 
   const checkUser = async () => {
@@ -73,7 +88,7 @@ const BlogDetail = () => {
         .select(`
           *,
           profiles:author_id (full_name, avatar_url),
-          categories:category_id (name)
+          categories:category_id (id, name)
         `)
         .eq("id", id)
         .eq("status", "published")
@@ -86,6 +101,11 @@ const BlogDetail = () => {
       if (id) {
         trackPostView(id);
       }
+
+      // Fetch related posts from same category
+      if (data.category_id) {
+        fetchRelatedPosts(data.category_id);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -94,6 +114,55 @@ const BlogDetail = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRelatedPosts = async (categoryId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, title, slug")
+        .eq("category_id", categoryId)
+        .eq("status", "published")
+        .neq("id", id)
+        .order("published_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setRelatedPosts(data || []);
+    } catch (error) {
+      console.error("Error fetching related posts:", error);
+    }
+  };
+
+  const fetchRecentCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, title, slug, featured_image, categories(name)")
+        .eq("status", "published")
+        .neq("id", id)
+        .order("published_at", { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setRecentCourses(data || []);
+    } catch (error) {
+      console.error("Error fetching recent courses:", error);
+    }
+  };
+
+  const fetchTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name")
+        .limit(10);
+
+      if (error) throw error;
+      setAllTags(data?.map(c => c.name) || []);
+    } catch (error) {
+      console.error("Error fetching tags:", error);
     }
   };
 
@@ -160,6 +229,15 @@ const BlogDetail = () => {
     }
   };
 
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Subscribed!",
+      description: "You've been subscribed to our newsletter.",
+    });
+    setEmail("");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -176,9 +254,9 @@ const BlogDetail = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Post not found</h1>
+          <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           <Link to="/blogs">
-            <Button>Back to Blogs</Button>
+            <Button>Back to Courses</Button>
           </Link>
         </div>
       </div>
@@ -186,34 +264,39 @@ const BlogDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-subtle">
       <Header />
       
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <Link to="/blogs" className="inline-flex items-center text-primary hover:underline mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Blogs
-        </Link>
+      {/* Large Poster Banner */}
+      {post.featured_image && (
+        <div className="w-full h-[400px] md:h-[500px] relative overflow-hidden">
+          <img
+            src={post.featured_image}
+            alt={post.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        </div>
+      )}
 
-        <article>
-          {post.featured_image && (
-            <img
-              src={post.featured_image}
-              alt={post.title}
-              className="w-full h-96 object-cover rounded-lg mb-6"
-            />
-          )}
+      {/* Course Introduction */}
+      <div className="container mx-auto px-4 -mt-32 relative z-10 mb-12">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/blogs" className="inline-flex items-center text-primary hover:underline mb-6">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Courses
+          </Link>
 
-          <div className="mb-6">
+          <Card className="p-8 shadow-elegant border border-primary/10 bg-card/95 backdrop-blur-sm">
             {post.categories && (
-              <Badge variant="secondary" className="mb-4">
+              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
                 {post.categories.name}
               </Badge>
             )}
             
-            <h1 className="text-4xl font-bold text-foreground mb-4">{post.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">{post.title}</h1>
 
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 <span>{post.profiles?.full_name || "Anonymous"}</span>
@@ -225,162 +308,304 @@ const BlogDetail = () => {
                 </div>
               )}
             </div>
-          </div>
 
-          <Separator className="mb-6" />
-
-          <div 
-            className="prose prose-lg max-w-none text-foreground mb-12"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-          
-          <style>{`
-            .prose {
-              color: hsl(var(--foreground));
-            }
-            .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-              color: hsl(var(--foreground));
-              font-weight: 700;
-              margin-top: 1.5em;
-              margin-bottom: 0.5em;
-            }
-            .prose h1 { font-size: 2.25em; }
-            .prose h2 { font-size: 1.875em; }
-            .prose h3 { font-size: 1.5em; }
-            .prose h4 { font-size: 1.25em; }
-            .prose p {
-              margin-bottom: 1em;
-              line-height: 1.75;
-            }
-            .prose a {
-              color: hsl(var(--primary));
-              text-decoration: underline;
-            }
-            .prose a:hover {
-              color: hsl(var(--primary-glow));
-            }
-            .prose strong {
-              font-weight: 700;
-              color: hsl(var(--foreground));
-            }
-            .prose em {
-              font-style: italic;
-            }
-            .prose ul, .prose ol {
-              margin: 1em 0;
-              padding-left: 1.5em;
-            }
-            .prose li {
-              margin-bottom: 0.5em;
-            }
-            .prose blockquote {
-              border-left: 4px solid hsl(var(--primary));
-              padding-left: 1em;
-              margin: 1.5em 0;
-              font-style: italic;
-              color: hsl(var(--muted-foreground));
-            }
-            .prose code {
-              background: hsl(var(--muted));
-              padding: 0.2em 0.4em;
-              border-radius: 0.25em;
-              font-size: 0.875em;
-              font-family: monospace;
-            }
-            .prose pre {
-              background: hsl(var(--muted));
-              padding: 1em;
-              border-radius: 0.5em;
-              overflow-x: auto;
-              margin: 1em 0;
-            }
-            .prose pre code {
-              background: none;
-              padding: 0;
-            }
-            .prose img {
-              max-width: 100%;
-              height: auto;
-              border-radius: 0.5em;
-              margin: 1.5em 0;
-            }
-          `}</style>
-        </article>
-
-        <Separator className="my-8" />
-
-        {/* Comments Section */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <MessageSquare className="h-6 w-6" />
-            Comments ({comments.length})
-          </h2>
-
-          {/* Comment Form */}
-          {user ? (
-            <Card className="mb-8">
-              <CardContent className="pt-6">
-                <form onSubmit={handleSubmitComment} className="space-y-4">
-                  <Textarea
-                    placeholder="Share your thoughts..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    rows={4}
-                    required
-                  />
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? "Submitting..." : "Post Comment"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="mb-8">
-              <CardContent className="pt-6 text-center">
-                <p className="text-muted-foreground mb-4">Please login to leave a comment</p>
-                <Link to="/auth">
-                  <Button>Login</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Comments List */}
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <Card key={comment.id}>
-                <CardContent className="pt-6">
-                  <div className="flex gap-4">
-                    <Avatar>
-                      <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {comment.profiles?.full_name?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold">
-                          {comment.profiles?.full_name || "Anonymous"}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(comment.created_at), "MMM d, yyyy")}
-                        </span>
-                      </div>
-                      <p className="text-foreground">{comment.content}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {comments.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">
-                No comments yet. Be the first to comment!
+            {post.excerpt && (
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                {post.excerpt}
               </p>
             )}
-          </div>
-        </section>
-      </main>
+          </Card>
+        </div>
+      </div>
+
+      {/* 3-Column Layout */}
+      <div className="container mx-auto px-4 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* LEFT SIDEBAR - Course Topics/Lessons */}
+          <aside className="lg:col-span-3">
+            <Card className="sticky top-4 p-6 border border-primary/10 shadow-card">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <h2 className="font-bold text-lg">Course Topics</h2>
+              </div>
+              
+              <Separator className="mb-4" />
+              
+              <nav className="space-y-2">
+                {relatedPosts.length > 0 ? (
+                  relatedPosts.map((topic, index) => (
+                    <Link 
+                      key={topic.id}
+                      to={`/blog/${topic.slug}`}
+                      className="block p-3 rounded-lg hover:bg-primary/5 transition-colors group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm group-hover:text-primary transition-colors line-clamp-2">
+                          {topic.title}
+                        </span>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No related topics yet</p>
+                )}
+              </nav>
+            </Card>
+          </aside>
+
+          {/* MAIN CONTENT - Course Details */}
+          <main className="lg:col-span-6">
+            <Card className="p-8 border border-primary/10 shadow-card">
+              <div 
+                className="prose prose-lg max-w-none text-foreground"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+            </Card>
+
+            <Separator className="my-8" />
+
+            {/* Comments Section */}
+            <Card className="p-8 border border-primary/10 shadow-card">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <MessageSquare className="h-6 w-6 text-primary" />
+                Comments ({comments.length})
+              </h2>
+
+              {/* Comment Form */}
+              {user ? (
+                <div className="mb-8">
+                  <form onSubmit={handleSubmitComment} className="space-y-4">
+                    <Textarea
+                      placeholder="Share your thoughts..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      rows={4}
+                      required
+                      className="border-primary/20 focus:border-primary"
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={submitting}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      {submitting ? "Submitting..." : "Post Comment"}
+                    </Button>
+                  </form>
+                </div>
+              ) : (
+                <div className="mb-8 text-center p-6 bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground mb-4">Please login to leave a comment</p>
+                  <Link to="/auth">
+                    <Button className="bg-primary hover:bg-primary/90">Login</Button>
+                  </Link>
+                </div>
+              )}
+
+              {/* Comments List */}
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex gap-4">
+                      <Avatar>
+                        <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {comment.profiles?.full_name?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold">
+                            {comment.profiles?.full_name || "Anonymous"}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(comment.created_at), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                        <p className="text-foreground">{comment.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {comments.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No comments yet. Be the first to comment!
+                  </p>
+                )}
+              </div>
+            </Card>
+          </main>
+
+          {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter */}
+          <aside className="lg:col-span-3 space-y-6">
+            
+            {/* Recent Courses */}
+            <Card className="p-6 border border-primary/10 shadow-card">
+              <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
+              <div className="space-y-4">
+                {recentCourses.map((course) => (
+                  <Link 
+                    key={course.id}
+                    to={`/blog/${course.slug}`}
+                    className="block group"
+                  >
+                    <div className="flex gap-3">
+                      {course.featured_image && (
+                        <img 
+                          src={course.featured_image} 
+                          alt={course.title}
+                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                          {course.title}
+                        </h4>
+                        {course.categories && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {course.categories.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Card>
+
+            {/* Tags */}
+            <Card className="p-6 border border-primary/10 shadow-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Tag className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Tags</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <Badge 
+                    key={tag} 
+                    variant="secondary"
+                    className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </Card>
+
+            {/* Newsletter Subscription */}
+            <Card className="p-6 border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-transparent">
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Newsletter</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get the latest courses and updates delivered to your inbox.
+              </p>
+              <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+                <Input 
+                  type="email"
+                  placeholder="Your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="border-primary/20"
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full bg-primary hover:bg-primary/90"
+                >
+                  Subscribe
+                </Button>
+              </form>
+            </Card>
+
+            {/* AdSense Placeholder */}
+            <Card className="p-6 border border-primary/10 shadow-card bg-muted/30">
+              <div className="text-center py-12">
+                <p className="text-sm text-muted-foreground">Advertisement</p>
+                <p className="text-xs text-muted-foreground mt-2">Google AdSense</p>
+              </div>
+            </Card>
+
+          </aside>
+        </div>
+      </div>
+
+      <style>{`
+        .prose {
+          color: hsl(var(--foreground));
+        }
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+          color: hsl(var(--foreground));
+          font-weight: 700;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+        }
+        .prose h1 { font-size: 2.25em; }
+        .prose h2 { font-size: 1.875em; }
+        .prose h3 { font-size: 1.5em; }
+        .prose h4 { font-size: 1.25em; }
+        .prose p {
+          margin-bottom: 1em;
+          line-height: 1.75;
+        }
+        .prose a {
+          color: hsl(var(--primary));
+          text-decoration: underline;
+        }
+        .prose a:hover {
+          color: hsl(var(--primary-glow));
+        }
+        .prose strong {
+          font-weight: 700;
+          color: hsl(var(--foreground));
+        }
+        .prose em {
+          font-style: italic;
+        }
+        .prose ul, .prose ol {
+          margin: 1em 0;
+          padding-left: 1.5em;
+        }
+        .prose li {
+          margin-bottom: 0.5em;
+        }
+        .prose blockquote {
+          border-left: 4px solid hsl(var(--primary));
+          padding-left: 1em;
+          margin: 1.5em 0;
+          font-style: italic;
+          color: hsl(var(--muted-foreground));
+        }
+        .prose code {
+          background: hsl(var(--muted));
+          padding: 0.2em 0.4em;
+          border-radius: 0.25em;
+          font-size: 0.875em;
+          font-family: monospace;
+        }
+        .prose pre {
+          background: hsl(var(--muted));
+          padding: 1em;
+          border-radius: 0.5em;
+          overflow-x: auto;
+          margin: 1em 0;
+        }
+        .prose pre code {
+          background: none;
+          padding: 0;
+        }
+        .prose img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5em;
+          margin: 1.5em 0;
+        }
+      `}</style>
     </div>
   );
 };
