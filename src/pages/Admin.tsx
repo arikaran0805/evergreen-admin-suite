@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Users, FileText, MessageSquare, Home, Calendar, Eye } from "lucide-react";
+import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit } from "lucide-react";
 import { format } from "date-fns";
 
 interface RecentPost {
@@ -15,6 +16,7 @@ interface RecentPost {
   status: string;
   published_at: string | null;
   created_at: string;
+  updated_at: string;
   profiles: {
     full_name: string | null;
   };
@@ -24,6 +26,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
+  const [filterType, setFilterType] = useState<"posted" | "edited">("posted");
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPosts: 0,
@@ -35,6 +38,12 @@ const Admin = () => {
   useEffect(() => {
     checkAdminAccess();
   }, []);
+
+  useEffect(() => {
+    if (!loading && isAdmin) {
+      fetchRecentPosts();
+    }
+  }, [filterType, loading, isAdmin]);
 
   const checkAdminAccess = async () => {
     try {
@@ -106,8 +115,15 @@ const Admin = () => {
         totalPosts: postsCount || 0,
         totalComments: commentsCount || 0,
       });
+    } catch (error: any) {
+      console.error("Error fetching stats:", error);
+    }
+  };
 
-      // Fetch recent posts
+  const fetchRecentPosts = async () => {
+    try {
+      const orderField = filterType === "posted" ? "created_at" : "updated_at";
+      
       const { data: postsData, error: postsError } = await supabase
         .from("posts")
         .select(`
@@ -116,15 +132,16 @@ const Admin = () => {
           status,
           published_at,
           created_at,
+          updated_at,
           profiles:author_id (full_name)
         `)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .order(orderField, { ascending: false })
+        .limit(7);
 
       if (postsError) throw postsError;
       setRecentPosts(postsData || []);
     } catch (error: any) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching recent posts:", error);
     }
   };
 
@@ -239,34 +256,59 @@ const Admin = () => {
       {/* Recent Posts */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Posts</CardTitle>
-          <CardDescription>Latest blog posts from your site</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Posts</CardTitle>
+              <CardDescription>Latest blog posts from your site</CardDescription>
+            </div>
+            <Tabs value={filterType} onValueChange={(v) => setFilterType(v as "posted" | "edited")} className="w-auto">
+              <TabsList>
+                <TabsTrigger value="posted">Recently Posted</TabsTrigger>
+                <TabsTrigger value="edited">Recently Edited</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {recentPosts.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">No posts yet. Create your first post!</p>
             ) : (
               recentPosts.map((post) => (
-                <Link key={post.id} to={`/blog/${post.id}`} target="_blank">
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary/50 hover:bg-accent/5 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground truncate">{post.title}</h3>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(post.created_at), "MMM d, yyyy")}
-                        </span>
-                        {post.profiles?.full_name && (
-                          <span>by {post.profiles.full_name}</span>
-                        )}
-                      </div>
+                <div key={post.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary/50 hover:bg-accent/5 transition-colors">
+                  <div className="flex-1 min-w-0 mr-4">
+                    <h3 className="font-semibold text-foreground truncate mb-1">{post.title}</h3>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {filterType === "posted" 
+                          ? format(new Date(post.created_at), "MMM d, yyyy 'at' h:mm a")
+                          : format(new Date(post.updated_at), "MMM d, yyyy 'at' h:mm a")
+                        }
+                      </span>
+                      {post.profiles?.full_name && (
+                        <span>by {post.profiles.full_name}</span>
+                      )}
                     </div>
-                    <Badge variant={post.status === "published" ? "default" : "secondary"}>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={post.status === "published" ? "default" : "secondary"} className="shrink-0">
                       {post.status}
                     </Badge>
+                    <Link to={`/blog/${post.id}`} target="_blank">
+                      <Button size="sm" variant="outline" className="gap-1">
+                        <Eye className="h-3 w-3" />
+                        View
+                      </Button>
+                    </Link>
+                    <Link to={`/admin/posts`}>
+                      <Button size="sm" variant="outline" className="gap-1">
+                        <Edit className="h-3 w-3" />
+                        Edit
+                      </Button>
+                    </Link>
                   </div>
-                </Link>
+                </div>
               ))
             )}
           </div>
