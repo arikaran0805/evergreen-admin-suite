@@ -13,9 +13,10 @@ interface BlogCardProps {
   author: string;
   slug?: string;
   views?: number;
+  linkType?: "blog" | "category";
 }
 
-const BlogCard = ({ title, excerpt, category, image, date, author, slug, views = 0 }: BlogCardProps) => {
+const BlogCard = ({ title, excerpt, category, image, date, author, slug, views = 0, linkType = "blog" }: BlogCardProps) => {
   // Calculate learners from views or use a simulated count
   const learnersCount = views > 0 ? views : Math.floor(Math.random() * 15000) + 5000;
   const formattedLearners = learnersCount.toLocaleString();
@@ -66,8 +67,9 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, views =
   );
 
   if (slug) {
+    const linkPath = linkType === "category" ? `/category/${slug}` : `/blog/${slug}`;
     return (
-      <Link to={`/blog/${slug}`} className="block">
+      <Link to={linkPath} className="block">
         {CardContent}
       </Link>
     );
