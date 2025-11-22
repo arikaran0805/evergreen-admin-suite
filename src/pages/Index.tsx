@@ -230,17 +230,18 @@ const Index = () => {
 
               <div>
                 <h3 className="font-semibold mb-4">Connect</h3>
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-2">
                   {socialLinks.twitter && (
                     <a 
                       href={socialLinks.twitter} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={() => trackSocialMediaClick("twitter")}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Twitter"
                     >
                       <Twitter className="h-5 w-5" />
+                      <span>Twitter</span>
                     </a>
                   )}
                   {socialLinks.facebook && (
@@ -249,10 +250,11 @@ const Index = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={() => trackSocialMediaClick("facebook")}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Facebook"
                     >
                       <Facebook className="h-5 w-5" />
+                      <span>Facebook</span>
                     </a>
                   )}
                   {socialLinks.instagram && (
@@ -261,10 +263,11 @@ const Index = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={() => trackSocialMediaClick("instagram")}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Instagram"
                     >
                       <Instagram className="h-5 w-5" />
+                      <span>Instagram</span>
                     </a>
                   )}
                   {socialLinks.linkedin && (
@@ -273,10 +276,11 @@ const Index = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={() => trackSocialMediaClick("linkedin")}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                       aria-label="LinkedIn"
                     >
                       <Linkedin className="h-5 w-5" />
+                      <span>LinkedIn</span>
                     </a>
                   )}
                   {socialLinks.youtube && (
@@ -285,10 +289,11 @@ const Index = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={() => trackSocialMediaClick("youtube")}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                       aria-label="YouTube"
                     >
                       <Youtube className="h-5 w-5" />
+                      <span>YouTube</span>
                     </a>
                   )}
                   {socialLinks.github && (
@@ -297,10 +302,11 @@ const Index = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={() => trackSocialMediaClick("github")}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                       aria-label="GitHub"
                     >
                       <Github className="h-5 w-5" />
+                      <span>GitHub</span>
                     </a>
                   )}
                 </div>
