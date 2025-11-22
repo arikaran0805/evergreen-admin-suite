@@ -229,11 +229,82 @@ const BlogDetail = () => {
 
           <Separator className="mb-6" />
 
-          <div className="prose prose-lg max-w-none text-foreground mb-12">
-            {post.content.split('\n').map((paragraph, idx) => (
-              <p key={idx} className="mb-4">{paragraph}</p>
-            ))}
-          </div>
+          <div 
+            className="prose prose-lg max-w-none text-foreground mb-12"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+          
+          <style>{`
+            .prose {
+              color: hsl(var(--foreground));
+            }
+            .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+              color: hsl(var(--foreground));
+              font-weight: 700;
+              margin-top: 1.5em;
+              margin-bottom: 0.5em;
+            }
+            .prose h1 { font-size: 2.25em; }
+            .prose h2 { font-size: 1.875em; }
+            .prose h3 { font-size: 1.5em; }
+            .prose h4 { font-size: 1.25em; }
+            .prose p {
+              margin-bottom: 1em;
+              line-height: 1.75;
+            }
+            .prose a {
+              color: hsl(var(--primary));
+              text-decoration: underline;
+            }
+            .prose a:hover {
+              color: hsl(var(--primary-glow));
+            }
+            .prose strong {
+              font-weight: 700;
+              color: hsl(var(--foreground));
+            }
+            .prose em {
+              font-style: italic;
+            }
+            .prose ul, .prose ol {
+              margin: 1em 0;
+              padding-left: 1.5em;
+            }
+            .prose li {
+              margin-bottom: 0.5em;
+            }
+            .prose blockquote {
+              border-left: 4px solid hsl(var(--primary));
+              padding-left: 1em;
+              margin: 1.5em 0;
+              font-style: italic;
+              color: hsl(var(--muted-foreground));
+            }
+            .prose code {
+              background: hsl(var(--muted));
+              padding: 0.2em 0.4em;
+              border-radius: 0.25em;
+              font-size: 0.875em;
+              font-family: monospace;
+            }
+            .prose pre {
+              background: hsl(var(--muted));
+              padding: 1em;
+              border-radius: 0.5em;
+              overflow-x: auto;
+              margin: 1em 0;
+            }
+            .prose pre code {
+              background: none;
+              padding: 0;
+            }
+            .prose img {
+              max-width: 100%;
+              height: auto;
+              border-radius: 0.5em;
+              margin: 1.5em 0;
+            }
+          `}</style>
         </article>
 
         <Separator className="my-8" />
