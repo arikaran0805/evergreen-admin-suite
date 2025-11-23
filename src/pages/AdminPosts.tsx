@@ -38,7 +38,7 @@ const postSchema = z.object({
   excerpt: z.string().max(500, "Excerpt too long").optional(),
   content: z.string().min(1, "Content is required"),
   featured_image: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  category_id: z.string().uuid().optional(),
+  category_id: z.string().uuid().optional().or(z.literal("")),
   status: z.enum(["draft", "published"]),
   lesson_order: z.number().int().min(0).optional(),
   parent_id: z.string().uuid().optional().or(z.literal("")),
@@ -174,7 +174,7 @@ const AdminPosts = () => {
         author_id: session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
         lesson_order: validated.lesson_order || 0,
-        parent_id: validated.parent_id || null,
+        parent_id: validated.parent_id && validated.parent_id !== "" ? validated.parent_id : null,
       };
 
       if (editingPost) {
@@ -249,7 +249,6 @@ const AdminPosts = () => {
   };
 
   const handleEdit = async (post: Post) => {
-    console.log("Edit clicked for post:", post);
     setEditingPost(post);
     
     try {
@@ -260,37 +259,27 @@ const AdminPosts = () => {
         .eq("id", post.id)
         .single();
 
-      if (error) {
-        console.error("Error fetching post:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load post data",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
       
-      console.log("Fetched post data:", data);
       if (data) {
         setFormData({
-          title: data.title,
-          slug: data.slug,
+          title: data.title || "",
+          slug: data.slug || "",
           excerpt: data.excerpt || "",
-          content: data.content,
+          content: data.content || "",
           featured_image: data.featured_image || "",
           category_id: data.category_id || "",
-          status: data.status as "draft" | "published",
+          status: (data.status as "draft" | "published") || "draft",
           lesson_order: data.lesson_order || 0,
           parent_id: data.parent_id || "",
         });
-        console.log("Form data set, opening dialog");
         setIsDialogOpen(true);
       }
     } catch (err) {
-      console.error("Unexpected error:", err);
+      console.error("Error loading post:", err);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "Failed to load post data",
         variant: "destructive",
       });
     }
@@ -405,16 +394,21 @@ const AdminPosts = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None - Main Lesson</SelectItem>
-                    {(mainLessons || [])
-                      .filter(lesson => 
-                        lesson.id !== editingPost?.id && 
-                        (formData.category_id ? lesson.category_id === formData.category_id : true)
-                      )
-                      .map((lesson) => (
-                        <SelectItem key={lesson.id} value={lesson.id}>
-                          {lesson.title}
-                        </SelectItem>
-                      ))}
+                    {Array.isArray(mainLessons) && mainLessons.length > 0 ? (
+                      mainLessons
+                        .filter(lesson => {
+                          // Don't show current post as its own parent
+                          if (editingPost && lesson.id === editingPost.id) return false;
+                          // Only show lessons from same category
+                          if (formData.category_id && lesson.category_id !== formData.category_id) return false;
+                          return true;
+                        })
+                        .map((lesson) => (
+                          <SelectItem key={lesson.id} value={lesson.id}>
+                            {lesson.title}
+                          </SelectItem>
+                        ))
+                    ) : null}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">
