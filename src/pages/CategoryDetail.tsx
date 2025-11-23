@@ -325,12 +325,15 @@ const CategoryDetail = () => {
           <main className="lg:col-span-6">
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between mb-6">
-              <Link to="/">
-                <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5 transition-colors">
-                  <Home className="h-4 w-4" />
-                  Home
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 hover:bg-primary/5 transition-colors"
+                onClick={() => setSelectedPost(null)}
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
               {selectedPost && (
                 <div className="flex gap-2">
                   {hasPrevious && (
@@ -360,7 +363,7 @@ const CategoryDetail = () => {
             </div>
 
             <Card className="border border-primary/10 shadow-card">
-              <CardContent className="p-8">
+              <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">Loading lesson...</p>
@@ -406,9 +409,64 @@ const CategoryDetail = () => {
 
                     {/* Lesson Content */}
                     <div 
-                      className="prose prose-lg max-w-none"
+                      className="prose prose-lg max-w-none leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: selectedPost.content || '' }}
                     />
+
+                    {/* Comments Section */}
+                    <div className="mt-12 pt-8 border-t border-border">
+                      <h3 className="text-2xl font-bold mb-6">Comments</h3>
+                      <div className="space-y-6">
+                        {/* Comment Form */}
+                        <Card className="border border-primary/10">
+                          <CardContent className="p-6">
+                            <h4 className="font-semibold mb-4">Leave a Comment</h4>
+                            <form className="space-y-4">
+                              <div>
+                                <Input 
+                                  placeholder="Your name" 
+                                  className="border-primary/20"
+                                />
+                              </div>
+                              <div>
+                                <textarea
+                                  placeholder="Your comment..."
+                                  className="w-full min-h-[120px] px-3 py-2 rounded-md border border-primary/20 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                />
+                              </div>
+                              <Button 
+                                type="submit" 
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                Post Comment
+                              </Button>
+                            </form>
+                          </CardContent>
+                        </Card>
+
+                        {/* Sample Comments */}
+                        <div className="space-y-4">
+                          <Card className="border border-primary/10">
+                            <CardContent className="p-6">
+                              <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                                  J
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-semibold">John Doe</span>
+                                    <span className="text-xs text-muted-foreground">2 days ago</span>
+                                  </div>
+                                  <p className="text-muted-foreground">
+                                    Great lesson! The explanations were clear and easy to follow. Looking forward to the next one.
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Lesson Navigation */}
                     <div className="mt-12 pt-8 border-t border-border flex items-center justify-between">
@@ -514,6 +572,18 @@ const CategoryDetail = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10 border-primary/20"
                     />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Advertisement Banner 1 */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <div className="bg-muted/30 rounded-lg h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground font-semibold">Advertisement</p>
+                      <p className="text-xs text-muted-foreground mt-1">Your ad could be here</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -664,6 +734,18 @@ const CategoryDetail = () => {
                         <Instagram className="h-5 w-5" />
                       </a>
                     )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Advertisement Banner 2 */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <div className="bg-muted/30 rounded-lg h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground font-semibold">Advertisement</p>
+                      <p className="text-xs text-muted-foreground mt-1">Your ad could be here</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
