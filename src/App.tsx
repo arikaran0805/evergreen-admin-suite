@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
+import Courses from "./pages/Courses";
 import BlogDetail from "./pages/BlogDetail";
 import CategoryDetail from "./pages/CategoryDetail";
 import About from "./pages/About";
@@ -62,6 +63,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/blogs" element={<Blogs />} />
+        <Route path="/courses" element={<Courses />} />
         <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/category/:slug" element={<CategoryDetail />} />
         <Route path="/about" element={<About />} />
