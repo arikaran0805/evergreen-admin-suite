@@ -424,28 +424,32 @@ const CategoryDetail = () => {
                           selectedPost?.id === post.id ? 'bg-primary/10' : ''
                         }`}
                       >
-                        <div className="flex items-start gap-2 p-2 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
-                          <div className={`flex-shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
-                            selectedPost?.id === post.id 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
-                          }`}>
-                            {index + 1}
+                        <div className="p-2 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                          <div className="flex items-start gap-2 mb-2">
+                            <div className={`flex-shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
+                              selectedPost?.id === post.id 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className={`text-xs font-medium transition-colors line-clamp-2 ${
+                                selectedPost?.id === post.id 
+                                  ? 'text-primary' 
+                                  : 'group-hover:text-primary'
+                              }`}>
+                                {post.title}
+                              </h3>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className={`text-xs font-medium transition-colors line-clamp-2 ${
+                          <div className="flex justify-center">
+                            <Play className={`h-4 w-4 transition-colors ${
                               selectedPost?.id === post.id 
                                 ? 'text-primary' 
-                                : 'group-hover:text-primary'
-                            }`}>
-                              {post.title}
-                            </h3>
+                                : 'text-muted-foreground group-hover:text-primary'
+                            }`} />
                           </div>
-                          <Play className={`h-3 w-3 transition-colors flex-shrink-0 ${
-                            selectedPost?.id === post.id 
-                              ? 'text-primary' 
-                              : 'text-muted-foreground group-hover:text-primary'
-                          }`} />
                         </div>
                       </div>
                     ))
