@@ -388,7 +388,21 @@ const AdminPosts = () => {
                   <Label htmlFor="parent">Parent Lesson (Optional)</Label>
                   <Select 
                     value={formData.parent_id || ""} 
-                    onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
+                    onValueChange={(value) => {
+                      // When selecting a parent, inherit its category
+                      if (value !== "none" && value) {
+                        const parentLesson = mainLessons.find(l => l.id === value);
+                        if (parentLesson && parentLesson.category_id) {
+                          setFormData({ 
+                            ...formData, 
+                            parent_id: value,
+                            category_id: parentLesson.category_id 
+                          });
+                          return;
+                        }
+                      }
+                      setFormData({ ...formData, parent_id: value });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="None - This is a main lesson" />
@@ -409,7 +423,7 @@ const AdminPosts = () => {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Select a parent lesson to make this a sub-lesson
+                    Select a parent lesson to make this a sub-lesson. Category will be inherited from parent.
                   </p>
                 </div>
 
