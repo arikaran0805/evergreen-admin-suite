@@ -403,7 +403,7 @@ const CategoryDetail = () => {
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
-            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-green-200 rounded-none">
+            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-gray-100 rounded-none">
               <CardContent className="p-4 pb-0">
                 <div 
                   className="flex items-center gap-2 mb-3 cursor-pointer hover:text-primary transition-colors"
