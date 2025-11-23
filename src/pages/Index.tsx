@@ -34,31 +34,21 @@ const Index = () => {
 
   const fetchFeaturedCourses = async () => {
     const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        id,
-        title,
-        slug,
-        excerpt,
-        featured_image,
-        published_at,
-        categories(name),
-        profiles(full_name)
-      `)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
+      .from('categories')
+      .select('id, name, slug, description')
+      .order('created_at', { ascending: false })
       .limit(6);
 
     if (!error && data) {
-      const formattedCourses = data.map((post: any) => ({
-        id: post.id,
-        title: post.title,
-        excerpt: post.excerpt || 'Explore this course and learn new skills',
-        category: post.categories?.name || 'General',
-        image: post.featured_image || '/placeholder.svg',
-        date: post.published_at ? new Date(post.published_at).toLocaleDateString() : 'Recently',
-        author: post.profiles?.full_name || 'BlogHub Team',
-        slug: post.slug
+      const formattedCourses = data.map((category: any) => ({
+        id: category.id,
+        title: category.name,
+        excerpt: category.description || 'Explore this course category and learn new skills',
+        category: category.name,
+        image: '/placeholder.svg',
+        date: 'Course Category',
+        author: 'BlogHub Team',
+        slug: category.slug
       }));
       setFeaturedCourses(formattedCourses);
     }
@@ -157,7 +147,7 @@ const Index = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredCourses.map((course) => (
-              <BlogCard key={course.id} {...course} linkType="blog" />
+              <BlogCard key={course.id} {...course} linkType="category" />
             ))}
           </div>
 
