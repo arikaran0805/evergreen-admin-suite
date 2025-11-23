@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Edit, Trash2, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Category {
@@ -15,6 +16,7 @@ interface Category {
   name: string;
   slug: string;
   description: string | null;
+  featured: boolean;
 }
 
 const AdminCategories = () => {
@@ -106,6 +108,21 @@ const AdminCategories = () => {
     }
   };
 
+  const toggleFeatured = async (id: string, currentFeatured: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .update({ featured: !currentFeatured })
+        .eq("id", id);
+      
+      if (error) throw error;
+      toast({ title: `Category ${!currentFeatured ? "marked as featured" : "unmarked as featured"}` });
+      fetchCategories();
+    } catch (error: any) {
+      toast({ title: "Error updating featured status", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
     setFormData({ name: category.name, slug: category.slug, description: category.description || "" });
@@ -179,6 +196,14 @@ const AdminCategories = () => {
                 {category.description && (
                   <p className="text-sm mt-2">{category.description}</p>
                 )}
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                  <Star className={`h-4 w-4 ${category.featured ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-sm font-medium">Featured</span>
+                  <Switch
+                    checked={category.featured}
+                    onCheckedChange={() => toggleFeatured(category.id, category.featured)}
+                  />
+                </div>
               </CardContent>
             </Card>
           ))}
