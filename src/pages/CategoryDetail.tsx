@@ -423,8 +423,10 @@ const CategoryDetail = () => {
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
-                        className={`group cursor-pointer rounded-md transition-all duration-300 ${
-                          selectedPost?.id === post.id ? 'bg-primary/30' : 'bg-muted/50 hover:bg-primary/15'
+                        className={`group cursor-pointer transition-all duration-300 ${
+                          selectedPost?.id === post.id 
+                            ? 'bg-primary/30 rounded-md' 
+                            : 'bg-muted/50 hover:bg-primary/15'
                         }`}
                       >
                         <div className="p-3">
