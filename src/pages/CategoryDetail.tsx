@@ -73,11 +73,34 @@ const CategoryDetail = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentContent, setCommentContent] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [expandedLessons, setExpandedLessons] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Calculate learners count
   const learnersCount = Math.floor(Math.random() * 15000) + 5000;
   const formattedLearners = learnersCount.toLocaleString();
+
+  // Generate sub-sections for each lesson
+  const getSubSections = (postTitle: string) => {
+    return [
+      "Introduction",
+      "Key Concepts",
+      "Practical Examples",
+      "Summary"
+    ];
+  };
+
+  const toggleLesson = (postId: string) => {
+    setExpandedLessons(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     document.title = category ? `${category.name} - BlogHub` : "BlogHub - Course";
@@ -418,24 +441,55 @@ const CategoryDetail = () => {
                 <nav>
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
-                      <div
-                        key={post.id}
-                        onClick={() => handleLessonClick(post)}
-                        className={`cursor-pointer transition-all duration-200 border-b border-gray-300 ${
-                          selectedPost?.id === post.id 
-                            ? 'bg-green-600' 
-                            : 'bg-gray-100 hover:bg-gray-200'
-                        }`}
-                      >
-                        <div className="px-4 py-3">
-                          <h3 className={`text-base font-medium transition-colors ${
+                      <div key={post.id}>
+                        {/* Main Lesson */}
+                        <div
+                          className={`cursor-pointer transition-all duration-200 border-b border-gray-300 ${
                             selectedPost?.id === post.id 
-                              ? 'text-white' 
-                              : 'text-gray-900'
-                          }`}>
-                            {post.title}
-                          </h3>
+                              ? 'bg-green-600' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                        >
+                          <div 
+                            className="px-4 py-3 flex items-center justify-between"
+                            onClick={() => handleLessonClick(post)}
+                          >
+                            <h3 className={`text-base font-medium transition-colors flex-1 ${
+                              selectedPost?.id === post.id 
+                                ? 'text-white' 
+                                : 'text-gray-900'
+                            }`}>
+                              {post.title}
+                            </h3>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleLesson(post.id);
+                              }}
+                              className={`ml-2 transition-transform ${
+                                expandedLessons.has(post.id) ? 'rotate-180' : ''
+                              } ${selectedPost?.id === post.id ? 'text-white' : 'text-gray-600'}`}
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Sub-sections */}
+                        {expandedLessons.has(post.id) && (
+                          <div className="bg-white border-b border-gray-300">
+                            {getSubSections(post.title).map((section, idx) => (
+                              <div
+                                key={idx}
+                                className="px-8 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
+                              >
+                                <p className="text-sm text-gray-700 hover:text-green-600">
+                                  {section}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
