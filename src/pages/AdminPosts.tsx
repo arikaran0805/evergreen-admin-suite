@@ -41,7 +41,7 @@ const postSchema = z.object({
   category_id: z.string().uuid().optional().or(z.literal("")),
   status: z.enum(["draft", "published"]),
   lesson_order: z.number().int().min(0).optional(),
-  parent_id: z.string().uuid().optional().or(z.literal("")),
+  parent_id: z.string().uuid().optional().or(z.literal("")).or(z.literal("none")),
 });
 
 interface Post {
@@ -80,8 +80,6 @@ const AdminPosts = () => {
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  console.log("Dialog state:", { isDialogOpen, editingPost, mainLessonsCount: mainLessons.length });
 
   useEffect(() => {
     checkAdminAccess();
@@ -176,7 +174,7 @@ const AdminPosts = () => {
         author_id: session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
         lesson_order: validated.lesson_order || 0,
-        parent_id: validated.parent_id && validated.parent_id !== "" ? validated.parent_id : null,
+        parent_id: validated.parent_id && validated.parent_id !== "" && validated.parent_id !== "none" ? validated.parent_id : null,
       };
 
       if (editingPost) {
@@ -326,7 +324,6 @@ const AdminPosts = () => {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          console.log("Dialog onOpenChange:", open);
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -397,7 +394,7 @@ const AdminPosts = () => {
                       <SelectValue placeholder="None - This is a main lesson" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None - Main Lesson</SelectItem>
+                      <SelectItem value="none">None - Main Lesson</SelectItem>
                       {mainLessons && mainLessons.length > 0 && mainLessons
                         .filter(lesson => {
                           if (editingPost && lesson.id === editingPost.id) return false;
