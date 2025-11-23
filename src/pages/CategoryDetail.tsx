@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
@@ -75,6 +75,7 @@ const CategoryDetail = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentContent, setCommentContent] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Calculate learners count
@@ -260,6 +261,19 @@ const CategoryDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const toggleParentExpansion = (parentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedParents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(parentId)) {
+        newSet.delete(parentId);
+      } else {
+        newSet.add(parentId);
+      }
+      return newSet;
+    });
+  };
+
   const fetchComments = async (postId: string) => {
     setLoadingComments(true);
     try {
@@ -436,56 +450,73 @@ const CategoryDetail = () => {
                         }
                       });
 
-                      return mainLessons.map((post) => (
-                        <div key={post.id}>
-                          {/* Main Lesson */}
-                          <div
-                            onClick={() => handleLessonClick(post)}
-                            className={`cursor-pointer transition-all duration-200 ${
-                              selectedPost?.id === post.id 
-                                ? 'bg-green-600' 
-                                : ''
-                            }`}
-                          >
-                            <div className="px-4 py-2">
-                              <h3 className={`text-base font-semibold ${
+                      return mainLessons.map((post) => {
+                        const hasChildren = subLessonsMap.has(post.id);
+                        const isExpanded = expandedParents.has(post.id);
+                        
+                        return (
+                          <div key={post.id}>
+                            {/* Main Lesson */}
+                            <div
+                              className={`cursor-pointer transition-all duration-200 ${
                                 selectedPost?.id === post.id 
-                                  ? 'text-white' 
-                                  : 'text-gray-900'
-                              }`}>
-                                {post.title}
-                              </h3>
-                            </div>
-                          </div>
-                          
-                          {/* Sub-lessons */}
-                          {subLessonsMap.has(post.id) && (
-                            <div className="bg-gray-100">
-                              {subLessonsMap.get(post.id)!.map((subPost) => (
-                                <div
-                                  key={subPost.id}
-                                  onClick={() => handleLessonClick(subPost)}
-                                  className={`cursor-pointer transition-all duration-200 ${
-                                    selectedPost?.id === subPost.id 
-                                      ? 'bg-green-600' 
-                                      : ''
+                                  ? 'bg-green-600' 
+                                  : ''
+                              }`}
+                            >
+                              <div className="px-4 py-2 flex items-center justify-between">
+                                <h3 
+                                  onClick={() => handleLessonClick(post)}
+                                  className={`text-base font-semibold flex-1 ${
+                                    selectedPost?.id === post.id 
+                                      ? 'text-white' 
+                                      : 'text-gray-900'
                                   }`}
                                 >
-                                  <div className="px-8 py-2">
-                                    <h3 className={`text-sm font-normal ${
-                                      selectedPost?.id === subPost.id 
-                                        ? 'text-white' 
-                                        : 'text-gray-700'
-                                    }`}>
-                                      • {subPost.title}
-                                    </h3>
-                                  </div>
-                                </div>
-                              ))}
+                                  {post.title}
+                                </h3>
+                                {hasChildren && (
+                                  <button
+                                    onClick={(e) => toggleParentExpansion(post.id, e)}
+                                    className={`ml-2 p-1 hover:bg-gray-300 rounded transition-transform ${
+                                      isExpanded ? 'rotate-180' : ''
+                                    } ${selectedPost?.id === post.id ? 'text-white hover:bg-green-700' : 'text-gray-600'}`}
+                                  >
+                                    <ChevronDown className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      ));
+                            
+                            {/* Sub-lessons - only show when expanded */}
+                            {hasChildren && isExpanded && (
+                              <div className="bg-gray-100">
+                                {subLessonsMap.get(post.id)!.map((subPost) => (
+                                  <div
+                                    key={subPost.id}
+                                    onClick={() => handleLessonClick(subPost)}
+                                    className={`cursor-pointer transition-all duration-200 ${
+                                      selectedPost?.id === subPost.id 
+                                        ? 'bg-green-600' 
+                                        : ''
+                                    }`}
+                                  >
+                                    <div className="px-8 py-2">
+                                      <h3 className={`text-sm font-normal ${
+                                        selectedPost?.id === subPost.id 
+                                          ? 'text-white' 
+                                          : 'text-gray-700'
+                                      }`}>
+                                        • {subPost.title}
+                                      </h3>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
                     })()
                   ) : (
                     <p className="text-sm text-gray-600 p-4">No lessons available yet</p>
