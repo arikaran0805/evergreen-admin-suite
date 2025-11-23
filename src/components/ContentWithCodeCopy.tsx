@@ -43,6 +43,9 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
         }
       }
 
+      // Add padding to the pre element to make room for header
+      pre.style.paddingTop = "3rem";
+
       // Create wrapper div for positioning
       const wrapper = document.createElement("div");
       wrapper.className = "relative group";
@@ -53,11 +56,11 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
 
       // Create header container for language badge and copy button
       const headerContainer = document.createElement("div");
-      headerContainer.className = "absolute top-2 left-0 right-0 flex items-center justify-between px-4 z-10";
+      headerContainer.className = "absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-2 border-b border-border/50 bg-background/95 backdrop-blur-sm rounded-t-lg";
 
       // Create language badge
       const languageBadge = document.createElement("div");
-      languageBadge.className = "px-2 py-1 text-xs font-mono font-semibold rounded bg-background/80 text-foreground border border-border backdrop-blur-sm";
+      languageBadge.className = "text-xs font-mono font-semibold text-muted-foreground";
       languageBadge.textContent = language;
 
       // Create copy button container
@@ -67,7 +70,7 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
 
       // Create copy button
       const button = document.createElement("button");
-      button.className = "copy-code-button flex items-center gap-1 px-2 py-1 text-xs bg-background/80 hover:bg-background border border-border rounded text-foreground backdrop-blur-sm transition-colors";
+      button.className = "copy-code-button flex items-center gap-1 px-2 py-1 text-xs bg-background hover:bg-muted border border-border rounded text-foreground transition-colors";
       button.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
