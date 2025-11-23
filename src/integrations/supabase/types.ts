@@ -65,6 +65,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          featured: boolean | null
           id: string
           name: string
           slug: string
@@ -72,6 +73,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           name: string
           slug: string
@@ -79,6 +81,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           name?: string
           slug?: string

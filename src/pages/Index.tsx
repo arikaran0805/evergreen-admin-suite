@@ -36,7 +36,8 @@ const Index = () => {
     const { data, error } = await supabase
       .from('categories')
       .select('id, name, slug, description')
-      .order('created_at', { ascending: false })
+      .eq('featured', true)
+      .order('name', { ascending: true })
       .limit(6);
 
     if (!error && data) {
@@ -152,7 +153,7 @@ const Index = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Link to="/blogs">
+            <Link to="/courses">
               <Button size="lg" className="bg-gradient-primary shadow-elegant hover:shadow-glow">
                 View All Courses
                 <ArrowRight className="ml-2 h-4 w-4" />
