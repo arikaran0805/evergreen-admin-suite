@@ -425,14 +425,14 @@ const CategoryDetail = () => {
                         onClick={() => handleLessonClick(post)}
                         className={`group cursor-pointer transition-all duration-300 ${
                           selectedPost?.id === post.id 
-                            ? 'bg-primary/30 rounded-md' 
+                            ? 'bg-primary/30' 
                             : 'bg-muted/50 hover:bg-primary/15'
                         }`}
                       >
                         <div className="p-3">
                           <h3 className={`text-sm font-medium transition-colors line-clamp-2 leading-relaxed ${
                             selectedPost?.id === post.id 
-                              ? 'text-primary font-semibold' 
+                              ? 'text-white font-semibold' 
                               : 'text-foreground group-hover:text-primary'
                           }`}>
                             {post.title}
