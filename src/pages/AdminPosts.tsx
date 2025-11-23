@@ -248,30 +248,52 @@ const AdminPosts = () => {
     }
   };
 
-  const handleEdit = (post: Post) => {
+  const handleEdit = async (post: Post) => {
+    console.log("Edit clicked for post:", post);
     setEditingPost(post);
-    // Fetch full post data
-    supabase
-      .from("posts")
-      .select("*")
-      .eq("id", post.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setFormData({
-            title: data.title,
-            slug: data.slug,
-            excerpt: data.excerpt || "",
-            content: data.content,
-            featured_image: data.featured_image || "",
-            category_id: data.category_id || "",
-            status: data.status as "draft" | "published",
-            lesson_order: data.lesson_order || 0,
-            parent_id: data.parent_id || "",
-          });
-          setIsDialogOpen(true);
-        }
+    
+    try {
+      // Fetch full post data
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", post.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching post:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load post data",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log("Fetched post data:", data);
+      if (data) {
+        setFormData({
+          title: data.title,
+          slug: data.slug,
+          excerpt: data.excerpt || "",
+          content: data.content,
+          featured_image: data.featured_image || "",
+          category_id: data.category_id || "",
+          status: data.status as "draft" | "published",
+          lesson_order: data.lesson_order || 0,
+          parent_id: data.parent_id || "",
+        });
+        console.log("Form data set, opening dialog");
+        setIsDialogOpen(true);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
+    }
   };
 
   const resetForm = () => {
