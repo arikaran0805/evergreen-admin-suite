@@ -423,8 +423,8 @@ const CategoryDetail = () => {
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
-                        className={`group cursor-pointer transition-all duration-300 ${
-                          selectedPost?.id === post.id ? 'bg-primary/10' : 'hover:bg-primary/5'
+                        className={`group cursor-pointer rounded-md transition-all duration-300 ${
+                          selectedPost?.id === post.id ? 'bg-primary/20' : 'hover:bg-primary/10'
                         }`}
                       >
                         <div className="p-2">
@@ -448,7 +448,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-8">
+          <main className="lg:col-span-7">
             <Card className="border border-primary/10 shadow-card rounded-none">
               <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
@@ -718,7 +718,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-2">
+          <aside className="lg:col-span-3">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
