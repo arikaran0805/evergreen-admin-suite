@@ -27,6 +27,7 @@ interface Post {
   slug: string;
   featured_image: string | null;
   published_at: string | null;
+  content?: string;
   profiles: {
     full_name: string | null;
   };
@@ -43,6 +44,8 @@ const CategoryDetail = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [loadingPost, setLoadingPost] = useState(false);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -174,9 +177,52 @@ const CategoryDetail = () => {
     trackSocialMediaClick(platform);
   };
 
-  const currentPostIndex = posts.findIndex(p => window.location.pathname.includes(p.slug));
+  const fetchPostContent = async (post: Post) => {
+    setLoadingPost(true);
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          profiles:author_id (full_name, avatar_url)
+        `)
+        .eq("id", post.id)
+        .single();
+
+      if (error) throw error;
+      setSelectedPost(data);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to load lesson content",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPost(false);
+    }
+  };
+
+  const handleLessonClick = (post: Post) => {
+    fetchPostContent(post);
+  };
+
+  const currentPostIndex = selectedPost 
+    ? posts.findIndex(p => p.id === selectedPost.id)
+    : -1;
   const hasPrevious = currentPostIndex > 0;
   const hasNext = currentPostIndex < posts.length - 1 && currentPostIndex !== -1;
+
+  const handlePrevious = () => {
+    if (hasPrevious) {
+      fetchPostContent(posts[currentPostIndex - 1]);
+    }
+  };
+
+  const handleNext = () => {
+    if (hasNext) {
+      fetchPostContent(posts[currentPostIndex + 1]);
+    }
+  };
 
   if (loading) {
     return (
@@ -213,48 +259,9 @@ const CategoryDetail = () => {
         ogDescription={category.description || `Learn ${category.name} with our comprehensive course materials`}
       />
       <Header />
-      
-      {/* Large Poster Banner */}
-      <div className="w-full h-[400px] md:h-[500px] relative overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background">
-        <div className="absolute inset-0 bg-[url('/placeholder.svg')] bg-cover bg-center opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-        
-        {/* Banner Content */}
-        <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
-          <div className="max-w-3xl">
-            <Badge className="mb-4 bg-primary text-primary-foreground shadow-lg">
-              Course Category
-            </Badge>
-            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
-              {category.name}
-            </h1>
-            <div className="flex items-center gap-2 text-muted-foreground mb-6">
-              <Users className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">{formattedLearners} learners</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Full Course Introduction */}
-      <div className="container mx-auto px-4 -mt-20 relative z-10 mb-12">
-        <Card className="p-8 shadow-elegant border border-primary/20 bg-card">
-          {category.description && (
-            <p className="text-xl leading-relaxed text-foreground">
-              {category.description}
-            </p>
-          )}
-          {!category.description && (
-            <p className="text-xl leading-relaxed text-foreground">
-              Welcome to {category.name}. This comprehensive course will guide you through essential concepts and practical applications. 
-              Our structured lessons are designed to take you from fundamentals to advanced topics, with hands-on examples and real-world scenarios.
-            </p>
-          )}
-        </Card>
-      </div>
 
       {/* 3-Column Layout */}
-      <div className="container mx-auto px-4 pb-12">
+      <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
@@ -270,37 +277,51 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-6 pb-6 pt-0">
-                  <nav className="space-y-1">
-                    {posts.length > 0 ? (
-                      posts.map((post, index) => (
-                        <Link 
-                          key={post.id}
-                          to={`/blog/${post.slug}`}
-                          className="block group"
-                        >
-                          <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 group-hover:scale-110">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
-                                {post.title}
-                              </h3>
-                            </div>
-                            <Play className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                <nav className="space-y-1">
+                  {posts.length > 0 ? (
+                    posts.map((post, index) => (
+                      <div
+                        key={post.id}
+                        onClick={() => handleLessonClick(post)}
+                        className={`block group cursor-pointer ${
+                          selectedPost?.id === post.id ? 'bg-primary/10' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full text-sm flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
+                            selectedPost?.id === post.id 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
+                          }`}>
+                            {index + 1}
                           </div>
-                        </Link>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground p-3">No lessons available yet</p>
-                    )}
-                  </nav>
+                          <div className="flex-1 min-w-0">
+                            <h3 className={`text-sm font-medium transition-colors line-clamp-2 ${
+                              selectedPost?.id === post.id 
+                                ? 'text-primary' 
+                                : 'group-hover:text-primary'
+                            }`}>
+                              {post.title}
+                            </h3>
+                          </div>
+                          <Play className={`h-4 w-4 transition-colors flex-shrink-0 ${
+                            selectedPost?.id === post.id 
+                              ? 'text-primary' 
+                              : 'text-muted-foreground group-hover:text-primary'
+                          }`} />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-3">No lessons available yet</p>
+                  )}
+                </nav>
                 </CardContent>
               </ScrollArea>
             </Card>
           </aside>
 
-          {/* MAIN CONTENT - Detailed Description & Lesson Content */}
+          {/* MAIN CONTENT - Lesson Content */}
           <main className="lg:col-span-6">
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between mb-6">
@@ -310,115 +331,165 @@ const CategoryDetail = () => {
                   Home
                 </Button>
               </Link>
-              <div className="flex gap-2">
-                {hasPrevious && (
-                  <Link to={`/blog/${posts[currentPostIndex - 1].slug}`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5 transition-colors">
+              {selectedPost && (
+                <div className="flex gap-2">
+                  {hasPrevious && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 hover:bg-primary/5 transition-colors"
+                      onClick={handlePrevious}
+                    >
                       <ChevronLeft className="h-4 w-4" />
                       Previous
                     </Button>
-                  </Link>
-                )}
-                {hasNext && (
-                  <Link to={`/blog/${posts[currentPostIndex + 1].slug}`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5 transition-colors">
+                  )}
+                  {hasNext && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 hover:bg-primary/5 transition-colors"
+                      onClick={handleNext}
+                    >
                       Next
                       <ChevronRight className="h-4 w-4" />
                     </Button>
-                  </Link>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <Card className="border border-primary/10 shadow-card">
               <CardContent className="p-8">
-                <h2 className="text-3xl font-bold mb-6">About This Course</h2>
-                
-                <div className="prose prose-lg max-w-none text-foreground mb-8">
-                  <p className="text-lg leading-relaxed mb-4">
-                    This {category.name} course is designed to provide you with comprehensive knowledge 
-                    and practical skills. Whether you're just starting out or looking to advance your expertise, 
-                    our structured curriculum will guide you every step of the way.
-                  </p>
-                  
-                  <h3 className="text-2xl font-bold mt-8 mb-4">What You'll Learn</h3>
-                  <ul className="space-y-2 text-foreground">
-                    <li>Core concepts and fundamental principles</li>
-                    <li>Hands-on practical applications</li>
-                    <li>Real-world examples and case studies</li>
-                    <li>Best practices and industry standards</li>
-                    <li>Advanced techniques and optimization strategies</li>
-                  </ul>
-
-                  <h3 className="text-2xl font-bold mt-8 mb-4">Course Structure</h3>
-                  <p className="text-lg leading-relaxed mb-4">
-                    Our {posts.length} lessons are carefully structured to build upon each other, 
-                    ensuring a smooth learning progression. Each lesson includes detailed explanations, 
-                    visual aids, and practical exercises to reinforce your understanding.
-                  </p>
-
-                  <h3 className="text-2xl font-bold mt-8 mb-4">Who This Course Is For</h3>
-                  <p className="text-lg leading-relaxed">
-                    This course is perfect for beginners looking to get started, intermediate learners 
-                    seeking to deepen their knowledge, and advanced practitioners wanting to stay updated 
-                    with the latest developments in {category.name}.
-                  </p>
-                </div>
-
-                <Separator className="my-8" />
-
-                {/* Lessons Preview Cards */}
-                {posts.length > 0 && (
+                {loadingPost ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading lesson...</p>
+                  </div>
+                ) : selectedPost ? (
                   <>
-                    <h2 className="text-2xl font-bold mb-6">Featured Lessons</h2>
-                    <div className="grid gap-6">
-                      {posts.slice(0, 3).map((post, index) => (
-                        <Link key={post.id} to={`/blog/${post.slug}`}>
-                          <Card className="group overflow-hidden border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-md">
-                            <CardContent className="p-6">
-                              <div className="flex gap-4">
-                                {post.featured_image && (
-                                  <img 
-                                    src={post.featured_image} 
-                                    alt={post.title}
-                                    className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform"
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                      Lesson {index + 1}
-                                    </Badge>
-                                  </div>
-                                  <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">
-                                    {post.title}
-                                  </h3>
-                                  {post.excerpt && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2">
-                                      {post.excerpt}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      ))}
+                    {/* Lesson Header */}
+                    <div className="mb-8">
+                      <Badge className="mb-4 bg-primary/10 text-primary">
+                        Lesson {currentPostIndex + 1} of {posts.length}
+                      </Badge>
+                      <h1 className="text-4xl font-bold mb-4">{selectedPost.title}</h1>
+                      {selectedPost.excerpt && (
+                        <p className="text-xl text-muted-foreground">{selectedPost.excerpt}</p>
+                      )}
+                      <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <span>By {selectedPost.profiles?.full_name || 'Anonymous'}</span>
+                        </div>
+                        {selectedPost.published_at && (
+                          <span>
+                            {new Date(selectedPost.published_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Featured Image */}
+                    {selectedPost.featured_image && (
+                      <img 
+                        src={selectedPost.featured_image} 
+                        alt={selectedPost.title}
+                        className="w-full h-auto rounded-lg mb-8 shadow-md"
+                      />
+                    )}
+
+                    <Separator className="my-8" />
+
+                    {/* Lesson Content */}
+                    <div 
+                      className="prose prose-lg max-w-none"
+                      dangerouslySetInnerHTML={{ __html: selectedPost.content || '' }}
+                    />
+
+                    {/* Lesson Navigation */}
+                    <div className="mt-12 pt-8 border-t border-border flex items-center justify-between">
+                      {hasPrevious ? (
+                        <Button 
+                          variant="outline" 
+                          className="gap-2"
+                          onClick={handlePrevious}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous Lesson
+                        </Button>
+                      ) : (
+                        <div />
+                      )}
+                      {hasNext ? (
+                        <Button 
+                          className="gap-2 bg-primary hover:bg-primary/90"
+                          onClick={handleNext}
+                        >
+                          Next Lesson
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <div />
+                      )}
                     </div>
                   </>
-                )}
+                ) : (
+                  <>
+                    {/* Course Overview - Default View */}
+                    <div className="text-center py-8">
+                      <BookOpen className="h-16 w-16 mx-auto mb-4 text-primary" />
+                      <h2 className="text-3xl font-bold mb-4">{category.name}</h2>
+                      {category.description && (
+                        <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+                          {category.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground mb-8">
+                        <Users className="h-5 w-5 text-primary" />
+                        <span className="text-lg font-semibold">{formattedLearners} learners</span>
+                      </div>
+                    </div>
 
-                <div className="mt-8 p-6 bg-primary/5 rounded-lg border border-primary/20">
-                  <h3 className="font-bold text-xl mb-3">Ready to Get Started?</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Join {formattedLearners} learners already taking this course. Start your learning journey today!
-                  </p>
-                  <Link to={posts[0] ? `/blog/${posts[0].slug}` : "#"}>
-                    <Button className="bg-primary hover:bg-primary/90 shadow-md w-full sm:w-auto">
-                      Start First Lesson
-                    </Button>
-                  </Link>
-                </div>
+                    <Separator className="my-8" />
+
+                    <div className="prose prose-lg max-w-none text-foreground mb-8">
+                      <h3 className="text-2xl font-bold mt-8 mb-4">What You'll Learn</h3>
+                      <ul className="space-y-2 text-foreground">
+                        <li>Core concepts and fundamental principles</li>
+                        <li>Hands-on practical applications</li>
+                        <li>Real-world examples and case studies</li>
+                        <li>Best practices and industry standards</li>
+                        <li>Advanced techniques and optimization strategies</li>
+                      </ul>
+
+                      <h3 className="text-2xl font-bold mt-8 mb-4">Course Structure</h3>
+                      <p className="text-lg leading-relaxed mb-4">
+                        Our {posts.length} lessons are carefully structured to build upon each other, 
+                        ensuring a smooth learning progression. Each lesson includes detailed explanations, 
+                        visual aids, and practical exercises to reinforce your understanding.
+                      </p>
+                    </div>
+
+                    {posts.length > 0 && (
+                      <div className="mt-8 p-6 bg-primary/5 rounded-lg border border-primary/20">
+                        <h3 className="font-bold text-xl mb-3">Ready to Get Started?</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Select a lesson from the sidebar to begin your learning journey!
+                        </p>
+                        <Button 
+                          className="bg-primary hover:bg-primary/90 shadow-md w-full sm:w-auto"
+                          onClick={() => handleLessonClick(posts[0])}
+                        >
+                          Start First Lesson
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </main>
@@ -738,6 +809,37 @@ const CategoryDetail = () => {
           </div>
         </div>
       </footer>
+
+      <style>{`
+        .prose {
+          color: hsl(var(--foreground));
+        }
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+          color: hsl(var(--foreground));
+          font-weight: 700;
+        }
+        .prose p {
+          line-height: 1.75;
+        }
+        .prose ul {
+          list-style-type: disc;
+          padding-left: 1.5em;
+        }
+        .prose li {
+          margin-bottom: 0.5em;
+        }
+        .prose img {
+          border-radius: 0.5rem;
+          margin: 1.5rem 0;
+        }
+        .prose a {
+          color: hsl(var(--primary));
+          text-decoration: underline;
+        }
+        .prose a:hover {
+          opacity: 0.8;
+        }
+      `}</style>
     </div>
   );
 };
