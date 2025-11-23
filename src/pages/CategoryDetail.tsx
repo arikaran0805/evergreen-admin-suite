@@ -417,7 +417,7 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-1">
+                <nav className="space-y-0">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
@@ -448,7 +448,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-7">
+          <main className="lg:col-span-8">
             <Card className="border border-primary/10 shadow-card rounded-none">
               <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
@@ -718,7 +718,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-3">
+          <aside className="lg:col-span-2">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
