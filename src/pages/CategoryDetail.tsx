@@ -424,7 +424,7 @@ const CategoryDetail = () => {
                         className={`cursor-pointer transition-all duration-200 ${
                           selectedPost?.id === post.id 
                             ? 'bg-green-600' 
-                            : 'bg-white'
+                            : ''
                         }`}
                       >
                         <div className="px-4 py-3">
