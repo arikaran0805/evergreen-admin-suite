@@ -414,7 +414,7 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-2">
+                <nav className="space-y-0">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
@@ -424,7 +424,7 @@ const CategoryDetail = () => {
                           selectedPost?.id === post.id ? 'bg-primary/10' : 'hover:bg-primary/5'
                         }`}
                       >
-                        <div className="p-4">
+                        <div className="p-2">
                           <h3 className={`text-sm font-medium transition-colors line-clamp-2 leading-relaxed ${
                             selectedPost?.id === post.id 
                               ? 'text-primary' 
@@ -755,7 +755,7 @@ const CategoryDetail = () => {
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
           <aside className="lg:col-span-2">
-            <div className="sticky top-4 space-y-6">
+            <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
               <Card className="border border-primary/10 shadow-card">
