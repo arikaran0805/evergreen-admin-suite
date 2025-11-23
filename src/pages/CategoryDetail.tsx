@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Play, Search, Facebook, Twitter, Linkedin, Youtube, Instagram } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Play, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 
@@ -42,6 +42,7 @@ const CategoryDetail = () => {
   const [email, setEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [siteSettings, setSiteSettings] = useState<any>(null);
+  const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -57,6 +58,7 @@ const CategoryDetail = () => {
     fetchRecentCourses();
     fetchTags();
     fetchSiteSettings();
+    fetchFooterCategories();
   }, [slug]);
 
   const fetchSiteSettings = async () => {
@@ -70,6 +72,21 @@ const CategoryDetail = () => {
       setSiteSettings(data);
     } catch (error) {
       console.error("Error fetching site settings:", error);
+    }
+  };
+
+  const fetchFooterCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, slug")
+        .order("name", { ascending: true })
+        .limit(6);
+
+      if (error) throw error;
+      setFooterCategories(data || []);
+    } catch (error) {
+      console.error("Error fetching footer categories:", error);
     }
   };
 
@@ -408,190 +425,315 @@ const CategoryDetail = () => {
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
           <aside className="lg:col-span-3">
-            <div className="sticky top-4">
-              <ScrollArea className="h-[calc(100vh-100px)]">
-                <div className="space-y-6 pr-4">
+            <div className="sticky top-4 space-y-6">
                   
-                  {/* Search */}
-                  <Card className="border border-primary/10 shadow-card">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Search className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-lg">Search</h3>
-                      </div>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="text"
-                          placeholder="Search lessons..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 border-primary/20"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Search */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Search className="h-5 w-5 text-primary" />
+                    <h3 className="font-bold text-lg">Search</h3>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search lessons..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 border-primary/20"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-                  {/* Recent Courses */}
-                  <Card className="border border-primary/10 shadow-card">
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
-                      <div className="space-y-4">
-                        {recentCourses.map((course) => (
-                          <Link 
-                            key={course.id}
-                            to={`/category/${course.slug}`}
-                            className="block group"
-                          >
-                            <div className="p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
-                              <h4 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
-                                {course.name}
-                              </h4>
-                              {course.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                  {course.description}
-                                </p>
-                              )}
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Recent Courses */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
+                  <div className="space-y-4">
+                    {recentCourses.map((course) => (
+                      <Link 
+                        key={course.id}
+                        to={`/category/${course.slug}`}
+                        className="block group"
+                      >
+                        <div className="p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                          <h4 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
+                            {course.name}
+                          </h4>
+                          {course.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {course.description}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-                  {/* Tags */}
-                  <Card className="border border-primary/10 shadow-card">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Tag className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-lg">Tags</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {allTags.map((tag) => (
-                          <Badge 
-                            key={tag} 
-                            variant="secondary"
-                            className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Tags */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Tag className="h-5 w-5 text-primary" />
+                    <h3 className="font-bold text-lg">Tags</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map((tag) => (
+                      <Badge 
+                        key={tag} 
+                        variant="secondary"
+                        className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-                  {/* Google AdSense Placeholder */}
-                  <Card className="border border-primary/10 shadow-card">
-                    <CardContent className="p-6">
-                      <div className="bg-muted/30 rounded-lg h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
-                        <p className="text-sm text-muted-foreground">Ad Space</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Google AdSense Placeholder */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <div className="bg-muted/30 rounded-lg h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
+                    <p className="text-sm text-muted-foreground">Ad Space</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-                  {/* Newsletter Subscription */}
-                  <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Mail className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-lg">Newsletter</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Get the latest courses and updates delivered to your inbox.
-                      </p>
-                      <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                        <Input 
-                          type="email"
-                          placeholder="Your email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                          className="border-primary/20"
-                        />
-                        <Button 
-                          type="submit" 
-                          className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
-                        >
-                          Subscribe
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </Card>
+              {/* Newsletter Subscription */}
+              <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Mail className="h-5 w-5 text-primary" />
+                    <h3 className="font-bold text-lg">Newsletter</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Get the latest courses and updates delivered to your inbox.
+                  </p>
+                  <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+                    <Input 
+                      type="email"
+                      placeholder="Your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="border-primary/20"
+                    />
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
+                    >
+                      Subscribe
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
 
-                  {/* Follow Us - Social Links */}
-                  <Card className="border border-primary/10 shadow-card">
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-lg mb-4">Follow Us</h3>
-                      <div className="flex flex-wrap gap-3">
-                        {siteSettings?.facebook_url && (
-                          <a
-                            href={siteSettings.facebook_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => handleSocialClick('facebook')}
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                          >
-                            <Facebook className="h-5 w-5" />
-                          </a>
-                        )}
-                        {siteSettings?.twitter_url && (
-                          <a
-                            href={siteSettings.twitter_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => handleSocialClick('twitter')}
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                          >
-                            <Twitter className="h-5 w-5" />
-                          </a>
-                        )}
-                        {siteSettings?.linkedin_url && (
-                          <a
-                            href={siteSettings.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => handleSocialClick('linkedin')}
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                          >
-                            <Linkedin className="h-5 w-5" />
-                          </a>
-                        )}
-                        {siteSettings?.youtube_url && (
-                          <a
-                            href={siteSettings.youtube_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => handleSocialClick('youtube')}
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                          >
-                            <Youtube className="h-5 w-5" />
-                          </a>
-                        )}
-                        {siteSettings?.instagram_url && (
-                          <a
-                            href={siteSettings.instagram_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => handleSocialClick('instagram')}
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                          >
-                            <Instagram className="h-5 w-5" />
-                          </a>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </ScrollArea>
+              {/* Follow Us - Social Links */}
+              <Card className="border border-primary/10 shadow-card">
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-lg mb-4">Follow Us</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {siteSettings?.facebook_url && (
+                      <a
+                        href={siteSettings.facebook_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleSocialClick('facebook')}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                      >
+                        <Facebook className="h-5 w-5" />
+                      </a>
+                    )}
+                    {siteSettings?.twitter_url && (
+                      <a
+                        href={siteSettings.twitter_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleSocialClick('twitter')}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                      >
+                        <Twitter className="h-5 w-5" />
+                      </a>
+                    )}
+                    {siteSettings?.linkedin_url && (
+                      <a
+                        href={siteSettings.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleSocialClick('linkedin')}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                      >
+                        <Linkedin className="h-5 w-5" />
+                      </a>
+                    )}
+                    {siteSettings?.youtube_url && (
+                      <a
+                        href={siteSettings.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleSocialClick('youtube')}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                      >
+                        <Youtube className="h-5 w-5" />
+                      </a>
+                    )}
+                    {siteSettings?.instagram_url && (
+                      <a
+                        href={siteSettings.instagram_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleSocialClick('instagram')}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                      >
+                        <Instagram className="h-5 w-5" />
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </aside>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="bg-card border-t border-primary/10 mt-12">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center text-muted-foreground">
+      <footer className="border-t border-border py-12 bg-card mt-12">
+        <div className="container px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                {siteSettings?.logo_url ? (
+                  <img src={siteSettings.logo_url} alt={siteSettings.site_name} className="h-10 w-auto" />
+                ) : (
+                  <>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow">
+                      <span className="text-xl font-bold text-primary-foreground">
+                        {siteSettings?.site_name?.charAt(0) || 'B'}
+                      </span>
+                    </div>
+                    <span className="text-xl font-bold text-primary">{siteSettings?.site_name || 'BlogHub'}</span>
+                  </>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {siteSettings?.site_description || 'Inspiring stories and ideas for curious minds.'}
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Categories</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {footerCategories.map((category) => (
+                  <li key={category.slug}>
+                    <Link to={`/category/${category.slug}`} className="hover:text-primary transition-colors">
+                      {category.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
+                <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+                <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Connect</h3>
+              <div className="flex flex-col gap-2">
+                {siteSettings?.twitter_url && (
+                  <a 
+                    href={siteSettings.twitter_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => handleSocialClick("twitter")}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="Twitter"
+                  >
+                    <Twitter className="h-5 w-5" />
+                    <span>Twitter</span>
+                  </a>
+                )}
+                {siteSettings?.facebook_url && (
+                  <a 
+                    href={siteSettings.facebook_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => handleSocialClick("facebook")}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="Facebook"
+                  >
+                    <Facebook className="h-5 w-5" />
+                    <span>Facebook</span>
+                  </a>
+                )}
+                {siteSettings?.instagram_url && (
+                  <a 
+                    href={siteSettings.instagram_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => handleSocialClick("instagram")}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="Instagram"
+                  >
+                    <Instagram className="h-5 w-5" />
+                    <span>Instagram</span>
+                  </a>
+                )}
+                {siteSettings?.linkedin_url && (
+                  <a 
+                    href={siteSettings.linkedin_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => handleSocialClick("linkedin")}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="LinkedIn"
+                  >
+                    <Linkedin className="h-5 w-5" />
+                    <span>LinkedIn</span>
+                  </a>
+                )}
+                {siteSettings?.youtube_url && (
+                  <a 
+                    href={siteSettings.youtube_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => handleSocialClick("youtube")}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="YouTube"
+                  >
+                    <Youtube className="h-5 w-5" />
+                    <span>YouTube</span>
+                  </a>
+                )}
+                {siteSettings?.github_url && (
+                  <a 
+                    href={siteSettings.github_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => handleSocialClick("github")}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="GitHub"
+                  >
+                    <Github className="h-5 w-5" />
+                    <span>GitHub</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} {siteSettings?.site_name || 'BlogHub'}. All rights reserved.</p>
           </div>
         </div>
