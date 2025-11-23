@@ -117,14 +117,33 @@ All colors MUST be HSL.
   
   /* Code block styling in prose content */
   .prose pre {
-    @apply relative bg-muted border border-border rounded-lg p-4 overflow-x-auto;
+    @apply relative rounded-lg p-4 overflow-x-auto;
+    background-color: hsl(0 0% 96%);
+    border: 1px solid hsl(0 0% 88%);
   }
   
   .prose code {
-    @apply bg-muted text-foreground rounded px-1 py-0.5 text-sm;
+    @apply rounded px-1.5 py-0.5 text-sm font-mono;
+    background-color: hsl(0 0% 96%);
+    color: hsl(0 0% 20%);
   }
   
   .prose pre code {
     @apply bg-transparent p-0 text-sm;
+    color: hsl(0 0% 20%);
+  }
+  
+  .dark .prose pre {
+    background-color: hsl(0 0% 15%);
+    border-color: hsl(0 0% 25%);
+  }
+  
+  .dark .prose code {
+    background-color: hsl(0 0% 15%);
+    color: hsl(0 0% 90%);
+  }
+  
+  .dark .prose pre code {
+    color: hsl(0 0% 90%);
   }
 }
