@@ -257,11 +257,17 @@ const CategoryDetail = () => {
   };
 
   const handleLessonClick = (post: Post) => {
+    // Check if this lesson has children
+    const hasChildren = posts.some(p => p.parent_id === post.id);
+    
     // If clicking a sub-lesson, only keep its parent expanded
     if (post.parent_id) {
       setExpandedParents(new Set([post.parent_id]));
+    } else if (hasChildren) {
+      // If clicking a main lesson with children, expand it
+      setExpandedParents(new Set([post.id]));
     } else {
-      // If clicking a main lesson, close all expanded parents
+      // If clicking a main lesson without children, close all
       setExpandedParents(new Set());
     }
     
