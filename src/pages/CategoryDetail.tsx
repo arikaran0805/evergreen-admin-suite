@@ -424,10 +424,10 @@ const CategoryDetail = () => {
                         className={`cursor-pointer transition-all duration-200 border-b border-gray-300 ${
                           selectedPost?.id === post.id 
                             ? 'bg-green-600' 
-                            : 'bg-gray-100'
+                            : ''
                         }`}
                       >
-                        <div className="px-4 py-3">
+                        <div className="px-4 py-2">
                           <h3 className={`text-base font-medium transition-colors ${
                             selectedPost?.id === post.id 
                               ? 'text-white' 
