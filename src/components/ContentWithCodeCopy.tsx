@@ -20,28 +20,6 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
       // Skip if elements already added
       if (pre.querySelector(".copy-code-button")) return;
 
-      // Detect language from code element classes
-      const codeElement = pre.querySelector("code");
-      let language = "Code";
-      
-      if (codeElement) {
-        const classes = codeElement.className.split(" ");
-        const langClass = classes.find(cls => 
-          cls.startsWith("language-") || cls.startsWith("lang-") || cls === "ql-syntax"
-        );
-        
-        if (langClass) {
-          if (langClass === "ql-syntax") {
-            language = "Code";
-          } else {
-            language = langClass.replace(/^(language-|lang-)/, "").toUpperCase();
-          }
-        }
-      }
-
-      // Add padding to the pre element to make room for header
-      pre.style.paddingTop = "3rem";
-
       // Create wrapper div for positioning
       const wrapper = document.createElement("div");
       wrapper.className = "relative group";
@@ -50,20 +28,9 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
       pre.parentNode?.insertBefore(wrapper, pre);
       wrapper.appendChild(pre);
 
-      // Create header container for language badge and copy button
+      // Create header container for copy button
       const headerContainer = document.createElement("div");
-      headerContainer.className = "absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-2 border-b border-border/50 backdrop-blur-sm rounded-t-lg";
-      headerContainer.style.backgroundColor = "var(--background)";
-      headerContainer.style.borderColor = "var(--border)";
-
-      // Create language badge
-      const languageBadge = document.createElement("div");
-      languageBadge.className = "text-xs font-mono font-semibold text-muted-foreground";
-      languageBadge.textContent = language;
-
-      // Create copy button container
-      const buttonContainer = document.createElement("div");
-      buttonContainer.className = "opacity-0 group-hover:opacity-100 transition-opacity";
+      headerContainer.className = "absolute top-0 right-0 px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity";
 
       // Create copy button
       const copyButton = document.createElement("button");
@@ -115,9 +82,7 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
         }
       };
 
-      buttonContainer.appendChild(copyButton);
-      headerContainer.appendChild(languageBadge);
-      headerContainer.appendChild(buttonContainer);
+      headerContainer.appendChild(copyButton);
       wrapper.appendChild(headerContainer);
     });
   }, [content, toast]);
