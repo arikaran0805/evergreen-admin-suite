@@ -344,6 +344,8 @@ export type Database = {
           facebook_url: string | null
           github_url: string | null
           hero_headline: string | null
+          hero_highlight_color: string | null
+          hero_highlight_text: string | null
           hero_subheadline: string | null
           id: string
           instagram_url: string | null
@@ -369,6 +371,8 @@ export type Database = {
           facebook_url?: string | null
           github_url?: string | null
           hero_headline?: string | null
+          hero_highlight_color?: string | null
+          hero_highlight_text?: string | null
           hero_subheadline?: string | null
           id?: string
           instagram_url?: string | null
@@ -394,6 +398,8 @@ export type Database = {
           facebook_url?: string | null
           github_url?: string | null
           hero_headline?: string | null
+          hero_highlight_color?: string | null
+          hero_highlight_text?: string | null
           hero_subheadline?: string | null
           id?: string
           instagram_url?: string | null

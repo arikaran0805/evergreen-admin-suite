@@ -32,6 +32,8 @@ const AdminSettings = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [heroHeadline, setHeroHeadline] = useState("Join Learners Who Think Differently");
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
+  const [heroHighlightText, setHeroHighlightText] = useState("Think Differently");
+  const [heroHighlightColor, setHeroHighlightColor] = useState("#22c55e");
   
   // Social Media Links
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -100,6 +102,8 @@ const AdminSettings = () => {
       setLogoUrl(data.logo_url || "");
       setHeroHeadline(data.hero_headline || "Join Learners Who Think Differently");
       setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
+      setHeroHighlightText(data.hero_highlight_text || "Think Differently");
+      setHeroHighlightColor(data.hero_highlight_color || "#22c55e");
       setTwitterUrl(data.twitter_url || "");
       setFacebookUrl(data.facebook_url || "");
       setInstagramUrl(data.instagram_url || "");
@@ -182,6 +186,8 @@ const AdminSettings = () => {
             logo_url: logoUrl,
             hero_headline: heroHeadline,
             hero_subheadline: heroSubheadline,
+            hero_highlight_text: heroHighlightText,
+            hero_highlight_color: heroHighlightColor,
           })
           .eq("id", settingsId);
 
@@ -197,6 +203,8 @@ const AdminSettings = () => {
             logo_url: logoUrl,
             hero_headline: heroHeadline,
             hero_subheadline: heroSubheadline,
+            hero_highlight_text: heroHighlightText,
+            hero_highlight_color: heroHighlightColor,
           })
           .select()
           .single();
@@ -445,6 +453,43 @@ const AdminSettings = () => {
                         placeholder="Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding."
                         rows={3}
                       />
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label htmlFor="heroHighlightText">Highlighted Text in Headline</Label>
+                      <Input
+                        id="heroHighlightText"
+                        value={heroHighlightText}
+                        onChange={(e) => setHeroHighlightText(e.target.value)}
+                        placeholder="Think Differently"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Enter the exact text from your headline that you want to highlight in color
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="heroHighlightColor">Highlight Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="heroHighlightColor"
+                          type="color"
+                          value={heroHighlightColor}
+                          onChange={(e) => setHeroHighlightColor(e.target.value)}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          value={heroHighlightColor}
+                          onChange={(e) => setHeroHighlightColor(e.target.value)}
+                          placeholder="#22c55e"
+                          className="flex-1"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Choose a color for the highlighted text (default: green #22c55e)
+                      </p>
                     </div>
                   </div>
                 </div>
