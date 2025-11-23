@@ -417,20 +417,20 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-0">
+                <nav className="space-y-1">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
                         className={`group cursor-pointer rounded-md transition-all duration-300 ${
-                          selectedPost?.id === post.id ? 'bg-primary/20' : 'hover:bg-primary/10'
+                          selectedPost?.id === post.id ? 'bg-primary/30' : 'bg-muted/50 hover:bg-primary/15'
                         }`}
                       >
-                        <div className="p-2">
+                        <div className="p-3">
                           <h3 className={`text-sm font-medium transition-colors line-clamp-2 leading-relaxed ${
                             selectedPost?.id === post.id 
-                              ? 'text-primary' 
+                              ? 'text-primary font-semibold' 
                               : 'text-foreground group-hover:text-primary'
                           }`}>
                             {post.title}
