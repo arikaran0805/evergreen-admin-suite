@@ -75,7 +75,7 @@ const AdminPosts = () => {
     category_id: "",
     status: "draft" as "draft" | "published",
     lesson_order: 0,
-    parent_id: "",
+    parent_id: "none",
   });
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const navigate = useNavigate();
@@ -271,7 +271,7 @@ const AdminPosts = () => {
           category_id: data.category_id || "",
           status: (data.status as "draft" | "published") || "draft",
           lesson_order: data.lesson_order || 0,
-          parent_id: data.parent_id || "",
+          parent_id: data.parent_id || "none",
         });
         setIsDialogOpen(true);
       }
@@ -295,7 +295,7 @@ const AdminPosts = () => {
       category_id: "",
       status: "draft",
       lesson_order: 0,
-      parent_id: "",
+      parent_id: "none",
     });
     setEditingPost(null);
   };
