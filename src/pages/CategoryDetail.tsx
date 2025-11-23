@@ -455,15 +455,15 @@ const CategoryDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-2 bg-background border-r">
+          <aside className="lg:col-span-2 bg-green-50 border-r border-green-100">
             <div className="sticky top-4">
-              <div className="px-6 py-4 border-b">
+              <div className="px-6 py-4 border-b border-green-100 bg-green-100/50">
                 <div 
-                  className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+                  className="flex items-center gap-2 cursor-pointer hover:text-green-700 transition-colors"
                   onClick={() => setSelectedPost(null)}
                 >
-                  <BookOpen className="h-5 w-5" />
-                  <h2 className="font-semibold text-lg">Course Lessons</h2>
+                  <BookOpen className="h-5 w-5 text-green-700" />
+                  <h2 className="font-semibold text-lg text-green-900">Course Lessons</h2>
                 </div>
               </div>
               
@@ -487,24 +487,30 @@ const CategoryDetail = () => {
                       return mainLessons.map((post) => {
                         const hasChildren = subLessonsMap.has(post.id);
                         const isExpanded = expandedParents.has(post.id);
+                        const isMainLessonActive = selectedPost?.id === post.id;
+                        const hasActiveChild = selectedPost?.parent_id === post.id;
                         
                         return (
                           <div key={post.id} className="mb-1">
                             {/* Main Lesson */}
                             <div
-                              className={`rounded-lg transition-all duration-200 ${
-                                selectedPost?.id === post.id 
-                                  ? 'bg-primary text-primary-foreground' 
-                                  : 'hover:bg-muted'
+                              className={`rounded-lg transition-all duration-300 ${
+                                isMainLessonActive
+                                  ? 'bg-green-600 shadow-md' 
+                                  : hasActiveChild
+                                  ? 'bg-green-200'
+                                  : 'hover:bg-green-100'
                               }`}
                             >
                               <div className="px-3 py-2.5 flex items-center justify-between">
                                 <h3 
                                   onClick={() => handleLessonClick(post)}
-                                  className={`text-sm font-medium flex-1 cursor-pointer ${
-                                    selectedPost?.id === post.id 
-                                      ? 'text-primary-foreground' 
-                                      : 'text-foreground'
+                                  className={`text-sm font-medium flex-1 cursor-pointer transition-colors ${
+                                    isMainLessonActive
+                                      ? 'text-white' 
+                                      : hasActiveChild
+                                      ? 'text-green-900 font-semibold'
+                                      : 'text-green-900'
                                   }`}
                                 >
                                   {post.title}
@@ -512,9 +518,15 @@ const CategoryDetail = () => {
                                 {hasChildren && (
                                   <button
                                     onClick={(e) => toggleParentExpansion(post.id, e)}
-                                    className={`ml-2 p-1 rounded hover:bg-accent transition-transform ${
+                                    className={`ml-2 p-1 rounded hover:bg-green-300 transition-all duration-300 ${
                                       isExpanded ? 'rotate-180' : ''
-                                    } ${selectedPost?.id === post.id ? 'hover:bg-primary-foreground/20' : ''}`}
+                                    } ${
+                                      isMainLessonActive 
+                                        ? 'text-white hover:bg-green-700' 
+                                        : hasActiveChild
+                                        ? 'text-green-900'
+                                        : 'text-green-700'
+                                    }`}
                                   >
                                     <ChevronDown className="h-4 w-4" />
                                   </button>
@@ -524,22 +536,22 @@ const CategoryDetail = () => {
                             
                             {/* Sub-lessons - only show when expanded */}
                             {hasChildren && isExpanded && (
-                              <div className="ml-4 mt-1 space-y-1">
+                              <div className="ml-4 mt-1 space-y-1 animate-accordion-down">
                                 {subLessonsMap.get(post.id)!.map((subPost) => (
                                   <div
                                     key={subPost.id}
                                     onClick={() => handleLessonClick(subPost)}
                                     className={`rounded-lg cursor-pointer transition-all duration-200 ${
                                       selectedPost?.id === subPost.id 
-                                        ? 'bg-primary text-primary-foreground' 
-                                        : 'hover:bg-muted'
+                                        ? 'bg-green-600 shadow-md scale-[1.02]' 
+                                        : 'hover:bg-green-100'
                                     }`}
                                   >
                                     <div className="px-3 py-2">
-                                      <h3 className={`text-sm ${
+                                      <h3 className={`text-sm transition-colors ${
                                         selectedPost?.id === subPost.id 
-                                          ? 'text-primary-foreground' 
-                                          : 'text-muted-foreground'
+                                          ? 'text-white font-medium' 
+                                          : 'text-green-700'
                                       }`}>
                                         • {subPost.title}
                                       </h3>
@@ -553,7 +565,7 @@ const CategoryDetail = () => {
                       });
                     })()
                   ) : (
-                    <p className="text-sm text-muted-foreground p-4">No lessons available yet</p>
+                    <p className="text-sm text-green-700 p-4">No lessons available yet</p>
                   )}
                 </nav>
               </ScrollArea>
