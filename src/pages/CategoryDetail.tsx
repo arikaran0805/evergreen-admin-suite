@@ -365,18 +365,52 @@ const CategoryDetail = () => {
   const currentPostIndex = selectedPost 
     ? posts.findIndex(p => p.id === selectedPost.id)
     : -1;
-  const hasPrevious = currentPostIndex > 0;
-  const hasNext = currentPostIndex < posts.length - 1 && currentPostIndex !== -1;
+
+  // Build ordered lesson list considering hierarchy
+  const getOrderedLessons = () => {
+    const mainLessons = posts.filter(post => !post.parent_id);
+    const orderedLessons: Post[] = [];
+    
+    mainLessons.forEach(mainLesson => {
+      orderedLessons.push(mainLesson);
+      const subLessons = posts.filter(post => post.parent_id === mainLesson.id);
+      orderedLessons.push(...subLessons);
+    });
+    
+    return orderedLessons;
+  };
+
+  const orderedLessons = getOrderedLessons();
+  const currentOrderedIndex = selectedPost 
+    ? orderedLessons.findIndex(p => p.id === selectedPost.id)
+    : -1;
+    
+  const hasPrevious = currentOrderedIndex > 0;
+  const hasNext = currentOrderedIndex < orderedLessons.length - 1 && currentOrderedIndex !== -1;
 
   const handlePrevious = () => {
     if (hasPrevious) {
-      fetchPostContent(posts[currentPostIndex - 1]);
+      const prevLesson = orderedLessons[currentOrderedIndex - 1];
+      
+      // If previous lesson is a sub-lesson, expand its parent
+      if (prevLesson.parent_id) {
+        setExpandedParents(prev => new Set([...prev, prevLesson.parent_id!]));
+      }
+      
+      fetchPostContent(prevLesson);
     }
   };
 
   const handleNext = () => {
     if (hasNext) {
-      fetchPostContent(posts[currentPostIndex + 1]);
+      const nextLesson = orderedLessons[currentOrderedIndex + 1];
+      
+      // If next lesson is a sub-lesson, expand its parent
+      if (nextLesson.parent_id) {
+        setExpandedParents(prev => new Set([...prev, nextLesson.parent_id!]));
+      }
+      
+      fetchPostContent(nextLesson);
     }
   };
 
@@ -539,7 +573,7 @@ const CategoryDetail = () => {
                     {/* Lesson Header */}
                     <div className="mb-8">
                       <Badge className="mb-4 bg-primary/10 text-primary">
-                        Lesson {currentPostIndex + 1} of {posts.length}
+                        Lesson {currentOrderedIndex + 1} of {orderedLessons.length}
                       </Badge>
                       <h1 className="text-4xl font-bold mb-4">{selectedPost.title}</h1>
                       {selectedPost.excerpt && (
@@ -703,7 +737,7 @@ const CategoryDetail = () => {
                             <ChevronLeft className="h-5 w-5" />
                             <div className="text-left">
                               <div className="text-xs text-muted-foreground">Previous</div>
-                              <div className="font-semibold">{posts[currentPostIndex - 1]?.title}</div>
+                              <div className="font-semibold truncate max-w-[200px]">{orderedLessons[currentOrderedIndex - 1]?.title}</div>
                             </div>
                           </Button>
                         ) : (
@@ -716,8 +750,8 @@ const CategoryDetail = () => {
                             onClick={handleNext}
                           >
                             <div className="text-right">
-                              <div className="text-xs">Next</div>
-                              <div className="font-semibold">{posts[currentPostIndex + 1]?.title}</div>
+                              <div className="text-xs">Next Lesson</div>
+                              <div className="font-semibold truncate max-w-[200px]">{orderedLessons[currentOrderedIndex + 1]?.title}</div>
                             </div>
                             <ChevronRight className="h-5 w-5" />
                           </Button>
