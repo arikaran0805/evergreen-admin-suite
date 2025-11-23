@@ -455,20 +455,20 @@ const CategoryDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-2">
-            <div className="sticky top-4 bg-gray-200 border-r border-gray-300">
-              <div className="px-4 py-3 border-b border-gray-300 bg-gray-200">
+          <aside className="lg:col-span-2 bg-background border-r">
+            <div className="sticky top-4">
+              <div className="px-6 py-4 border-b">
                 <div 
                   className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => setSelectedPost(null)}
                 >
                   <BookOpen className="h-5 w-5" />
-                  <h2 className="font-bold text-lg text-gray-900">Lessons</h2>
+                  <h2 className="font-semibold text-lg">Course Lessons</h2>
                 </div>
               </div>
               
               <ScrollArea className="h-[calc(100vh-200px)]">
-                <nav>
+                <nav className="p-2">
                   {posts.length > 0 ? (
                     (() => {
                       // Group posts by parent
@@ -489,22 +489,22 @@ const CategoryDetail = () => {
                         const isExpanded = expandedParents.has(post.id);
                         
                         return (
-                          <div key={post.id}>
+                          <div key={post.id} className="mb-1">
                             {/* Main Lesson */}
                             <div
-                              className={`cursor-pointer transition-all duration-200 ${
+                              className={`rounded-lg transition-all duration-200 ${
                                 selectedPost?.id === post.id 
-                                  ? 'bg-green-600' 
-                                  : ''
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'hover:bg-muted'
                               }`}
                             >
-                              <div className="px-4 py-2 flex items-center justify-between">
+                              <div className="px-3 py-2.5 flex items-center justify-between">
                                 <h3 
                                   onClick={() => handleLessonClick(post)}
-                                  className={`text-base font-semibold flex-1 ${
+                                  className={`text-sm font-medium flex-1 cursor-pointer ${
                                     selectedPost?.id === post.id 
-                                      ? 'text-white' 
-                                      : 'text-gray-900'
+                                      ? 'text-primary-foreground' 
+                                      : 'text-foreground'
                                   }`}
                                 >
                                   {post.title}
@@ -512,9 +512,9 @@ const CategoryDetail = () => {
                                 {hasChildren && (
                                   <button
                                     onClick={(e) => toggleParentExpansion(post.id, e)}
-                                    className={`ml-2 p-1 hover:bg-gray-300 rounded transition-transform ${
+                                    className={`ml-2 p-1 rounded hover:bg-accent transition-transform ${
                                       isExpanded ? 'rotate-180' : ''
-                                    } ${selectedPost?.id === post.id ? 'text-white hover:bg-green-700' : 'text-gray-600'}`}
+                                    } ${selectedPost?.id === post.id ? 'hover:bg-primary-foreground/20' : ''}`}
                                   >
                                     <ChevronDown className="h-4 w-4" />
                                   </button>
@@ -524,22 +524,22 @@ const CategoryDetail = () => {
                             
                             {/* Sub-lessons - only show when expanded */}
                             {hasChildren && isExpanded && (
-                              <div className="bg-gray-100">
+                              <div className="ml-4 mt-1 space-y-1">
                                 {subLessonsMap.get(post.id)!.map((subPost) => (
                                   <div
                                     key={subPost.id}
                                     onClick={() => handleLessonClick(subPost)}
-                                    className={`cursor-pointer transition-all duration-200 ${
+                                    className={`rounded-lg cursor-pointer transition-all duration-200 ${
                                       selectedPost?.id === subPost.id 
-                                        ? 'bg-green-600' 
-                                        : ''
+                                        ? 'bg-primary text-primary-foreground' 
+                                        : 'hover:bg-muted'
                                     }`}
                                   >
-                                    <div className="px-8 py-2">
-                                      <h3 className={`text-sm font-normal ${
+                                    <div className="px-3 py-2">
+                                      <h3 className={`text-sm ${
                                         selectedPost?.id === subPost.id 
-                                          ? 'text-white' 
-                                          : 'text-gray-700'
+                                          ? 'text-primary-foreground' 
+                                          : 'text-muted-foreground'
                                       }`}>
                                         • {subPost.title}
                                       </h3>
@@ -553,7 +553,7 @@ const CategoryDetail = () => {
                       });
                     })()
                   ) : (
-                    <p className="text-sm text-gray-600 p-4">No lessons available yet</p>
+                    <p className="text-sm text-muted-foreground p-4">No lessons available yet</p>
                   )}
                 </nav>
               </ScrollArea>
