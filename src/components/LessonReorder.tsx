@@ -195,13 +195,51 @@ export default function LessonReorder() {
     }
   };
 
+  const handleAutoSequence = async () => {
+    if (!selectedCategoryId) return;
+    
+    try {
+      setLoading(true);
+      
+      // Update all posts in the category to sequential order
+      const updates = posts.map((post, index) => ({
+        id: post.id,
+        lesson_order: index + 1,
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("posts")
+          .update({ lesson_order: update.lesson_order })
+          .eq("id", update.id);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Lesson orders reset to sequential numbering",
+      });
+      
+      await fetchPosts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to reset lesson orders",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Reorder Lessons</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
+        <div className="mb-4 flex gap-3">
           <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
             <SelectTrigger>
               <SelectValue placeholder="Select a category" />
@@ -214,6 +252,13 @@ export default function LessonReorder() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            onClick={handleAutoSequence}
+            disabled={loading || posts.length === 0}
+            variant="outline"
+          >
+            Auto-Sequence
+          </Button>
         </div>
 
         {loading ? (
