@@ -142,6 +142,30 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         .rich-text-editor .ql-toolbar .ql-picker-item.ql-selected .ql-fill {
           fill: hsl(var(--primary));
         }
+        
+        /* Code block styling */
+        .rich-text-editor .ql-editor pre.ql-syntax {
+          background-color: hsl(var(--muted));
+          color: hsl(var(--foreground));
+          border: 1px solid hsl(var(--border));
+          border-radius: var(--radius);
+          padding: 1rem;
+          margin: 1rem 0;
+          overflow-x: auto;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        
+        /* Inline code styling */
+        .rich-text-editor .ql-editor code {
+          background-color: hsl(var(--muted));
+          color: hsl(var(--foreground));
+          padding: 0.2rem 0.4rem;
+          border-radius: 3px;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 0.9em;
+        }
       `}</style>
     </div>
   );
