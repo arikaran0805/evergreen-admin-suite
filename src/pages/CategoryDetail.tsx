@@ -425,7 +425,7 @@ const CategoryDetail = () => {
                         }`}
                       >
                         <div className="p-2 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
-                          <div className="flex items-start gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <div className={`flex-shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
                               selectedPost?.id === post.id 
                                 ? 'bg-primary text-primary-foreground' 
@@ -443,8 +443,8 @@ const CategoryDetail = () => {
                               </h3>
                             </div>
                           </div>
-                          <div className="flex justify-center">
-                            <Play className={`h-4 w-4 transition-colors ${
+                          <div className="flex justify-center mt-1">
+                            <Play className={`h-3 w-3 transition-colors ${
                               selectedPost?.id === post.id 
                                 ? 'text-primary' 
                                 : 'text-muted-foreground group-hover:text-primary'
@@ -657,31 +657,49 @@ const CategoryDetail = () => {
                       </div>
                     </div>
 
+                    {/* Advertisement Placeholder */}
+                    <Card className="mt-8 border-2 border-dashed border-primary/20 bg-muted/30">
+                      <CardContent className="p-8 text-center">
+                        <p className="text-sm text-muted-foreground font-medium">Advertisement</p>
+                        <p className="text-xs text-muted-foreground mt-1">300x250</p>
+                      </CardContent>
+                    </Card>
+
                     {/* Lesson Navigation */}
-                    <div className="mt-12 pt-8 border-t border-border flex items-center justify-between">
-                      {hasPrevious ? (
-                        <Button 
-                          variant="outline" 
-                          className="gap-2"
-                          onClick={handlePrevious}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          Previous Lesson
-                        </Button>
-                      ) : (
-                        <div />
-                      )}
-                      {hasNext ? (
-                        <Button 
-                          className="gap-2 bg-primary hover:bg-primary/90"
-                          onClick={handleNext}
-                        >
-                          Next Lesson
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <div />
-                      )}
+                    <div className="mt-12 pt-8 border-t-2 border-border">
+                      <div className="flex items-center justify-between gap-4">
+                        {hasPrevious ? (
+                          <Button 
+                            variant="outline" 
+                            size="lg"
+                            className="gap-2 flex-1"
+                            onClick={handlePrevious}
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                            <div className="text-left">
+                              <div className="text-xs text-muted-foreground">Previous</div>
+                              <div className="font-semibold">{posts[currentPostIndex - 1]?.title}</div>
+                            </div>
+                          </Button>
+                        ) : (
+                          <div className="flex-1" />
+                        )}
+                        {hasNext ? (
+                          <Button 
+                            size="lg"
+                            className="gap-2 bg-primary hover:bg-primary/90 flex-1"
+                            onClick={handleNext}
+                          >
+                            <div className="text-right">
+                              <div className="text-xs">Next</div>
+                              <div className="font-semibold">{posts[currentPostIndex + 1]?.title}</div>
+                            </div>
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                        ) : (
+                          <div className="flex-1" />
+                        )}
+                      </div>
                     </div>
                   </>
                 ) : (
