@@ -403,14 +403,14 @@ const CategoryDetail = () => {
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
-            <div className="sticky top-4 bg-white border-r border-gray-300">
-              <div className="p-4 border-b border-gray-300">
+            <div className="sticky top-4 bg-gray-200 border-r border-gray-300">
+              <div className="px-4 py-3 border-b border-gray-300 bg-gray-200">
                 <div 
                   className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => setSelectedPost(null)}
                 >
                   <BookOpen className="h-5 w-5" />
-                  <h2 className="font-bold text-lg">Lessons</h2>
+                  <h2 className="font-bold text-lg text-gray-900">Lessons</h2>
                 </div>
               </div>
               
@@ -421,14 +421,14 @@ const CategoryDetail = () => {
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
-                        className={`cursor-pointer transition-all duration-200 border-b border-gray-300 ${
+                        className={`cursor-pointer transition-all duration-200 ${
                           selectedPost?.id === post.id 
                             ? 'bg-green-600' 
-                            : ''
+                            : 'bg-white'
                         }`}
                       >
-                        <div className="px-4 py-1.5">
-                          <h3 className={`text-sm font-medium transition-colors ${
+                        <div className="px-4 py-3">
+                          <h3 className={`text-base font-normal ${
                             selectedPost?.id === post.id 
                               ? 'text-white' 
                               : 'text-gray-900'
