@@ -403,37 +403,35 @@ const CategoryDetail = () => {
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
-            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-gray-200 rounded-none">
-              <CardContent className="p-4 pb-0">
+            <div className="sticky top-4 bg-gray-200 border-r border-gray-300">
+              <div className="p-4 border-b border-gray-300">
                 <div 
-                  className="flex items-center gap-2 mb-3 cursor-pointer hover:text-primary transition-colors"
+                  className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => setSelectedPost(null)}
                 >
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <h2 className="font-bold text-base">Lessons</h2>
+                  <BookOpen className="h-5 w-5" />
+                  <h2 className="font-bold text-lg">Lessons</h2>
                 </div>
-                <Separator className="mb-3" />
-              </CardContent>
+              </div>
               
-              <ScrollArea className="h-[calc(100vh-300px)]">
-                <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-0">
+              <ScrollArea className="h-[calc(100vh-200px)]">
+                <nav>
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
-                        className={`group cursor-pointer transition-all duration-300 ${
+                        className={`cursor-pointer transition-all duration-200 border-b border-gray-300 ${
                           selectedPost?.id === post.id 
-                            ? 'bg-primary/30' 
-                            : 'bg-muted/50 hover:bg-primary/15'
+                            ? 'bg-green-600' 
+                            : 'bg-gray-100 hover:bg-gray-200'
                         }`}
                       >
-                        <div className="p-3">
-                          <h3 className={`text-sm font-medium transition-colors line-clamp-2 leading-relaxed ${
+                        <div className="px-4 py-3">
+                          <h3 className={`text-base font-medium transition-colors ${
                             selectedPost?.id === post.id 
-                              ? 'text-white font-semibold' 
-                              : 'text-foreground group-hover:text-primary'
+                              ? 'text-white' 
+                              : 'text-gray-900'
                           }`}>
                             {post.title}
                           </h3>
@@ -441,12 +439,11 @@ const CategoryDetail = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-muted-foreground p-2">No lessons available yet</p>
+                    <p className="text-sm text-gray-600 p-4">No lessons available yet</p>
                   )}
                 </nav>
-                </CardContent>
               </ScrollArea>
-            </Card>
+            </div>
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
