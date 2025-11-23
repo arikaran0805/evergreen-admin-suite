@@ -343,6 +343,8 @@ export type Database = {
           created_at: string
           facebook_url: string | null
           github_url: string | null
+          hero_headline: string | null
+          hero_subheadline: string | null
           id: string
           instagram_url: string | null
           linkedin_url: string | null
@@ -366,6 +368,8 @@ export type Database = {
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
+          hero_headline?: string | null
+          hero_subheadline?: string | null
           id?: string
           instagram_url?: string | null
           linkedin_url?: string | null
@@ -389,6 +393,8 @@ export type Database = {
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
+          hero_headline?: string | null
+          hero_subheadline?: string | null
           id?: string
           instagram_url?: string | null
           linkedin_url?: string | null
