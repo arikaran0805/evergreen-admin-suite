@@ -257,6 +257,14 @@ const CategoryDetail = () => {
   };
 
   const handleLessonClick = (post: Post) => {
+    // If clicking a sub-lesson, only keep its parent expanded
+    if (post.parent_id) {
+      setExpandedParents(new Set([post.parent_id]));
+    } else {
+      // If clicking a main lesson, close all expanded parents
+      setExpandedParents(new Set());
+    }
+    
     fetchPostContent(post);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -392,9 +400,11 @@ const CategoryDetail = () => {
     if (hasPrevious) {
       const prevLesson = orderedLessons[currentOrderedIndex - 1];
       
-      // If previous lesson is a sub-lesson, expand its parent
+      // Only keep the previous lesson's parent expanded if it's a sub-lesson
       if (prevLesson.parent_id) {
-        setExpandedParents(prev => new Set([...prev, prevLesson.parent_id!]));
+        setExpandedParents(new Set([prevLesson.parent_id]));
+      } else {
+        setExpandedParents(new Set());
       }
       
       fetchPostContent(prevLesson);
@@ -405,9 +415,11 @@ const CategoryDetail = () => {
     if (hasNext) {
       const nextLesson = orderedLessons[currentOrderedIndex + 1];
       
-      // If next lesson is a sub-lesson, expand its parent
+      // Only keep the next lesson's parent expanded if it's a sub-lesson
       if (nextLesson.parent_id) {
-        setExpandedParents(prev => new Set([...prev, nextLesson.parent_id!]));
+        setExpandedParents(new Set([nextLesson.parent_id]));
+      } else {
+        setExpandedParents(new Set());
       }
       
       fetchPostContent(nextLesson);
