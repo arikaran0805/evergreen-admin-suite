@@ -135,7 +135,7 @@ const AdminPosts = () => {
     try {
       const { data, error } = await supabase
         .from("posts")
-        .select("*")
+        .select("id, title, slug, status, published_at, created_at, parent_id, category_id")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -375,7 +375,7 @@ const AdminPosts = () => {
               <div>
                 <Label htmlFor="parent">Parent Lesson (Optional)</Label>
                 <Select 
-                  value={formData.parent_id} 
+                  value={formData.parent_id || ""} 
                   onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
                 >
                   <SelectTrigger>
@@ -383,8 +383,11 @@ const AdminPosts = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None - Main Lesson</SelectItem>
-                    {mainLessons
-                      .filter(lesson => lesson.id !== editingPost?.id && lesson.category_id === formData.category_id)
+                    {(mainLessons || [])
+                      .filter(lesson => 
+                        lesson.id !== editingPost?.id && 
+                        (formData.category_id ? lesson.category_id === formData.category_id : true)
+                      )
                       .map((lesson) => (
                         <SelectItem key={lesson.id} value={lesson.id}>
                           {lesson.title}
