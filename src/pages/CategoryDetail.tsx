@@ -446,6 +446,19 @@ const CategoryDetail = () => {
 
           {/* MAIN CONTENT - Lesson Content */}
           <main className="lg:col-span-8">
+            {/* Home Button */}
+            <div className="mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 hover:bg-primary/5 transition-colors"
+                onClick={() => setSelectedPost(null)}
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+            </div>
+            
             <Card className="border border-primary/10 shadow-card">
               <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
@@ -712,45 +725,6 @@ const CategoryDetail = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Navigation Buttons - Below Content */}
-            <div className="flex items-center justify-between mt-6">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2 hover:bg-primary/5 transition-colors"
-                onClick={() => setSelectedPost(null)}
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
-              {selectedPost && (
-                <div className="flex gap-2">
-                  {hasPrevious && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-2 hover:bg-primary/5 transition-colors"
-                      onClick={handlePrevious}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
-                    </Button>
-                  )}
-                  {hasNext && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-2 hover:bg-primary/5 transition-colors"
-                      onClick={handleNext}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
