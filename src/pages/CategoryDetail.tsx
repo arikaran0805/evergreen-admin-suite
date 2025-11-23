@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Play, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
@@ -399,7 +399,7 @@ const CategoryDetail = () => {
 
       {/* 3-Column Layout */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
@@ -414,7 +414,7 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-1">
+                <nav className="space-y-2">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
@@ -424,21 +424,14 @@ const CategoryDetail = () => {
                           selectedPost?.id === post.id ? 'bg-primary/10' : 'hover:bg-primary/5'
                         }`}
                       >
-                        <div className="flex items-center gap-2 p-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className={`text-xs font-medium transition-colors line-clamp-2 leading-tight ${
-                              selectedPost?.id === post.id 
-                                ? 'text-primary' 
-                                : 'text-foreground group-hover:text-primary'
-                            }`}>
-                              {post.title}
-                            </h3>
-                          </div>
-                          <Play className={`flex-shrink-0 h-3 w-3 transition-colors ${
+                        <div className="p-4">
+                          <h3 className={`text-sm font-medium transition-colors line-clamp-2 leading-relaxed ${
                             selectedPost?.id === post.id 
                               ? 'text-primary' 
-                              : 'text-muted-foreground group-hover:text-primary'
-                          }`} />
+                              : 'text-foreground group-hover:text-primary'
+                          }`}>
+                            {post.title}
+                          </h3>
                         </div>
                       </div>
                     ))
@@ -453,45 +446,6 @@ const CategoryDetail = () => {
 
           {/* MAIN CONTENT - Lesson Content */}
           <main className="lg:col-span-8">
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between mb-6">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2 hover:bg-primary/5 transition-colors"
-                onClick={() => setSelectedPost(null)}
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
-              {selectedPost && (
-                <div className="flex gap-2">
-                  {hasPrevious && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-2 hover:bg-primary/5 transition-colors"
-                      onClick={handlePrevious}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
-                    </Button>
-                  )}
-                  {hasNext && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-2 hover:bg-primary/5 transition-colors"
-                      onClick={handleNext}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-
             <Card className="border border-primary/10 shadow-card">
               <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
@@ -758,6 +712,45 @@ const CategoryDetail = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Navigation Buttons - Below Content */}
+            <div className="flex items-center justify-between mt-6">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 hover:bg-primary/5 transition-colors"
+                onClick={() => setSelectedPost(null)}
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+              {selectedPost && (
+                <div className="flex gap-2">
+                  {hasPrevious && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 hover:bg-primary/5 transition-colors"
+                      onClick={handlePrevious}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                  )}
+                  {hasNext && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 hover:bg-primary/5 transition-colors"
+                      onClick={handleNext}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
