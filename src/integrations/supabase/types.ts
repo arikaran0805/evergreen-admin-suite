@@ -261,6 +261,7 @@ export type Database = {
           featured_image: string | null
           id: string
           lesson_order: number | null
+          parent_id: string | null
           published_at: string | null
           slug: string
           status: string
@@ -276,6 +277,7 @@ export type Database = {
           featured_image?: string | null
           id?: string
           lesson_order?: number | null
+          parent_id?: string | null
           published_at?: string | null
           slug: string
           status?: string
@@ -291,6 +293,7 @@ export type Database = {
           featured_image?: string | null
           id?: string
           lesson_order?: number | null
+          parent_id?: string | null
           published_at?: string | null
           slug?: string
           status?: string
@@ -310,6 +313,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]

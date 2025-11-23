@@ -28,6 +28,7 @@ interface Post {
   title: string;
   lesson_order: number;
   category_id: string | null;
+  parent_id: string | null;
 }
 
 interface Category {
@@ -82,7 +83,10 @@ export default function LessonReorder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [posts, setPosts] = useState<Post[]>([]);
+  const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showSubLessons, setShowSubLessons] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<string>("");
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -98,9 +102,28 @@ export default function LessonReorder() {
 
   useEffect(() => {
     if (selectedCategoryId) {
+      fetchMainLessons();
       fetchPosts();
     }
-  }, [selectedCategoryId]);
+  }, [selectedCategoryId, showSubLessons, selectedParentId]);
+
+  const fetchMainLessons = async () => {
+    if (!selectedCategoryId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, title, lesson_order, category_id, parent_id")
+        .eq("category_id", selectedCategoryId)
+        .is("parent_id", null)
+        .order("lesson_order", { ascending: true });
+
+      if (error) throw error;
+      setMainLessons(data || []);
+    } catch (error: any) {
+      console.error("Error fetching main lessons:", error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -125,12 +148,21 @@ export default function LessonReorder() {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const query = supabase
         .from("posts")
-        .select("id, title, lesson_order, category_id")
+        .select("id, title, lesson_order, category_id, parent_id")
         .eq("category_id", selectedCategoryId)
         .order("lesson_order", { ascending: true })
         .order("created_at", { ascending: true });
+
+      // Filter based on whether we're showing main lessons or sub-lessons
+      if (showSubLessons && selectedParentId) {
+        query.eq("parent_id", selectedParentId);
+      } else if (!showSubLessons) {
+        query.is("parent_id", null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setPosts(data || []);
@@ -239,38 +271,86 @@ export default function LessonReorder() {
         <CardTitle>Reorder Lessons</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 flex gap-3">
-          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleAutoSequence}
-            disabled={loading || posts.length === 0}
-            variant="outline"
-          >
-            Auto-Sequence
-          </Button>
+        <div className="mb-4 space-y-3">
+          <div className="flex gap-3">
+            <Select value={selectedCategoryId} onValueChange={(value) => {
+              setSelectedCategoryId(value);
+              setShowSubLessons(false);
+              setSelectedParentId("");
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleAutoSequence}
+              disabled={loading || posts.length === 0}
+              variant="outline"
+            >
+              Auto-Sequence
+            </Button>
+          </div>
+          
+          <div className="flex gap-3">
+            <Select 
+              value={showSubLessons ? "sub" : "main"} 
+              onValueChange={(value) => {
+                setShowSubLessons(value === "sub");
+                if (value === "main") setSelectedParentId("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="main">Main Lessons</SelectItem>
+                <SelectItem value="sub">Sub-Lessons</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {showSubLessons && (
+              <Select 
+                value={selectedParentId} 
+                onValueChange={setSelectedParentId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select parent lesson" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mainLessons.map((lesson) => (
+                    <SelectItem key={lesson.id} value={lesson.id}>
+                      {lesson.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </div>
 
         {loading ? (
           <p className="text-center text-muted-foreground py-8">Loading lessons...</p>
         ) : posts.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            No lessons found in this category
+            {showSubLessons && !selectedParentId 
+              ? "Select a parent lesson to view its sub-lessons"
+              : showSubLessons 
+                ? "No sub-lessons found for this parent lesson"
+                : "No main lessons found in this category"}
           </p>
         ) : (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground mb-3">
-              Drag and drop lessons to reorder them
+              {showSubLessons 
+                ? "Drag and drop to reorder sub-lessons within this main lesson"
+                : "Drag and drop to reorder main lessons"}
             </p>
             <DndContext
               sensors={sensors}
