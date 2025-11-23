@@ -402,10 +402,13 @@ const CategoryDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-2">
-            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-green-50">
+          <aside className="lg:col-span-1">
+            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-green-50 rounded-none">
               <CardContent className="p-4 pb-0">
-                <div className="flex items-center gap-2 mb-3">
+                <div 
+                  className="flex items-center gap-2 mb-3 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => setSelectedPost(null)}
+                >
                   <BookOpen className="h-4 w-4 text-primary" />
                   <h2 className="font-bold text-base">Lessons</h2>
                 </div>
@@ -420,7 +423,7 @@ const CategoryDetail = () => {
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
-                        className={`group cursor-pointer rounded-lg transition-all duration-300 ${
+                        className={`group cursor-pointer transition-all duration-300 ${
                           selectedPost?.id === post.id ? 'bg-primary/10' : 'hover:bg-primary/5'
                         }`}
                       >
@@ -446,20 +449,7 @@ const CategoryDetail = () => {
 
           {/* MAIN CONTENT - Lesson Content */}
           <main className="lg:col-span-8">
-            {/* Home Button */}
-            <div className="mb-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2 hover:bg-primary/5 transition-colors"
-                onClick={() => setSelectedPost(null)}
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
-            </div>
-            
-            <Card className="border border-primary/10 shadow-card">
+            <Card className="border border-primary/10 shadow-card rounded-none">
               <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
                   <div className="text-center py-12">
@@ -728,11 +718,11 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-2">
+          <aside className="lg:col-span-3">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Search className="h-5 w-5 text-primary" />
@@ -745,16 +735,16 @@ const CategoryDetail = () => {
                       placeholder="Search lessons..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 border-primary/20"
+                      className="pl-10 border-primary/20 rounded-none"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Advertisement Banner 1 */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
-                  <div className="bg-muted/30 rounded-lg h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
+                  <div className="bg-muted/30 h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground font-semibold">Advertisement</p>
                       <p className="text-xs text-muted-foreground mt-1">Your ad could be here</p>
@@ -764,7 +754,7 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Recent Courses */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
                   <div className="space-y-4">
@@ -774,7 +764,7 @@ const CategoryDetail = () => {
                         to={`/category/${course.slug}`}
                         className="block group"
                       >
-                        <div className="p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                        <div className="p-3 hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
                           <h4 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
                             {course.name}
                           </h4>
@@ -791,7 +781,7 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Tags */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Tag className="h-5 w-5 text-primary" />
@@ -812,16 +802,16 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Google AdSense Placeholder */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
-                  <div className="bg-muted/30 rounded-lg h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
+                  <div className="bg-muted/30 h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
                     <p className="text-sm text-muted-foreground">Ad Space</p>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Newsletter Subscription */}
-              <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background">
+              <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background rounded-none">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Mail className="h-5 w-5 text-primary" />
@@ -837,11 +827,11 @@ const CategoryDetail = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="border-primary/20"
+                      className="border-primary/20 rounded-none"
                     />
                     <Button 
                       type="submit" 
-                      className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
+                      className="w-full bg-primary hover:bg-primary/90 transition-all duration-300 rounded-none"
                     >
                       Subscribe
                     </Button>
@@ -850,7 +840,7 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Follow Us - Social Links */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <h3 className="font-bold text-lg mb-4">Follow Us</h3>
                   <div className="flex flex-wrap gap-3">
