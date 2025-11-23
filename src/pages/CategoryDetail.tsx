@@ -9,7 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { ArrowLeft, BookOpen, Users, Mail, Tag, Play } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Play, Search, Facebook, Twitter, Linkedin, Youtube, Instagram } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 
 interface Category {
   id: string;
@@ -38,6 +40,8 @@ const CategoryDetail = () => {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [siteSettings, setSiteSettings] = useState<any>(null);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -52,7 +56,22 @@ const CategoryDetail = () => {
     fetchCategoryAndPosts();
     fetchRecentCourses();
     fetchTags();
+    fetchSiteSettings();
   }, [slug]);
+
+  const fetchSiteSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("*")
+        .single();
+
+      if (error) throw error;
+      setSiteSettings(data);
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+    }
+  };
 
   const fetchCategoryAndPosts = async () => {
     try {
@@ -133,6 +152,14 @@ const CategoryDetail = () => {
     });
     setEmail("");
   };
+
+  const handleSocialClick = (platform: string) => {
+    trackSocialMediaClick(platform);
+  };
+
+  const currentPostIndex = posts.findIndex(p => window.location.pathname.includes(p.slug));
+  const hasPrevious = currentPostIndex > 0;
+  const hasNext = currentPostIndex < posts.length - 1 && currentPostIndex !== -1;
 
   if (loading) {
     return (
@@ -215,46 +242,77 @@ const CategoryDetail = () => {
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-3">
-            <Card className="sticky top-4 border border-primary/10 shadow-card">
-              <CardContent className="p-6">
+            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden">
+              <CardContent className="p-6 pb-0">
                 <div className="flex items-center gap-2 mb-4">
                   <BookOpen className="h-5 w-5 text-primary" />
                   <h2 className="font-bold text-lg">Course Lessons</h2>
                 </div>
-                
                 <Separator className="mb-4" />
-                
-                <nav className="space-y-1">
-                  {posts.length > 0 ? (
-                    posts.map((post, index) => (
-                      <Link 
-                        key={post.id}
-                        to={`/blog/${post.slug}`}
-                        className="block group"
-                      >
-                        <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/5 transition-colors">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
-                              {post.title}
-                            </h3>
-                          </div>
-                          <Play className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground p-3">No lessons available yet</p>
-                  )}
-                </nav>
               </CardContent>
+              
+              <ScrollArea className="h-[calc(100vh-300px)]">
+                <CardContent className="px-6 pb-6 pt-0">
+                  <nav className="space-y-1">
+                    {posts.length > 0 ? (
+                      posts.map((post, index) => (
+                        <Link 
+                          key={post.id}
+                          to={`/blog/${post.slug}`}
+                          className="block group"
+                        >
+                          <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 group-hover:scale-110">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
+                                {post.title}
+                              </h3>
+                            </div>
+                            <Play className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                          </div>
+                        </Link>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground p-3">No lessons available yet</p>
+                    )}
+                  </nav>
+                </CardContent>
+              </ScrollArea>
             </Card>
           </aside>
 
           {/* MAIN CONTENT - Detailed Description & Lesson Content */}
           <main className="lg:col-span-6">
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between mb-6">
+              <Link to="/">
+                <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5 transition-colors">
+                  <Home className="h-4 w-4" />
+                  Home
+                </Button>
+              </Link>
+              <div className="flex gap-2">
+                {hasPrevious && (
+                  <Link to={`/blog/${posts[currentPostIndex - 1].slug}`}>
+                    <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5 transition-colors">
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                  </Link>
+                )}
+                {hasNext && (
+                  <Link to={`/blog/${posts[currentPostIndex + 1].slug}`}>
+                    <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5 transition-colors">
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+
             <Card className="border border-primary/10 shadow-card">
               <CardContent className="p-8">
                 <h2 className="text-3xl font-bold mb-6">About This Course</h2>
@@ -349,134 +407,195 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-3 space-y-6">
-            
-            {/* Recent Courses */}
-            <Card className="border border-primary/10 shadow-card">
-              <CardContent className="p-6">
-                <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
-                <div className="space-y-4">
-                  {recentCourses.map((course) => (
-                    <Link 
-                      key={course.id}
-                      to={`/category/${course.slug}`}
-                      className="block group"
-                    >
-                      <div className="p-3 rounded-lg hover:bg-primary/5 transition-colors">
-                        <h4 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
-                          {course.name}
-                        </h4>
-                        {course.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {course.description}
-                          </p>
+          <aside className="lg:col-span-3">
+            <div className="sticky top-4">
+              <ScrollArea className="h-[calc(100vh-100px)]">
+                <div className="space-y-6 pr-4">
+                  
+                  {/* Search */}
+                  <Card className="border border-primary/10 shadow-card">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Search className="h-5 w-5 text-primary" />
+                        <h3 className="font-bold text-lg">Search</h3>
+                      </div>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Search lessons..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 border-primary/20"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Courses */}
+                  <Card className="border border-primary/10 shadow-card">
+                    <CardContent className="p-6">
+                      <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
+                      <div className="space-y-4">
+                        {recentCourses.map((course) => (
+                          <Link 
+                            key={course.id}
+                            to={`/category/${course.slug}`}
+                            className="block group"
+                          >
+                            <div className="p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                              <h4 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
+                                {course.name}
+                              </h4>
+                              {course.description && (
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {course.description}
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tags */}
+                  <Card className="border border-primary/10 shadow-card">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Tag className="h-5 w-5 text-primary" />
+                        <h3 className="font-bold text-lg">Tags</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {allTags.map((tag) => (
+                          <Badge 
+                            key={tag} 
+                            variant="secondary"
+                            className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Google AdSense Placeholder */}
+                  <Card className="border border-primary/10 shadow-card">
+                    <CardContent className="p-6">
+                      <div className="bg-muted/30 rounded-lg h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
+                        <p className="text-sm text-muted-foreground">Ad Space</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Newsletter Subscription */}
+                  <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Mail className="h-5 w-5 text-primary" />
+                        <h3 className="font-bold text-lg">Newsletter</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Get the latest courses and updates delivered to your inbox.
+                      </p>
+                      <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+                        <Input 
+                          type="email"
+                          placeholder="Your email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="border-primary/20"
+                        />
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
+                        >
+                          Subscribe
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+
+                  {/* Follow Us - Social Links */}
+                  <Card className="border border-primary/10 shadow-card">
+                    <CardContent className="p-6">
+                      <h3 className="font-bold text-lg mb-4">Follow Us</h3>
+                      <div className="flex flex-wrap gap-3">
+                        {siteSettings?.facebook_url && (
+                          <a
+                            href={siteSettings.facebook_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handleSocialClick('facebook')}
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                          >
+                            <Facebook className="h-5 w-5" />
+                          </a>
+                        )}
+                        {siteSettings?.twitter_url && (
+                          <a
+                            href={siteSettings.twitter_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handleSocialClick('twitter')}
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                          >
+                            <Twitter className="h-5 w-5" />
+                          </a>
+                        )}
+                        {siteSettings?.linkedin_url && (
+                          <a
+                            href={siteSettings.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handleSocialClick('linkedin')}
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                          >
+                            <Linkedin className="h-5 w-5" />
+                          </a>
+                        )}
+                        {siteSettings?.youtube_url && (
+                          <a
+                            href={siteSettings.youtube_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handleSocialClick('youtube')}
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                          >
+                            <Youtube className="h-5 w-5" />
+                          </a>
+                        )}
+                        {siteSettings?.instagram_url && (
+                          <a
+                            href={siteSettings.instagram_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handleSocialClick('instagram')}
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                          >
+                            <Instagram className="h-5 w-5" />
+                          </a>
                         )}
                       </div>
-                    </Link>
-                  ))}
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Tags */}
-            <Card className="border border-primary/10 shadow-card">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Tag className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-lg">Tags</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {allTags.map((tag) => (
-                    <Badge 
-                      key={tag} 
-                      variant="secondary"
-                      className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer transition-colors"
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Newsletter Subscription */}
-            <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-lg">Newsletter</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Get the latest courses and updates delivered to your inbox.
-                </p>
-                <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                  <Input 
-                    type="email"
-                    placeholder="Your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="border-primary/20"
-                  />
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary hover:bg-primary/90"
-                  >
-                    Subscribe
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Google AdSense Placeholder */}
-            <Card className="border border-primary/10 shadow-card bg-muted/30">
-              <CardContent className="p-6">
-                <div className="text-center py-16">
-                  <p className="text-sm text-muted-foreground font-medium">Advertisement</p>
-                  <p className="text-xs text-muted-foreground mt-2">Google AdSense</p>
-                  <div className="mt-4 text-xs text-muted-foreground">
-                    300 x 250
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Second AdSense Placement */}
-            <Card className="border border-primary/10 shadow-card bg-muted/30">
-              <CardContent className="p-6">
-                <div className="text-center py-12">
-                  <p className="text-sm text-muted-foreground font-medium">Advertisement</p>
-                  <p className="text-xs text-muted-foreground mt-2">Google AdSense</p>
-                  <div className="mt-4 text-xs text-muted-foreground">
-                    300 x 600
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
+              </ScrollArea>
+            </div>
           </aside>
         </div>
       </div>
 
-      <style>{`
-        .prose {
-          color: hsl(var(--foreground));
-        }
-        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-          color: hsl(var(--foreground));
-          font-weight: 700;
-        }
-        .prose p {
-          line-height: 1.75;
-        }
-        .prose ul {
-          list-style-type: disc;
-          padding-left: 1.5em;
-        }
-        .prose li {
-          margin-bottom: 0.5em;
-        }
-      `}</style>
+      {/* Footer */}
+      <footer className="bg-card border-t border-primary/10 mt-12">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} {siteSettings?.site_name || 'BlogHub'}. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
