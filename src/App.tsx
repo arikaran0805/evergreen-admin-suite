@@ -17,6 +17,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AdminPosts from "./pages/AdminPosts";
+import AdminPostEditor from "./pages/AdminPostEditor";
 import AdminPages from "./pages/AdminPages";
 import AdminCategories from "./pages/AdminCategories";
 import AdminComments from "./pages/AdminComments";
@@ -74,6 +75,8 @@ const AppContent = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/posts" element={<AdminPosts />} />
+        <Route path="/admin/posts/new" element={<AdminPostEditor />} />
+        <Route path="/admin/posts/edit/:id" element={<AdminPostEditor />} />
         <Route path="/admin/pages" element={<AdminPages />} />
         <Route path="/admin/categories" element={<AdminCategories />} />
         <Route path="/admin/comments" element={<AdminComments />} />
