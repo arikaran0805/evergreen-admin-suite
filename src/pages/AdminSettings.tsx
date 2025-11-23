@@ -30,6 +30,8 @@ const AdminSettings = () => {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [heroHeadline, setHeroHeadline] = useState("Join Learners Who Think Differently");
+  const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
   
   // Social Media Links
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -96,6 +98,8 @@ const AdminSettings = () => {
       setSiteDescription(data.site_description || "");
       setSiteUrl(data.site_url || "");
       setLogoUrl(data.logo_url || "");
+      setHeroHeadline(data.hero_headline || "Join Learners Who Think Differently");
+      setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
       setTwitterUrl(data.twitter_url || "");
       setFacebookUrl(data.facebook_url || "");
       setInstagramUrl(data.instagram_url || "");
@@ -176,12 +180,8 @@ const AdminSettings = () => {
             site_description: siteDescription,
             site_url: siteUrl,
             logo_url: logoUrl,
-            twitter_url: twitterUrl || null,
-            facebook_url: facebookUrl || null,
-            instagram_url: instagramUrl || null,
-            linkedin_url: linkedinUrl || null,
-            youtube_url: youtubeUrl || null,
-            github_url: githubUrl || null,
+            hero_headline: heroHeadline,
+            hero_subheadline: heroSubheadline,
           })
           .eq("id", settingsId);
 
@@ -195,12 +195,8 @@ const AdminSettings = () => {
             site_description: siteDescription,
             site_url: siteUrl,
             logo_url: logoUrl,
-            twitter_url: twitterUrl || null,
-            facebook_url: facebookUrl || null,
-            instagram_url: instagramUrl || null,
-            linkedin_url: linkedinUrl || null,
-            youtube_url: youtubeUrl || null,
-            github_url: githubUrl || null,
+            hero_headline: heroHeadline,
+            hero_subheadline: heroSubheadline,
           })
           .select()
           .single();
@@ -213,6 +209,60 @@ const AdminSettings = () => {
     } catch (error: any) {
       toast({
         title: "Error saving settings",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveSocial = async () => {
+    setSaving(true);
+    try {
+      // Validate URLs
+      const validation = {
+        twitterUrl: urlSchema.safeParse(twitterUrl),
+        facebookUrl: urlSchema.safeParse(facebookUrl),
+        instagramUrl: urlSchema.safeParse(instagramUrl),
+        linkedinUrl: urlSchema.safeParse(linkedinUrl),
+        youtubeUrl: urlSchema.safeParse(youtubeUrl),
+        githubUrl: urlSchema.safeParse(githubUrl),
+      };
+
+      const errors = Object.entries(validation)
+        .filter(([_, result]) => !result.success)
+        .map(([field]) => field);
+
+      if (errors.length > 0) {
+        toast({
+          title: "Invalid URLs",
+          description: `Please check: ${errors.join(", ")}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (settingsId) {
+        const { error } = await supabase
+          .from("site_settings")
+          .update({
+            twitter_url: twitterUrl || null,
+            facebook_url: facebookUrl || null,
+            instagram_url: instagramUrl || null,
+            linkedin_url: linkedinUrl || null,
+            youtube_url: youtubeUrl || null,
+            github_url: githubUrl || null,
+          })
+          .eq("id", settingsId);
+
+        if (error) throw error;
+      }
+      
+      toast({ title: "Social media links saved successfully" });
+    } catch (error: any) {
+      toast({
+        title: "Error saving social media links",
         description: error.message,
         variant: "destructive"
       });
@@ -268,10 +318,14 @@ const AdminSettings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[700px]">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               General
+            </TabsTrigger>
+            <TabsTrigger value="social" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Social
             </TabsTrigger>
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -292,7 +346,7 @@ const AdminSettings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-primary" />
+                  <Settings className="h-5 w-5 text-primary" />
                   Site Information
                 </CardTitle>
                 <CardDescription>
@@ -367,92 +421,29 @@ const AdminSettings = () => {
                 <Separator />
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Social Media Links</h3>
+                  <h3 className="text-lg font-semibold mb-4">Hero Section</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Add your social media profile URLs (optional)
+                    Customize the main headline and subheadline on your homepage
                   </p>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="twitter" className="flex items-center gap-2">
-                        <Twitter className="h-4 w-4" />
-                        Twitter / X
-                      </Label>
+                      <Label htmlFor="heroHeadline">Headline</Label>
                       <Input
-                        id="twitter"
-                        value={twitterUrl}
-                        onChange={(e) => setTwitterUrl(e.target.value)}
-                        placeholder="https://twitter.com/yourusername"
-                        type="url"
+                        id="heroHeadline"
+                        value={heroHeadline}
+                        onChange={(e) => setHeroHeadline(e.target.value)}
+                        placeholder="Join Learners Who Think Differently"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="facebook" className="flex items-center gap-2">
-                        <Facebook className="h-4 w-4" />
-                        Facebook
-                      </Label>
-                      <Input
-                        id="facebook"
-                        value={facebookUrl}
-                        onChange={(e) => setFacebookUrl(e.target.value)}
-                        placeholder="https://facebook.com/yourpage"
-                        type="url"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="instagram" className="flex items-center gap-2">
-                        <Instagram className="h-4 w-4" />
-                        Instagram
-                      </Label>
-                      <Input
-                        id="instagram"
-                        value={instagramUrl}
-                        onChange={(e) => setInstagramUrl(e.target.value)}
-                        placeholder="https://instagram.com/yourusername"
-                        type="url"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="linkedin" className="flex items-center gap-2">
-                        <Linkedin className="h-4 w-4" />
-                        LinkedIn
-                      </Label>
-                      <Input
-                        id="linkedin"
-                        value={linkedinUrl}
-                        onChange={(e) => setLinkedinUrl(e.target.value)}
-                        placeholder="https://linkedin.com/company/yourcompany"
-                        type="url"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="youtube" className="flex items-center gap-2">
-                        <Youtube className="h-4 w-4" />
-                        YouTube
-                      </Label>
-                      <Input
-                        id="youtube"
-                        value={youtubeUrl}
-                        onChange={(e) => setYoutubeUrl(e.target.value)}
-                        placeholder="https://youtube.com/@yourchannel"
-                        type="url"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="github" className="flex items-center gap-2">
-                        <Github className="h-4 w-4" />
-                        GitHub
-                      </Label>
-                      <Input
-                        id="github"
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        placeholder="https://github.com/yourusername"
-                        type="url"
+                      <Label htmlFor="heroSubheadline">Subheadline</Label>
+                      <Textarea
+                        id="heroSubheadline"
+                        value={heroSubheadline}
+                        onChange={(e) => setHeroSubheadline(e.target.value)}
+                        placeholder="Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding."
+                        rows={3}
                       />
                     </div>
                   </div>
@@ -467,6 +458,112 @@ const AdminSettings = () => {
                     {saving ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Social Media Settings */}
+          <TabsContent value="social" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" />
+                  Social Media Links
+                </CardTitle>
+                <CardDescription>
+                  Add your social media profile URLs (optional)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter" className="flex items-center gap-2">
+                      <Twitter className="h-4 w-4" />
+                      Twitter / X
+                    </Label>
+                    <Input
+                      id="twitter"
+                      value={twitterUrl}
+                      onChange={(e) => setTwitterUrl(e.target.value)}
+                      placeholder="https://twitter.com/yourusername"
+                      type="url"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="facebook" className="flex items-center gap-2">
+                      <Facebook className="h-4 w-4" />
+                      Facebook
+                    </Label>
+                    <Input
+                      id="facebook"
+                      value={facebookUrl}
+                      onChange={(e) => setFacebookUrl(e.target.value)}
+                      placeholder="https://facebook.com/yourpage"
+                      type="url"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram" className="flex items-center gap-2">
+                      <Instagram className="h-4 w-4" />
+                      Instagram
+                    </Label>
+                    <Input
+                      id="instagram"
+                      value={instagramUrl}
+                      onChange={(e) => setInstagramUrl(e.target.value)}
+                      placeholder="https://instagram.com/yourusername"
+                      type="url"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedin" className="flex items-center gap-2">
+                      <Linkedin className="h-4 w-4" />
+                      LinkedIn
+                    </Label>
+                    <Input
+                      id="linkedin"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      placeholder="https://linkedin.com/company/yourcompany"
+                      type="url"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="youtube" className="flex items-center gap-2">
+                      <Youtube className="h-4 w-4" />
+                      YouTube
+                    </Label>
+                    <Input
+                      id="youtube"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      placeholder="https://youtube.com/@yourchannel"
+                      type="url"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="github" className="flex items-center gap-2">
+                      <Github className="h-4 w-4" />
+                      GitHub
+                    </Label>
+                    <Input
+                      id="github"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="https://github.com/yourusername"
+                      type="url"
+                    />
+                  </div>
+                </div>
+
+                <Button onClick={handleSaveSocial} disabled={saving} className="bg-primary w-full">
+                  {saving ? "Saving..." : "Save Social Media Links"}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

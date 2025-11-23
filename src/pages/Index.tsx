@@ -16,6 +16,8 @@ const Index = () => {
   const [siteName, setSiteName] = useState("BlogHub");
   const [logoUrl, setLogoUrl] = useState("");
   const [siteDescription, setSiteDescription] = useState("Inspiring stories and ideas for curious minds.");
+  const [heroHeadline, setHeroHeadline] = useState("Join Learners Who Think Differently");
+  const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
   const [socialLinks, setSocialLinks] = useState({
     twitter: "",
     facebook: "",
@@ -70,7 +72,7 @@ const Index = () => {
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, site_description, logo_url, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
+      .select('site_name, site_description, logo_url, hero_headline, hero_subheadline, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
       .limit(1)
       .maybeSingle();
     
@@ -78,6 +80,8 @@ const Index = () => {
       setSiteName(data.site_name || "BlogHub");
       setSiteDescription(data.site_description || "Inspiring stories and ideas for curious minds.");
       setLogoUrl(data.logo_url || "");
+      setHeroHeadline(data.hero_headline || "Join Learners Who Think Differently");
+      setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
       setSocialLinks({
         twitter: data.twitter_url || "",
         facebook: data.facebook_url || "",
@@ -106,15 +110,11 @@ const Index = () => {
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-              Discover{" "}
-              <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                Stories
-              </span>{" "}
-              That Inspire
+              {heroHeadline}
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-200">
-              Join thousands of readers exploring ideas, insights, and inspiration across technology, lifestyle, business, and more.
+              {heroSubheadline}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
