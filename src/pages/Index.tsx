@@ -196,12 +196,17 @@ const Index = () => {
 
         {/* Featured Courses */}
         <section className="container px-4 py-16">
-          <div className="flex items-center gap-2 mb-8">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            <h2 className="text-3xl font-bold">Featured Courses</h2>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-6 w-6 text-primary" />
+              <h2 className="text-3xl font-bold">Featured Courses</h2>
+            </div>
+            <Link to="/courses" className="text-primary hover:underline font-semibold flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredCourses.map((course) => (
               <BlogCard key={course.id} {...course} linkType="category" />
             ))}
@@ -224,7 +229,8 @@ const Index = () => {
               <TrendingUp className="h-6 w-6 text-primary" />
               <h2 className="text-3xl font-bold">Latest Blog Posts</h2>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
               <Button
                 variant={activeFilter === "new" ? "default" : "outline"}
                 onClick={() => setActiveFilter("new")}
@@ -246,10 +252,14 @@ const Index = () => {
               >
                 Popular
               </Button>
+              </div>
+              <Link to="/blogs" className="text-primary hover:underline font-semibold flex items-center gap-1">
+                View All <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {latestPosts.map((post) => (
               <BlogCard key={post.id} {...post} linkType="blog" />
             ))}
