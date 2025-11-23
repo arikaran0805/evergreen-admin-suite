@@ -39,7 +39,7 @@ const Courses = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <SEOHead 
         title="All Courses"
         description="Explore all our course categories"
