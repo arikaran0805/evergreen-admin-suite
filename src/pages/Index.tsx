@@ -15,7 +15,6 @@ import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 const Index = () => {
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
-  const [activeFilter, setActiveFilter] = useState<"trending" | "new" | "popular">("new");
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [siteName, setSiteName] = useState("BlogHub");
   const [logoUrl, setLogoUrl] = useState("");
@@ -41,10 +40,6 @@ const Index = () => {
     fetchFooterCategories();
     fetchSiteSettings();
   }, []);
-
-  useEffect(() => {
-    fetchLatestPosts();
-  }, [activeFilter]);
 
   const fetchFeaturedCourses = async () => {
     const { data, error } = await supabase
@@ -73,21 +68,12 @@ const Index = () => {
   };
 
   const fetchLatestPosts = async () => {
-    let query = supabase
+    const { data, error } = await supabase
       .from('posts')
       .select('id, title, slug, excerpt, featured_image, created_at, category_id, categories(name)')
       .eq('status', 'published')
+      .order('created_at', { ascending: false })
       .limit(6);
-
-    if (activeFilter === "new") {
-      query = query.order('created_at', { ascending: false });
-    } else if (activeFilter === "popular") {
-      query = query.order('created_at', { ascending: false });
-    } else {
-      query = query.order('created_at', { ascending: false });
-    }
-
-    const { data, error } = await query;
 
     if (!error && data) {
       const formattedPosts = data.map((post: any) => ({
@@ -199,14 +185,9 @@ const Index = () => {
 
         {/* Featured Courses */}
         <section className="container px-4 py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-primary" />
-              <h2 className="text-3xl font-bold">Featured Courses</h2>
-            </div>
-            <Link to="/courses" className="text-primary hover:underline font-semibold flex items-center gap-1">
-              View All <ArrowRight className="h-4 w-4" />
-            </Link>
+          <div className="flex items-center gap-2 mb-8">
+            <TrendingUp className="h-6 w-6 text-primary" />
+            <h2 className="text-3xl font-bold">Featured Courses</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -214,67 +195,19 @@ const Index = () => {
               <BlogCard key={course.id} {...course} linkType="category" />
             ))}
           </div>
-
-          <div className="text-center mt-12">
-            <Link to="/courses">
-              <Button size="lg" className="bg-gradient-primary shadow-elegant hover:shadow-glow">
-                View All Courses
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
         </section>
 
         {/* Trending Blog Posts Section */}
         <section className="container px-4 py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-primary" />
-              <h2 className="text-3xl font-bold">Latest Blog Posts</h2>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-              <Button
-                variant={activeFilter === "new" ? "default" : "outline"}
-                onClick={() => setActiveFilter("new")}
-                size="sm"
-              >
-                New
-              </Button>
-              <Button
-                variant={activeFilter === "trending" ? "default" : "outline"}
-                onClick={() => setActiveFilter("trending")}
-                size="sm"
-              >
-                Trending
-              </Button>
-              <Button
-                variant={activeFilter === "popular" ? "default" : "outline"}
-                onClick={() => setActiveFilter("popular")}
-                size="sm"
-              >
-                Popular
-              </Button>
-              </div>
-              <Link to="/blogs" className="text-primary hover:underline font-semibold flex items-center gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+          <div className="flex items-center gap-2 mb-8">
+            <TrendingUp className="h-6 w-6 text-primary" />
+            <h2 className="text-3xl font-bold">Latest Blog Posts</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {latestPosts.map((post) => (
               <BlogCard key={post.id} {...post} linkType="blog" />
             ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Link to="/blogs">
-              <Button size="lg" className="bg-gradient-primary shadow-elegant hover:shadow-glow">
-                View All Posts
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
           </div>
         </section>
 

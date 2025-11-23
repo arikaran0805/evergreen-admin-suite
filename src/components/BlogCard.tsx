@@ -48,13 +48,6 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, views =
         {/* Shimmer Effect */}
         <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
         
-        {/* Category Badge on Image */}
-        <div className="absolute top-3 left-3">
-          <Badge className="bg-primary/90 text-primary-foreground border-0 shadow-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
-            {category}
-          </Badge>
-        </div>
-        
         {/* Level Badge on Image */}
         {level && (
           <div className="absolute top-3 right-3">
@@ -71,38 +64,26 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, views =
           {title}
         </h3>
 
+        {/* View Count and Rating Row */}
+        <div className="flex items-center justify-between">
+          {/* Learners Count - Left */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground group-hover:text-primary transition-colors duration-300">
+            <Users className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-300" />
+            <span className="font-medium">{formattedLearners}</span>
+          </div>
+
+          {/* Rating - Right */}
+          {linkType === "category" && (
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-semibold text-foreground">{displayRating}</span>
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform duration-300" />
+            </div>
+          )}
+        </div>
+
         <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground/80 transition-colors duration-300 flex-1">
           {excerpt}
         </p>
-
-        {/* Rating */}
-        {linkType === "category" && (
-          <div className="flex items-center gap-1">
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`h-4 w-4 ${
-                    i < Math.floor(courseRating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : i < courseRating
-                      ? "fill-yellow-400/50 text-yellow-400"
-                      : "text-gray-300"
-                  } transition-all duration-300 group-hover:scale-110`}
-                  style={{ transitionDelay: `${i * 50}ms` }}
-                />
-              ))}
-            </div>
-            <span className="text-sm font-semibold text-foreground ml-1">{displayRating}</span>
-            <span className="text-xs text-muted-foreground">({Math.floor(Math.random() * 2000) + 500} reviews)</span>
-          </div>
-        )}
-
-        {/* Learners Count */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground group-hover:text-primary transition-colors duration-300">
-          <Users className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-300" />
-          <span className="font-medium">{formattedLearners} learners</span>
-        </div>
 
         {/* Get Started Button */}
         <Button 
