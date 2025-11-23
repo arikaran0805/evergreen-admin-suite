@@ -427,7 +427,7 @@ const CategoryDetail = () => {
                             : ''
                         }`}
                       >
-                        <div className="px-4 py-3">
+                        <div className="px-4 py-2">
                           <h3 className={`text-base font-normal ${
                             selectedPost?.id === post.id 
                               ? 'text-white' 
