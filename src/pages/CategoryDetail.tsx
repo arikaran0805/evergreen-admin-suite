@@ -398,11 +398,11 @@ const CategoryDetail = () => {
       <Header />
 
       {/* 3-Column Layout */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-2">
+          <aside className="lg:col-span-2 pl-4">
             <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-green-50">
               <CardContent className="p-4 pb-0">
                 <div className="flex items-center gap-2 mb-3">
@@ -445,7 +445,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-8">
+          <main className="lg:col-span-8 px-4">
             {/* Home Button */}
             <div className="mb-4">
               <Button 
@@ -728,7 +728,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-2">
+          <aside className="lg:col-span-2 pr-4">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
