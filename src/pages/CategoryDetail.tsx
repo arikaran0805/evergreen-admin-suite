@@ -399,11 +399,11 @@ const CategoryDetail = () => {
 
       {/* 3-Column Layout */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
-            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden">
+            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-green-50">
               <CardContent className="p-4 pb-0">
                 <div className="flex items-center gap-2 mb-3">
                   <BookOpen className="h-4 w-4 text-primary" />
@@ -414,7 +414,7 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-2">
+                <nav className="space-y-1">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
@@ -424,14 +424,7 @@ const CategoryDetail = () => {
                           selectedPost?.id === post.id ? 'bg-primary/10' : 'hover:bg-primary/5'
                         }`}
                       >
-                        <div className="flex items-center gap-2 p-3">
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 ${
-                            selectedPost?.id === post.id 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
-                          }`}>
-                            {index + 1}
-                          </div>
+                        <div className="flex items-center gap-2 p-2">
                           <div className="flex-1 min-w-0">
                             <h3 className={`text-xs font-medium transition-colors line-clamp-2 leading-tight ${
                               selectedPost?.id === post.id 
@@ -441,7 +434,7 @@ const CategoryDetail = () => {
                               {post.title}
                             </h3>
                           </div>
-                          <Play className={`flex-shrink-0 h-4 w-4 transition-colors ${
+                          <Play className={`flex-shrink-0 h-3 w-3 transition-colors ${
                             selectedPost?.id === post.id 
                               ? 'text-primary' 
                               : 'text-muted-foreground group-hover:text-primary'
@@ -459,7 +452,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-7">
+          <main className="lg:col-span-8">
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between mb-6">
               <Button 
@@ -768,7 +761,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-3">
+          <aside className="lg:col-span-2">
             <div className="sticky top-4 space-y-6">
                   
               {/* Search */}
