@@ -114,4 +114,17 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Code block styling in prose content */
+  .prose pre {
+    @apply relative bg-muted border border-border rounded-lg p-4 overflow-x-auto;
+  }
+  
+  .prose code {
+    @apply bg-muted text-foreground rounded px-1 py-0.5 text-sm;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
 }

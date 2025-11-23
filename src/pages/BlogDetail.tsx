@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { trackPostView } from "@/lib/analytics";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
+import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import { Calendar, User, MessageSquare, ArrowLeft, BookOpen, Mail, Tag } from "lucide-react";
 import { format } from "date-fns";
 
@@ -369,9 +370,9 @@ const BlogDetail = () => {
           {/* MAIN CONTENT - Course Details */}
           <main className="lg:col-span-6">
             <Card className="p-8 border border-primary/10 shadow-card">
-              <div 
+              <ContentWithCodeCopy 
+                content={post.content}
                 className="prose prose-lg max-w-none text-foreground"
-                dangerouslySetInnerHTML={{ __html: post.content }}
               />
             </Card>
 
