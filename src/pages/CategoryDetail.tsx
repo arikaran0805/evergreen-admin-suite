@@ -403,7 +403,7 @@ const CategoryDetail = () => {
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
-            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-gray-100 rounded-none">
+            <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-gray-200 rounded-none">
               <CardContent className="p-4 pb-0">
                 <div 
                   className="flex items-center gap-2 mb-3 cursor-pointer hover:text-primary transition-colors"
@@ -448,7 +448,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-7">
+          <main className="lg:col-span-8">
             <Card className="border border-primary/10 shadow-card rounded-none">
               <CardContent className="p-12 leading-relaxed">
                 {loadingPost ? (
@@ -718,7 +718,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-3">
+          <aside className="lg:col-span-2">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
