@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
+import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
@@ -638,9 +639,9 @@ const CategoryDetail = () => {
                     <Separator className="my-8" />
 
                     {/* Lesson Content */}
-                    <div 
+                    <ContentWithCodeCopy 
+                      content={selectedPost.content || ''}
                       className="prose prose-lg max-w-none leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: selectedPost.content || '' }}
                     />
 
                     {/* Comments Section */}
