@@ -402,18 +402,18 @@ const CategoryDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-3">
+          <aside className="lg:col-span-2">
             <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden">
-              <CardContent className="p-6 pb-0">
-                <div className="flex items-center gap-2 mb-4">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold text-lg">Course Lessons</h2>
+              <CardContent className="p-4 pb-0">
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <h2 className="font-bold text-base">Lessons</h2>
                 </div>
-                <Separator className="mb-4" />
+                <Separator className="mb-3" />
               </CardContent>
               
               <ScrollArea className="h-[calc(100vh-300px)]">
-                <CardContent className="px-6 pb-6 pt-0">
+                <CardContent className="px-4 pb-4 pt-0">
                 <nav className="space-y-1">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
@@ -424,8 +424,8 @@ const CategoryDetail = () => {
                           selectedPost?.id === post.id ? 'bg-primary/10' : ''
                         }`}
                       >
-                        <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-full text-sm flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
+                        <div className="flex items-start gap-2 p-2 rounded-lg hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
                             selectedPost?.id === post.id 
                               ? 'bg-primary text-primary-foreground' 
                               : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
@@ -433,7 +433,7 @@ const CategoryDetail = () => {
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className={`text-sm font-medium transition-colors line-clamp-2 ${
+                            <h3 className={`text-xs font-medium transition-colors line-clamp-2 ${
                               selectedPost?.id === post.id 
                                 ? 'text-primary' 
                                 : 'group-hover:text-primary'
@@ -441,7 +441,7 @@ const CategoryDetail = () => {
                               {post.title}
                             </h3>
                           </div>
-                          <Play className={`h-4 w-4 transition-colors flex-shrink-0 ${
+                          <Play className={`h-3 w-3 transition-colors flex-shrink-0 ${
                             selectedPost?.id === post.id 
                               ? 'text-primary' 
                               : 'text-muted-foreground group-hover:text-primary'
@@ -450,7 +450,7 @@ const CategoryDetail = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground p-3">No lessons available yet</p>
+                    <p className="text-xs text-muted-foreground p-2">No lessons available yet</p>
                   )}
                 </nav>
                 </CardContent>
@@ -459,7 +459,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-6">
+          <main className="lg:col-span-7">
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between mb-6">
               <Button 
@@ -682,19 +682,31 @@ const CategoryDetail = () => {
                   </>
                 ) : (
                   <>
+                    {/* Course Banner */}
+                    <div className="relative w-full h-64 mb-8 rounded-lg overflow-hidden">
+                      <img 
+                        src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&h=400&fit=crop"
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent flex items-end">
+                        <div className="p-8 w-full">
+                          <h2 className="text-4xl font-bold mb-2 text-foreground">{category.name}</h2>
+                          <div className="flex items-center gap-2 text-foreground/80">
+                            <Users className="h-5 w-5" />
+                            <span className="text-lg font-semibold">{formattedLearners} learners</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Course Overview - Default View */}
-                    <div className="text-center py-8">
-                      <BookOpen className="h-16 w-16 mx-auto mb-4 text-primary" />
-                      <h2 className="text-3xl font-bold mb-4">{category.name}</h2>
+                    <div className="py-4">
                       {category.description && (
-                        <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+                        <p className="text-lg text-muted-foreground mb-6">
                           {category.description}
                         </p>
                       )}
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground mb-8">
-                        <Users className="h-5 w-5 text-primary" />
-                        <span className="text-lg font-semibold">{formattedLearners} learners</span>
-                      </div>
                     </div>
 
                     <Separator className="my-8" />
