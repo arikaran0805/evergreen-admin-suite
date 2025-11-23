@@ -81,6 +81,8 @@ const AdminPosts = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  console.log("Dialog state:", { isDialogOpen, editingPost, mainLessonsCount: mainLessons.length });
+
   useEffect(() => {
     checkAdminAccess();
     fetchCategories();
@@ -324,6 +326,7 @@ const AdminPosts = () => {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          console.log("Dialog onOpenChange:", open);
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -395,21 +398,17 @@ const AdminPosts = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">None - Main Lesson</SelectItem>
-                      {Array.isArray(mainLessons) && mainLessons.length > 0 ? (
-                        mainLessons
-                          .filter(lesson => {
-                            // Don't show current post as its own parent
-                            if (editingPost && lesson.id === editingPost.id) return false;
-                            // Only show lessons from same category
-                            if (formData.category_id && lesson.category_id !== formData.category_id) return false;
-                            return true;
-                          })
-                          .map((lesson) => (
-                            <SelectItem key={lesson.id} value={lesson.id}>
-                              {lesson.title}
-                            </SelectItem>
-                          ))
-                      ) : null}
+                      {mainLessons && mainLessons.length > 0 && mainLessons
+                        .filter(lesson => {
+                          if (editingPost && lesson.id === editingPost.id) return false;
+                          if (formData.category_id && lesson.category_id !== formData.category_id) return false;
+                          return true;
+                        })
+                        .map((lesson) => (
+                          <SelectItem key={lesson.id} value={lesson.id}>
+                            {lesson.title}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
