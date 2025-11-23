@@ -55,6 +55,7 @@ const Index = () => {
       .limit(6);
 
     if (!error && data) {
+      const levels: Array<"Beginner" | "Intermediate" | "Advanced"> = ["Beginner", "Intermediate", "Advanced"];
       const formattedCourses = data.map((category: any) => ({
         id: category.id,
         title: category.name,
@@ -63,7 +64,9 @@ const Index = () => {
         image: '/placeholder.svg',
         date: 'Course Category',
         author: 'BlogHub Team',
-        slug: category.slug
+        slug: category.slug,
+        rating: Math.random() * 1.5 + 3.5, // Random rating between 3.5 and 5.0
+        level: levels[Math.floor(Math.random() * levels.length)] // Random level
       }));
       setFeaturedCourses(formattedCourses);
     }
