@@ -333,152 +333,154 @@ const AdminPosts = () => {
               New Post
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingPost ? "Edit Post" : "Create New Post"}</DialogTitle>
-              <DialogDescription>
-                {editingPost ? "Update your blog post" : "Create a new blog post"}
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[85vh]">
+            <div className="overflow-y-auto max-h-[calc(85vh-100px)]">
+              <DialogHeader>
+                <DialogTitle>{editingPost ? "Edit Post" : "Create New Post"}</DialogTitle>
+                <DialogDescription>
+                  {editingPost ? "Update your blog post" : "Create a new blog post"}
+                </DialogDescription>
+              </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => {
-                    setFormData({ ...formData, title: e.target.value });
-                    if (!editingPost) {
-                      setFormData(prev => ({ ...prev, slug: generateSlug(e.target.value) }));
-                    }
-                  }}
-                  required
-                />
-              </div>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => {
+                      setFormData({ ...formData, title: e.target.value });
+                      if (!editingPost) {
+                        setFormData(prev => ({ ...prev, slug: generateSlug(e.target.value) }));
+                      }
+                    }}
+                    required
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  required
-                />
-              </div>
+                <div>
+                  <Label htmlFor="slug">Slug</Label>
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    required
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <Label htmlFor="parent">Parent Lesson (Optional)</Label>
-                <Select 
-                  value={formData.parent_id || ""} 
-                  onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="None - This is a main lesson" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None - Main Lesson</SelectItem>
-                    {Array.isArray(mainLessons) && mainLessons.length > 0 ? (
-                      mainLessons
-                        .filter(lesson => {
-                          // Don't show current post as its own parent
-                          if (editingPost && lesson.id === editingPost.id) return false;
-                          // Only show lessons from same category
-                          if (formData.category_id && lesson.category_id !== formData.category_id) return false;
-                          return true;
-                        })
-                        .map((lesson) => (
-                          <SelectItem key={lesson.id} value={lesson.id}>
-                            {lesson.title}
-                          </SelectItem>
-                        ))
-                    ) : null}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Select a parent lesson to make this a sub-lesson
-                </p>
-              </div>
+                <div>
+                  <Label htmlFor="parent">Parent Lesson (Optional)</Label>
+                  <Select 
+                    value={formData.parent_id || ""} 
+                    onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="None - This is a main lesson" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None - Main Lesson</SelectItem>
+                      {Array.isArray(mainLessons) && mainLessons.length > 0 ? (
+                        mainLessons
+                          .filter(lesson => {
+                            // Don't show current post as its own parent
+                            if (editingPost && lesson.id === editingPost.id) return false;
+                            // Only show lessons from same category
+                            if (formData.category_id && lesson.category_id !== formData.category_id) return false;
+                            return true;
+                          })
+                          .map((lesson) => (
+                            <SelectItem key={lesson.id} value={lesson.id}>
+                              {lesson.title}
+                            </SelectItem>
+                          ))
+                      ) : null}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select a parent lesson to make this a sub-lesson
+                  </p>
+                </div>
 
-              <div>
-                <Label htmlFor="lesson_order">Lesson Order</Label>
-                <Input
-                  id="lesson_order"
-                  type="number"
-                  min="0"
-                  value={formData.lesson_order}
-                  onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Set the order for this lesson (lower numbers appear first)
-                </p>
-              </div>
+                <div>
+                  <Label htmlFor="lesson_order">Lesson Order</Label>
+                  <Input
+                    id="lesson_order"
+                    type="number"
+                    min="0"
+                    value={formData.lesson_order}
+                    onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Set the order for this lesson (lower numbers appear first)
+                  </p>
+                </div>
 
-              <div>
-                <Label htmlFor="featured_image">Featured Image URL</Label>
-                <Input
-                  id="featured_image"
-                  type="url"
-                  value={formData.featured_image}
-                  onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
-                />
-              </div>
+                <div>
+                  <Label htmlFor="featured_image">Featured Image URL</Label>
+                  <Input
+                    id="featured_image"
+                    type="url"
+                    value={formData.featured_image}
+                    onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="excerpt">Excerpt</Label>
-                <Textarea
-                  id="excerpt"
-                  value={formData.excerpt}
-                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  rows={3}
-                />
-              </div>
+                <div>
+                  <Label htmlFor="excerpt">Excerpt</Label>
+                  <Textarea
+                    id="excerpt"
+                    value={formData.excerpt}
+                    onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                    rows={3}
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <RichTextEditor
-                  value={formData.content}
-                  onChange={(value) => setFormData({ ...formData, content: value })}
-                  placeholder="Write your post content here..."
-                />
-              </div>
+                <div>
+                  <Label htmlFor="content">Content</Label>
+                  <RichTextEditor
+                    value={formData.content}
+                    onChange={(value) => setFormData({ ...formData, content: value })}
+                    placeholder="Write your post content here..."
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value: "draft" | "published") => setFormData({ ...formData, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value: "draft" | "published") => setFormData({ ...formData, status: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <DialogFooter>
-                <Button type="submit">
-                  {editingPost ? "Update Post" : "Create Post"}
-                </Button>
-              </DialogFooter>
-            </form>
+                <DialogFooter>
+                  <Button type="submit">
+                    {editingPost ? "Update Post" : "Create Post"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
