@@ -403,7 +403,7 @@ const CategoryDetail = () => {
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:col-span-2">
-            <div className="sticky top-4 bg-gray-200 border-r border-gray-300">
+            <div className="sticky top-4 bg-white border-r border-gray-300">
               <div className="p-4 border-b border-gray-300">
                 <div 
                   className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
@@ -427,8 +427,8 @@ const CategoryDetail = () => {
                             : ''
                         }`}
                       >
-                        <div className="px-4 py-2">
-                          <h3 className={`text-base font-medium transition-colors ${
+                        <div className="px-4 py-1.5">
+                          <h3 className={`text-sm font-medium transition-colors ${
                             selectedPost?.id === post.id 
                               ? 'text-white' 
                               : 'text-gray-900'
