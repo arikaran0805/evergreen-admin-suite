@@ -398,11 +398,11 @@ const CategoryDetail = () => {
       <Header />
 
       {/* 3-Column Layout */}
-      <div className="w-full py-8">
+      <div className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-1">
+          <aside className="lg:col-span-2">
             <Card className="sticky top-4 border border-primary/10 shadow-card overflow-hidden bg-green-50 rounded-none">
               <CardContent className="p-4 pb-0">
                 <div 
@@ -718,7 +718,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-3">
+          <aside className="lg:col-span-2">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
