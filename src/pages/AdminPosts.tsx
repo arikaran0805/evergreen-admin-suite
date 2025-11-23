@@ -41,6 +41,7 @@ const postSchema = z.object({
   category_id: z.string().uuid().optional(),
   status: z.enum(["draft", "published"]),
   lesson_order: z.number().int().min(0).optional(),
+  parent_id: z.string().uuid().optional().or(z.literal("")),
 });
 
 interface Post {
@@ -50,6 +51,8 @@ interface Post {
   status: string;
   published_at: string | null;
   created_at: string;
+  parent_id: string | null;
+  category_id: string | null;
 }
 
 interface Category {
@@ -72,7 +75,9 @@ const AdminPosts = () => {
     category_id: "",
     status: "draft" as "draft" | "published",
     lesson_order: 0,
+    parent_id: "",
   });
+  const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -135,6 +140,9 @@ const AdminPosts = () => {
 
       if (error) throw error;
       setPosts(data || []);
+      
+      // Filter main lessons (posts without parent_id) for the parent selector
+      setMainLessons((data || []).filter(post => !post.parent_id));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -166,6 +174,7 @@ const AdminPosts = () => {
         author_id: session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
         lesson_order: validated.lesson_order || 0,
+        parent_id: validated.parent_id || null,
       };
 
       if (editingPost) {
@@ -258,6 +267,7 @@ const AdminPosts = () => {
             category_id: data.category_id || "",
             status: data.status as "draft" | "published",
             lesson_order: data.lesson_order || 0,
+            parent_id: data.parent_id || "",
           });
           setIsDialogOpen(true);
         }
@@ -274,6 +284,7 @@ const AdminPosts = () => {
       category_id: "",
       status: "draft",
       lesson_order: 0,
+      parent_id: "",
     });
     setEditingPost(null);
   };
@@ -359,6 +370,31 @@ const AdminPosts = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="parent">Parent Lesson (Optional)</Label>
+                <Select 
+                  value={formData.parent_id} 
+                  onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None - This is a main lesson" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None - Main Lesson</SelectItem>
+                    {mainLessons
+                      .filter(lesson => lesson.id !== editingPost?.id && lesson.category_id === formData.category_id)
+                      .map((lesson) => (
+                        <SelectItem key={lesson.id} value={lesson.id}>
+                          {lesson.title}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select a parent lesson to make this a sub-lesson
+                </p>
               </div>
 
               <div>

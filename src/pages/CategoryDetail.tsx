@@ -30,6 +30,8 @@ interface Post {
   featured_image: string | null;
   published_at: string | null;
   content?: string;
+  parent_id: string | null;
+  lesson_order: number | null;
   profiles: {
     full_name: string | null;
   };
@@ -164,6 +166,7 @@ const CategoryDetail = () => {
           featured_image,
           published_at,
           lesson_order,
+          parent_id,
           profiles:author_id (full_name)
         `)
         .eq("category_id", categoryData.id)
@@ -419,27 +422,71 @@ const CategoryDetail = () => {
               <ScrollArea className="h-[calc(100vh-200px)]">
                 <nav>
                   {posts.length > 0 ? (
-                    posts.map((post, index) => (
-                      <div
-                        key={post.id}
-                        onClick={() => handleLessonClick(post)}
-                        className={`cursor-pointer transition-all duration-200 ${
-                          selectedPost?.id === post.id 
-                            ? 'bg-green-600' 
-                            : ''
-                        }`}
-                      >
-                        <div className="px-4 py-2">
-                          <h3 className={`text-base font-normal ${
-                            selectedPost?.id === post.id 
-                              ? 'text-white' 
-                              : 'text-gray-900'
-                          }`}>
-                            {post.title}
-                          </h3>
+                    (() => {
+                      // Group posts by parent
+                      const mainLessons = posts.filter(post => !post.parent_id);
+                      const subLessonsMap = new Map<string, Post[]>();
+                      
+                      posts.forEach(post => {
+                        if (post.parent_id) {
+                          if (!subLessonsMap.has(post.parent_id)) {
+                            subLessonsMap.set(post.parent_id, []);
+                          }
+                          subLessonsMap.get(post.parent_id)!.push(post);
+                        }
+                      });
+
+                      return mainLessons.map((post) => (
+                        <div key={post.id}>
+                          {/* Main Lesson */}
+                          <div
+                            onClick={() => handleLessonClick(post)}
+                            className={`cursor-pointer transition-all duration-200 ${
+                              selectedPost?.id === post.id 
+                                ? 'bg-green-600' 
+                                : ''
+                            }`}
+                          >
+                            <div className="px-4 py-2">
+                              <h3 className={`text-base font-semibold ${
+                                selectedPost?.id === post.id 
+                                  ? 'text-white' 
+                                  : 'text-gray-900'
+                              }`}>
+                                {post.title}
+                              </h3>
+                            </div>
+                          </div>
+                          
+                          {/* Sub-lessons */}
+                          {subLessonsMap.has(post.id) && (
+                            <div className="bg-gray-100">
+                              {subLessonsMap.get(post.id)!.map((subPost) => (
+                                <div
+                                  key={subPost.id}
+                                  onClick={() => handleLessonClick(subPost)}
+                                  className={`cursor-pointer transition-all duration-200 ${
+                                    selectedPost?.id === subPost.id 
+                                      ? 'bg-green-600' 
+                                      : ''
+                                  }`}
+                                >
+                                  <div className="px-8 py-2">
+                                    <h3 className={`text-sm font-normal ${
+                                      selectedPost?.id === subPost.id 
+                                        ? 'text-white' 
+                                        : 'text-gray-700'
+                                    }`}>
+                                      • {subPost.title}
+                                    </h3>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))
+                      ));
+                    })()
                   ) : (
                     <p className="text-sm text-gray-600 p-4">No lessons available yet</p>
                   )}
