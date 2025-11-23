@@ -18,6 +18,8 @@ const Index = () => {
   const [siteDescription, setSiteDescription] = useState("Inspiring stories and ideas for curious minds.");
   const [heroHeadline, setHeroHeadline] = useState("Join Learners Who Think Differently");
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
+  const [heroHighlightText, setHeroHighlightText] = useState("Think Differently");
+  const [heroHighlightColor, setHeroHighlightColor] = useState("#22c55e");
   const [socialLinks, setSocialLinks] = useState({
     twitter: "",
     facebook: "",
@@ -72,7 +74,7 @@ const Index = () => {
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, site_description, logo_url, hero_headline, hero_subheadline, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
+      .select('site_name, site_description, logo_url, hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
       .limit(1)
       .maybeSingle();
     
@@ -82,6 +84,8 @@ const Index = () => {
       setLogoUrl(data.logo_url || "");
       setHeroHeadline(data.hero_headline || "Join Learners Who Think Differently");
       setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
+      setHeroHighlightText(data.hero_highlight_text || "Think Differently");
+      setHeroHighlightColor(data.hero_highlight_color || "#22c55e");
       setSocialLinks({
         twitter: data.twitter_url || "",
         facebook: data.facebook_url || "",
@@ -110,7 +114,16 @@ const Index = () => {
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-              {heroHeadline}
+              {heroHeadline.split(heroHighlightText).map((part, index, array) => (
+                <span key={index}>
+                  {part}
+                  {index < array.length - 1 && (
+                    <span style={{ color: heroHighlightColor }}>
+                      {heroHighlightText}
+                    </span>
+                  )}
+                </span>
+              ))}
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-200">
