@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import SEOHead from "@/components/SEOHead";
 import { Home, ChevronLeft, ChevronRight, BookOpen, Users, Mail, Tag, Play, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
+import { z } from "zod";
+import type { User } from "@supabase/supabase-js";
 
 interface Category {
   id: string;
@@ -33,8 +35,28 @@ interface Post {
   };
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  status: string;
+  profiles: {
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
+const commentSchema = z.object({
+  content: z.string()
+    .trim()
+    .min(1, { message: "Comment cannot be empty" })
+    .max(1000, { message: "Comment must be less than 1000 characters" })
+});
+
 const CategoryDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [recentCourses, setRecentCourses] = useState<any[]>([]);
@@ -46,6 +68,11 @@ const CategoryDetail = () => {
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentContent, setCommentContent] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -57,12 +84,33 @@ const CategoryDetail = () => {
   }, [category]);
 
   useEffect(() => {
+    // Check authentication
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     fetchCategoryAndPosts();
     fetchRecentCourses();
     fetchTags();
     fetchSiteSettings();
     fetchFooterCategories();
   }, [slug]);
+
+  useEffect(() => {
+    if (selectedPost) {
+      fetchComments(selectedPost.id);
+    } else {
+      setComments([]);
+    }
+  }, [selectedPost]);
 
   const fetchSiteSettings = async () => {
     try {
@@ -204,6 +252,95 @@ const CategoryDetail = () => {
 
   const handleLessonClick = (post: Post) => {
     fetchPostContent(post);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const fetchComments = async (postId: string) => {
+    setLoadingComments(true);
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          status,
+          profiles:user_id (full_name, avatar_url)
+        `)
+        .eq("post_id", postId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setComments(data || []);
+    } catch (error: any) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to post a comment.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!selectedPost) return;
+
+    try {
+      // Validate input
+      const validated = commentSchema.parse({ content: commentContent });
+
+      setSubmittingComment(true);
+
+      const { error } = await supabase
+        .from("comments")
+        .insert({
+          content: validated.content,
+          post_id: selectedPost.id,
+          user_id: user.id,
+          status: "pending", // Comments need approval by default
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Comment Submitted",
+        description: "Your comment has been submitted for review.",
+      });
+
+      setCommentContent("");
+      
+      // Refresh comments after a short delay
+      setTimeout(() => {
+        fetchComments(selectedPost.id);
+      }, 500);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to submit comment. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   const currentPostIndex = selectedPost 
@@ -415,55 +552,103 @@ const CategoryDetail = () => {
 
                     {/* Comments Section */}
                     <div className="mt-12 pt-8 border-t border-border">
-                      <h3 className="text-2xl font-bold mb-6">Comments</h3>
+                      <h3 className="text-2xl font-bold mb-6">Comments ({comments.length})</h3>
                       <div className="space-y-6">
                         {/* Comment Form */}
                         <Card className="border border-primary/10">
                           <CardContent className="p-6">
                             <h4 className="font-semibold mb-4">Leave a Comment</h4>
-                            <form className="space-y-4">
-                              <div>
-                                <Input 
-                                  placeholder="Your name" 
-                                  className="border-primary/20"
-                                />
+                            {user ? (
+                              <form onSubmit={handleCommentSubmit} className="space-y-4">
+                                <div>
+                                  <textarea
+                                    placeholder="Share your thoughts..."
+                                    value={commentContent}
+                                    onChange={(e) => setCommentContent(e.target.value)}
+                                    className="w-full min-h-[120px] px-3 py-2 rounded-md border border-primary/20 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    maxLength={1000}
+                                    required
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {commentContent.length}/1000 characters
+                                  </p>
+                                </div>
+                                <Button 
+                                  type="submit" 
+                                  className="bg-primary hover:bg-primary/90"
+                                  disabled={submittingComment || !commentContent.trim()}
+                                >
+                                  {submittingComment ? "Posting..." : "Post Comment"}
+                                </Button>
+                              </form>
+                            ) : (
+                              <div className="text-center py-8">
+                                <p className="text-muted-foreground mb-4">
+                                  You must be logged in to leave a comment.
+                                </p>
+                                <Button 
+                                  onClick={() => navigate("/auth")}
+                                  className="bg-primary hover:bg-primary/90"
+                                >
+                                  Log In to Comment
+                                </Button>
                               </div>
-                              <div>
-                                <textarea
-                                  placeholder="Your comment..."
-                                  className="w-full min-h-[120px] px-3 py-2 rounded-md border border-primary/20 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
-                              </div>
-                              <Button 
-                                type="submit" 
-                                className="bg-primary hover:bg-primary/90"
-                              >
-                                Post Comment
-                              </Button>
-                            </form>
+                            )}
                           </CardContent>
                         </Card>
 
-                        {/* Sample Comments */}
+                        {/* Comments List */}
                         <div className="space-y-4">
-                          <Card className="border border-primary/10">
-                            <CardContent className="p-6">
-                              <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
-                                  J
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="font-semibold">John Doe</span>
-                                    <span className="text-xs text-muted-foreground">2 days ago</span>
+                          {loadingComments ? (
+                            <Card className="border border-primary/10">
+                              <CardContent className="p-6 text-center text-muted-foreground">
+                                Loading comments...
+                              </CardContent>
+                            </Card>
+                          ) : comments.length > 0 ? (
+                            comments.map((comment) => (
+                              <Card key={comment.id} className="border border-primary/10">
+                                <CardContent className="p-6">
+                                  <div className="flex items-start gap-4">
+                                    {comment.profiles?.avatar_url ? (
+                                      <img 
+                                        src={comment.profiles.avatar_url} 
+                                        alt={comment.profiles.full_name || "User"}
+                                        className="flex-shrink-0 w-10 h-10 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                                        {comment.profiles?.full_name?.charAt(0)?.toUpperCase() || "?"}
+                                      </div>
+                                    )}
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="font-semibold">
+                                          {comment.profiles?.full_name || "Anonymous"}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {new Date(comment.created_at).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric'
+                                          })}
+                                        </span>
+                                      </div>
+                                      <p className="text-muted-foreground whitespace-pre-wrap">
+                                        {comment.content}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <p className="text-muted-foreground">
-                                    Great lesson! The explanations were clear and easy to follow. Looking forward to the next one.
-                                  </p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                                </CardContent>
+                              </Card>
+                            ))
+                          ) : (
+                            <Card className="border border-primary/10">
+                              <CardContent className="p-6 text-center text-muted-foreground">
+                                No comments yet. Be the first to share your thoughts!
+                              </CardContent>
+                            </Card>
+                          )}
                         </div>
                       </div>
                     </div>
