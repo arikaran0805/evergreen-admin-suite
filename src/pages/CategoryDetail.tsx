@@ -414,19 +414,19 @@ const CategoryDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <CardContent className="px-4 pb-4 pt-0">
-                <nav className="space-y-1">
+                <nav className="space-y-2">
                   {posts.length > 0 ? (
                     posts.map((post, index) => (
                       <div
                         key={post.id}
                         onClick={() => handleLessonClick(post)}
-                        className={`block group cursor-pointer rounded-lg ${
-                          selectedPost?.id === post.id ? 'bg-primary/10' : ''
+                        className={`group cursor-pointer rounded-lg transition-all duration-300 ${
+                          selectedPost?.id === post.id ? 'bg-primary/10' : 'hover:bg-primary/5'
                         }`}
                       >
-                        <div className="p-2 hover:bg-primary/10 transition-all duration-300">
-                          <div className="flex items-center gap-2">
-                            <div className={`flex-shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 group-hover:scale-110 ${
+                        <div className="p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`flex-shrink-0 w-7 h-7 rounded-full text-xs flex items-center justify-center font-semibold transition-all duration-300 ${
                               selectedPost?.id === post.id 
                                 ? 'bg-primary text-primary-foreground' 
                                 : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
@@ -434,17 +434,17 @@ const CategoryDetail = () => {
                               {index + 1}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className={`text-xs font-medium transition-colors line-clamp-2 ${
+                              <h3 className={`text-xs font-medium transition-colors line-clamp-2 leading-tight ${
                                 selectedPost?.id === post.id 
                                   ? 'text-primary' 
-                                  : 'group-hover:text-primary'
+                                  : 'text-foreground group-hover:text-primary'
                               }`}>
                                 {post.title}
                               </h3>
                             </div>
                           </div>
-                          <div className="flex justify-center mt-2">
-                            <Play className={`h-3 w-3 transition-colors ${
+                          <div className="flex justify-center pt-1">
+                            <Play className={`h-4 w-4 transition-colors ${
                               selectedPost?.id === post.id 
                                 ? 'text-primary' 
                                 : 'text-muted-foreground group-hover:text-primary'
