@@ -39,6 +39,7 @@ const postSchema = z.object({
   featured_image: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   category_id: z.string().uuid().optional(),
   status: z.enum(["draft", "published"]),
+  lesson_order: z.number().int().min(0).optional(),
 });
 
 interface Post {
@@ -69,6 +70,7 @@ const AdminPosts = () => {
     featured_image: "",
     category_id: "",
     status: "draft" as "draft" | "published",
+    lesson_order: 0,
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -162,6 +164,7 @@ const AdminPosts = () => {
         status: validated.status,
         author_id: session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
+        lesson_order: validated.lesson_order || 0,
       };
 
       if (editingPost) {
@@ -253,6 +256,7 @@ const AdminPosts = () => {
             featured_image: data.featured_image || "",
             category_id: data.category_id || "",
             status: data.status as "draft" | "published",
+            lesson_order: data.lesson_order || 0,
           });
           setIsDialogOpen(true);
         }
@@ -268,6 +272,7 @@ const AdminPosts = () => {
       featured_image: "",
       category_id: "",
       status: "draft",
+      lesson_order: 0,
     });
     setEditingPost(null);
   };
@@ -353,6 +358,21 @@ const AdminPosts = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="lesson_order">Lesson Order</Label>
+                <Input
+                  id="lesson_order"
+                  type="number"
+                  min="0"
+                  value={formData.lesson_order}
+                  onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Set the order for this lesson (lower numbers appear first)
+                </p>
               </div>
 
               <div>

@@ -163,11 +163,13 @@ const CategoryDetail = () => {
           slug,
           featured_image,
           published_at,
+          lesson_order,
           profiles:author_id (full_name)
         `)
         .eq("category_id", categoryData.id)
         .eq("status", "published")
-        .order("published_at", { ascending: false });
+        .order("lesson_order", { ascending: true })
+        .order("created_at", { ascending: true });
 
       if (postsError) throw postsError;
       setPosts(postsData || []);

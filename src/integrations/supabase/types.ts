@@ -260,6 +260,7 @@ export type Database = {
           excerpt: string | null
           featured_image: string | null
           id: string
+          lesson_order: number | null
           published_at: string | null
           slug: string
           status: string
@@ -274,6 +275,7 @@ export type Database = {
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          lesson_order?: number | null
           published_at?: string | null
           slug: string
           status?: string
@@ -288,6 +290,7 @@ export type Database = {
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          lesson_order?: number | null
           published_at?: string | null
           slug?: string
           status?: string
