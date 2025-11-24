@@ -20,8 +20,21 @@ interface Category {
 const AdminCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const toggleExpand = (id: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     checkAdminAccess();
@@ -123,15 +136,27 @@ const AdminCategories = () => {
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">/{category.slug}</p>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground break-words">/{category.slug}</p>
                 {category.description && (
-                  <p className="text-sm mt-2">{category.description}</p>
+                  <div>
+                    <p className={`text-sm break-words ${!expandedCards.has(category.id) ? "line-clamp-3" : ""}`}>
+                      {category.description}
+                    </p>
+                    {category.description.length > 150 && (
+                      <button
+                        onClick={() => toggleExpand(category.id)}
+                        className="text-xs text-primary hover:underline mt-1"
+                      >
+                        {expandedCards.has(category.id) ? "Read less" : "Read more"}
+                      </button>
+                    )}
+                  </div>
                 )}
                 {category.level && (
-                  <p className="text-sm mt-2 font-medium">Level: {category.level}</p>
+                  <p className="text-sm font-medium break-words">Level: {category.level}</p>
                 )}
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 pt-3 border-t">
                   <Star className={`h-4 w-4 ${category.featured ? "fill-primary text-primary" : "text-muted-foreground"}`} />
                   <span className="text-sm font-medium">Featured</span>
                   <Switch
