@@ -140,9 +140,10 @@ const AdminCategories = () => {
                 <p className="text-sm text-muted-foreground break-words">/{category.slug}</p>
                 {category.description && (
                   <div>
-                    <p className={`text-sm break-words ${!expandedCards.has(category.id) ? "line-clamp-3" : ""}`}>
-                      {category.description}
-                    </p>
+                    <div 
+                      className={`text-sm break-words prose prose-sm max-w-none ${!expandedCards.has(category.id) ? "line-clamp-3" : ""}`}
+                      dangerouslySetInnerHTML={{ __html: category.description }}
+                    />
                     {category.description.length > 150 && (
                       <button
                         onClick={() => toggleExpand(category.id)}
