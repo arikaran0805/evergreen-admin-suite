@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, FileText, FolderTree, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Webhook, 
-  Settings, BarChart3, Share2, Menu, X, LogOut, Home, Search
+  Settings, BarChart3, Share2, Menu, X, LogOut, Home, Search, Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ const adminMenuItems = [
   { icon: FileText, label: "Posts", path: "/admin/posts" },
   { icon: FolderTree, label: "Pages", path: "/admin/pages" },
   { icon: FolderTree, label: "Categories", path: "/admin/categories" },
+  { icon: Layers, label: "Difficulty Levels", path: "/admin/difficulty-levels" },
   { icon: Tags, label: "Tags", path: "/admin/tags" },
   { icon: Users, label: "Users", path: "/admin/users" },
   { icon: UserCog, label: "Authors/Admins", path: "/admin/authors" },
