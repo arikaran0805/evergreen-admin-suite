@@ -813,33 +813,14 @@ const CategoryDetail = () => {
                     </div>
 
                     {/* Course Overview - Default View */}
-                    <div className="py-4">
-                      {category.description && (
-                        <p className="text-lg text-muted-foreground mb-6">
-                          {category.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <Separator className="my-8" />
-
-                    <div className="prose prose-lg max-w-none text-foreground mb-8">
-                      <h3 className="text-2xl font-bold mt-8 mb-4">What You'll Learn</h3>
-                      <ul className="space-y-2 text-foreground">
-                        <li>Core concepts and fundamental principles</li>
-                        <li>Hands-on practical applications</li>
-                        <li>Real-world examples and case studies</li>
-                        <li>Best practices and industry standards</li>
-                        <li>Advanced techniques and optimization strategies</li>
-                      </ul>
-
-                      <h3 className="text-2xl font-bold mt-8 mb-4">Course Structure</h3>
-                      <p className="text-lg leading-relaxed mb-4">
-                        Our {posts.length} lessons are carefully structured to build upon each other, 
-                        ensuring a smooth learning progression. Each lesson includes detailed explanations, 
-                        visual aids, and practical exercises to reinforce your understanding.
-                      </p>
-                    </div>
+                    {category.description && (
+                      <div className="py-4 mb-8">
+                        <div 
+                          className="prose prose-lg max-w-none text-foreground leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: category.description }}
+                        />
+                      </div>
+                    )}
 
                     {posts.length > 0 && (
                       <div className="mt-8 p-6 bg-primary/5 rounded-lg border border-primary/20">
@@ -913,9 +894,10 @@ const CategoryDetail = () => {
                             {course.name}
                           </h4>
                           {course.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {course.description}
-                            </p>
+                            <div 
+                              className="text-xs text-muted-foreground line-clamp-2 prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: course.description }}
+                            />
                           )}
                         </div>
                       </Link>
