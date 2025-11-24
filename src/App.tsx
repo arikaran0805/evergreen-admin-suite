@@ -21,6 +21,7 @@ import AdminPostEditor from "./pages/AdminPostEditor";
 import AdminPages from "./pages/AdminPages";
 import AdminCategories from "./pages/AdminCategories";
 import AdminCategoryEditor from "./pages/AdminCategoryEditor";
+import AdminDifficultyLevels from "./pages/AdminDifficultyLevels";
 import AdminComments from "./pages/AdminComments";
 import AdminUsers from "./pages/AdminUsers";
 import AdminPlaceholder from "./pages/AdminPlaceholder";
@@ -82,6 +83,7 @@ const AppContent = () => {
         <Route path="/admin/categories" element={<AdminCategories />} />
         <Route path="/admin/categories/new" element={<AdminCategoryEditor />} />
         <Route path="/admin/categories/:id" element={<AdminCategoryEditor />} />
+        <Route path="/admin/difficulty-levels" element={<AdminDifficultyLevels />} />
         <Route path="/admin/comments" element={<AdminComments />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/tags" element={<AdminPlaceholder title="Tags Management" description="Manage blog tags, create bulk operations, and enable auto-suggestions." />} />

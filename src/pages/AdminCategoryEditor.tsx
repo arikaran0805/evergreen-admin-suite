@@ -17,6 +17,7 @@ const AdminCategoryEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [difficultyLevels, setDifficultyLevels] = useState<{ id: string; name: string }[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -27,7 +28,22 @@ const AdminCategoryEditor = () => {
 
   useEffect(() => {
     checkAdminAccess();
+    fetchDifficultyLevels();
   }, []);
+
+  const fetchDifficultyLevels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("difficulty_levels")
+        .select("id, name")
+        .order("display_order");
+
+      if (error) throw error;
+      setDifficultyLevels(data || []);
+    } catch (error: any) {
+      toast({ title: "Error fetching difficulty levels", description: error.message, variant: "destructive" });
+    }
+  };
 
   const checkAdminAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -205,11 +221,11 @@ const AdminCategoryEditor = () => {
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Beginner">Beginner</SelectItem>
-                      <SelectItem value="Intermediate">Intermediate</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
-                      <SelectItem value="Beginner - Advanced">Beginner - Advanced</SelectItem>
-                      <SelectItem value="Intermediate - Advanced">Intermediate - Advanced</SelectItem>
+                      {difficultyLevels.map((level) => (
+                        <SelectItem key={level.id} value={level.name}>
+                          {level.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
