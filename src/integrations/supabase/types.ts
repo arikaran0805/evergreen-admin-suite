@@ -67,6 +67,7 @@ export type Database = {
           description: string | null
           featured: boolean | null
           id: string
+          level: string | null
           name: string
           slug: string
         }
@@ -75,6 +76,7 @@ export type Database = {
           description?: string | null
           featured?: boolean | null
           id?: string
+          level?: string | null
           name: string
           slug: string
         }
@@ -83,6 +85,7 @@ export type Database = {
           description?: string | null
           featured?: boolean | null
           id?: string
+          level?: string | null
           name?: string
           slug?: string
         }

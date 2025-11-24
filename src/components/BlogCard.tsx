@@ -48,11 +48,11 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, views =
         {/* Shimmer Effect */}
         <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
         
-        {/* Level Badge on Image */}
-        {level && (
-          <div className="absolute top-3 right-3">
-            <Badge className={`${levelColors[level]} text-white border-0 shadow-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300`}>
-              {level}
+        {/* Course Name Badge in Top Left - Only for Courses */}
+        {linkType === "category" && (
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-background/90 text-foreground border-0 shadow-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300 font-semibold">
+              {title}
             </Badge>
           </div>
         )}
@@ -84,6 +84,15 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, views =
         <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground/80 transition-colors duration-300 flex-1">
           {excerpt}
         </p>
+
+        {/* Level Badge Below Description - Only for Courses */}
+        {level && linkType === "category" && (
+          <div className="flex justify-start">
+            <Badge className={`${levelColors[level]} text-white border-0 shadow-md`}>
+              {level}
+            </Badge>
+          </div>
+        )}
 
         {/* Get Started Button */}
         <Button 
