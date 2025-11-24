@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -179,12 +179,9 @@ const AdminCategoryEditor = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Enter category description"
+                  <RichTextEditor
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
+                    onChange={(value) => setFormData({ ...formData, description: value })}
                   />
                 </div>
               </CardContent>
@@ -211,6 +208,8 @@ const AdminCategoryEditor = () => {
                       <SelectItem value="Beginner">Beginner</SelectItem>
                       <SelectItem value="Intermediate">Intermediate</SelectItem>
                       <SelectItem value="Advanced">Advanced</SelectItem>
+                      <SelectItem value="Beginner - Advanced">Beginner - Advanced</SelectItem>
+                      <SelectItem value="Intermediate - Advanced">Intermediate - Advanced</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
