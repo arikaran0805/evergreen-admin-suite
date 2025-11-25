@@ -13,7 +13,7 @@ import { trackPostView } from "@/lib/analytics";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
-import { Calendar, User, MessageSquare, ArrowLeft, BookOpen, Mail, Tag } from "lucide-react";
+import { Calendar, MessageSquare, ArrowLeft, BookOpen, Mail, Tag, Heart, Share2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Post {
@@ -23,6 +23,7 @@ interface Post {
   excerpt: string | null;
   featured_image: string | null;
   published_at: string | null;
+  updated_at: string;
   author_id: string;
   category_id: string | null;
   profiles: {
@@ -298,25 +299,32 @@ const BlogDetail = () => {
           </Link>
 
           <Card className="p-8 shadow-elegant border border-primary/10 bg-card/95 backdrop-blur-sm">
-            {post.categories && (
-              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-                {post.categories.name}
-              </Badge>
-            )}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                {post.categories && (
+                  <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+                    {post.categories.name}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" className="hover:text-primary">
+                  <Heart className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="hover:text-primary">
+                  <Share2 className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="hover:text-primary">
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
             
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">{post.title}</h1>
 
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>{post.profiles?.full_name || "Anonymous"}</span>
-              </div>
-              {post.published_at && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>{format(new Date(post.published_at), "MMM d, yyyy")}</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+              <Calendar className="h-4 w-4" />
+              <span>Last updated: {format(new Date(post.updated_at), "MMM d, yyyy")}</span>
             </div>
 
             {post.excerpt && (
@@ -344,20 +352,15 @@ const BlogDetail = () => {
               
               <nav className="space-y-2">
                 {relatedPosts.length > 0 ? (
-                  relatedPosts.map((topic, index) => (
+                  relatedPosts.map((topic) => (
                     <Link 
                       key={topic.id}
                       to={`/blog/${topic.slug}`}
                       className="block p-3 rounded-lg hover:bg-primary/5 transition-colors group"
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm group-hover:text-primary transition-colors line-clamp-2">
-                          {topic.title}
-                        </span>
-                      </div>
+                      <span className="text-sm group-hover:text-primary transition-colors line-clamp-2">
+                        {topic.title}
+                      </span>
                     </Link>
                   ))
                 ) : (
