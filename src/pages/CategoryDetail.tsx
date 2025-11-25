@@ -604,8 +604,8 @@ const CategoryDetail = () => {
                 ) : selectedPost ? (
                   <>
                     {/* Lesson Header */}
-                    <div className="mb-8">
-                      <div className="flex items-start justify-between mb-4">
+                    <div className="mb-4">
+                      <div className="flex items-start justify-between mb-2">
                         <h1 className="text-4xl font-bold flex-1">{selectedPost.title}</h1>
                         <div className="flex items-center gap-3 ml-4">
                           <Button variant="ghost" size="icon" className="hover:text-primary">
@@ -620,9 +620,9 @@ const CategoryDetail = () => {
                         </div>
                       </div>
                       {selectedPost.excerpt && (
-                        <p className="text-xl text-muted-foreground mb-4">{selectedPost.excerpt}</p>
+                        <p className="text-xl text-muted-foreground mb-2">{selectedPost.excerpt}</p>
                       )}
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground pb-4 border-b">
                         <Calendar className="h-4 w-4" />
                         <span>Last updated: {new Date(selectedPost.updated_at).toLocaleDateString('en-US', {
                           year: 'numeric',
