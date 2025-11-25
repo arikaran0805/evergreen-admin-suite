@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, Heart, Share2, MessageSquare, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
@@ -30,6 +30,7 @@ interface Post {
   slug: string;
   featured_image: string | null;
   published_at: string | null;
+  updated_at: string;
   content?: string;
   parent_id: string | null;
   lesson_order: number | null;
@@ -167,6 +168,7 @@ const CategoryDetail = () => {
           slug,
           featured_image,
           published_at,
+          updated_at,
           lesson_order,
           parent_id,
           profiles:author_id (full_name)
@@ -603,27 +605,30 @@ const CategoryDetail = () => {
                   <>
                     {/* Lesson Header */}
                     <div className="mb-8">
-                      <Badge className="mb-4 bg-primary/10 text-primary">
-                        Lesson {currentOrderedIndex + 1} of {orderedLessons.length}
-                      </Badge>
-                      <h1 className="text-4xl font-bold mb-4">{selectedPost.title}</h1>
-                      {selectedPost.excerpt && (
-                        <p className="text-xl text-muted-foreground">{selectedPost.excerpt}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>By {selectedPost.profiles?.full_name || 'Anonymous'}</span>
+                      <div className="flex items-start justify-between mb-4">
+                        <h1 className="text-4xl font-bold flex-1">{selectedPost.title}</h1>
+                        <div className="flex items-center gap-3 ml-4">
+                          <Button variant="ghost" size="icon" className="hover:text-primary">
+                            <Heart className="h-5 w-5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="hover:text-primary">
+                            <Share2 className="h-5 w-5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="hover:text-primary">
+                            <MessageSquare className="h-5 w-5" />
+                          </Button>
                         </div>
-                        {selectedPost.published_at && (
-                          <span>
-                            {new Date(selectedPost.published_at).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        )}
+                      </div>
+                      {selectedPost.excerpt && (
+                        <p className="text-xl text-muted-foreground mb-4">{selectedPost.excerpt}</p>
+                      )}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>Last updated: {new Date(selectedPost.updated_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}</span>
                       </div>
                     </div>
 
