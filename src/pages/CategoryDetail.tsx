@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, Heart, Share2, MessageSquare, Calendar } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, ThumbsUp, Share2, MessageSquare, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
@@ -616,13 +616,13 @@ const CategoryDetail = () => {
                           })}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
-                            <Heart className="h-5 w-5" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <ThumbsUp className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Share2 className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MessageSquare className="h-5 w-5" />
                           </Button>
                         </div>
