@@ -596,7 +596,7 @@ const CategoryDetail = () => {
           {/* MAIN CONTENT - Lesson Content */}
           <main className="lg:col-span-8">
             <Card className="border border-primary/10 shadow-card rounded-none">
-              <CardContent className="p-12 leading-relaxed">
+              <CardContent className="pt-8 px-12 pb-12 leading-relaxed">
                 {loadingPost ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">Loading lesson...</p>
