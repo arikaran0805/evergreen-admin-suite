@@ -638,8 +638,6 @@ const CategoryDetail = () => {
                       />
                     )}
 
-                    <Separator className="my-8" />
-
                     {/* Lesson Content */}
                     <ContentWithCodeCopy 
                       content={selectedPost.content || ''}
