@@ -604,31 +604,28 @@ const CategoryDetail = () => {
                 ) : selectedPost ? (
                   <>
                     {/* Lesson Header */}
-                    <div className="mb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h1 className="text-4xl font-bold flex-1">{selectedPost.title}</h1>
-                        <div className="flex items-center gap-3 ml-4">
-                          <Button variant="ghost" size="icon" className="hover:text-primary">
+                    <div className="mb-4 pb-4 border-b">
+                      <h1 className="text-4xl font-bold mb-2">{selectedPost.title}</h1>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>Last updated: {new Date(selectedPost.updated_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
                             <Heart className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="hover:text-primary">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
                             <Share2 className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="hover:text-primary">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
                             <MessageSquare className="h-5 w-5" />
                           </Button>
                         </div>
-                      </div>
-                      {selectedPost.excerpt && (
-                        <p className="text-xl text-muted-foreground mb-2">{selectedPost.excerpt}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground pb-4 border-b">
-                        <Calendar className="h-4 w-4" />
-                        <span>Last updated: {new Date(selectedPost.updated_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}</span>
                       </div>
                     </div>
 
