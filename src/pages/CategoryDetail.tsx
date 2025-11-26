@@ -604,8 +604,8 @@ const CategoryDetail = () => {
                 ) : selectedPost ? (
                   <>
                     {/* Lesson Header */}
-                    <div className="mb-4 pb-4 border-b">
-                      <h1 className="text-4xl font-bold mb-2">{selectedPost.title}</h1>
+                    <div className="mb-4 pb-2 border-b">
+                      <h1 className="text-4xl font-bold mb-1">{selectedPost.title}</h1>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4" />
