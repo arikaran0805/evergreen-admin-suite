@@ -13,6 +13,7 @@ import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, ThumbsUp, Share2, MessageSquare, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ShareDialog from "@/components/ShareDialog";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
@@ -82,6 +83,7 @@ const CategoryDetail = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [likingPost, setLikingPost] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -686,7 +688,12 @@ const CategoryDetail = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setShareDialogOpen(true)}
+                          >
                             <Share2 className="h-5 w-5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -1280,6 +1287,16 @@ const CategoryDetail = () => {
           opacity: 0.8;
         }
       `}</style>
+
+      {/* Share Dialog */}
+      {selectedPost && (
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          title={selectedPost.title}
+          url={window.location.href}
+        />
+      )}
     </div>
   );
 };
