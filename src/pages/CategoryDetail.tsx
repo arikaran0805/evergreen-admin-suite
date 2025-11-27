@@ -299,6 +299,7 @@ const CategoryDetail = () => {
 
       if (error) throw error;
       setSelectedPost(data);
+      await fetchLikeData(post.id);
     } catch (error: any) {
       toast({
         title: "Error",
