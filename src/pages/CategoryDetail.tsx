@@ -12,6 +12,7 @@ import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, ThumbsUp, Share2, MessageSquare, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
@@ -78,6 +79,9 @@ const CategoryDetail = () => {
   const [commentContent, setCommentContent] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const [likeCount, setLikeCount] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [likingPost, setLikingPost] = useState(false);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -218,6 +222,53 @@ const CategoryDetail = () => {
       setAllTags(data?.map(c => c.name) || []);
     } catch (error) {
       console.error("Error fetching tags:", error);
+    }
+  };
+
+  const fetchLikeData = async (postId: string) => {
+    try {
+      const { count } = await supabase
+        .from("post_likes")
+        .select("*", { count: "exact", head: true })
+        .eq("post_id", postId);
+      setLikeCount(count || 0);
+
+      if (user) {
+        const { data } = await supabase
+          .from("post_likes")
+          .select("id")
+          .eq("post_id", postId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setHasLiked(!!data);
+      }
+    } catch (error) {
+      console.error("Error fetching like data:", error);
+    }
+  };
+
+  const handleLikeToggle = async () => {
+    if (!user) {
+      toast({ title: "Authentication required", description: "Please sign in to like this lesson.", variant: "destructive" });
+      return;
+    }
+    if (!selectedPost || likingPost) return;
+
+    setLikingPost(true);
+    try {
+      if (hasLiked) {
+        await supabase.from("post_likes").delete().eq("post_id", selectedPost.id).eq("user_id", user.id);
+        setHasLiked(false);
+        setLikeCount((prev) => Math.max(0, prev - 1));
+      } else {
+        await supabase.from("post_likes").insert({ post_id: selectedPost.id, user_id: user.id });
+        setHasLiked(true);
+        setLikeCount((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    } finally {
+      setLikingPost(false);
     }
   };
 
@@ -616,9 +667,24 @@ const CategoryDetail = () => {
                           })}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <ThumbsUp className="h-5 w-5" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8"
+                                  onClick={handleLikeToggle}
+                                  disabled={likingPost}
+                                >
+                                  <ThumbsUp className={`h-5 w-5 ${hasLiked ? 'fill-current' : ''}`} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Share2 className="h-5 w-5" />
                           </Button>
