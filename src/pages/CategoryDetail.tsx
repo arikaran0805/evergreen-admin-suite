@@ -698,19 +698,26 @@ const CategoryDetail = () => {
                           >
                             <Share2 className="h-5 w-5" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 relative"
-                            onClick={() => setCommentDialogOpen(true)}
-                          >
-                            <MessageSquare className="h-5 w-5" />
-                            {comments.length > 0 && (
-                              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                                {comments.length}
-                              </span>
-                            )}
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 relative"
+                                onClick={() => setCommentDialogOpen(true)}
+                              >
+                                <MessageSquare className="h-5 w-5" />
+                                {comments.length > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                    {comments.length}
+                                  </span>
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
                     </div>
