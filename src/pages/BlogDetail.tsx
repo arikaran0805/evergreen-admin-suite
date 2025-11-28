@@ -15,6 +15,7 @@ import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import { Calendar, MessageSquare, ArrowLeft, BookOpen, Mail, Tag, Heart, Share2 } from "lucide-react";
 import { format } from "date-fns";
+import CommentDialog from "@/components/CommentDialog";
 
 interface Post {
   id: string;
@@ -65,6 +66,7 @@ const BlogDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -314,8 +316,18 @@ const BlogDetail = () => {
                 <Button variant="ghost" size="icon" className="hover:text-primary">
                   <Share2 className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="hover:text-primary">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:text-primary relative"
+                  onClick={() => setCommentDialogOpen(true)}
+                >
                   <MessageSquare className="h-5 w-5" />
+                  {comments.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {comments.length}
+                    </span>
+                  )}
                 </Button>
               </div>
             </div>
@@ -377,79 +389,6 @@ const BlogDetail = () => {
                 content={post.content}
                 className="prose prose-lg max-w-none text-foreground"
               />
-            </Card>
-
-            <Separator className="my-8" />
-
-            {/* Comments Section */}
-            <Card className="p-8 border border-primary/10 shadow-card">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <MessageSquare className="h-6 w-6 text-primary" />
-                Comments ({comments.length})
-              </h2>
-
-              {/* Comment Form */}
-              {user ? (
-                <div className="mb-8">
-                  <form onSubmit={handleSubmitComment} className="space-y-4">
-                    <Textarea
-                      placeholder="Share your thoughts..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      rows={4}
-                      required
-                      className="border-primary/20 focus:border-primary"
-                    />
-                    <Button 
-                      type="submit" 
-                      disabled={submitting}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {submitting ? "Submitting..." : "Post Comment"}
-                    </Button>
-                  </form>
-                </div>
-              ) : (
-                <div className="mb-8 text-center p-6 bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground mb-4">Please login to leave a comment</p>
-                  <Link to="/auth">
-                    <Button className="bg-primary hover:bg-primary/90">Login</Button>
-                  </Link>
-                </div>
-              )}
-
-              {/* Comments List */}
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="p-4 bg-muted/30 rounded-lg">
-                    <div className="flex gap-4">
-                      <Avatar>
-                        <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {comment.profiles?.full_name?.charAt(0) || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-semibold">
-                            {comment.profiles?.full_name || "Anonymous"}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {format(new Date(comment.created_at), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                        <p className="text-foreground">{comment.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {comments.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    No comments yet. Be the first to comment!
-                  </p>
-                )}
-              </div>
             </Card>
           </main>
 
@@ -547,6 +486,18 @@ const BlogDetail = () => {
           </aside>
         </div>
       </div>
+
+      {/* Comment Dialog */}
+      <CommentDialog
+        open={commentDialogOpen}
+        onOpenChange={setCommentDialogOpen}
+        comments={comments}
+        user={user}
+        newComment={newComment}
+        setNewComment={setNewComment}
+        onSubmitComment={handleSubmitComment}
+        submitting={submitting}
+      />
 
       <style>{`
         .prose {
