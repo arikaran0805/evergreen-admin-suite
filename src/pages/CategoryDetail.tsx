@@ -14,6 +14,7 @@ import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Ta
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ShareDialog from "@/components/ShareDialog";
+import CommentDialog from "@/components/CommentDialog";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
@@ -84,6 +85,7 @@ const CategoryDetail = () => {
   const [hasLiked, setHasLiked] = useState(false);
   const [likingPost, setLikingPost] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Calculate learners count
@@ -696,8 +698,18 @@ const CategoryDetail = () => {
                           >
                             <Share2 className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 relative"
+                            onClick={() => setCommentDialogOpen(true)}
+                          >
                             <MessageSquare className="h-5 w-5" />
+                            {comments.length > 0 && (
+                              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                {comments.length}
+                              </span>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -717,109 +729,6 @@ const CategoryDetail = () => {
                       content={selectedPost.content || ''}
                       className="prose prose-lg max-w-none leading-relaxed"
                     />
-
-                    {/* Comments Section */}
-                    <div className="mt-12 pt-8 border-t border-border">
-                      <h3 className="text-2xl font-bold mb-6">Comments ({comments.length})</h3>
-                      <div className="space-y-6">
-                        {/* Comment Form */}
-                        <Card className="border border-primary/10">
-                          <CardContent className="p-6">
-                            <h4 className="font-semibold mb-4">Leave a Comment</h4>
-                            {user ? (
-                              <form onSubmit={handleCommentSubmit} className="space-y-4">
-                                <div>
-                                  <textarea
-                                    placeholder="Share your thoughts..."
-                                    value={commentContent}
-                                    onChange={(e) => setCommentContent(e.target.value)}
-                                    className="w-full min-h-[120px] px-3 py-2 rounded-md border border-primary/20 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                    maxLength={1000}
-                                    required
-                                  />
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {commentContent.length}/1000 characters
-                                  </p>
-                                </div>
-                                <Button 
-                                  type="submit" 
-                                  className="bg-primary hover:bg-primary/90"
-                                  disabled={submittingComment || !commentContent.trim()}
-                                >
-                                  {submittingComment ? "Posting..." : "Post Comment"}
-                                </Button>
-                              </form>
-                            ) : (
-                              <div className="text-center py-8">
-                                <p className="text-muted-foreground mb-4">
-                                  You must be logged in to leave a comment.
-                                </p>
-                                <Button 
-                                  onClick={() => navigate("/auth")}
-                                  className="bg-primary hover:bg-primary/90"
-                                >
-                                  Log In to Comment
-                                </Button>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-
-                        {/* Comments List */}
-                        <div className="space-y-4">
-                          {loadingComments ? (
-                            <Card className="border border-primary/10">
-                              <CardContent className="p-6 text-center text-muted-foreground">
-                                Loading comments...
-                              </CardContent>
-                            </Card>
-                          ) : comments.length > 0 ? (
-                            comments.map((comment) => (
-                              <Card key={comment.id} className="border border-primary/10">
-                                <CardContent className="p-6">
-                                  <div className="flex items-start gap-4">
-                                    {comment.profiles?.avatar_url ? (
-                                      <img 
-                                        src={comment.profiles.avatar_url} 
-                                        alt={comment.profiles.full_name || "User"}
-                                        className="flex-shrink-0 w-10 h-10 rounded-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
-                                        {comment.profiles?.full_name?.charAt(0)?.toUpperCase() || "?"}
-                                      </div>
-                                    )}
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="font-semibold">
-                                          {comment.profiles?.full_name || "Anonymous"}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {new Date(comment.created_at).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric'
-                                          })}
-                                        </span>
-                                      </div>
-                                      <p className="text-muted-foreground whitespace-pre-wrap">
-                                        {comment.content}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))
-                          ) : (
-                            <Card className="border border-primary/10">
-                              <CardContent className="p-6 text-center text-muted-foreground">
-                                No comments yet. Be the first to share your thoughts!
-                              </CardContent>
-                            </Card>
-                          )}
-                        </div>
-                      </div>
-                    </div>
 
                     {/* Advertisement Placeholder */}
                     <Card className="mt-8 border-2 border-dashed border-primary/20 bg-muted/30">
@@ -1295,6 +1204,20 @@ const CategoryDetail = () => {
           onOpenChange={setShareDialogOpen}
           title={selectedPost.title}
           url={window.location.href}
+        />
+      )}
+
+      {/* Comment Dialog */}
+      {selectedPost && (
+        <CommentDialog
+          open={commentDialogOpen}
+          onOpenChange={setCommentDialogOpen}
+          comments={comments}
+          user={user}
+          newComment={commentContent}
+          setNewComment={setCommentContent}
+          onSubmitComment={handleCommentSubmit}
+          submitting={submittingComment}
         />
       )}
     </div>
