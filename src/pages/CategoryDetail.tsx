@@ -678,11 +678,11 @@ const CategoryDetail = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  className="h-8 w-8"
+                                  className="h-8 w-8 hover:bg-transparent"
                                   onClick={handleLikeToggle}
                                   disabled={likingPost}
                                 >
-                                  <ThumbsUp className={`h-5 w-5 ${hasLiked ? 'fill-current' : ''}`} />
+                                  <ThumbsUp className={`h-5 w-5 text-foreground ${hasLiked ? 'fill-current' : ''}`} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -693,20 +693,20 @@ const CategoryDetail = () => {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8"
+                            className="h-8 w-8 hover:bg-transparent"
                             onClick={() => setShareDialogOpen(true)}
                           >
-                            <Share2 className="h-5 w-5" />
+                            <Share2 className="h-5 w-5 text-foreground" />
                           </Button>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8"
+                                className="h-8 w-8 hover:bg-transparent"
                                 onClick={() => setCommentDialogOpen(true)}
                               >
-                                <MessageSquare className="h-5 w-5" />
+                                <MessageSquare className="h-5 w-5 text-foreground" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
