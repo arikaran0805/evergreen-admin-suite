@@ -678,7 +678,7 @@ const CategoryDetail = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  className="h-8 w-8"
+                                  className="h-8 w-8 hover:bg-transparent"
                                   onClick={handleLikeToggle}
                                   disabled={likingPost}
                                 >
@@ -693,7 +693,7 @@ const CategoryDetail = () => {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8"
+                            className="h-8 w-8 hover:bg-transparent"
                             onClick={() => setShareDialogOpen(true)}
                           >
                             <Share2 className="h-5 w-5" />
@@ -703,7 +703,7 @@ const CategoryDetail = () => {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 relative"
+                                className="h-8 w-8 relative hover:bg-transparent"
                                 onClick={() => setCommentDialogOpen(true)}
                               >
                                 <MessageSquare className="h-5 w-5" />
