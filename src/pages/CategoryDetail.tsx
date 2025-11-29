@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, ThumbsUp, Share2, MessageSquare, Calendar } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, ThumbsUp, Share2, MessageSquare, Calendar, MoreHorizontal } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ShareDialog from "@/components/ShareDialog";
@@ -671,25 +671,7 @@ const CategoryDetail = () => {
                             day: 'numeric'
                           })}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 hover:bg-transparent"
-                                  onClick={handleLikeToggle}
-                                  disabled={likingPost}
-                                >
-                                  <ThumbsUp className={`h-5 w-5 text-foreground ${hasLiked ? 'fill-current' : ''}`} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                        <div className="flex items-center gap-1">
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -713,6 +695,31 @@ const CategoryDetail = () => {
                               <p>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</p>
                             </TooltipContent>
                           </Tooltip>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 hover:bg-transparent"
+                                  onClick={handleLikeToggle}
+                                  disabled={likingPost}
+                                >
+                                  <ThumbsUp className={`h-5 w-5 text-foreground ${hasLiked ? 'fill-current' : ''}`} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 hover:bg-transparent"
+                          >
+                            <MoreHorizontal className="h-5 w-5 text-foreground" />
+                          </Button>
                         </div>
                       </div>
                     </div>
