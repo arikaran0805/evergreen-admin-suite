@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, ThumbsUp, ThumbsDown, Reply } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -51,7 +51,7 @@ const CommentDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
-            Comments ({comments.length})
+            Comments
           </DialogTitle>
           <DialogDescription>
             Share your thoughts and join the discussion
@@ -113,7 +113,35 @@ const CommentDialog = ({
                         {format(new Date(comment.created_at), "MMM d, yyyy")}
                       </span>
                     </div>
-                    <p className="text-foreground">{comment.content}</p>
+                    <p className="text-foreground mb-3">{comment.content}</p>
+                    
+                    {/* Comment Actions */}
+                    <div className="flex items-center gap-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-muted-foreground hover:text-primary"
+                      >
+                        <ThumbsUp className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Like</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-muted-foreground hover:text-primary"
+                      >
+                        <ThumbsDown className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Dislike</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-muted-foreground hover:text-primary"
+                      >
+                        <Reply className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Reply</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
