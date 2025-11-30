@@ -851,31 +851,34 @@ const CategoryDetail = () => {
                 )}
               </CardContent>
             </Card>
-          </main>
 
-          {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:w-[300px] flex-shrink-0">
-            <div className="sticky top-4 space-y-0">
-                  
-              {/* Search */}
-              <Card className="border border-primary/10 shadow-card rounded-none">
+            {/* Tags Section - Below Main Content */}
+            {allTags.length > 0 && (
+              <Card className="border border-primary/10 shadow-card rounded-none mt-8">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Search className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-lg">Search</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Tag className="h-5 w-5 text-primary" />
+                    <h3 className="font-bold text-lg">Tags</h3>
                   </div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Search lessons..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 border-primary/20 rounded-none"
-                    />
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map((tag) => (
+                      <Badge 
+                        key={tag} 
+                        variant="secondary"
+                        className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </main>
+
+          {/* RIGHT SIDEBAR - Recent Courses & AdSense */}
+          <aside className="lg:w-[300px] flex-shrink-0">
+            <div className="sticky top-4 space-y-0">
 
               {/* Advertisement Banner 1 */}
               <Card className="border border-primary/10 shadow-card rounded-none">
@@ -917,125 +920,11 @@ const CategoryDetail = () => {
                 </CardContent>
               </Card>
 
-              {/* Tags */}
-              <Card className="border border-primary/10 shadow-card rounded-none">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Tag className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-lg">Tags</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => (
-                      <Badge 
-                        key={tag} 
-                        variant="secondary"
-                        className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Google AdSense Placeholder */}
               <Card className="border border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <div className="bg-muted/30 h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
                     <p className="text-sm text-muted-foreground">Ad Space</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Newsletter Subscription */}
-              <Card className="border border-primary/10 shadow-card bg-gradient-to-br from-primary/5 to-background rounded-none">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Mail className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-lg">Newsletter</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Get the latest courses and updates delivered to your inbox.
-                  </p>
-                  <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                    <Input 
-                      type="email"
-                      placeholder="Your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="border-primary/20 rounded-none"
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-primary hover:bg-primary/90 transition-all duration-300 rounded-none"
-                    >
-                      Subscribe
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* Follow Us - Social Links */}
-              <Card className="border border-primary/10 shadow-card rounded-none">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-4">Follow Us</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {siteSettings?.facebook_url && (
-                      <a
-                        href={siteSettings.facebook_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleSocialClick('facebook')}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                      >
-                        <Facebook className="h-5 w-5" />
-                      </a>
-                    )}
-                    {siteSettings?.twitter_url && (
-                      <a
-                        href={siteSettings.twitter_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleSocialClick('twitter')}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                      >
-                        <Twitter className="h-5 w-5" />
-                      </a>
-                    )}
-                    {siteSettings?.linkedin_url && (
-                      <a
-                        href={siteSettings.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleSocialClick('linkedin')}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                      >
-                        <Linkedin className="h-5 w-5" />
-                      </a>
-                    )}
-                    {siteSettings?.youtube_url && (
-                      <a
-                        href={siteSettings.youtube_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleSocialClick('youtube')}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                      >
-                        <Youtube className="h-5 w-5" />
-                      </a>
-                    )}
-                    {siteSettings?.instagram_url && (
-                      <a
-                        href={siteSettings.instagram_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleSocialClick('instagram')}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
-                      >
-                        <Instagram className="h-5 w-5" />
-                      </a>
-                    )}
                   </div>
                 </CardContent>
               </Card>
