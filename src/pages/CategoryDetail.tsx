@@ -652,7 +652,7 @@ const CategoryDetail = () => {
 
           {/* MAIN CONTENT - Lesson Content */}
           <main className="flex-1">
-            <Card className="border border-primary/10 shadow-card rounded-none">
+            <Card className="border-l border-t border-b border-primary/10 shadow-card rounded-none">
               <CardContent className="pt-8 px-12 pb-12 leading-relaxed">
                 {loadingPost ? (
                   <div className="text-center py-12">
@@ -881,7 +881,7 @@ const CategoryDetail = () => {
             <div className="sticky top-4 space-y-0">
 
               {/* Advertisement Banner 1 */}
-              <Card className="border border-primary/10 shadow-card rounded-none">
+              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <div className="bg-muted/30 h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
                     <div className="text-center">
@@ -893,7 +893,7 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Recent Courses */}
-              <Card className="border border-primary/10 shadow-card rounded-none">
+              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
                   <div className="space-y-4">
@@ -921,7 +921,7 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Google AdSense Placeholder */}
-              <Card className="border border-primary/10 shadow-card rounded-none">
+              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <div className="bg-muted/30 h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
                     <p className="text-sm text-muted-foreground">Ad Space</p>
@@ -930,7 +930,7 @@ const CategoryDetail = () => {
               </Card>
 
               {/* Advertisement Banner 2 */}
-              <Card className="border border-primary/10 shadow-card">
+              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
                 <CardContent className="p-6">
                   <div className="bg-muted/30 rounded-lg h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
                     <div className="text-center">
