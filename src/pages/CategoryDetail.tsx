@@ -530,10 +530,10 @@ const CategoryDetail = () => {
 
       {/* 3-Column Layout */}
       <div className="w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
-          <aside className="lg:col-span-2 bg-green-50 border-r border-green-100">
+          <aside className="lg:w-64 bg-green-50 border-r border-green-100 flex-shrink-0">
             <div className="sticky top-4">
               <div className="px-6 py-4 border-b border-green-100 bg-green-100/50">
                 <div 
@@ -651,7 +651,7 @@ const CategoryDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="lg:col-span-8">
+          <main className="flex-1">
             <Card className="border border-primary/10 shadow-card rounded-none">
               <CardContent className="pt-8 px-12 pb-12 leading-relaxed">
                 {loadingPost ? (
@@ -854,7 +854,7 @@ const CategoryDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter, AdSense */}
-          <aside className="lg:col-span-2">
+          <aside className="lg:w-[300px] flex-shrink-0">
             <div className="sticky top-4 space-y-0">
                   
               {/* Search */}
