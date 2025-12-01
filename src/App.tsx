@@ -30,6 +30,7 @@ import AdminSettings from "./pages/AdminSettings";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
 import AdminSEO from "./pages/AdminSEO";
+import AdminTags from "./pages/AdminTags";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
@@ -86,7 +87,7 @@ const AppContent = () => {
         <Route path="/admin/difficulty-levels" element={<AdminDifficultyLevels />} />
         <Route path="/admin/comments" element={<AdminComments />} />
         <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/tags" element={<AdminPlaceholder title="Tags Management" description="Manage blog tags, create bulk operations, and enable auto-suggestions." />} />
+        <Route path="/admin/tags" element={<AdminTags />} />
         <Route path="/admin/authors" element={<AdminAuthors />} />
         <Route path="/admin/media" element={<AdminPlaceholder title="Media Library" description="Upload, rename, compress, and manage media files." />} />
         <Route path="/admin/monetization" element={<AdminPlaceholder title="Monetization" description="Manage ads, placements, and rotation rules." />} />
