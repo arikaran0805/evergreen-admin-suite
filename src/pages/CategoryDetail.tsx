@@ -766,6 +766,27 @@ const CategoryDetail = () => {
                       </CardContent>
                     </Card>
 
+                    {/* Tags */}
+                    {allTags.length > 0 && (
+                      <div className="mt-8">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Tag className="h-5 w-5 text-primary" />
+                          <h3 className="font-bold text-lg">Tags</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {allTags.map((tag) => (
+                            <Badge 
+                              key={tag} 
+                              variant="secondary"
+                              className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Lesson Navigation */}
                     <div className="mt-12 pt-8 border-t-2 border-border">
                       <div className="flex items-center justify-between gap-4">
@@ -851,29 +872,6 @@ const CategoryDetail = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Tags Section - Below Main Content */}
-            {allTags.length > 0 && (
-              <Card className="border border-primary/10 shadow-card rounded-none mt-8">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Tag className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-lg">Tags</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => (
-                      <Badge 
-                        key={tag} 
-                        variant="secondary"
-                        className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses & AdSense */}
