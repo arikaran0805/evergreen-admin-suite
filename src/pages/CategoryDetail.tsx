@@ -68,7 +68,7 @@ const CategoryDetail = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [recentCourses, setRecentCourses] = useState<any[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<Array<{id: string; name: string; slug: string}>>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -113,7 +113,6 @@ const CategoryDetail = () => {
   useEffect(() => {
     fetchCategoryAndPosts();
     fetchRecentCourses();
-    fetchTags();
     fetchSiteSettings();
     fetchFooterCategories();
   }, [slug]);
@@ -121,8 +120,10 @@ const CategoryDetail = () => {
   useEffect(() => {
     if (selectedPost) {
       fetchComments(selectedPost.id);
+      fetchTags(selectedPost.id);
     } else {
       setComments([]);
+      setAllTags([]);
     }
   }, [selectedPost]);
 
@@ -216,15 +217,22 @@ const CategoryDetail = () => {
     }
   };
 
-  const fetchTags = async () => {
+  const fetchTags = async (postId?: string) => {
+    if (!postId) {
+      setAllTags([]);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
-        .from("categories")
-        .select("name")
-        .limit(10);
+        .from("post_tags")
+        .select("tags(id, name, slug)")
+        .eq("post_id", postId);
 
       if (error) throw error;
-      setAllTags(data?.map(c => c.name) || []);
+      
+      const tags = data?.map(item => (item.tags as any)) || [];
+      setAllTags(tags);
     } catch (error) {
       console.error("Error fetching tags:", error);
     }
@@ -776,11 +784,11 @@ const CategoryDetail = () => {
                         <div className="flex flex-wrap gap-2">
                           {allTags.map((tag) => (
                             <Badge 
-                              key={tag} 
+                              key={tag.id} 
                               variant="secondary"
                               className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
                             >
-                              {tag}
+                              {tag.name}
                             </Badge>
                           ))}
                         </div>
