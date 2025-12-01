@@ -10,8 +10,9 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, X } from "lucide-react";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -36,6 +37,12 @@ interface Post {
   category_id: string | null;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 const AdminPostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,6 +50,9 @@ const AdminPostEditor = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -59,8 +69,10 @@ const AdminPostEditor = () => {
     checkAdminAccess();
     fetchCategories();
     fetchMainLessons();
+    fetchTags();
     if (id) {
       fetchPost(id);
+      fetchPostTags(id);
     }
   }, [id]);
 
@@ -123,6 +135,36 @@ const AdminPostEditor = () => {
     }
   };
 
+  const fetchTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tags")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setAllTags(data || []);
+    } catch (error: any) {
+      console.error("Error fetching tags:", error);
+    }
+  };
+
+  const fetchPostTags = async (postId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("post_tags")
+        .select("tag_id, tags(id, name, slug)")
+        .eq("post_id", postId);
+
+      if (error) throw error;
+      
+      const tags = data?.map(item => (item.tags as any)) || [];
+      setSelectedTags(tags);
+    } catch (error: any) {
+      console.error("Error fetching post tags:", error);
+    }
+  };
+
   const fetchPost = async (postId: string) => {
     try {
       setLoading(true);
@@ -181,6 +223,8 @@ const AdminPostEditor = () => {
         parent_id: validated.parent_id && validated.parent_id !== "" && validated.parent_id !== "none" ? validated.parent_id : null,
       };
 
+      let postId = id;
+
       if (id) {
         const { error } = await supabase
           .from("posts")
@@ -188,23 +232,26 @@ const AdminPostEditor = () => {
           .eq("id", id);
 
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Post updated successfully",
-        });
       } else {
-        const { error } = await supabase
+        const { data: newPost, error } = await supabase
           .from("posts")
-          .insert([postData]);
+          .insert([postData])
+          .select()
+          .single();
 
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Post created successfully",
-        });
+        postId = newPost.id;
       }
+
+      // Save tags
+      if (postId) {
+        await savePostTags(postId);
+      }
+
+      toast({
+        title: "Success",
+        description: id ? "Post updated successfully" : "Post created successfully",
+      });
 
       navigate("/admin/posts");
     } catch (error: any) {
@@ -224,6 +271,76 @@ const AdminPostEditor = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const savePostTags = async (postId: string) => {
+    try {
+      // Delete existing tags
+      await supabase
+        .from("post_tags")
+        .delete()
+        .eq("post_id", postId);
+
+      // Insert new tags
+      if (selectedTags.length > 0) {
+        const postTagsData = selectedTags.map(tag => ({
+          post_id: postId,
+          tag_id: tag.id,
+        }));
+
+        const { error } = await supabase
+          .from("post_tags")
+          .insert(postTagsData);
+
+        if (error) throw error;
+      }
+    } catch (error: any) {
+      console.error("Error saving post tags:", error);
+      throw error;
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!tagInput.trim()) return;
+
+    const tagName = tagInput.trim();
+    const tagSlug = generateSlug(tagName);
+
+    // Check if tag already exists
+    let tag = allTags.find(t => t.slug === tagSlug);
+
+    if (!tag) {
+      // Create new tag
+      try {
+        const { data, error } = await supabase
+          .from("tags")
+          .insert([{ name: tagName, slug: tagSlug }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        tag = data;
+        setAllTags([...allTags, data]);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: "Failed to create tag",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Add tag to selected tags if not already added
+    if (tag && !selectedTags.find(t => t.id === tag.id)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (tagId: string) => {
+    setSelectedTags(selectedTags.filter(t => t.id !== tagId));
   };
 
   const generateSlug = (title: string) => {
@@ -431,6 +548,45 @@ const AdminPostEditor = () => {
                 onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
                 placeholder="https://..."
               />
+            </div>
+
+            <div>
+              <Label htmlFor="tags">Tags</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tags"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
+                  placeholder="Add a tag..."
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddTag}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedTags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    variant="secondary"
+                    className="gap-1 pr-1"
+                  >
+                    {tag.name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag.id)}
+                      className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
             </div>
           </Card>
         </div>
