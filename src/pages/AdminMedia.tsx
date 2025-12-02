@@ -1,0 +1,339 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import AdminLayout from "@/components/AdminLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Upload, Trash2, Edit2, Search, Image, FileText, Video, Music, Copy } from "lucide-react";
+
+interface MediaFile {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+}
+
+const AdminMedia = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [media, setMedia] = useState<MediaFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFile, setSelectedFile] = useState<MediaFile | null>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkAdminAccess();
+  }, []);
+
+  const checkAdminAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    setUserId(session.user.id);
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
+      toast({ title: "Access Denied", variant: "destructive" });
+      navigate("/");
+      return;
+    }
+
+    fetchMedia();
+  };
+
+  const fetchMedia = async () => {
+    const { data, error } = await supabase
+      .from("media")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Error fetching media", variant: "destructive" });
+    } else {
+      setMedia(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !userId) return;
+
+    setUploading(true);
+
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("site-assets")
+        .upload(filePath, file);
+
+      if (uploadError) {
+        toast({ title: `Failed to upload ${file.name}`, variant: "destructive" });
+        continue;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("site-assets")
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase.from("media").insert({
+        file_name: file.name,
+        file_url: publicUrl,
+        file_type: file.type,
+        file_size: file.size,
+        user_id: userId,
+      });
+
+      if (dbError) {
+        toast({ title: `Failed to save ${file.name}`, variant: "destructive" });
+      }
+    }
+
+    toast({ title: "Upload complete" });
+    setUploading(false);
+    fetchMedia();
+    e.target.value = "";
+  };
+
+  const handleRename = async () => {
+    if (!selectedFile || !newFileName.trim()) return;
+
+    const { error } = await supabase
+      .from("media")
+      .update({ file_name: newFileName.trim() })
+      .eq("id", selectedFile.id);
+
+    if (error) {
+      toast({ title: "Failed to rename", variant: "destructive" });
+    } else {
+      toast({ title: "File renamed" });
+      fetchMedia();
+    }
+    setRenameDialogOpen(false);
+    setSelectedFile(null);
+    setNewFileName("");
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFile) return;
+
+    // Extract path from URL
+    const urlParts = selectedFile.file_url.split("/site-assets/");
+    if (urlParts.length > 1) {
+      await supabase.storage.from("site-assets").remove([urlParts[1]]);
+    }
+
+    const { error } = await supabase.from("media").delete().eq("id", selectedFile.id);
+
+    if (error) {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    } else {
+      toast({ title: "File deleted" });
+      fetchMedia();
+    }
+    setDeleteDialogOpen(false);
+    setSelectedFile(null);
+  };
+
+  const copyToClipboard = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast({ title: "URL copied to clipboard" });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith("image/")) return <Image className="h-8 w-8 text-primary" />;
+    if (type.startsWith("video/")) return <Video className="h-8 w-8 text-primary" />;
+    if (type.startsWith("audio/")) return <Music className="h-8 w-8 text-primary" />;
+    return <FileText className="h-8 w-8 text-primary" />;
+  };
+
+  const filteredMedia = media.filter((file) =>
+    file.file_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-3xl font-bold text-foreground">Media Library</h1>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="upload" className="cursor-pointer">
+              <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                <Upload className="h-4 w-4" />
+                {uploading ? "Uploading..." : "Upload Files"}
+              </div>
+              <Input
+                id="upload"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleUpload}
+                disabled={uploading}
+              />
+            </Label>
+          </div>
+        </div>
+
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        ) : filteredMedia.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {searchQuery ? "No files found" : "No media files yet. Upload some!"}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredMedia.map((file) => (
+              <Card key={file.id} className="group overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="aspect-square relative bg-muted flex items-center justify-center overflow-hidden">
+                    {file.file_type.startsWith("image/") ? (
+                      <img
+                        src={file.file_url}
+                        alt={file.file_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      getFileIcon(file.file_type)
+                    )}
+                    <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        onClick={() => copyToClipboard(file.file_url)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        onClick={() => {
+                          setSelectedFile(file);
+                          setNewFileName(file.file_name);
+                          setRenameDialogOpen(true);
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedFile(file);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <p className="text-sm font-medium truncate">{file.file_name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(file.file_size)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename File</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newName">New Name</Label>
+              <Input
+                id="newName"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRename}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete File?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{selectedFile?.file_name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </AdminLayout>
+  );
+};
+
+export default AdminMedia;

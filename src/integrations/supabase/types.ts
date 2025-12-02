@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ads: {
+        Row: {
+          ad_code: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          name: string
+          placement: string
+          priority: number
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_code: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          placement: string
+          priority?: number
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_code?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          placement?: string
+          priority?: number
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics: {
         Row: {
           browser: string | null
@@ -436,6 +475,39 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      redirects: {
+        Row: {
+          created_at: string
+          destination_url: string
+          hit_count: number
+          id: string
+          is_active: boolean
+          redirect_type: number
+          source_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination_url: string
+          hit_count?: number
+          id?: string
+          is_active?: boolean
+          redirect_type?: number
+          source_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination_url?: string
+          hit_count?: number
+          id?: string
+          is_active?: boolean
+          redirect_type?: number
+          source_path?: string
           updated_at?: string
         }
         Relationships: []
