@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import BlogCard from "@/components/BlogCard";
 import EmojiBackground from "@/components/EmojiBackground";
 import SEOHead from "@/components/SEOHead";
+import AdDisplay from "@/components/AdDisplay";
 import { ArrowRight, TrendingUp, Sparkles, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Lightbulb, Zap, Target, Star, CheckCircle, BookOpen, Brain, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
@@ -181,6 +182,9 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        {/* Header Ad */}
+        <AdDisplay placement="header" className="container px-4 py-4" />
 
         {/* Featured Courses */}
         <section className="container px-4 py-16">
@@ -500,6 +504,9 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        {/* Footer Ad */}
+        <AdDisplay placement="footer" className="container px-4 py-6" />
 
         {/* Footer */}
         <footer className="border-t border-border py-12 bg-card">
