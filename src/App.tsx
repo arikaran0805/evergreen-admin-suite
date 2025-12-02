@@ -26,6 +26,9 @@ import AdminComments from "./pages/AdminComments";
 import AdminUsers from "./pages/AdminUsers";
 import AdminPlaceholder from "./pages/AdminPlaceholder";
 import AdminAuthors from "./pages/AdminAuthors";
+import AdminMedia from "./pages/AdminMedia";
+import AdminMonetization from "./pages/AdminMonetization";
+import AdminRedirects from "./pages/AdminRedirects";
 import AdminSettings from "./pages/AdminSettings";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
@@ -89,9 +92,9 @@ const AppContent = () => {
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/tags" element={<AdminTags />} />
         <Route path="/admin/authors" element={<AdminAuthors />} />
-        <Route path="/admin/media" element={<AdminPlaceholder title="Media Library" description="Upload, rename, compress, and manage media files." />} />
-        <Route path="/admin/monetization" element={<AdminPlaceholder title="Monetization" description="Manage ads, placements, and rotation rules." />} />
-        <Route path="/admin/redirects" element={<AdminPlaceholder title="Redirect Rules" description="Create and manage 301/302 redirects." />} />
+        <Route path="/admin/media" element={<AdminMedia />} />
+        <Route path="/admin/monetization" element={<AdminMonetization />} />
+        <Route path="/admin/redirects" element={<AdminRedirects />} />
         <Route path="/admin/api-keys" element={<AdminPlaceholder title="API Keys & Tokens" description="Generate, revoke, and manage API access." />} />
         <Route path="/admin/webhooks" element={<AdminPlaceholder title="Webhooks" description="Create webhooks and trigger events." />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
