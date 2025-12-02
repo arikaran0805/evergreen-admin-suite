@@ -13,6 +13,7 @@ import { trackPostView } from "@/lib/analytics";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
+import AdDisplay from "@/components/AdDisplay";
 import { Calendar, MessageSquare, ArrowLeft, BookOpen, Mail, Tag, Heart, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import CommentDialog from "@/components/CommentDialog";
@@ -389,7 +390,13 @@ const BlogDetail = () => {
                 content={post.content}
                 className="prose prose-lg max-w-none text-foreground"
               />
+              
+              {/* After Post Ad */}
+              <AdDisplay placement="after-post" className="mt-8 pt-8 border-t" />
             </Card>
+            
+            {/* In-Content Ad */}
+            <AdDisplay placement="in-content" className="my-6" />
           </main>
 
           {/* RIGHT SIDEBAR - Recent Courses, Tags, Newsletter */}
@@ -475,13 +482,8 @@ const BlogDetail = () => {
               </form>
             </Card>
 
-            {/* AdSense Placeholder */}
-            <Card className="p-6 border border-primary/10 shadow-card bg-muted/30">
-              <div className="text-center py-12">
-                <p className="text-sm text-muted-foreground">Advertisement</p>
-                <p className="text-xs text-muted-foreground mt-2">Google AdSense</p>
-              </div>
-            </Card>
+            {/* Sidebar Ad */}
+            <AdDisplay placement="sidebar" className="rounded-lg overflow-hidden" />
 
           </aside>
         </div>
