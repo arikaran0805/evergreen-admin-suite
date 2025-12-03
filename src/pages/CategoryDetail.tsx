@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ShareDialog";
 import CommentDialog from "@/components/CommentDialog";
+import AdDisplay from "@/components/AdDisplay";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
@@ -882,70 +883,17 @@ const CategoryDetail = () => {
             </Card>
           </main>
 
-          {/* RIGHT SIDEBAR - Recent Courses & AdSense */}
+          {/* RIGHT SIDEBAR - Ads Only */}
           <aside className="lg:w-[300px] flex-shrink-0">
-            <div className="sticky top-4 space-y-0">
-
-              {/* Advertisement Banner 1 */}
-              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
-                <CardContent className="p-6">
-                  <div className="bg-muted/30 h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground font-semibold">Advertisement</p>
-                      <p className="text-xs text-muted-foreground mt-1">Your ad could be here</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Courses */}
-              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-4">Recent Courses</h3>
-                  <div className="space-y-4">
-                    {recentCourses.map((course) => (
-                      <Link 
-                        key={course.id}
-                        to={`/category/${course.slug}`}
-                        className="block group"
-                      >
-                        <div className="p-3 hover:bg-primary/10 transition-all duration-300 hover:shadow-sm">
-                          <h4 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
-                            {course.name}
-                          </h4>
-                          {course.description && (
-                            <div 
-                              className="text-xs text-muted-foreground line-clamp-2 prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ __html: course.description }}
-                            />
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Google AdSense Placeholder */}
-              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
-                <CardContent className="p-6">
-                  <div className="bg-muted/30 h-[250px] flex items-center justify-center border-2 border-dashed border-primary/20">
-                    <p className="text-sm text-muted-foreground">Ad Space</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Advertisement Banner 2 */}
-              <Card className="border-t border-r border-b border-primary/10 shadow-card rounded-none">
-                <CardContent className="p-6">
-                  <div className="bg-muted/30 rounded-lg h-[280px] flex items-center justify-center border-2 border-dashed border-primary/20">
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground font-semibold">Advertisement</p>
-                      <p className="text-xs text-muted-foreground mt-1">Your ad could be here</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="sticky top-4 space-y-4">
+              {/* Sidebar Ad 1 */}
+              <AdDisplay placement="sidebar" className="rounded-lg overflow-hidden" />
+              
+              {/* Sidebar Ad 2 */}
+              <AdDisplay placement="sidebar-2" className="rounded-lg overflow-hidden" />
+              
+              {/* Sidebar Ad 3 */}
+              <AdDisplay placement="sidebar-3" className="rounded-lg overflow-hidden" />
             </div>
           </aside>
         </div>
