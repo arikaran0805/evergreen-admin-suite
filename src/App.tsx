@@ -29,6 +29,7 @@ import AdminAuthors from "./pages/AdminAuthors";
 import AdminMedia from "./pages/AdminMedia";
 import AdminMonetization from "./pages/AdminMonetization";
 import AdminRedirects from "./pages/AdminRedirects";
+import AdminAPI from "./pages/AdminAPI";
 import AdminSettings from "./pages/AdminSettings";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
@@ -95,8 +96,7 @@ const AppContent = () => {
         <Route path="/admin/media" element={<AdminMedia />} />
         <Route path="/admin/monetization" element={<AdminMonetization />} />
         <Route path="/admin/redirects" element={<AdminRedirects />} />
-        <Route path="/admin/api-keys" element={<AdminPlaceholder title="API Keys & Tokens" description="Generate, revoke, and manage API access." />} />
-        <Route path="/admin/webhooks" element={<AdminPlaceholder title="Webhooks" description="Create webhooks and trigger events." />} />
+        <Route path="/admin/api" element={<AdminAPI />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/social-analytics" element={<AdminSocialAnalytics />} />
         <Route path="/admin/seo" element={<AdminSEO />} />
