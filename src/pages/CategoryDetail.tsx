@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import ShareDialog from "@/components/ShareDialog";
 import CommentDialog from "@/components/CommentDialog";
 import AdDisplay from "@/components/AdDisplay";
+import CollapsibleSidebarAds from "@/components/CollapsibleSidebarAds";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
@@ -885,16 +886,7 @@ const CategoryDetail = () => {
 
           {/* RIGHT SIDEBAR - Ads Only */}
           <aside className="lg:w-[300px] flex-shrink-0">
-            <div className="sticky top-4 space-y-4">
-              {/* Sidebar Ad 1 */}
-              <AdDisplay placement="sidebar" className="rounded-lg overflow-hidden" />
-              
-              {/* Sidebar Ad 2 */}
-              <AdDisplay placement="sidebar-2" className="rounded-lg overflow-hidden" />
-              
-              {/* Sidebar Ad 3 */}
-              <AdDisplay placement="sidebar-3" className="rounded-lg overflow-hidden" />
-            </div>
+            <CollapsibleSidebarAds placements={["sidebar", "sidebar-2", "sidebar-3"]} />
           </aside>
         </div>
       </div>
