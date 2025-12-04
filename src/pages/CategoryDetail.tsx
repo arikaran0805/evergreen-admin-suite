@@ -886,7 +886,7 @@ const CategoryDetail = () => {
 
           {/* RIGHT SIDEBAR - Ads Only */}
           <aside className="lg:w-[300px] flex-shrink-0">
-            <div className="sticky top-4 space-y-4">
+            <div className="sticky top-4 space-y-2">
               <AdDisplay placement="sidebar" className="rounded-lg overflow-hidden" />
               <AdDisplay placement="sidebar-2" className="rounded-lg overflow-hidden" />
               <AdDisplay placement="sidebar-3" className="rounded-lg overflow-hidden" />
