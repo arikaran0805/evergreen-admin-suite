@@ -60,6 +60,8 @@ interface Ad {
 const PLACEMENTS = [
   { value: "header", label: "Header" },
   { value: "sidebar", label: "Sidebar" },
+  { value: "sidebar-2", label: "Sidebar 2" },
+  { value: "sidebar-3", label: "Sidebar 3" },
   { value: "footer", label: "Footer" },
   { value: "in-content", label: "In Content" },
   { value: "before-comments", label: "Before Comments" },
