@@ -6,6 +6,50 @@ declare global {
   }
 }
 
+// Track if script is already being loaded/loaded
+let scriptLoading = false;
+let scriptLoaded = false;
+
+const loadAdSenseScript = (adClient: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (scriptLoaded) {
+      resolve();
+      return;
+    }
+    
+    if (scriptLoading) {
+      // Wait for existing script to load
+      const checkInterval = setInterval(() => {
+        if (scriptLoaded) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+      return;
+    }
+
+    scriptLoading = true;
+    
+    const script = document.createElement("script");
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adClient}`;
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    
+    script.onload = () => {
+      scriptLoaded = true;
+      scriptLoading = false;
+      resolve();
+    };
+    
+    script.onerror = () => {
+      scriptLoading = false;
+      reject(new Error("Failed to load AdSense script"));
+    };
+    
+    document.head.appendChild(script);
+  });
+};
+
 interface AdPlaceholderProps {
   googleAdSlot?: string;
   googleAdClient?: string;
@@ -21,25 +65,35 @@ const AdPlaceholder = ({
 }: AdPlaceholderProps) => {
   const adRef = useRef<HTMLDivElement>(null);
   const [adLoaded, setAdLoaded] = useState(false);
+  const [scriptReady, setScriptReady] = useState(false);
 
+  // Check if we have valid (non-placeholder) credentials
+  const hasValidCredentials = 
+    googleAdSlot && 
+    googleAdClient && 
+    !googleAdClient.includes("XXXXXXXX") &&
+    googleAdSlot !== "1234567890";
+
+  // Load the AdSense script when valid credentials are available
   useEffect(() => {
-    // Only initialize if we have valid credentials (not placeholder values)
-    const hasValidCredentials = 
-      googleAdSlot && 
-      googleAdClient && 
-      !googleAdClient.includes("XXXXXXXX") &&
-      googleAdSlot !== "1234567890";
+    if (hasValidCredentials && googleAdClient) {
+      loadAdSenseScript(googleAdClient)
+        .then(() => setScriptReady(true))
+        .catch((error) => console.error("AdSense script error:", error));
+    }
+  }, [hasValidCredentials, googleAdClient]);
 
-    if (hasValidCredentials && adRef.current && !adLoaded) {
+  // Initialize the ad once script is ready
+  useEffect(() => {
+    if (scriptReady && hasValidCredentials && adRef.current && !adLoaded) {
       try {
-        // Initialize Google AdSense
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         setAdLoaded(true);
       } catch (error) {
-        console.error("AdSense error:", error);
+        console.error("AdSense initialization error:", error);
       }
     }
-  }, [googleAdSlot, googleAdClient, adLoaded]);
+  }, [scriptReady, hasValidCredentials, adLoaded]);
 
   const getAdDimensions = () => {
     switch (adType) {
@@ -66,13 +120,6 @@ const AdPlaceholder = ({
         return "auto";
     }
   };
-
-  // Check if we have valid (non-placeholder) credentials
-  const hasValidCredentials = 
-    googleAdSlot && 
-    googleAdClient && 
-    !googleAdClient.includes("XXXXXXXX") &&
-    googleAdSlot !== "1234567890";
 
   return (
     <div 
