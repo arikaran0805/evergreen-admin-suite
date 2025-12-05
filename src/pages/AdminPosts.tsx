@@ -185,7 +185,7 @@ const AdminPosts = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => window.open(`/blog/${post.id}`, "_blank")}
+                        onClick={() => window.open(`/category/${post.slug}`, "_blank")}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
