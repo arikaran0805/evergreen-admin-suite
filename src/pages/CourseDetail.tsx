@@ -386,8 +386,10 @@ const CourseDetail = () => {
       const hasActiveChild = selectedPost?.parent_id === post.id;
       const isCurrentlyExpanded = expandedParents.has(post.id);
       
-      // Don't collapse if a child lesson is active
+      // If child is active, load parent content but keep expanded
       if (isCurrentlyExpanded && hasActiveChild) {
+        fetchPostContent(post);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
       
