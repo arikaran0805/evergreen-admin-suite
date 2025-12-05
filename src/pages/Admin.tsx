@@ -389,7 +389,7 @@ const Admin = () => {
                       {post.status}
                     </Badge>
                     {post.courses?.slug ? (
-                      <Link to={`/category/${post.courses.slug}?lesson=${post.slug}`} target="_blank">
+                      <Link to={`/course/${post.courses.slug}?lesson=${post.slug}`} target="_blank">
                         <Button size="sm" variant="outline" className="gap-1">
                           <Eye className="h-3 w-3" />
                           View

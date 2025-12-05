@@ -273,7 +273,7 @@ const AdminPosts = () => {
                         size="icon"
                         onClick={() => {
                           if (post.courses?.slug) {
-                            window.open(`/category/${post.courses.slug}?lesson=${post.slug}`, "_blank");
+                            window.open(`/course/${post.courses.slug}?lesson=${post.slug}`, "_blank");
                           } else {
                             toast({
                               title: "No Course",

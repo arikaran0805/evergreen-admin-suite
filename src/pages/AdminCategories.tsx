@@ -159,7 +159,7 @@ const AdminCategories = () => {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => window.open(`/category/${category.slug}`, "_blank")}
+                      onClick={() => window.open(`/course/${category.slug}`, "_blank")}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

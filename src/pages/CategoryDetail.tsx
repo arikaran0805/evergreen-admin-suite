@@ -967,7 +967,7 @@ const CategoryDetail = () => {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 {footerCategories.map((category) => (
                   <li key={category.slug}>
-                    <Link to={`/category/${category.slug}`} className="hover:text-primary transition-colors">
+                    <Link to={`/course/${category.slug}`} className="hover:text-primary transition-colors">
                       {category.name}
                     </Link>
                   </li>

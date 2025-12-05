@@ -530,7 +530,7 @@ const Index = () => {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {footerCategories.map((category) => (
                     <li key={category.slug}>
-                      <Link to={`/category/${category.slug}`} className="hover:text-primary">
+                      <Link to={`/course/${category.slug}`} className="hover:text-primary">
                         {category.name}
                       </Link>
                     </li>
