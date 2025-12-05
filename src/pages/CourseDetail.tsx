@@ -382,8 +382,15 @@ const CourseDetail = () => {
       fetchPostContent(post);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (hasChildren) {
-      // If clicking a main lesson with children, toggle expansion only
+      // Check if a child of this parent is currently selected
+      const hasActiveChild = selectedPost?.parent_id === post.id;
       const isCurrentlyExpanded = expandedParents.has(post.id);
+      
+      // Don't collapse if a child lesson is active
+      if (isCurrentlyExpanded && hasActiveChild) {
+        return;
+      }
+      
       setExpandedParents(prev => {
         const newSet = new Set(prev);
         if (newSet.has(post.id)) {
