@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
@@ -9,6 +9,7 @@ import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [siteName, setSiteName] = useState("EmojiLearn");
@@ -17,9 +18,17 @@ const Index = () => {
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity and deeper understanding.");
   const [heroHighlightText, setHeroHighlightText] = useState("Any Subject");
   const [heroHighlightColor, setHeroHighlightColor] = useState("#10b981");
+  const [searchQuery, setSearchQuery] = useState("");
   const [socialLinks, setSocialLinks] = useState({
     twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
   });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/courses?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   // Scroll animation hooks
   const heroAnimation = useScrollAnimation({ threshold: 0.2 });
@@ -136,18 +145,22 @@ const Index = () => {
               </h1>
             </div>
 
-            {/* Simple Search Button */}
-            <Link to="/courses" className="group">
-              <div className="relative p-[2px] rounded-full bg-border/50 hover:bg-primary/30 transition-colors">
-                <Button 
-                  size="lg"
-                  className="h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg shadow-lg"
-                >
-                  <Search className="h-5 w-5 mr-2" />
-                  Search
-                </Button>
+            {/* Search Bar with Green Border */}
+            <form onSubmit={handleSearch} className="w-full max-w-2xl">
+              <div className="relative flex items-center h-16 md:h-18 rounded-full border-2 border-primary bg-card shadow-lg">
+                <Search className="absolute left-5 h-5 w-5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search courses..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-full pl-14 pr-14 text-lg bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground"
+                />
+                <button type="submit" className="absolute right-5 text-muted-foreground hover:text-primary transition-colors">
+                  <Search className="h-5 w-5" />
+                </button>
               </div>
-            </Link>
+            </form>
 
             {/* CTAs */}
             <div className="flex flex-wrap justify-center gap-4 pt-4">
