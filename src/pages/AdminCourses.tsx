@@ -27,7 +27,7 @@ interface CategoryStats {
   };
 }
 
-const AdminCategories = () => {
+const AdminCourses = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStats>({});
   const [loading, setLoading] = useState(true);
@@ -249,4 +249,4 @@ const AdminCategories = () => {
   );
 };
 
-export default AdminCategories;
+export default AdminCourses;

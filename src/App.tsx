@@ -19,8 +19,8 @@ import Admin from "./pages/Admin";
 import AdminPosts from "./pages/AdminPosts";
 import AdminPostEditor from "./pages/AdminPostEditor";
 import AdminPages from "./pages/AdminPages";
-import AdminCategories from "./pages/AdminCategories";
-import AdminCategoryEditor from "./pages/AdminCategoryEditor";
+import AdminCourses from "./pages/AdminCourses";
+import AdminCourseEditor from "./pages/AdminCourseEditor";
 import AdminDifficultyLevels from "./pages/AdminDifficultyLevels";
 import AdminComments from "./pages/AdminComments";
 import AdminUsers from "./pages/AdminUsers";
@@ -84,9 +84,9 @@ const AppContent = () => {
         <Route path="/admin/posts/new" element={<AdminPostEditor />} />
         <Route path="/admin/posts/edit/:id" element={<AdminPostEditor />} />
         <Route path="/admin/pages" element={<AdminPages />} />
-        <Route path="/admin/courses" element={<AdminCategories />} />
-        <Route path="/admin/courses/new" element={<AdminCategoryEditor />} />
-        <Route path="/admin/courses/:id" element={<AdminCategoryEditor />} />
+        <Route path="/admin/courses" element={<AdminCourses />} />
+        <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
+        <Route path="/admin/courses/:id" element={<AdminCourseEditor />} />
         <Route path="/admin/difficulty-levels" element={<AdminDifficultyLevels />} />
         <Route path="/admin/comments" element={<AdminComments />} />
         <Route path="/admin/users" element={<AdminUsers />} />
