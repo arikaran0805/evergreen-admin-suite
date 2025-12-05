@@ -885,10 +885,10 @@ const CourseDetail = () => {
                     <div className="mt-8 pt-6 border-t border-border">
                       <div className="flex items-center justify-between">
                         {/* Tags on left */}
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-base">
                           {allTags.length > 0 && (
                             <>
-                              <Tag className="h-4 w-4 text-primary" />
+                              <Tag className="h-5 w-5 text-primary" />
                               <span className="font-medium text-primary">tag:</span>
                               <span className="text-primary font-medium bg-primary/10 px-2 py-0.5 rounded">{allTags.map(tag => tag.name).join(', ')}</span>
                             </>
