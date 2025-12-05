@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Webhook, Key, Copy, Eye, EyeOff, DollarSign, LayoutGrid, FileCode, Monitor, Smartphone, CheckCircle, AlertCircle, Save, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Webhook, Key, Copy, Eye, EyeOff, DollarSign, LayoutGrid, FileCode, Monitor, Smartphone, CheckCircle, AlertCircle, Save, RefreshCw, Link, Image, Code, Upload } from "lucide-react";
 
 interface WebhookType {
   id: string;
@@ -136,6 +136,14 @@ const AdminAPI = () => {
   // Ad settings state
   const [adSettings, setAdSettings] = useState<AdSetting[]>([]);
   const [savingAds, setSavingAds] = useState(false);
+
+  // Embed code generator state
+  const [embedImageUrl, setEmbedImageUrl] = useState("");
+  const [embedRedirectUrl, setEmbedRedirectUrl] = useState("");
+  const [embedWidth, setEmbedWidth] = useState("300");
+  const [embedHeight, setEmbedHeight] = useState("250");
+  const [embedAltText, setEmbedAltText] = useState("");
+  const [generatedEmbedCode, setGeneratedEmbedCode] = useState("");
 
   useEffect(() => {
     checkAdminAccess();
@@ -558,6 +566,28 @@ const AdminAPI = () => {
                     onCheckedChange={(checked) => handleAdSettingChange("auto_ads", checked.toString())}
                   />
                 </div>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show_preview_ads" className="text-base">Show Preview Ads</Label>
+                    <p className="text-sm text-muted-foreground">Display placeholder ads for testing when no real ads are configured</p>
+                  </div>
+                  <Switch
+                    id="show_preview_ads"
+                    checked={getAdSettingValue("show_preview_ads") === "true"}
+                    onCheckedChange={(checked) => handleAdSettingChange("show_preview_ads", checked.toString())}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="ad_redirect_url">Ad Redirect URL (Optional)</Label>
+                  <Input
+                    id="ad_redirect_url"
+                    placeholder="https://example.com/ad-landing"
+                    value={getAdSettingValue("ad_redirect_url")}
+                    onChange={(e) => handleAdSettingChange("ad_redirect_url", e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Default redirect URL for custom image ads</p>
+                </div>
               </CardContent>
             </Card>
 
@@ -707,6 +737,147 @@ const AdminAPI = () => {
                     </div>
                   </TabsContent>
                 </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Embed Code Generator */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  Embed Code Generator
+                </CardTitle>
+                <CardDescription>Generate embed code for custom image ads with redirect links</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="embed_image_url">Image URL</Label>
+                      <Input
+                        id="embed_image_url"
+                        placeholder="https://example.com/ad-image.jpg"
+                        value={embedImageUrl}
+                        onChange={(e) => setEmbedImageUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">URL of the ad image to display</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="embed_redirect_url">Redirect URL</Label>
+                      <Input
+                        id="embed_redirect_url"
+                        placeholder="https://example.com/landing-page"
+                        value={embedRedirectUrl}
+                        onChange={(e) => setEmbedRedirectUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">URL to redirect when the ad is clicked</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="embed_width">Width (px)</Label>
+                        <Input
+                          id="embed_width"
+                          type="number"
+                          placeholder="300"
+                          value={embedWidth}
+                          onChange={(e) => setEmbedWidth(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="embed_height">Height (px)</Label>
+                        <Input
+                          id="embed_height"
+                          type="number"
+                          placeholder="250"
+                          value={embedHeight}
+                          onChange={(e) => setEmbedHeight(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="embed_alt_text">Alt Text</Label>
+                      <Input
+                        id="embed_alt_text"
+                        placeholder="Advertisement"
+                        value={embedAltText}
+                        onChange={(e) => setEmbedAltText(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        if (!embedImageUrl) {
+                          toast({ title: "Error", description: "Please enter an image URL", variant: "destructive" });
+                          return;
+                        }
+                        const code = embedRedirectUrl
+                          ? `<a href="${embedRedirectUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;">
+  <img src="${embedImageUrl}" alt="${embedAltText || 'Advertisement'}" width="${embedWidth}" height="${embedHeight}" style="max-width:100%;height:auto;border:0;" />
+</a>`
+                          : `<img src="${embedImageUrl}" alt="${embedAltText || 'Advertisement'}" width="${embedWidth}" height="${embedHeight}" style="max-width:100%;height:auto;border:0;" />`;
+                        setGeneratedEmbedCode(code);
+                        toast({ title: "Code Generated", description: "Embed code has been generated successfully" });
+                      }}
+                      className="w-full"
+                    >
+                      <Code className="mr-2 h-4 w-4" />
+                      Generate Embed Code
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Generated Embed Code</Label>
+                      <Textarea
+                        placeholder="Generated embed code will appear here..."
+                        rows={10}
+                        value={generatedEmbedCode}
+                        readOnly
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (generatedEmbedCode) {
+                          navigator.clipboard.writeText(generatedEmbedCode);
+                          toast({ title: "Copied!", description: "Embed code copied to clipboard" });
+                        }
+                      }}
+                      disabled={!generatedEmbedCode}
+                      className="w-full"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Embed Code
+                    </Button>
+                    {embedImageUrl && (
+                      <div className="space-y-2">
+                        <Label>Preview</Label>
+                        <div className="border rounded-lg p-4 bg-muted/20 flex items-center justify-center min-h-[150px]">
+                          {embedRedirectUrl ? (
+                            <a href={embedRedirectUrl} target="_blank" rel="noopener noreferrer">
+                              <img 
+                                src={embedImageUrl} 
+                                alt={embedAltText || "Advertisement"} 
+                                style={{ maxWidth: `${embedWidth}px`, maxHeight: `${embedHeight}px`, objectFit: "contain" }}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23ddd' width='200' height='150'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage Error%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
+                            </a>
+                          ) : (
+                            <img 
+                              src={embedImageUrl} 
+                              alt={embedAltText || "Advertisement"} 
+                              style={{ maxWidth: `${embedWidth}px`, maxHeight: `${embedHeight}px`, objectFit: "contain" }}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23ddd' width='200' height='150'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage Error%3C/text%3E%3C/svg%3E";
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
