@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code } from "lucide-react";
 import { z } from "zod";
 
@@ -1049,35 +1050,49 @@ const AdminSettings = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Clear cached data to improve performance
                   </p>
-                  <Button 
-                    variant="outline" 
-                    disabled={clearingCache}
-                    onClick={async () => {
-                      setClearingCache(true);
-                      try {
-                        // Clear React Query cache
-                        queryClient.clear();
-                        // Clear localStorage
-                        localStorage.clear();
-                        // Clear sessionStorage
-                        sessionStorage.clear();
-                        toast({
-                          title: "Cache Cleared",
-                          description: "All cached data has been cleared successfully",
-                        });
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: "Failed to clear cache",
-                          variant: "destructive",
-                        });
-                      } finally {
-                        setClearingCache(false);
-                      }
-                    }}
-                  >
-                    {clearingCache ? "Clearing..." : "Clear Cache"}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={clearingCache}>
+                        {clearingCache ? "Clearing..." : "Clear Cache"}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Clear All Cache?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will clear all cached data including browser storage and query cache. 
+                          You may need to log in again and some preferences may be reset. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={async () => {
+                            setClearingCache(true);
+                            try {
+                              queryClient.clear();
+                              localStorage.clear();
+                              sessionStorage.clear();
+                              toast({
+                                title: "Cache Cleared",
+                                description: "All cached data has been cleared successfully",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to clear cache",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setClearingCache(false);
+                            }
+                          }}
+                        >
+                          Clear Cache
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
 
                 <Separator />
