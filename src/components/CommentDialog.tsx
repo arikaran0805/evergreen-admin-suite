@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check } from "lucide-react";
+import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check, Bold, Italic, Code, Link } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -421,8 +422,8 @@ const CommentDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
+        <DialogHeader className="pr-8">
+          <div className="flex items-center justify-between gap-4">
             <DialogTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
               Comments ({comments.length})
@@ -450,18 +451,75 @@ const CommentDialog = ({
           {/* Comment Form */}
           <div>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="space-y-1">
+              <div className="border border-primary/20 rounded-md focus-within:border-primary overflow-hidden">
                 <Textarea
                   placeholder="Share your thoughts..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   rows={4}
                   required
-                  className="border-primary/20 focus:border-primary"
+                  className="border-0 focus-visible:ring-0 resize-none"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Formatting: **bold**, *italic*, `code`, [link](url)
-                </p>
+                <div className="flex items-center gap-1 px-2 py-1.5 border-t border-primary/10 bg-muted/30">
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setNewComment(newComment + "**bold**")}
+                        >
+                          <Bold className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Bold (**text**)</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setNewComment(newComment + "*italic*")}
+                        >
+                          <Italic className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Italic (*text*)</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setNewComment(newComment + "`code`")}
+                        >
+                          <Code className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Code (`code`)</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setNewComment(newComment + "[link](url)")}
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Link ([text](url))</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
               
               <div className="flex items-center justify-between">
