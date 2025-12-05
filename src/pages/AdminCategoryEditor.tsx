@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -10,13 +10,15 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X, Image } from "lucide-react";
 
 const AdminCategoryEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [difficultyLevels, setDifficultyLevels] = useState<{ id: string; name: string }[]>([]);
   const [formData, setFormData] = useState({
     name: "",
@@ -24,6 +26,7 @@ const AdminCategoryEditor = () => {
     description: "",
     featured: false,
     level: "Beginner",
+    featured_image: "",
   });
 
   useEffect(() => {
@@ -90,6 +93,7 @@ const AdminCategoryEditor = () => {
           description: data.description || "",
           featured: data.featured || false,
           level: data.level || "Beginner",
+          featured_image: data.featured_image || "",
         });
       }
     } catch (error: any) {
@@ -131,6 +135,39 @@ const AdminCategoryEditor = () => {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `course-${Date.now()}.${fileExt}`;
+      const filePath = `courses/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, featured_image: publicUrl });
+      toast({ title: "Image uploaded successfully" });
+    } catch (error: any) {
+      toast({ title: "Error uploading image", description: error.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setFormData({ ...formData, featured_image: "" });
   };
 
   if (loading) {
@@ -206,6 +243,61 @@ const AdminCategoryEditor = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Featured Image</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.featured_image ? (
+                  <div className="relative">
+                    <img
+                      src={formData.featured_image}
+                      alt="Featured"
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={removeImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Image className="h-10 w-10 mx-auto text-muted-foreground/50" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Click to upload image
+                    </p>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                {formData.featured_image && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {uploading ? "Uploading..." : "Change Image"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Settings</CardTitle>
