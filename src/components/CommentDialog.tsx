@@ -451,7 +451,7 @@ const CommentDialog = ({
           {/* Comment Form */}
           <div>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="border border-primary/20 rounded-md focus-within:border-primary overflow-hidden">
+              <div className="group border border-primary/20 rounded-md focus-within:border-primary overflow-hidden">
                 <Textarea
                   placeholder="Share your thoughts..."
                   value={newComment}
@@ -460,7 +460,7 @@ const CommentDialog = ({
                   required
                   className="border-0 focus-visible:ring-0 resize-none"
                 />
-                <div className="flex items-center gap-1 px-2 py-1.5 border-t border-primary/10 bg-muted/30">
+                <div className="flex items-center gap-1 px-2 py-1.5 border-t border-primary/10 bg-muted/30 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                   <TooltipProvider delayDuration={300}>
                     <Tooltip>
                       <TooltipTrigger asChild>
