@@ -15,7 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Plus, Edit, Trash2, Eye, Info, MessageSquare, ThumbsUp } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Info } from "lucide-react";
 import { format } from "date-fns";
 
 
@@ -230,7 +230,6 @@ const AdminPosts = () => {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Stats</TableHead>
                 <TableHead>Published</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -246,22 +245,6 @@ const AdminPosts = () => {
                     }`}>
                       {post.status}
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1" title="Views">
-                        <Eye className="h-3.5 w-3.5" />
-                        {postStats[post.id]?.views || 0}
-                      </span>
-                      <span className="flex items-center gap-1" title="Likes">
-                        <ThumbsUp className="h-3.5 w-3.5" />
-                        {postStats[post.id]?.likes || 0}
-                      </span>
-                      <span className="flex items-center gap-1" title="Comments">
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        {postStats[post.id]?.comments || 0}
-                      </span>
-                    </div>
                   </TableCell>
                   <TableCell>
                     {post.published_at ? format(new Date(post.published_at), "MMM d, yyyy") : "-"}
@@ -337,7 +320,7 @@ const AdminPosts = () => {
               ))}
               {posts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     No posts yet. Create your first post!
                   </TableCell>
                 </TableRow>
