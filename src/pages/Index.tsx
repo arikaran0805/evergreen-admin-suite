@@ -173,9 +173,9 @@ const Index = () => {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
-              <Link to="/blogs">
+              <Link to="/courses">
                 <Button size="lg" variant="outline" className="border-2 border-primary/30 hover:bg-primary/10">
-                  Explore All Posts
+                  Explore All Courses
                 </Button>
               </Link>
             </div>
