@@ -380,8 +380,17 @@ const CourseDetail = () => {
     if (post.parent_id) {
       setExpandedParents(new Set([post.parent_id]));
     } else if (hasChildren) {
-      // If clicking a main lesson with children, expand it
-      setExpandedParents(new Set([post.id]));
+      // If clicking a main lesson with children, toggle expansion
+      setExpandedParents(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(post.id)) {
+          newSet.delete(post.id);
+        } else {
+          newSet.clear();
+          newSet.add(post.id);
+        }
+        return newSet;
+      });
     } else {
       // If clicking a main lesson without children, close all
       setExpandedParents(new Set());
@@ -735,7 +744,7 @@ const CourseDetail = () => {
                                           ? 'text-white font-medium' 
                                           : 'text-green-700'
                                       }`}>
-                                        • {subPost.title}
+                                        {subPost.title}
                                       </h3>
                                     </div>
                                   </div>
