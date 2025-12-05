@@ -101,18 +101,16 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   );
 
   return (
-    <div ref={containerRef} className="relative inline-block" onMouseLeave={handleMouseLeave}>
-      <div onMouseEnter={handleMouseEnter}>
-        {children || (
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
-            <Share2 className="h-5 w-5 text-foreground" />
-          </Button>
-        )}
-      </div>
+    <div ref={containerRef} className="relative inline-block" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      {children || (
+        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
+          <Share2 className="h-5 w-5 text-foreground" />
+        </Button>
+      )}
       
       {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2">
-          <div className="bg-white border border-border rounded-2xl shadow-lg p-2">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 z-50">
+          <div className="bg-white border border-border rounded-2xl shadow-lg p-2 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2">
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
