@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
-  ExternalLink, Send, Shield, XCircle
+  ExternalLink, Send, Shield, XCircle, X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -143,6 +143,20 @@ const AdminComments = () => {
       fetchComments();
     } catch (error: any) {
       toast({ title: "Error deleting comment", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .update({ status: "rejected" })
+        .eq("id", id);
+      if (error) throw error;
+      toast({ title: "Comment rejected" });
+      fetchComments();
+    } catch (error: any) {
+      toast({ title: "Error rejecting comment", description: error.message, variant: "destructive" });
     }
   };
 
@@ -336,6 +350,16 @@ const AdminComments = () => {
               >
                 <Reply className="mr-1 h-4 w-4" /> Reply
               </Button>
+              {comment.status !== "rejected" && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleReject(comment.id)}
+                  className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
+                >
+                  <X className="mr-1 h-4 w-4" /> Reject
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 variant="destructive" 
