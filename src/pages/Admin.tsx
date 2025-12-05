@@ -315,7 +315,7 @@ const Admin = () => {
             <Link to="/admin/categories">
               <Button className="w-full justify-start" variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
-                Manage Categories
+                Manage Courses
               </Button>
             </Link>
             <Link to="/admin/comments">
@@ -396,7 +396,7 @@ const Admin = () => {
                         </Button>
                       </Link>
                     ) : (
-                      <Button size="sm" variant="outline" className="gap-1" disabled title="No category assigned">
+                      <Button size="sm" variant="outline" className="gap-1" disabled title="No course assigned">
                         <Eye className="h-3 w-3" />
                         View
                       </Button>

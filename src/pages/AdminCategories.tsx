@@ -76,7 +76,7 @@ const AdminCategories = () => {
         await fetchCategoryStats(data.map(c => c.id));
       }
     } catch (error: any) {
-      toast({ title: "Error fetching categories", description: error.message, variant: "destructive" });
+      toast({ title: "Error fetching courses", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -110,14 +110,14 @@ const AdminCategories = () => {
 
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+    if (!confirm("Are you sure you want to delete this course?")) return;
     try {
       const { error } = await supabase.from("categories").delete().eq("id", id);
       if (error) throw error;
-      toast({ title: "Category deleted successfully" });
+      toast({ title: "Course deleted successfully" });
       fetchCategories();
     } catch (error: any) {
-      toast({ title: "Error deleting category", description: error.message, variant: "destructive" });
+      toast({ title: "Error deleting course", description: error.message, variant: "destructive" });
     }
   };
 
@@ -129,7 +129,7 @@ const AdminCategories = () => {
         .eq("id", id);
       
       if (error) throw error;
-      toast({ title: `Category ${!currentFeatured ? "marked as featured" : "unmarked as featured"}` });
+      toast({ title: `Course ${!currentFeatured ? "marked as featured" : "unmarked as featured"}` });
       fetchCategories();
     } catch (error: any) {
       toast({ title: "Error updating featured status", description: error.message, variant: "destructive" });
@@ -143,9 +143,9 @@ const AdminCategories = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-foreground">Categories</h1>
+          <h1 className="text-3xl font-bold text-foreground">Courses</h1>
           <Button onClick={() => navigate("/admin/categories/new")}>
-            <Plus className="mr-2 h-4 w-4" /> New Category
+            <Plus className="mr-2 h-4 w-4" /> New Course
           </Button>
         </div>
 

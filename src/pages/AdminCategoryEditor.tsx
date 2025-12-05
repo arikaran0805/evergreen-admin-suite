@@ -93,7 +93,7 @@ const AdminCategoryEditor = () => {
         });
       }
     } catch (error: any) {
-      toast({ title: "Error fetching category", description: error.message, variant: "destructive" });
+      toast({ title: "Error fetching course", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -110,19 +110,19 @@ const AdminCategoryEditor = () => {
           .eq("id", id);
         
         if (error) throw error;
-        toast({ title: "Category updated successfully" });
+        toast({ title: "Course updated successfully" });
       } else {
         const { error } = await supabase
           .from("categories")
           .insert([formData]);
         
         if (error) throw error;
-        toast({ title: "Category created successfully" });
+        toast({ title: "Course created successfully" });
       }
       
       navigate("/admin/categories");
     } catch (error: any) {
-      toast({ title: "Error saving category", description: error.message, variant: "destructive" });
+      toast({ title: "Error saving course", description: error.message, variant: "destructive" });
     }
   };
 
@@ -149,10 +149,10 @@ const AdminCategoryEditor = () => {
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => navigate("/admin/categories")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Categories
+            Back to Courses
           </Button>
           <h1 className="text-3xl font-bold text-foreground">
-            {id ? "Edit Category" : "Create New Category"}
+            {id ? "Edit Course" : "Create New Course"}
           </h1>
         </div>
 
@@ -161,14 +161,14 @@ const AdminCategoryEditor = () => {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Category Details</CardTitle>
+                <CardTitle>Course Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Category Name *</Label>
+                  <Label htmlFor="name">Course Name *</Label>
                   <Input
                     id="name"
-                    placeholder="Enter category name"
+                    placeholder="Enter course name"
                     value={formData.name}
                     onChange={(e) => {
                       const name = e.target.value;
@@ -186,7 +186,7 @@ const AdminCategoryEditor = () => {
                   <Label htmlFor="slug">Slug *</Label>
                   <Input
                     id="slug"
-                    placeholder="category-slug"
+                    placeholder="course-slug"
                     value={formData.slug}
                     onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                     required
@@ -232,7 +232,7 @@ const AdminCategoryEditor = () => {
 
                 <div className="flex items-center justify-between space-x-2">
                   <Label htmlFor="featured" className="cursor-pointer">
-                    Featured Category
+                    Featured Course
                   </Label>
                   <Switch
                     id="featured"
@@ -245,7 +245,7 @@ const AdminCategoryEditor = () => {
 
             <div className="flex flex-col gap-2">
               <Button type="submit" className="w-full">
-                {id ? "Update Category" : "Create Category"}
+                {id ? "Update Course" : "Create Course"}
               </Button>
               <Button
                 type="button"

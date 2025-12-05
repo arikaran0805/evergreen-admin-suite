@@ -19,7 +19,7 @@ const adminMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: FileText, label: "Posts", path: "/admin/posts" },
   { icon: FolderTree, label: "Pages", path: "/admin/pages" },
-  { icon: FolderTree, label: "Categories", path: "/admin/categories" },
+  { icon: FolderTree, label: "Courses", path: "/admin/categories" },
   { icon: Layers, label: "Difficulty Levels", path: "/admin/difficulty-levels" },
   { icon: Tags, label: "Tags", path: "/admin/tags" },
   { icon: Users, label: "Users", path: "/admin/users" },
