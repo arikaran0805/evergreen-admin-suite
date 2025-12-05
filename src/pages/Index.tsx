@@ -146,22 +146,16 @@ const Index = () => {
             </div>
 
             {/* Search Bar with Green Border */}
-            <form onSubmit={handleSearch} className="w-full max-w-xl">
-              <div className="relative flex items-center h-12 rounded-full border-2 border-primary bg-card shadow-md">
+            <form onSubmit={handleSearch} className="w-full max-w-2xl">
+              <div className="relative flex items-center h-14 md:h-16 rounded-full border-2 border-primary bg-card shadow-lg">
                 <input
                   type="text"
                   placeholder="Search courses, lessons, topics..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-full pl-5 pr-12 text-base bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground"
+                  className="w-full h-full pl-6 pr-14 text-lg bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground"
                 />
-                <button 
-                  type="submit" 
-                  className="absolute right-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                  onClick={() => {
-                    navigate(`/courses${searchQuery.trim() ? `?search=${encodeURIComponent(searchQuery.trim())}` : ''}`);
-                  }}
-                >
+                <button type="submit" className="absolute right-5 text-muted-foreground hover:text-primary transition-colors">
                   <Search className="h-5 w-5" />
                 </button>
               </div>
