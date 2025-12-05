@@ -588,6 +588,11 @@ export type Database = {
           og_description: string | null
           og_image: string | null
           og_title: string | null
+          schema_address: string | null
+          schema_contact_email: string | null
+          schema_phone: string | null
+          schema_same_as: string[] | null
+          schema_type: string | null
           site_description: string | null
           site_name: string
           site_url: string | null
@@ -615,6 +620,11 @@ export type Database = {
           og_description?: string | null
           og_image?: string | null
           og_title?: string | null
+          schema_address?: string | null
+          schema_contact_email?: string | null
+          schema_phone?: string | null
+          schema_same_as?: string[] | null
+          schema_type?: string | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null
@@ -642,6 +652,11 @@ export type Database = {
           og_description?: string | null
           og_image?: string | null
           og_title?: string | null
+          schema_address?: string | null
+          schema_contact_email?: string | null
+          schema_phone?: string | null
+          schema_same_as?: string[] | null
+          schema_type?: string | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null

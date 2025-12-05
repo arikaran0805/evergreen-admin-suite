@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code } from "lucide-react";
 import { z } from "zod";
 
 const urlSchema = z.string().url().optional().or(z.literal(""));
@@ -60,6 +60,12 @@ const AdminSettings = () => {
   const [ogDescription, setOgDescription] = useState("");
   const [twitterCardType, setTwitterCardType] = useState("summary_large_image");
   const [twitterSite, setTwitterSite] = useState("");
+  
+  // Schema Markup Settings
+  const [schemaType, setSchemaType] = useState("Organization");
+  const [schemaContactEmail, setSchemaContactEmail] = useState("");
+  const [schemaPhone, setSchemaPhone] = useState("");
+  const [schemaAddress, setSchemaAddress] = useState("");
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -129,6 +135,11 @@ const AdminSettings = () => {
       setOgDescription(data.og_description || "");
       setTwitterCardType(data.twitter_card_type || "summary_large_image");
       setTwitterSite(data.twitter_site || "");
+      // Schema Markup Settings
+      setSchemaType((data as any).schema_type || "Organization");
+      setSchemaContactEmail((data as any).schema_contact_email || "");
+      setSchemaPhone((data as any).schema_phone || "");
+      setSchemaAddress((data as any).schema_address || "");
     }
   };
 
@@ -349,6 +360,10 @@ const AdminSettings = () => {
           og_description: ogDescription,
           twitter_card_type: twitterCardType,
           twitter_site: twitterSite,
+          schema_type: schemaType,
+          schema_contact_email: schemaContactEmail,
+          schema_phone: schemaPhone,
+          schema_address: schemaAddress,
         })
         .eq("id", settingsId);
 
@@ -802,9 +817,98 @@ const AdminSettings = () => {
                     placeholder="@yoursitehandle"
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  Structured Data / Schema Markup
+                </CardTitle>
+                <CardDescription>
+                  Configure JSON-LD schema for rich search results
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="schema_type">Organization Type</Label>
+                  <select
+                    id="schema_type"
+                    value={schemaType}
+                    onChange={(e) => setSchemaType(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="Organization">Organization</option>
+                    <option value="LocalBusiness">Local Business</option>
+                    <option value="Corporation">Corporation</option>
+                    <option value="EducationalOrganization">Educational Organization</option>
+                    <option value="Person">Person / Blog</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Select the type that best describes your site
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="schema_contact_email">Contact Email</Label>
+                  <Input
+                    id="schema_contact_email"
+                    type="email"
+                    value={schemaContactEmail}
+                    onChange={(e) => setSchemaContactEmail(e.target.value)}
+                    placeholder="contact@yoursite.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Email shown in schema markup for contact
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="schema_phone">Phone Number (Optional)</Label>
+                  <Input
+                    id="schema_phone"
+                    value={schemaPhone}
+                    onChange={(e) => setSchemaPhone(e.target.value)}
+                    placeholder="+1-234-567-8900"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="schema_address">Address (Optional)</Label>
+                  <Textarea
+                    id="schema_address"
+                    value={schemaAddress}
+                    onChange={(e) => setSchemaAddress(e.target.value)}
+                    placeholder="123 Main St, City, State, Country"
+                    rows={2}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Physical address for LocalBusiness schema
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div className="rounded-lg bg-muted p-4">
+                  <h4 className="font-medium mb-2 text-sm">Schema Preview</h4>
+                  <pre className="text-xs text-muted-foreground overflow-x-auto">
+{`{
+  "@context": "https://schema.org",
+  "@type": "${schemaType}",
+  "name": "${siteName}",
+  "url": "${siteUrl || "https://yoursite.com"}",
+  ${logoUrl ? `"logo": "${logoUrl}",` : ""}
+  ${schemaContactEmail ? `"email": "${schemaContactEmail}",` : ""}
+  ${schemaPhone ? `"telephone": "${schemaPhone}",` : ""}
+  ${schemaAddress ? `"address": "${schemaAddress}",` : ""}
+  "sameAs": [${[twitterUrl, facebookUrl, instagramUrl, linkedinUrl, youtubeUrl, githubUrl].filter(Boolean).map(u => `"${u}"`).join(", ")}]
+}`}
+                  </pre>
+                </div>
 
                 <Button onClick={handleSaveSEO} disabled={saving} className="bg-primary w-full">
-                  {saving ? "Saving..." : "Save SEO Settings"}
+                  {saving ? "Saving..." : "Save SEO & Schema Settings"}
                 </Button>
               </CardContent>
             </Card>
