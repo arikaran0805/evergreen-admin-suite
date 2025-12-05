@@ -392,32 +392,98 @@ const CommentDialog = ({
           {/* Reply form */}
           {replyingTo === comment.id && (
             <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 space-y-2">
-              <Textarea
-                placeholder="Write a reply..."
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                rows={2}
-                className="border-primary/20 focus:border-primary"
-              />
-              {user && (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`reply-anon-${comment.id}`}
-                    checked={replyAnonymously}
-                    onCheckedChange={(checked) => setReplyAnonymously(checked as boolean)}
-                  />
-                  <Label htmlFor={`reply-anon-${comment.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                    Reply anonymously
-                  </Label>
+              <div className="border border-primary/20 rounded-md focus-within:border-primary overflow-hidden">
+                <Textarea
+                  placeholder="Write a reply..."
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  rows={2}
+                  className="border-0 focus-visible:ring-0 resize-none"
+                />
+                <div className="flex items-center gap-1 px-2 py-1.5 border-t border-primary/10 bg-muted/30">
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setReplyContent(replyContent + "**bold**")}
+                        >
+                          <Bold className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Bold</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setReplyContent(replyContent + "*italic*")}
+                        >
+                          <Italic className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Italic</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setReplyContent(replyContent + "`code`")}
+                        >
+                          <Code className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Code</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setReplyContent(replyContent + "[link](url)")}
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Link</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-              )}
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={submitting || !replyContent.trim()}>
-                  {submitting ? "Posting..." : "Post Reply"}
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => setReplyingTo(null)}>
-                  Cancel
-                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                {user ? (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`reply-anon-${comment.id}`}
+                      checked={replyAnonymously}
+                      onCheckedChange={(checked) => setReplyAnonymously(checked as boolean)}
+                    />
+                    <Label htmlFor={`reply-anon-${comment.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                      Reply anonymously
+                    </Label>
+                  </div>
+                ) : (
+                  <div />
+                )}
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setReplyingTo(null)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={submitting || !replyContent.trim()}>
+                    {submitting ? "Posting..." : "Post Reply"}
+                  </Button>
+                </div>
               </div>
             </form>
           )}
