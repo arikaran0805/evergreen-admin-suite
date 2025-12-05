@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
@@ -18,10 +19,12 @@ import { z } from "zod";
 const urlSchema = z.string().url().optional().or(z.literal(""));
 
 const AdminSettings = () => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
   
   // General Settings
   const [siteName, setSiteName] = useState("BlogHub");
@@ -1046,7 +1049,35 @@ const AdminSettings = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Clear cached data to improve performance
                   </p>
-                  <Button variant="outline">Clear Cache</Button>
+                  <Button 
+                    variant="outline" 
+                    disabled={clearingCache}
+                    onClick={async () => {
+                      setClearingCache(true);
+                      try {
+                        // Clear React Query cache
+                        queryClient.clear();
+                        // Clear localStorage
+                        localStorage.clear();
+                        // Clear sessionStorage
+                        sessionStorage.clear();
+                        toast({
+                          title: "Cache Cleared",
+                          description: "All cached data has been cleared successfully",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to clear cache",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setClearingCache(false);
+                      }
+                    }}
+                  >
+                    {clearingCache ? "Clearing..." : "Clear Cache"}
+                  </Button>
                 </div>
 
                 <Separator />
@@ -1056,7 +1087,9 @@ const AdminSettings = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Manage API keys and access tokens
                   </p>
-                  <Button variant="outline">Manage API Keys</Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/api")}>
+                    Manage API Keys
+                  </Button>
                 </div>
               </CardContent>
             </Card>
