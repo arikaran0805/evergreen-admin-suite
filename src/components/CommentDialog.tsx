@@ -44,7 +44,7 @@ interface CommentDialogProps {
   user: any;
   newComment: string;
   setNewComment: (value: string) => void;
-  onSubmitComment: (e: React.FormEvent, isAnonymous: boolean, parentId?: string) => void;
+  onSubmitComment: (e: React.FormEvent, isAnonymous: boolean, parentId?: string, content?: string) => void;
   onEditComment?: (commentId: string, newContent: string) => Promise<void>;
   onDeleteComment?: (commentId: string) => Promise<void>;
   submitting: boolean;
@@ -206,11 +206,8 @@ const CommentDialog = ({
     e.preventDefault();
     if (!replyContent.trim()) return;
     
-    // Temporarily set newComment to reply content
-    const originalComment = newComment;
-    setNewComment(replyContent);
-    onSubmitComment(e, replyAnonymously, parentId);
-    setNewComment(originalComment);
+    // Pass reply content directly to avoid async state issues
+    onSubmitComment(e, replyAnonymously, parentId, replyContent);
     setReplyContent("");
     setReplyingTo(null);
     setReplyAnonymously(false);
