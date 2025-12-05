@@ -2,7 +2,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -15,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface SiteSettings {
   site_name: string;
@@ -151,11 +151,13 @@ const Header = () => {
           ))}
         </nav>
 
-        {/* Search, User Menu and Mobile Menu */}
+        {/* Search, Theme Toggle, User Menu and Mobile Menu */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="hover:bg-secondary">
             <Search className="h-5 w-5" />
           </Button>
+          
+          <ThemeToggle />
 
           {/* User Menu - Desktop */}
           {user ? (
