@@ -85,6 +85,29 @@ const BlogDetail = () => {
     fetchComments();
     fetchRecentCourses();
     fetchTags();
+
+    // Subscribe to real-time comment updates
+    if (id) {
+      const channel = supabase
+        .channel(`comments-${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'comments',
+            filter: `post_id=eq.${id}`
+          },
+          () => {
+            fetchComments();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [id]);
 
   const checkUser = async () => {

@@ -149,6 +149,27 @@ const CourseDetail = () => {
     if (selectedPost) {
       fetchComments(selectedPost.id);
       fetchTags(selectedPost.id);
+
+      // Subscribe to real-time comment updates
+      const channel = supabase
+        .channel(`comments-${selectedPost.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'comments',
+            filter: `post_id=eq.${selectedPost.id}`
+          },
+          () => {
+            fetchComments(selectedPost.id);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setComments([]);
       setAllTags([]);
