@@ -6,9 +6,9 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Check, X, Trash2, MessageSquare, 
-  Search, User, UserX, Reply, ThumbsUp, ThumbsDown, ExternalLink,
-  Send, Shield
+  Check, X, Trash2, MessageSquare, AlertCircle, CheckCircle, XCircle, 
+  Search, User, UserX, Reply, ThumbsUp, ThumbsDown, Eye, ExternalLink,
+  CornerDownRight, Send, Shield
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -238,6 +238,9 @@ const AdminComments = () => {
     topLevel: topLevelComments.length,
     replies: comments.filter(c => c.parent_id).length,
     anonymous: comments.filter(c => c.is_anonymous).length,
+    pending: comments.filter(c => c.status === "pending").length,
+    approved: comments.filter(c => c.status === "approved").length,
+    rejected: comments.filter(c => c.status === "rejected").length,
   };
 
   const getAuthorDisplay = (comment: Comment) => {
@@ -481,7 +484,7 @@ const AdminComments = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <Card className="border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -529,6 +532,42 @@ const AdminComments = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border-yellow-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                  <p className="text-xl font-bold text-yellow-500">{stats.pending}</p>
+                </div>
+                <AlertCircle className="h-6 w-6 text-yellow-500/60" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Approved</p>
+                  <p className="text-xl font-bold text-green-500">{stats.approved}</p>
+                </div>
+                <CheckCircle className="h-6 w-6 text-green-500/60" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-red-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Rejected</p>
+                  <p className="text-xl font-bold text-red-500">{stats.rejected}</p>
+                </div>
+                <XCircle className="h-6 w-6 text-red-500/60" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Search */}
@@ -545,9 +584,13 @@ const AdminComments = () => {
 
         {/* Tabs for filtering */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="replies">With Replies</TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending {stats.pending > 0 && <Badge className="ml-1 bg-yellow-500">{stats.pending}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
             <TabsTrigger value="anonymous">Anonymous</TabsTrigger>
           </TabsList>
 
