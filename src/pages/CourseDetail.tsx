@@ -891,8 +891,14 @@ const CourseDetail = () => {
                               <Tag className="h-5 w-5 text-primary" />
                               <span className="font-medium text-primary">Tags:</span>
                               <div className="flex items-center gap-2">
-                                {allTags.map((tag, index) => (
-                                  <span key={tag.id} className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-full">{tag.name}</span>
+                                {allTags.map((tag) => (
+                                  <Link 
+                                    key={tag.id} 
+                                    to={`/tag/${tag.slug}`}
+                                    className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors cursor-pointer"
+                                  >
+                                    {tag.name}
+                                  </Link>
                                 ))}
                               </div>
                             </>
