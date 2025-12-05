@@ -157,6 +157,41 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          reaction_type: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          reaction_type: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -164,6 +199,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_anonymous: boolean
+          parent_id: string | null
           post_id: string
           status: string
           user_id: string | null
@@ -174,6 +210,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_anonymous?: boolean
+          parent_id?: string | null
           post_id: string
           status?: string
           user_id?: string | null
@@ -184,11 +221,19 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_anonymous?: boolean
+          parent_id?: string | null
           post_id?: string
           status?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
