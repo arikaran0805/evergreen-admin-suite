@@ -252,7 +252,10 @@ const Index = () => {
               <Link 
                 key={course.id} 
                 to={`/courses/${course.slug}`}
-                className={`group relative overflow-hidden bg-card ${index === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+                style={{ transitionDelay: coursesAnimation.isVisible ? `${index * 150}ms` : '0ms' }}
+                className={`group relative overflow-hidden bg-card transition-all duration-700 ${
+                  coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+                } ${index === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
               >
                 <div className={`relative ${index === 0 ? 'h-[600px]' : 'h-[300px]'} overflow-hidden`}>
                   <img 
