@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +80,7 @@ const CommentDialog = ({
   const [replyContent, setReplyContent] = useState("");
   const [replyAnonymously, setReplyAnonymously] = useState(false);
   const [reactions, setReactions] = useState<Record<string, { likes: number; dislikes: number; userReaction: string | null }>>({});
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most_liked">("newest");
   const { toast } = useToast();
 
   const sessionId = getSessionId();
@@ -219,8 +227,24 @@ const CommentDialog = ({
     }
   };
 
-  // Organize comments into threads
-  const topLevelComments = comments.filter(c => !c.parent_id);
+  // Organize and sort comments into threads
+  const topLevelComments = useMemo(() => {
+    const filtered = comments.filter(c => !c.parent_id);
+    
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else {
+        // most_liked
+        const aLikes = reactions[a.id]?.likes || 0;
+        const bLikes = reactions[b.id]?.likes || 0;
+        return bLikes - aLikes;
+      }
+    });
+  }, [comments, sortBy, reactions]);
+
   const getReplies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
 
   const renderComment = (comment: Comment, isReply: boolean = false) => (
@@ -429,6 +453,23 @@ const CommentDialog = ({
 
           {/* Comments List */}
           <div className="space-y-4">
+            {/* Sort Options */}
+            {comments.length > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Sort by</span>
+                <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most_liked") => setSortBy(value)}>
+                  <SelectTrigger className="w-[140px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                    <SelectItem value="most_liked">Most Liked</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             {topLevelComments.map((comment) => (
               <div key={comment.id}>
                 {renderComment(comment)}
