@@ -1,4 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+declare global {
+  interface Window {
+    adsbygoogle: any[];
+  }
+}
 
 interface AdPlaceholderProps {
   googleAdSlot?: string;
@@ -14,15 +20,26 @@ const AdPlaceholder = ({
   className = "" 
 }: AdPlaceholderProps) => {
   const adRef = useRef<HTMLDivElement>(null);
+  const [adLoaded, setAdLoaded] = useState(false);
 
   useEffect(() => {
-    // This is where the actual AdSense script would be initialized
-    // For now, we show a placeholder
-    if (googleAdSlot && googleAdClient && adRef.current) {
-      // Future: Initialize Google AdSense here
-      // (window.adsbygoogle = window.adsbygoogle || []).push({});
+    // Only initialize if we have valid credentials (not placeholder values)
+    const hasValidCredentials = 
+      googleAdSlot && 
+      googleAdClient && 
+      !googleAdClient.includes("XXXXXXXX") &&
+      googleAdSlot !== "1234567890";
+
+    if (hasValidCredentials && adRef.current && !adLoaded) {
+      try {
+        // Initialize Google AdSense
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        setAdLoaded(true);
+      } catch (error) {
+        console.error("AdSense error:", error);
+      }
     }
-  }, [googleAdSlot, googleAdClient]);
+  }, [googleAdSlot, googleAdClient, adLoaded]);
 
   const getAdDimensions = () => {
     switch (adType) {
@@ -37,6 +54,26 @@ const AdPlaceholder = ({
     }
   };
 
+  const getAdFormat = () => {
+    switch (adType) {
+      case "sidebar":
+        return "auto";
+      case "in-content":
+        return "fluid";
+      case "banner":
+        return "horizontal";
+      default:
+        return "auto";
+    }
+  };
+
+  // Check if we have valid (non-placeholder) credentials
+  const hasValidCredentials = 
+    googleAdSlot && 
+    googleAdClient && 
+    !googleAdClient.includes("XXXXXXXX") &&
+    googleAdSlot !== "1234567890";
+
   return (
     <div 
       ref={adRef}
@@ -50,10 +87,24 @@ const AdPlaceholder = ({
       data-ad-client={googleAdClient}
       data-ad-type={adType}
     >
-      {(!googleAdSlot || !googleAdClient) && (
+      {hasValidCredentials ? (
+        <ins
+          className="adsbygoogle"
+          style={{ display: "block", width: "100%", height: "100%" }}
+          data-ad-client={googleAdClient}
+          data-ad-slot={googleAdSlot}
+          data-ad-format={getAdFormat()}
+          data-full-width-responsive="true"
+        />
+      ) : (
         <div className="text-muted-foreground text-sm text-center">
           <div className="font-medium">Ad Placeholder</div>
-          <div className="text-xs opacity-70">{adType}</div>
+          <div className="text-xs opacity-70 mt-1">{adType}</div>
+          {googleAdSlot && (
+            <div className="text-xs opacity-50 mt-2">
+              Slot: {googleAdSlot}
+            </div>
+          )}
         </div>
       )}
     </div>
