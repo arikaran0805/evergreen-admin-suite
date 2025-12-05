@@ -376,10 +376,16 @@ const CourseDetail = () => {
     // Check if this lesson has children
     const hasChildren = posts.some(p => p.parent_id === post.id);
     
+    // Helper to update URL with lesson slug
+    const updateUrlWithLesson = (lessonSlug: string) => {
+      navigate(`/course/${slug}?lesson=${lessonSlug}`, { replace: true });
+    };
+    
     // If clicking a sub-lesson, only keep its parent expanded
     if (post.parent_id) {
       setExpandedParents(new Set([post.parent_id]));
       fetchPostContent(post);
+      updateUrlWithLesson(post.slug);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (hasChildren) {
       // Check if a child of this parent is currently selected
@@ -389,6 +395,7 @@ const CourseDetail = () => {
       // If child is active, load parent content but keep expanded
       if (isCurrentlyExpanded && hasActiveChild) {
         fetchPostContent(post);
+        updateUrlWithLesson(post.slug);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -406,12 +413,14 @@ const CourseDetail = () => {
       // Only load content if expanding (not collapsing) and not already selected
       if (!isCurrentlyExpanded && selectedPost?.id !== post.id) {
         fetchPostContent(post);
+        updateUrlWithLesson(post.slug);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
       // If clicking a main lesson without children, close all
       setExpandedParents(new Set());
       fetchPostContent(post);
+      updateUrlWithLesson(post.slug);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
