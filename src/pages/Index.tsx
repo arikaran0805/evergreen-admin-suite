@@ -174,27 +174,6 @@ const Index = () => {
                 </h1>
               </div>
 
-              {/* Subheadline */}
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-light">
-                {heroSubheadline}
-              </p>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-4 pt-4">
-                <Link to="/courses">
-                  <Button size="lg" className="h-16 px-10 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-none group relative overflow-hidden">
-                    <span className="relative z-10 flex items-center gap-2">
-                      Explore Courses
-                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                    <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  </Button>
-                </Link>
-                <Button size="lg" variant="outline" className="h-16 px-10 text-lg font-bold rounded-none border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
-                  <Compass className="mr-2 h-5 w-5" />
-                  Take a Tour
-                </Button>
-              </div>
             </div>
 
             {/* Right Side - Abstract Knowledge Constellation */}
