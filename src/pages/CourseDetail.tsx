@@ -939,6 +939,23 @@ const CourseDetail = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 hover:bg-transparent"
+                                >
+                                  <Edit className="h-5 w-5 text-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Suggest Changes</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </div>
                     </div>
