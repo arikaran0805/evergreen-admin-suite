@@ -890,7 +890,7 @@ const CourseDetail = () => {
                             <>
                               <Tag className="h-5 w-5 text-primary" />
                               <span className="font-medium text-primary">Tag:</span>
-                              <span className="text-primary font-medium bg-primary/10 px-2 py-0.5 rounded">{allTags.map(tag => tag.name).join(', ')}</span>
+                              <span className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-full">{allTags.map(tag => tag.name).join(', ')}</span>
                             </>
                           )}
                         </div>
