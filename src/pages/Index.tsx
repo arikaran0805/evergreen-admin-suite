@@ -121,7 +121,7 @@ const Index = () => {
         <div className="container px-4 relative z-10">
           <div className="grid lg:grid-cols-12 gap-8 items-center">
             {/* Left Content */}
-            <div className="lg:col-span-7 space-y-4">
+            <div className="lg:col-span-7 space-y-8">
               {/* Eyebrow */}
               <div className="inline-flex items-center gap-3 px-1">
                 <div className="flex items-center gap-1">
@@ -135,8 +135,8 @@ const Index = () => {
               </div>
 
               {/* Main Headline - Dramatic Typography */}
-              <div className="space-y-1">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[0.9] tracking-tighter">
+              <div className="space-y-2">
+                <h1 className="text-6xl md:text-8xl lg:text-9xl font-black leading-[0.85] tracking-tighter">
                   <span className="block text-foreground">{heroHeadline.split(heroHighlightText)[0]}</span>
                   <span 
                     className="block relative"
@@ -152,14 +152,14 @@ const Index = () => {
               </div>
 
               {/* Subheadline */}
-              <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed font-light">
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-light">
                 {heroSubheadline}
               </p>
 
               {/* CTAs */}
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-wrap gap-4 pt-4">
                 <Link to="/courses">
-                  <Button size="lg" className="h-14 px-8 text-base font-bold bg-foreground text-background hover:bg-foreground/90 rounded-none group relative overflow-hidden">
+                  <Button size="lg" className="h-16 px-10 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-none group relative overflow-hidden">
                     <span className="relative z-10 flex items-center gap-2">
                       Explore Courses
                       <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -167,7 +167,7 @@ const Index = () => {
                     <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="h-14 px-8 text-base font-bold rounded-none border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
+                <Button size="lg" variant="outline" className="h-16 px-10 text-lg font-bold rounded-none border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
                   <Compass className="mr-2 h-5 w-5" />
                   Take a Tour
                 </Button>
