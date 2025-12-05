@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
-  ExternalLink, Send, Shield, XCircle, X, Bold, Italic, Code, Link
+  ExternalLink, Send, Shield, XCircle, X, Bold, Italic, Code, Link, Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -157,6 +157,20 @@ const AdminComments = () => {
       fetchComments();
     } catch (error: any) {
       toast({ title: "Error rejecting comment", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .update({ status: "approved" })
+        .eq("id", id);
+      if (error) throw error;
+      toast({ title: "Comment approved" });
+      fetchComments();
+    } catch (error: any) {
+      toast({ title: "Error approving comment", description: error.message, variant: "destructive" });
     }
   };
 
@@ -355,7 +369,16 @@ const AdminComments = () => {
               >
                 <Reply className="mr-1 h-4 w-4" /> Reply
               </Button>
-              {comment.status !== "rejected" && (
+              {comment.status === "rejected" ? (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleApprove(comment.id)}
+                  className="border-green-500 text-green-500 hover:bg-green-500/10"
+                >
+                  <Check className="mr-1 h-4 w-4" /> Approve
+                </Button>
+              ) : (
                 <Button 
                   size="sm" 
                   variant="outline" 
