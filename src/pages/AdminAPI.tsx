@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Webhook, Key, Copy, Eye, EyeOff, DollarSign, LayoutGrid, FileCode, Monitor, Smartphone, CheckCircle, AlertCircle, Save, RefreshCw, Link, Image, Code, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Webhook, Key, Copy, Eye, EyeOff, DollarSign, LayoutGrid, FileCode, Monitor, Smartphone, CheckCircle, AlertCircle, Save, RefreshCw, Link, ImageIcon, Code, Upload } from "lucide-react";
 
 interface WebhookType {
   id: string;
@@ -144,9 +144,89 @@ const AdminAPI = () => {
   const [embedHeight, setEmbedHeight] = useState("250");
   const [embedAltText, setEmbedAltText] = useState("");
   const [generatedEmbedCode, setGeneratedEmbedCode] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<{ name: string; url: string }[]>([]);
+
+  // Fetch uploaded ad images
+  const fetchUploadedImages = async () => {
+    try {
+      const { data, error } = await supabase.storage.from("ad-images").list();
+      if (error) throw error;
+      
+      const images = data
+        .filter(file => file.name !== ".emptyFolderPlaceholder")
+        .map(file => ({
+          name: file.name,
+          url: supabase.storage.from("ad-images").getPublicUrl(file.name).data.publicUrl
+        }));
+      setUploadedImages(images);
+    } catch (error) {
+      console.error("Error fetching uploaded images:", error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Please upload a JPG, PNG, GIF, or WebP image", variant: "destructive" });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please upload an image smaller than 5MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+      const { data, error } = await supabase.storage.from("ad-images").upload(fileName, file);
+      
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage.from("ad-images").getPublicUrl(fileName);
+      setEmbedImageUrl(publicUrl);
+      
+      // Get image dimensions
+      const img = new Image();
+      img.onload = () => {
+        setEmbedWidth(img.width.toString());
+        setEmbedHeight(img.height.toString());
+      };
+      img.src = URL.createObjectURL(file);
+
+      toast({ title: "Image uploaded", description: "Ad image uploaded successfully" });
+      fetchUploadedImages();
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDeleteImage = async (fileName: string) => {
+    try {
+      const { error } = await supabase.storage.from("ad-images").remove([fileName]);
+      if (error) throw error;
+      toast({ title: "Deleted", description: "Image deleted successfully" });
+      fetchUploadedImages();
+      // Clear the URL if it matches the deleted image
+      if (embedImageUrl.includes(fileName)) {
+        setEmbedImageUrl("");
+      }
+    } catch (error: any) {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    }
+  };
 
   useEffect(() => {
     checkAdminAccess();
+    fetchUploadedImages();
   }, []);
 
   const checkAdminAccess = async () => {
@@ -750,6 +830,51 @@ const AdminAPI = () => {
                 <CardDescription>Generate embed code for custom image ads with redirect links</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Image Upload Section */}
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                  <Label className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload Ad Image
+                  </Label>
+                  <div className="flex gap-4">
+                    <Input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="cursor-pointer"
+                    />
+                    {uploadingImage && <RefreshCw className="h-5 w-5 animate-spin text-primary" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload JPG, PNG, GIF, or WebP (max 5MB). Image dimensions will be auto-detected.</p>
+                  
+                  {/* Uploaded Images Gallery */}
+                  {uploadedImages.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">Previously Uploaded Images</Label>
+                      <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto">
+                        {uploadedImages.map((img) => (
+                          <div 
+                            key={img.name} 
+                            className={`relative group cursor-pointer border rounded overflow-hidden ${embedImageUrl === img.url ? 'ring-2 ring-primary' : ''}`}
+                            onClick={() => setEmbedImageUrl(img.url)}
+                          >
+                            <img src={img.url} alt={img.name} className="w-full h-16 object-cover" />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.name); }}
+                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -760,7 +885,7 @@ const AdminAPI = () => {
                         value={embedImageUrl}
                         onChange={(e) => setEmbedImageUrl(e.target.value)}
                       />
-                      <p className="text-xs text-muted-foreground">URL of the ad image to display</p>
+                      <p className="text-xs text-muted-foreground">URL of the ad image to display (auto-filled when uploading)</p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="embed_redirect_url">Redirect URL</Label>
