@@ -32,6 +32,7 @@ import AdminSettings from "./pages/AdminSettings";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
 import AdminTags from "./pages/AdminTags";
+import TagPosts from "./pages/TagPosts";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
@@ -69,6 +70,7 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/course/:slug" element={<CourseDetail />} />
+        <Route path="/tag/:slug" element={<TagPosts />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/terms" element={<Terms />} />
