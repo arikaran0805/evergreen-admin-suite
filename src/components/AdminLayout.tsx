@@ -26,6 +26,7 @@ const adminMenuItems = [
   { icon: MessageSquare, label: "Comments", path: "/admin/comments" },
   { icon: Image, label: "Media Library", path: "/admin/media" },
   { icon: DollarSign, label: "Monetization", path: "/admin/monetization" },
+  { icon: DollarSign, label: "Ad Settings", path: "/admin/ad-settings" },
   { icon: Link2, label: "Redirects", path: "/admin/redirects" },
   { icon: Key, label: "API & Integrations", path: "/admin/api" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },

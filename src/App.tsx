@@ -35,6 +35,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
 import AdminSEO from "./pages/AdminSEO";
 import AdminTags from "./pages/AdminTags";
+import AdminAdSettings from "./pages/AdminAdSettings";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
@@ -100,6 +101,7 @@ const AppContent = () => {
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/social-analytics" element={<AdminSocialAnalytics />} />
         <Route path="/admin/seo" element={<AdminSEO />} />
+        <Route path="/admin/ad-settings" element={<AdminAdSettings />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

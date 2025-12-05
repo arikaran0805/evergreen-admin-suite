@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAdSettings } from "@/hooks/useAdSettings";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
@@ -98,6 +99,7 @@ const CategoryDetail = () => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { settings: adSettings } = useAdSettings();
 
   // Calculate learners count
   const learnersCount = Math.floor(Math.random() * 15000) + 5000;
@@ -763,8 +765,8 @@ const CategoryDetail = () => {
 
                     {/* In-Content Ad - Top (Below title and header) */}
                     <InContentAdTop 
-                      googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
-                      googleAdSlot="1234567890"
+                      googleAdClient={adSettings.googleAdClient}
+                      googleAdSlot={adSettings.inContentTopSlot}
                     />
 
                     {/* Featured Image */}
@@ -780,14 +782,14 @@ const CategoryDetail = () => {
                     <ContentWithAds 
                       htmlContent={selectedPost.content || ''}
                       insertAfterParagraph={3}
-                      googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
-                      googleAdSlot="2345678901"
+                      googleAdClient={adSettings.googleAdClient}
+                      googleAdSlot={adSettings.inContentMiddleSlot}
                     />
 
                     {/* In-Content Ad - Bottom (Before tags/navigation) */}
                     <InContentAdBottom 
-                      googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
-                      googleAdSlot="3456789012"
+                      googleAdClient={adSettings.googleAdClient}
+                      googleAdSlot={adSettings.inContentBottomSlot}
                     />
 
                     {/* Tags */}
@@ -903,21 +905,21 @@ const CategoryDetail = () => {
             <div className="sticky top-4 space-y-1">
               {/* SidebarAdTop - Always Google AdSense */}
               <SidebarAdTop 
-                googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
-                googleAdSlot="4567890123"
+                googleAdClient={adSettings.googleAdClient}
+                googleAdSlot={adSettings.sidebarTopSlot}
               />
               
               {/* SidebarAdMiddle - 3rd party if provided, else Google AdSense */}
               <SidebarAdMiddle 
-                googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
-                googleAdSlot="5678901234"
-                thirdPartyAdCode={undefined} // Pass third-party ad code here when available
+                googleAdClient={adSettings.googleAdClient}
+                googleAdSlot={adSettings.sidebarMiddleSlot}
+                thirdPartyAdCode={adSettings.thirdPartySidebarCode || undefined}
               />
               
               {/* SidebarAdBottom - Always Google AdSense */}
               <SidebarAdBottom 
-                googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
-                googleAdSlot="6789012345"
+                googleAdClient={adSettings.googleAdClient}
+                googleAdSlot={adSettings.sidebarBottomSlot}
               />
             </div>
           </aside>
