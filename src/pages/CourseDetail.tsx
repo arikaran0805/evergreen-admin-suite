@@ -379,8 +379,11 @@ const CourseDetail = () => {
     // If clicking a sub-lesson, only keep its parent expanded
     if (post.parent_id) {
       setExpandedParents(new Set([post.parent_id]));
+      fetchPostContent(post);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (hasChildren) {
-      // If clicking a main lesson with children, toggle expansion
+      // If clicking a main lesson with children, toggle expansion only
+      const isCurrentlyExpanded = expandedParents.has(post.id);
       setExpandedParents(prev => {
         const newSet = new Set(prev);
         if (newSet.has(post.id)) {
@@ -391,13 +394,17 @@ const CourseDetail = () => {
         }
         return newSet;
       });
+      // Only load content if expanding (not collapsing) and not already selected
+      if (!isCurrentlyExpanded && selectedPost?.id !== post.id) {
+        fetchPostContent(post);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } else {
       // If clicking a main lesson without children, close all
       setExpandedParents(new Set());
+      fetchPostContent(post);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
-    fetchPostContent(post);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleParentExpansion = (parentId: string, e: React.MouseEvent) => {
