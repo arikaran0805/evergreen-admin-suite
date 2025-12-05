@@ -28,8 +28,15 @@ interface Page {
   updated_at: string;
 }
 
+interface PageStats {
+  [pageId: string]: {
+    views: number;
+  };
+}
+
 const AdminPages = () => {
   const [pages, setPages] = useState<Page[]>([]);
+  const [pageStats, setPageStats] = useState<PageStats>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPage, setEditingPage] = useState<Page | null>(null);
@@ -73,10 +80,42 @@ const AdminPages = () => {
 
       if (error) throw error;
       setPages(data || []);
+      
+      // Fetch view stats for each page
+      if (data && data.length > 0) {
+        await fetchPageStats(data.map(p => p.id));
+      }
     } catch (error: any) {
       toast({ title: "Error fetching pages", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPageStats = async (pageIds: string[]) => {
+    try {
+      const statsMap: PageStats = {};
+      
+      pageIds.forEach(id => {
+        statsMap[id] = { views: 0 };
+      });
+
+      const { data: viewsData } = await supabase
+        .from("page_views")
+        .select("page_id")
+        .in("page_id", pageIds);
+      
+      if (viewsData) {
+        viewsData.forEach(view => {
+          if (statsMap[view.page_id]) {
+            statsMap[view.page_id].views++;
+          }
+        });
+      }
+
+      setPageStats(statsMap);
+    } catch (error) {
+      console.error("Error fetching page stats:", error);
     }
   };
 
@@ -208,6 +247,10 @@ const AdminPages = () => {
                         </TooltipTrigger>
                         <TooltipContent side="top" className="p-3">
                           <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Views:</span>
+                              <span className="font-medium">{pageStats[page.id]?.views || 0}</span>
+                            </div>
                             <div className="flex items-center justify-between gap-4">
                               <span className="text-muted-foreground">Status:</span>
                               <span className="font-medium">{page.status}</span>
