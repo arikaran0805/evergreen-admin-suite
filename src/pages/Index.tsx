@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { ArrowRight, ArrowUpRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon } from "lucide-react";
+import { ArrowRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -218,79 +218,81 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Courses - Magazine Layout */}
+      {/* Featured Courses - Clean Card Grid */}
       <section 
         ref={coursesAnimation.ref}
-        className={`py-32 relative transition-all duration-1000 delay-200 ${
+        className={`py-24 lg:py-32 relative transition-all duration-1000 delay-200 ${
           coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-        
         <div className="container px-4">
           {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-px bg-primary" />
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-3">
+                <div className="w-10 h-px bg-primary" />
                 <span className="font-mono text-sm uppercase tracking-[0.2em] text-primary">Featured</span>
               </div>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tight text-foreground">
-                Trending<br />
-                <span className="text-muted-foreground/50">Courses</span>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+                Popular Courses
               </h2>
+              <p className="text-muted-foreground max-w-md">
+                Start your learning journey with our most popular courses
+              </p>
             </div>
-            <Link to="/courses" className="group flex items-center gap-2 text-foreground hover:text-primary transition-colors">
-              <span className="font-medium">View All</span>
-              <ArrowUpRight className="h-5 w-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <Link to="/courses" className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all">
+              <span className="font-medium text-foreground">View All Courses</span>
+              <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
-          {/* Course Grid - Asymmetric */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          {/* Course Grid - Clean Equal Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredCourses.map((course, index) => (
               <Link 
                 key={course.id} 
                 to={`/courses/${course.slug}`}
-                style={{ transitionDelay: coursesAnimation.isVisible ? `${index * 150}ms` : '0ms' }}
-                className={`group relative overflow-hidden bg-card transition-all duration-700 ${
-                  coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-                } ${index === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+                style={{ transitionDelay: coursesAnimation.isVisible ? `${index * 100}ms` : '0ms' }}
+                className={`group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 ${
+                  coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
               >
-                <div className={`relative ${index === 0 ? 'h-[600px]' : 'h-[300px]'} overflow-hidden`}>
+                {/* Image Container */}
+                <div className="relative h-48 overflow-hidden">
                   <img 
                     src={course.image}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
                   
-                  {/* Content overlay */}
-                  <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end">
-                    {/* Level badge */}
-                    <div className="mb-4">
-                      <span className="inline-block px-3 py-1 text-xs font-mono uppercase tracking-wider bg-primary text-primary-foreground">
-                        {course.level}
-                      </span>
-                    </div>
-                    
-                    <h3 className={`font-black text-background mb-2 ${index === 0 ? 'text-4xl md:text-5xl' : 'text-2xl'}`}>
-                      {course.title}
-                    </h3>
-                    <p className={`text-background/70 ${index === 0 ? 'text-lg max-w-lg' : 'text-sm'} line-clamp-2`}>
-                      {course.description}
-                    </p>
-                    
-                    {/* Arrow indicator */}
-                    <div className="mt-4 flex items-center gap-2 text-primary">
-                      <span className="text-sm font-medium">Start Learning</span>
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform" />
-                    </div>
+                  {/* Level badge */}
+                  <div className="absolute top-4 left-4">
+                    <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-primary/90 text-primary-foreground rounded-full">
+                      {course.level}
+                    </span>
                   </div>
+                </div>
+                
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                    {course.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                    {course.description}
+                  </p>
                   
-                  {/* Index number */}
-                  <div className="absolute top-6 right-6 font-mono text-background/30 text-6xl font-black">
-                    {String(index + 1).padStart(2, '0')}
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Star className="h-4 w-4 text-primary fill-primary" />
+                      <span>Top Rated</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
+                      <span>Learn</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
                   </div>
                 </div>
               </Link>
