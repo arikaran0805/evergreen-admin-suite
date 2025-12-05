@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,6 +27,11 @@ const AdminSettings = () => {
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
+  const [cacheOptions, setCacheOptions] = useState({
+    queryCache: true,
+    localStorage: false,
+    sessionStorage: false,
+  });
   
   // General Settings
   const [siteName, setSiteName] = useState("BlogHub");
@@ -1048,20 +1054,77 @@ const AdminSettings = () => {
                 <div className="rounded-lg bg-muted p-4">
                   <h3 className="font-semibold mb-2">Cache Management</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Clear cached data to improve performance
+                    Select which cached data to clear
                   </p>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="cache-query" 
+                        checked={cacheOptions.queryCache}
+                        onCheckedChange={(checked) => setCacheOptions(prev => ({ ...prev, queryCache: checked === true }))}
+                      />
+                      <Label htmlFor="cache-query" className="text-sm font-normal cursor-pointer">
+                        Query Cache <span className="text-muted-foreground">(API responses, data fetching)</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="cache-local" 
+                        checked={cacheOptions.localStorage}
+                        onCheckedChange={(checked) => setCacheOptions(prev => ({ ...prev, localStorage: checked === true }))}
+                      />
+                      <Label htmlFor="cache-local" className="text-sm font-normal cursor-pointer">
+                        Local Storage <span className="text-muted-foreground">(preferences, settings)</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="cache-session" 
+                        checked={cacheOptions.sessionStorage}
+                        onCheckedChange={(checked) => setCacheOptions(prev => ({ ...prev, sessionStorage: checked === true }))}
+                      />
+                      <Label htmlFor="cache-session" className="text-sm font-normal cursor-pointer">
+                        Session Storage <span className="text-muted-foreground">(temporary session data)</span>
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCacheOptions({ queryCache: true, localStorage: true, sessionStorage: true })}
+                    >
+                      Select All
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCacheOptions({ queryCache: false, localStorage: false, sessionStorage: false })}
+                    >
+                      Deselect All
+                    </Button>
+                  </div>
+                  <Separator className="my-4" />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" disabled={clearingCache}>
-                        {clearingCache ? "Clearing..." : "Clear Cache"}
+                      <Button 
+                        variant="destructive" 
+                        disabled={clearingCache || (!cacheOptions.queryCache && !cacheOptions.localStorage && !cacheOptions.sessionStorage)}
+                      >
+                        {clearingCache ? "Clearing..." : "Clear Selected Cache"}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Clear All Cache?</AlertDialogTitle>
+                        <AlertDialogTitle>Clear Selected Cache?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will clear all cached data including browser storage and query cache. 
-                          You may need to log in again and some preferences may be reset. This action cannot be undone.
+                          This will clear the following:
+                          <ul className="list-disc list-inside mt-2 space-y-1">
+                            {cacheOptions.queryCache && <li>Query Cache (API responses)</li>}
+                            {cacheOptions.localStorage && <li>Local Storage (may reset preferences)</li>}
+                            {cacheOptions.sessionStorage && <li>Session Storage (may require re-login)</li>}
+                          </ul>
+                          <p className="mt-2">This action cannot be undone.</p>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -1070,12 +1133,22 @@ const AdminSettings = () => {
                           onClick={async () => {
                             setClearingCache(true);
                             try {
-                              queryClient.clear();
-                              localStorage.clear();
-                              sessionStorage.clear();
+                              const cleared: string[] = [];
+                              if (cacheOptions.queryCache) {
+                                queryClient.clear();
+                                cleared.push("Query Cache");
+                              }
+                              if (cacheOptions.localStorage) {
+                                localStorage.clear();
+                                cleared.push("Local Storage");
+                              }
+                              if (cacheOptions.sessionStorage) {
+                                sessionStorage.clear();
+                                cleared.push("Session Storage");
+                              }
                               toast({
                                 title: "Cache Cleared",
-                                description: "All cached data has been cleared successfully",
+                                description: `Cleared: ${cleared.join(", ")}`,
                               });
                             } catch (error) {
                               toast({
