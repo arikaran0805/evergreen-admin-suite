@@ -24,6 +24,7 @@ const Index = () => {
   });
   const [placeholder, setPlaceholder] = useState("");
   const [placeholderTexts, setPlaceholderTexts] = useState<string[]>(["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
+  const [heroQuickLinks, setHeroQuickLinks] = useState<{label: string; slug: string; highlighted: boolean}[]>([]);
   const placeholderIndex = useRef(0);
   const charIndex = useRef(0);
   const isDeleting = useRef(false);
@@ -106,7 +107,7 @@ const Index = () => {
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, site_description, hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url, search_placeholders')
+      .select('site_name, site_description, hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url, search_placeholders, hero_quick_links')
       .limit(1)
       .maybeSingle();
     
@@ -119,6 +120,9 @@ const Index = () => {
       setHeroHighlightColor(data.hero_highlight_color || "#10b981");
       if ((data as any).search_placeholders && (data as any).search_placeholders.length > 0) {
         setPlaceholderTexts((data as any).search_placeholders);
+      }
+      if ((data as any).hero_quick_links && (data as any).hero_quick_links.length > 0) {
+        setHeroQuickLinks((data as any).hero_quick_links);
       }
       setSocialLinks({
         twitter: data.twitter_url || "",
@@ -197,21 +201,23 @@ const Index = () => {
             </form>
 
             {/* Quick Course Links */}
-            <div className="flex flex-wrap justify-center gap-3">
-              {featuredCourses.slice(0, 4).map((course, index) => (
-                <Link
-                  key={course.id}
-                  to={`/courses/${course.slug}`}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    index === 0
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'bg-card border border-border text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {course.title}
-                </Link>
-              ))}
-            </div>
+            {heroQuickLinks.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-3">
+                {heroQuickLinks.map((link) => (
+                  <Link
+                    key={link.slug}
+                    to={`/courses/${link.slug}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      link.highlighted
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        : 'bg-card border border-border text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {/* CTAs */}
             <div className="flex flex-wrap justify-center gap-4 pt-4">
