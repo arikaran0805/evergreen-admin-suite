@@ -727,7 +727,7 @@ const CourseDetail = () => {
                             
                             {/* Sub-lessons - only show when expanded */}
                             {hasChildren && isExpanded && (
-                              <div className="ml-4 mt-1 space-y-1 animate-accordion-down">
+                              <div className="ml-4 mt-1 pl-3 border-l-2 border-green-300 space-y-1 animate-accordion-down">
                                 {subLessonsMap.get(post.id)!.map((subPost) => (
                                   <div
                                     key={subPost.id}
