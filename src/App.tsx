@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { useEffect, useRef } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
-import Blogs from "./pages/Blogs";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import About from "./pages/About";
@@ -68,7 +67,6 @@ const AppContent = () => {
       <Sonner />
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/blogs" element={<Blogs />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/course/:slug" element={<CourseDetail />} />
         <Route path="/about" element={<About />} />
