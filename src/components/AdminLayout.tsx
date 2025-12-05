@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
-  LayoutDashboard, FileText, FolderTree, Tags, Users, UserCog, 
+  LayoutDashboard, FileText, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Webhook, 
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, Layers, GraduationCap
 } from "lucide-react";
@@ -18,7 +18,7 @@ interface AdminLayoutProps {
 const adminMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: FileText, label: "Posts", path: "/admin/posts" },
-  { icon: FolderTree, label: "Pages", path: "/admin/pages" },
+  { icon: Files, label: "Pages", path: "/admin/pages" },
   { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
   { icon: Layers, label: "Difficulty Levels", path: "/admin/difficulty-levels" },
   { icon: Tags, label: "Tags", path: "/admin/tags" },
