@@ -196,6 +196,23 @@ const Index = () => {
               </div>
             </form>
 
+            {/* Quick Course Links */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {featuredCourses.slice(0, 4).map((course, index) => (
+                <Link
+                  key={course.id}
+                  to={`/courses/${course.slug}`}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    index === 0
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'bg-card border border-border text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {course.title}
+                </Link>
+              ))}
+            </div>
+
             {/* CTAs */}
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Link to="/courses">
