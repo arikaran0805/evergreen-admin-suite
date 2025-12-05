@@ -474,7 +474,7 @@ const CommentDialog = ({
                           <Bold className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Bold (**text**)</TooltipContent>
+                      <TooltipContent>Bold</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -488,7 +488,7 @@ const CommentDialog = ({
                           <Italic className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Italic (*text*)</TooltipContent>
+                      <TooltipContent>Italic</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -502,7 +502,7 @@ const CommentDialog = ({
                           <Code className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Code (`code`)</TooltipContent>
+                      <TooltipContent>Code</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -516,7 +516,7 @@ const CommentDialog = ({
                           <Link className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Link ([text](url))</TooltipContent>
+                      <TooltipContent>Link</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
