@@ -892,18 +892,22 @@ const AdminSettings = () => {
 
                 <div className="rounded-lg bg-muted p-4">
                   <h4 className="font-medium mb-2 text-sm">Schema Preview</h4>
-                  <pre className="text-xs text-muted-foreground overflow-x-auto">
-{`{
-  "@context": "https://schema.org",
-  "@type": "${schemaType}",
-  "name": "${siteName}",
-  "url": "${siteUrl || "https://yoursite.com"}",
-  ${logoUrl ? `"logo": "${logoUrl}",` : ""}
-  ${schemaContactEmail ? `"email": "${schemaContactEmail}",` : ""}
-  ${schemaPhone ? `"telephone": "${schemaPhone}",` : ""}
-  ${schemaAddress ? `"address": "${schemaAddress}",` : ""}
-  "sameAs": [${[twitterUrl, facebookUrl, instagramUrl, linkedinUrl, youtubeUrl, githubUrl].filter(Boolean).map(u => `"${u}"`).join(", ")}]
-}`}
+                  <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(
+                      {
+                        "@context": "https://schema.org",
+                        "@type": schemaType,
+                        "name": siteName || "Your Site Name",
+                        "url": siteUrl || "https://yoursite.com",
+                        ...(logoUrl && { "logo": logoUrl }),
+                        ...(schemaContactEmail && { "email": schemaContactEmail }),
+                        ...(schemaPhone && { "telephone": schemaPhone }),
+                        ...(schemaAddress && { "address": schemaAddress }),
+                        "sameAs": [twitterUrl, facebookUrl, instagramUrl, linkedinUrl, youtubeUrl, githubUrl].filter(Boolean)
+                      },
+                      null,
+                      2
+                    )}
                   </pre>
                 </div>
 
