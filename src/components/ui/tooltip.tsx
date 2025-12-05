@@ -3,9 +3,17 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 import { cn } from "@/lib/utils";
 
-const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipProvider = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>) => (
+  <TooltipPrimitive.Provider delayDuration={200} {...props}>
+    {children}
+  </TooltipPrimitive.Provider>
+);
 
-const Tooltip = TooltipPrimitive.Root;
+const Tooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => (
+  <TooltipPrimitive.Root disableHoverableContent {...props}>
+    {children}
+  </TooltipPrimitive.Root>
+);
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
