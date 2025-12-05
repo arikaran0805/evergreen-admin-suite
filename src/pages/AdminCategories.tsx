@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Star } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Edit, Trash2, Star, Eye, Info } from "lucide-react";
+import { format } from "date-fns";
 
 interface Category {
   id: string;
@@ -16,10 +18,18 @@ interface Category {
   description: string | null;
   featured: boolean;
   level: string | null;
+  created_at: string;
+}
+
+interface CategoryStats {
+  [categoryId: string]: {
+    postCount: number;
+  };
 }
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats>({});
   const [loading, setLoading] = useState(true);
   const [previewCategory, setPreviewCategory] = useState<Category | null>(null);
   const { toast } = useToast();
@@ -61,10 +71,40 @@ const AdminCategories = () => {
 
       if (error) throw error;
       setCategories(data || []);
+      
+      if (data && data.length > 0) {
+        await fetchCategoryStats(data.map(c => c.id));
+      }
     } catch (error: any) {
       toast({ title: "Error fetching categories", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategoryStats = async (categoryIds: string[]) => {
+    try {
+      const statsMap: CategoryStats = {};
+      categoryIds.forEach(id => {
+        statsMap[id] = { postCount: 0 };
+      });
+
+      const { data: postsData } = await supabase
+        .from("posts")
+        .select("category_id")
+        .in("category_id", categoryIds);
+
+      if (postsData) {
+        postsData.forEach(post => {
+          if (post.category_id && statsMap[post.category_id]) {
+            statsMap[post.category_id].postCount++;
+          }
+        });
+      }
+
+      setCategoryStats(statsMap);
+    } catch (error) {
+      console.error("Error fetching category stats:", error);
     }
   };
 
@@ -115,12 +155,40 @@ const AdminCategories = () => {
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>{category.name}</span>
-                  <div className="space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/admin/categories/${category.id}`)}>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => window.open(`/category/${category.slug}`, "_blank")}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/categories/${category.id}`)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(category.id)}>
-                      <Trash2 className="h-4 w-4" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="p-3">
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Posts:</span>
+                              <span className="font-medium">{categoryStats[category.id]?.postCount || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Created:</span>
+                              <span className="font-medium">{format(new Date(category.created_at), "MMM d, yyyy")}</span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(category.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </CardTitle>
