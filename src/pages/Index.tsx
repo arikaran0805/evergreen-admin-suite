@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { ArrowRight, ArrowUpRight, Compass, Star, Circle, Triangle, Square, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -299,63 +299,120 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Journey CTA - Full Bleed */}
+      {/* Journey CTA - Split Layout */}
       <section 
         ref={ctaAnimation.ref}
-        className={`relative py-40 overflow-hidden bg-foreground text-background transition-all duration-1000 delay-300 ${
+        className={`relative py-24 lg:py-32 overflow-hidden transition-all duration-1000 delay-300 ${
           ctaAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
-        {/* Background pattern */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--background)/0.1)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--background)/0.1)_1px,transparent_1px)] bg-[size:60px_60px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-gradient-radial from-primary/20 to-transparent rounded-full blur-3xl" />
-        </div>
-        
-        {/* Floating geometric accents */}
-        <div className="absolute top-20 left-20">
-          <Triangle className="w-16 h-16 text-primary/30 rotate-12" strokeWidth={1} />
-        </div>
-        <div className="absolute bottom-20 right-20">
-          <Circle className="w-20 h-20 text-accent/30" strokeWidth={1} />
-        </div>
-        <div className="absolute top-1/3 right-1/4">
-          <Square className="w-12 h-12 text-primary/20 rotate-45" strokeWidth={1} />
-        </div>
-        
-        <div className="container px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Sparkle icon */}
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-background/20 mb-8">
-              <Sparkles className="w-10 h-10 text-primary" />
-            </div>
-            
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 leading-[0.9]">
-              Ready to<br />
-              <span className="text-primary">Transform</span><br />
-              Your Mind?
-            </h2>
-            
-            <p className="text-xl md:text-2xl text-background/60 max-w-2xl mx-auto mb-12 leading-relaxed">
-              Join a community of curious minds exploring knowledge through engaging visual experiences.
-            </p>
-
-            {/* Features strip */}
-            <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
-              {["Free to Start", "Self-Paced", "Certificate Ready", "24/7 Access"].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 text-background/70">
-                  <Star className="w-4 h-4 text-primary fill-primary" />
-                  <span className="font-medium">{item}</span>
+        <div className="container px-4">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left Side - Illustration */}
+            <div className="relative order-2 lg:order-1">
+              <div className="relative aspect-square max-w-lg mx-auto">
+                {/* Background glow */}
+                <div className="absolute inset-0 bg-gradient-radial from-primary/20 via-primary/5 to-transparent rounded-full blur-3xl" />
+                
+                {/* Main illustration container */}
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {/* Central card stack */}
+                  <div className="relative w-64 h-80">
+                    {/* Back cards */}
+                    <div className="absolute -left-4 top-4 w-full h-full bg-muted/50 rounded-2xl border border-border rotate-[-8deg]" />
+                    <div className="absolute -right-4 top-2 w-full h-full bg-muted/30 rounded-2xl border border-border rotate-[5deg]" />
+                    
+                    {/* Main card */}
+                    <div className="relative w-full h-full bg-card rounded-2xl border-2 border-primary/20 shadow-2xl overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
+                      <div className="relative p-6 h-full flex flex-col">
+                        {/* Card header */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-3 h-3 rounded-full bg-primary/60" />
+                          <div className="w-3 h-3 rounded-full bg-accent/60" />
+                          <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+                        </div>
+                        
+                        {/* Content lines */}
+                        <div className="space-y-3 flex-1">
+                          <div className="h-4 bg-foreground/10 rounded w-3/4" />
+                          <div className="h-4 bg-foreground/10 rounded w-full" />
+                          <div className="h-4 bg-foreground/10 rounded w-5/6" />
+                          <div className="h-4 bg-foreground/10 rounded w-2/3" />
+                        </div>
+                        
+                        {/* Card emoji */}
+                        <div className="absolute bottom-6 right-6 text-6xl opacity-20">📚</div>
+                        
+                        {/* Progress bar */}
+                        <div className="mt-auto">
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full w-3/4 bg-gradient-to-r from-primary to-accent rounded-full" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">75% Complete</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Floating elements */}
+                  <div className="absolute top-8 right-8 w-16 h-16 bg-primary/20 rounded-xl flex items-center justify-center animate-[bounce_3s_ease-in-out_infinite]">
+                    <span className="text-3xl">🎯</span>
+                  </div>
+                  <div className="absolute bottom-12 left-4 w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center animate-[bounce_4s_ease-in-out_infinite_0.5s]">
+                    <span className="text-2xl">✨</span>
+                  </div>
+                  <div className="absolute top-1/4 left-0 w-12 h-12 bg-card border border-border rounded-lg flex items-center justify-center shadow-lg animate-[bounce_3.5s_ease-in-out_infinite_1s]">
+                    <span className="text-xl">💡</span>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
-
-            <Link to="/courses">
-              <Button size="lg" className="h-16 px-12 text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-none group">
-                Begin Your Journey
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
+            
+            {/* Right Side - Content */}
+            <div className="order-1 lg:order-2 space-y-8">
+              {/* Eyebrow */}
+              <div className="inline-flex items-center gap-3">
+                <div className="w-12 h-px bg-primary" />
+                <span className="font-mono text-sm uppercase tracking-[0.2em] text-primary">Start Today</span>
+              </div>
+              
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+                Begin Your<br />
+                <span className="text-primary">Learning Journey</span>
+              </h2>
+              
+              <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
+                Join a community of curious minds exploring knowledge through engaging visual experiences. Start for free and unlock your potential.
+              </p>
+              
+              {/* Features list */}
+              <div className="grid grid-cols-2 gap-4">
+                {["Free to Start", "Self-Paced Learning", "Visual Content", "Track Progress"].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Star className="w-4 h-4 text-primary fill-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-4 pt-4">
+                <Link to="/courses">
+                  <Button size="lg" className="h-14 px-8 text-base font-bold bg-foreground text-background hover:bg-foreground/90 rounded-xl group">
+                    Start Learning Free
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link to="/courses">
+                  <Button size="lg" variant="outline" className="h-14 px-8 text-base font-bold rounded-xl border-2 border-border hover:bg-muted transition-colors">
+                    Browse Courses
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
