@@ -434,14 +434,17 @@ const CourseDetail = () => {
     }
   };
 
-  const handleCommentSubmit = async (e: React.FormEvent, isAnonymous: boolean = false, parentId?: string) => {
+  const handleCommentSubmit = async (e: React.FormEvent, isAnonymous: boolean = false, parentId?: string, content?: string) => {
     e.preventDefault();
 
     if (!selectedPost) return;
 
+    // Use provided content for replies, otherwise use commentContent state
+    const commentText = content || commentContent;
+
     try {
       // Validate input
-      const validated = commentSchema.parse({ content: commentContent });
+      const validated = commentSchema.parse({ content: commentText });
 
       setSubmittingComment(true);
 
@@ -469,7 +472,10 @@ const CourseDetail = () => {
         description: "Your comment has been posted.",
       });
 
-      setCommentContent("");
+      // Only clear the main comment box for top-level comments
+      if (!content) {
+        setCommentContent("");
+      }
       fetchComments(selectedPost.id);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
