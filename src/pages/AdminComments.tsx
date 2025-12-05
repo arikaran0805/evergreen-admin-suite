@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Comment {
   id: string;
@@ -53,6 +54,7 @@ const AdminComments = () => {
   const [replyContent, setReplyContent] = useState("");
   const [submittingReply, setSubmittingReply] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [selectedComments, setSelectedComments] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -143,6 +145,48 @@ const AdminComments = () => {
       fetchComments();
     } catch (error: any) {
       toast({ title: "Error deleting comment", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedComments.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedComments.size} comment(s)? This will also delete all their replies.`)) return;
+    
+    try {
+      const ids = Array.from(selectedComments);
+      // Delete replies for all selected comments
+      for (const id of ids) {
+        await supabase.from("comments").delete().eq("parent_id", id);
+      }
+      // Delete all selected comments
+      const { error } = await supabase.from("comments").delete().in("id", ids);
+      if (error) throw error;
+      
+      toast({ title: `${selectedComments.size} comment(s) deleted` });
+      setSelectedComments(new Set());
+      fetchComments();
+    } catch (error: any) {
+      toast({ title: "Error deleting comments", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const toggleSelectComment = (id: string) => {
+    setSelectedComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedComments.size === filteredComments.length) {
+      setSelectedComments(new Set());
+    } else {
+      setSelectedComments(new Set(filteredComments.map(c => c.id)));
     }
   };
 
@@ -262,9 +306,16 @@ const AdminComments = () => {
 
     return (
       <div className={`${isReply ? 'ml-8 border-l-2 border-primary/20 pl-4' : ''}`}>
-        <Card className={`border-primary/10 ${isReply ? 'bg-muted/20' : ''}`}>
+        <Card className={`border-primary/10 ${isReply ? 'bg-muted/20' : ''} ${!isReply && selectedComments.has(comment.id) ? 'ring-2 ring-primary' : ''}`}>
           <CardHeader className="pb-3">
             <div className="flex justify-between items-start gap-4">
+              {!isReply && (
+                <Checkbox
+                  checked={selectedComments.has(comment.id)}
+                  onCheckedChange={() => toggleSelectComment(comment.id)}
+                  className="mt-1"
+                />
+              )}
               <div className="flex-1 space-y-2">
                 {/* Author Info */}
                 <div className="flex items-center gap-3">
@@ -610,6 +661,31 @@ const AdminComments = () => {
               </Alert>
             ) : (
               <div className="space-y-4">
+                {/* Bulk Actions Bar */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={selectedComments.size === filteredComments.length && filteredComments.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {selectedComments.size > 0 
+                        ? `${selectedComments.size} selected` 
+                        : "Select all"}
+                    </span>
+                  </div>
+                  {selectedComments.size > 0 && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleBulkDelete}
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Delete Selected ({selectedComments.size})
+                    </Button>
+                  )}
+                </div>
+
                 {filteredComments.map((comment) => (
                   <CommentCard key={comment.id} comment={comment} />
                 ))}
