@@ -147,24 +147,6 @@ const Index = () => {
           heroAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        {/* Geometric Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Large rotating circle */}
-          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full border-[60px] border-primary/10 animate-[spin_60s_linear_infinite]" />
-          
-          {/* Floating shapes */}
-          <div className="absolute top-20 left-[10%] w-24 h-24 bg-primary/20 rotate-45 animate-[bounce_4s_ease-in-out_infinite]" />
-          <div className="absolute top-40 right-[15%] w-16 h-16 rounded-full bg-accent/30 animate-[bounce_3s_ease-in-out_infinite_0.5s]" />
-          <div className="absolute bottom-32 left-[20%] w-12 h-12 border-4 border-primary/30 rotate-12 animate-[bounce_5s_ease-in-out_infinite_1s]" />
-          <div className="absolute top-1/2 right-[8%] w-20 h-20 border-4 border-accent/20 rounded-full animate-[pulse_3s_ease-in-out_infinite]" />
-          
-          {/* Gradient orbs */}
-          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-primary/8 to-transparent rounded-full blur-3xl" />
-          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-radial from-accent/5 to-transparent rounded-full blur-3xl" />
-          
-          {/* Grid pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[size:80px_80px] opacity-30" />
-        </div>
 
         <div className="container px-4 relative z-10">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
