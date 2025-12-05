@@ -34,7 +34,7 @@ const Courses = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('courses')
-      .select('id, name, slug, description')
+      .select('id, name, slug, description, featured_image')
       .order('name', { ascending: true });
 
     if (!error && data) {
@@ -43,7 +43,7 @@ const Courses = () => {
         title: category.name,
         excerpt: category.description || 'Explore this course and learn new skills',
         category: category.name,
-        image: '/placeholder.svg',
+        image: category.featured_image || '/placeholder.svg',
         date: 'Course',
         author: 'Emojilearn Team',
         slug: category.slug

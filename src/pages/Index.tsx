@@ -44,7 +44,7 @@ const Index = () => {
   const fetchFeaturedCourses = async () => {
     const { data, error } = await supabase
       .from('courses')
-      .select('id, name, slug, description, level')
+      .select('id, name, slug, description, level, featured_image')
       .eq('featured', true)
       .order('name', { ascending: true })
       .limit(6);
@@ -55,7 +55,7 @@ const Index = () => {
         title: category.name,
         excerpt: category.description || 'Explore this course and learn new skills',
         category: category.name,
-        image: '/placeholder.svg',
+        image: category.featured_image || '/placeholder.svg',
         date: 'Course',
         author: 'BlogHub Team',
         slug: category.slug,

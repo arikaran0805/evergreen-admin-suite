@@ -36,6 +36,7 @@ interface Category {
   name: string;
   slug: string;
   description: string | null;
+  featured_image: string | null;
 }
 
 interface Post {
@@ -883,6 +884,13 @@ const CategoryDetail = () => {
                     </div>
 
                     {/* Course Overview - Default View */}
+                    {category.featured_image && (
+                      <img 
+                        src={category.featured_image} 
+                        alt={category.name}
+                        className="w-full h-auto rounded-lg mb-8 shadow-md"
+                      />
+                    )}
                     {category.description && (
                       <div className="py-4 mb-8">
                         <div 
