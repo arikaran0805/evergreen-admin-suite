@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
@@ -7,10 +7,8 @@ import { ArrowRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Yout
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
-import { Input } from "@/components/ui/input";
 
 const Index = () => {
-  const navigate = useNavigate();
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [siteName, setSiteName] = useState("EmojiLearn");
@@ -19,17 +17,9 @@ const Index = () => {
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity and deeper understanding.");
   const [heroHighlightText, setHeroHighlightText] = useState("Any Subject");
   const [heroHighlightColor, setHeroHighlightColor] = useState("#10b981");
-  const [searchQuery, setSearchQuery] = useState("");
   const [socialLinks, setSocialLinks] = useState({
     twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/courses?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   // Scroll animation hooks
   const heroAnimation = useScrollAnimation({ threshold: 0.2 });
@@ -130,46 +120,34 @@ const Index = () => {
 
         <div className="container px-4 relative z-10">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
-            {/* Big Search Box - Centered with Gradient Border */}
-            <form onSubmit={handleSearch} className="w-full max-w-2xl group">
-              <div className="relative p-[3px] rounded-full bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-shift shadow-xl shadow-primary/20">
-                <div className="relative bg-card rounded-full">
-                  <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground z-10" />
-                  <Input
-                    type="text"
-                    placeholder=""
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-16 md:h-20 pl-16 pr-32 md:pr-40 text-lg md:text-xl rounded-full border-0 bg-transparent focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                  {/* Animated Placeholder */}
-                  {!searchQuery && (
-                    <div className="absolute left-16 top-1/2 -translate-y-1/2 text-lg md:text-xl text-muted-foreground pointer-events-none whitespace-nowrap overflow-hidden animate-typing">
-                      Search courses, lessons, topics...
-                    </div>
-                  )}
-                  <Button 
-                    type="submit"
-                    size="lg"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 h-12 md:h-16 px-6 md:px-8 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
-                  >
-                    <Search className="h-5 w-5 md:mr-2" />
-                    <span className="hidden md:inline">Search</span>
-                  </Button>
-                </div>
+            {/* Main Headline with Curved Line */}
+            <div className="space-y-2">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight">
+                <span className="text-foreground">{heroHeadline.replace(heroHighlightText, '')}</span>
+                <span 
+                  className="relative inline-block"
+                  style={{ color: heroHighlightColor }}
+                >
+                  {heroHighlightText}
+                  <svg className="absolute -bottom-2 left-0 w-full h-4" viewBox="0 0 200 12" preserveAspectRatio="none">
+                    <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke={heroHighlightColor} strokeWidth="3" strokeLinecap="round" className="animate-[dash_2s_ease-in-out_infinite]" />
+                  </svg>
+                </span>
+              </h1>
+            </div>
+
+            {/* Simple Search Button */}
+            <Link to="/courses" className="group">
+              <div className="relative p-[2px] rounded-full bg-border/50 hover:bg-primary/30 transition-colors">
+                <Button 
+                  size="lg"
+                  className="h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg shadow-lg"
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  Search
+                </Button>
               </div>
-            </form>
-
-            {/* Main Headline - Single Line Below Search */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight whitespace-nowrap">
-              <span className="text-foreground">{heroHeadline.replace(heroHighlightText, '')}</span>
-              <span style={{ color: heroHighlightColor }}>{heroHighlightText}</span>
-            </h1>
-
-            {/* Subheadline */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed font-light">
-              {heroSubheadline}
-            </p>
+            </Link>
 
             {/* CTAs */}
             <div className="flex flex-wrap justify-center gap-4 pt-4">
