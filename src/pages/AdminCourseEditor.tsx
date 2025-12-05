@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Upload, X, Image } from "lucide-react";
 
-const AdminCategoryEditor = () => {
+const AdminCourseEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -355,4 +355,4 @@ const AdminCategoryEditor = () => {
   );
 };
 
-export default AdminCategoryEditor;
+export default AdminCourseEditor;
