@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
-  ExternalLink, Send, Shield, XCircle, X
+  ExternalLink, Send, Shield, XCircle, X, Bold, Italic, Code, Link
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -268,7 +268,12 @@ const AdminComments = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{author.name}</p>
-                      {author.isAnonymous && (
+                      {comment.display_name === "Admin" && (
+                        <Badge className="text-xs bg-primary text-primary-foreground">
+                          <Shield className="h-3 w-3 mr-1" /> Admin
+                        </Badge>
+                      )}
+                      {author.isAnonymous && comment.display_name !== "Admin" && (
                         <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-600">
                           Anonymous
                         </Badge>
@@ -376,12 +381,56 @@ const AdminComments = () => {
                   <Shield className="h-4 w-4" />
                   <span className="font-medium">Reply as Admin</span>
                 </div>
-                <Textarea
-                  placeholder="Write your reply..."
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 border-b border-border/50 pb-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setReplyContent(prev => prev + "**bold text**")}
+                      title="Bold"
+                    >
+                      <Bold className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setReplyContent(prev => prev + "*italic text*")}
+                      title="Italic"
+                    >
+                      <Italic className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setReplyContent(prev => prev + "`code`")}
+                      title="Code"
+                    >
+                      <Code className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setReplyContent(prev => prev + "[link text](url)")}
+                      title="Link"
+                    >
+                      <Link className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Write your reply..."
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    className="min-h-[100px] resize-none"
+                  />
+                </div>
                 <div className="flex gap-2 justify-end">
                   <Button
                     size="sm"
