@@ -701,7 +701,7 @@ const CourseDetail = () => {
                           <div key={post.id} className="mb-1">
                             {/* Main Lesson */}
                             <div
-                              className={`rounded-lg transition-all duration-300 relative ${
+                              className={`rounded-lg transition-all duration-300 ${
                                 isMainLessonActive
                                   ? 'bg-green-600 shadow-md' 
                                   : hasActiveChild
@@ -709,11 +709,7 @@ const CourseDetail = () => {
                                   : 'hover:bg-green-100'
                               }`}
                             >
-                              {/* Active indicator line */}
-                              {isMainLessonActive && (
-                                <div className="absolute left-0 top-1 bottom-1 w-1 bg-green-900 rounded-full" />
-                              )}
-                              <div className={`px-3 py-2.5 flex items-center justify-between ${isMainLessonActive ? 'pl-4' : ''}`}>
+                              <div className="px-3 py-2.5 flex items-center justify-between">
                                 <h3 
                                   onClick={() => handleLessonClick(post)}
                                   className={`text-sm font-medium flex-1 cursor-pointer transition-colors ${
@@ -752,17 +748,13 @@ const CourseDetail = () => {
                                   <div
                                     key={subPost.id}
                                     onClick={() => handleLessonClick(subPost)}
-                                    className={`rounded-lg cursor-pointer transition-all duration-200 relative ${
+                                    className={`rounded-lg cursor-pointer transition-all duration-200 ${
                                       selectedPost?.id === subPost.id 
                                         ? 'bg-green-600 shadow-md scale-[1.02]' 
                                         : 'hover:bg-green-100'
                                     }`}
                                   >
-                                    {/* Active indicator for child */}
-                                    {selectedPost?.id === subPost.id && (
-                                      <div className="absolute left-0 top-1 bottom-1 w-1 bg-green-900 rounded-full" />
-                                    )}
-                                    <div className={`px-3 py-2 ${selectedPost?.id === subPost.id ? 'pl-4' : ''}`}>
+                                    <div className="px-3 py-2">
                                       <h3 className={`text-sm transition-colors ${
                                         selectedPost?.id === subPost.id 
                                           ? 'text-white font-medium'
