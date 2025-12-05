@@ -17,6 +17,7 @@ import AdDisplay from "@/components/AdDisplay";
 import { Calendar, MessageSquare, ArrowLeft, BookOpen, Mail, Tag, Heart, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import CommentDialog from "@/components/CommentDialog";
+import ShareDialog from "@/components/ShareDialog";
 
 interface Post {
   id: string;
@@ -68,6 +69,7 @@ const BlogDetail = () => {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -314,7 +316,12 @@ const BlogDetail = () => {
                 <Button variant="ghost" size="icon" className="hover:text-primary">
                   <Heart className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="hover:text-primary">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:text-primary"
+                  onClick={() => setShareDialogOpen(true)}
+                >
                   <Share2 className="h-5 w-5" />
                 </Button>
                 <Button 
@@ -488,6 +495,15 @@ const BlogDetail = () => {
           </aside>
         </div>
       </div>
+
+      {/* Share Dialog */}
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={post.title}
+        url={window.location.href}
+        postId={post.id}
+      />
 
       {/* Comment Dialog */}
       <CommentDialog
