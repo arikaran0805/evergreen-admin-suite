@@ -163,6 +163,28 @@ const CommentDialog = ({
     }
   };
 
+// Parse markdown in comment content
+  const parseMarkdown = (text: string) => {
+    // Process in order: code, bold, italic, links
+    let html = text
+      // Escape HTML first
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Inline code: `code`
+      .replace(/`([^`]+)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
+      // Bold: **text** or __text__
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+      // Italic: *text* or _text_
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      // Links: [text](url)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">$1</a>');
+    
+    return html;
+  };
+
   const getDisplayName = (comment: Comment) => {
     if (comment.is_anonymous || !comment.user_id) {
       return comment.display_name || "unknown_ant";
@@ -322,7 +344,10 @@ const CommentDialog = ({
               </div>
             </div>
           ) : (
-            <p className="text-foreground mb-3">{comment.content}</p>
+            <p 
+              className="text-foreground mb-3 whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: parseMarkdown(comment.content) }}
+            />
           )}
           
           {editingId !== comment.id && (
@@ -428,14 +453,19 @@ const CommentDialog = ({
           {/* Comment Form */}
           <div>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <Textarea
-                placeholder="Share your thoughts..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                rows={4}
-                required
-                className="border-primary/20 focus:border-primary"
-              />
+              <div className="space-y-1">
+                <Textarea
+                  placeholder="Share your thoughts..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={4}
+                  required
+                  className="border-primary/20 focus:border-primary"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formatting: **bold**, *italic*, `code`, [link](url)
+                </p>
+              </div>
               
               <div className="flex items-center justify-between">
                 <div>
