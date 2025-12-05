@@ -18,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check, Bold, Italic, Code, Link } from "lucide-react";
+import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check, Bold, Italic, Code, Link, Shield } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -278,12 +279,17 @@ const CommentDialog = ({
             {getAvatarFallback(comment)}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1">
+          <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="font-semibold">
                 {getDisplayName(comment)}
               </span>
+              {comment.display_name === "Admin" && (
+                <Badge className="text-xs bg-primary text-primary-foreground px-1.5 py-0">
+                  <Shield className="h-3 w-3 mr-1" /> Admin
+                </Badge>
+              )}
               <span className="text-sm text-muted-foreground">
                 {format(new Date(comment.created_at), "MMM d, yyyy")}
               </span>
