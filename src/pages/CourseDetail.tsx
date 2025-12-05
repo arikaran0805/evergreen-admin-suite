@@ -15,7 +15,7 @@ import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Ta
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import ShareDialog from "@/components/ShareDialog";
+import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
 import AdDisplay from "@/components/AdDisplay";
 import {
@@ -102,7 +102,6 @@ const CourseDetail = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [likingPost, setLikingPost] = useState(false);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
@@ -778,14 +777,19 @@ const CourseDetail = () => {
                           })}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 hover:bg-transparent"
-                            onClick={() => setShareDialogOpen(true)}
+                          <ShareTooltip
+                            title={selectedPost?.title || course?.name || ""}
+                            url={window.location.href}
+                            postId={selectedPost?.id}
                           >
-                            <Share2 className="h-5 w-5 text-foreground" />
-                          </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 hover:bg-transparent"
+                            >
+                              <Share2 className="h-5 w-5 text-foreground" />
+                            </Button>
+                          </ShareTooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button 
@@ -1186,17 +1190,6 @@ const CourseDetail = () => {
           opacity: 0.8;
         }
       `}</style>
-
-      {/* Share Dialog */}
-      {selectedPost && (
-        <ShareDialog
-          open={shareDialogOpen}
-          onOpenChange={setShareDialogOpen}
-          title={selectedPost.title}
-          url={window.location.href}
-          postId={selectedPost.id}
-        />
-      )}
 
       {/* Comment Dialog */}
       {selectedPost && (
