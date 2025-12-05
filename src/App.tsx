@@ -84,9 +84,9 @@ const AppContent = () => {
         <Route path="/admin/posts/new" element={<AdminPostEditor />} />
         <Route path="/admin/posts/edit/:id" element={<AdminPostEditor />} />
         <Route path="/admin/pages" element={<AdminPages />} />
-        <Route path="/admin/categories" element={<AdminCategories />} />
-        <Route path="/admin/categories/new" element={<AdminCategoryEditor />} />
-        <Route path="/admin/categories/:id" element={<AdminCategoryEditor />} />
+        <Route path="/admin/courses" element={<AdminCategories />} />
+        <Route path="/admin/courses/new" element={<AdminCategoryEditor />} />
+        <Route path="/admin/courses/:id" element={<AdminCategoryEditor />} />
         <Route path="/admin/difficulty-levels" element={<AdminDifficultyLevels />} />
         <Route path="/admin/comments" element={<AdminComments />} />
         <Route path="/admin/users" element={<AdminUsers />} />

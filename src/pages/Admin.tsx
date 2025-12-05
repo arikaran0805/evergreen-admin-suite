@@ -312,7 +312,7 @@ const Admin = () => {
                 Manage Posts
               </Button>
             </Link>
-            <Link to="/admin/categories">
+            <Link to="/admin/courses">
               <Button className="w-full justify-start" variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
                 Manage Courses
