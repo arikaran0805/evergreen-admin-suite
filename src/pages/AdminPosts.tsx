@@ -29,7 +29,7 @@ interface Post {
   updated_at: string;
   parent_id: string | null;
   category_id: string | null;
-  categories: {
+  courses: {
     slug: string;
   } | null;
 }
@@ -89,7 +89,7 @@ const AdminPosts = () => {
     try {
       const { data, error } = await supabase
         .from("posts")
-        .select("id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, categories:category_id(slug)")
+        .select("id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, courses:category_id(slug)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -272,12 +272,12 @@ const AdminPosts = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          if (post.categories?.slug) {
-                            window.open(`/category/${post.categories.slug}?lesson=${post.slug}`, "_blank");
+                          if (post.courses?.slug) {
+                            window.open(`/category/${post.courses.slug}?lesson=${post.slug}`, "_blank");
                           } else {
                             toast({
-                              title: "No Category",
-                              description: "This post doesn't have a category assigned.",
+                              title: "No Course",
+                              description: "This post doesn't have a course assigned.",
                               variant: "destructive",
                             });
                           }

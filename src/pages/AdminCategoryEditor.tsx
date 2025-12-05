@@ -76,7 +76,7 @@ const AdminCategoryEditor = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("*")
         .eq("id", id)
         .single();
@@ -105,7 +105,7 @@ const AdminCategoryEditor = () => {
     try {
       if (id) {
         const { error } = await supabase
-          .from("categories")
+          .from("courses")
           .update(formData)
           .eq("id", id);
         
@@ -113,7 +113,7 @@ const AdminCategoryEditor = () => {
         toast({ title: "Course updated successfully" });
       } else {
         const { error } = await supabase
-          .from("categories")
+          .from("courses")
           .insert([formData]);
         
         if (error) throw error;

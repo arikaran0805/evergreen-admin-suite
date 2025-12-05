@@ -20,7 +20,7 @@ interface Post {
   profiles: {
     full_name: string | null;
   };
-  categories: {
+  courses: {
     name: string;
   } | null;
 }
@@ -51,14 +51,14 @@ const Blogs = () => {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("*")
         .order("name");
 
       if (error) throw error;
       setCategories(data || []);
     } catch (error: any) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching courses:", error);
     }
   };
 
@@ -69,7 +69,7 @@ const Blogs = () => {
         .select(`
           *,
           profiles:author_id (full_name),
-          categories:category_id (name)
+          courses:category_id (name)
         `)
         .eq("status", "published")
         .order("published_at", { ascending: false });
@@ -162,7 +162,7 @@ const Blogs = () => {
                   title={post.title}
                   excerpt={post.excerpt || ""}
                   image={post.featured_image || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800"}
-                  category={post.categories?.name || "Uncategorized"}
+                  category={post.courses?.name || "Uncategorized"}
                   date={post.published_at || new Date().toISOString()}
                   author={post.profiles?.full_name || "Anonymous"}
                 />

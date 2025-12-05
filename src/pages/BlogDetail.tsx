@@ -33,7 +33,7 @@ interface Post {
     full_name: string | null;
     avatar_url: string | null;
   };
-  categories: {
+  courses: {
     id: string;
     name: string;
   } | null;
@@ -96,7 +96,7 @@ const BlogDetail = () => {
         .select(`
           *,
           profiles:author_id (full_name, avatar_url),
-          categories:category_id (id, name)
+          courses:category_id (id, name)
         `)
         .eq("id", id)
         .eq("status", "published")
@@ -147,7 +147,7 @@ const BlogDetail = () => {
     try {
       const { data, error } = await supabase
         .from("posts")
-        .select("id, title, slug, featured_image, categories(name)")
+        .select("id, title, slug, featured_image, courses(name)")
         .eq("status", "published")
         .neq("id", id)
         .order("published_at", { ascending: false })
@@ -163,7 +163,7 @@ const BlogDetail = () => {
   const fetchTags = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("name")
         .limit(10);
 
@@ -275,8 +275,8 @@ const BlogDetail = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <SEOHead 
         title={post.title}
-        description={post.excerpt || `Read ${post.title} on BlogHub. ${post.categories?.name || 'Article'} by ${post.profiles?.full_name || 'Anonymous'}`}
-        keywords={`${post.categories?.name || 'blog'}, ${post.title}, article`}
+        description={post.excerpt || `Read ${post.title} on BlogHub. ${post.courses?.name || 'Article'} by ${post.profiles?.full_name || 'Anonymous'}`}
+        keywords={`${post.courses?.name || 'blog'}, ${post.title}, article`}
         ogImage={post.featured_image || undefined}
         ogTitle={post.title}
         ogDescription={post.excerpt || undefined}
@@ -306,9 +306,9 @@ const BlogDetail = () => {
           <Card className="p-8 shadow-elegant border border-primary/10 bg-card/95 backdrop-blur-sm">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                {post.categories && (
+                {post.courses && (
                   <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-                    {post.categories.name}
+                    {post.courses.name}
                   </Badge>
                 )}
               </div>
@@ -431,9 +431,9 @@ const BlogDetail = () => {
                         <h4 className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                           {course.title}
                         </h4>
-                        {course.categories && (
+                        {course.courses && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {course.categories.name}
+                            {course.courses.name}
                           </p>
                         )}
                       </div>

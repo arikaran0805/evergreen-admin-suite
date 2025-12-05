@@ -128,7 +128,7 @@ export default function LessonReorder() {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("*")
         .order("name");
 

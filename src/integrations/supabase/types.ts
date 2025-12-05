@@ -157,36 +157,6 @@ export type Database = {
         }
         Relationships: []
       }
-      categories: {
-        Row: {
-          created_at: string
-          description: string | null
-          featured: boolean | null
-          id: string
-          level: string | null
-          name: string
-          slug: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          featured?: boolean | null
-          id?: string
-          level?: string | null
-          name: string
-          slug: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          featured?: boolean | null
-          id?: string
-          level?: string | null
-          name?: string
-          slug?: string
-        }
-        Relationships: []
-      }
       comments: {
         Row: {
           content: string
@@ -228,6 +198,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          description: string | null
+          featured: boolean | null
+          id: string
+          level: string | null
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          level?: string | null
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          level?: string | null
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       difficulty_levels: {
         Row: {
@@ -575,10 +575,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "posts_category_id_fkey"
+            foreignKeyName: "posts_course_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
