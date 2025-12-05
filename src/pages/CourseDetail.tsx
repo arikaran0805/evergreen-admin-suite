@@ -63,6 +63,7 @@ interface Comment {
   status: string;
   is_anonymous: boolean;
   display_name: string | null;
+  parent_id: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -396,11 +397,12 @@ const CourseDetail = () => {
           status,
           is_anonymous,
           display_name,
+          parent_id,
           profiles:user_id (full_name, avatar_url)
         `)
         .eq("post_id", postId)
         .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setComments(data || []);
@@ -411,7 +413,7 @@ const CourseDetail = () => {
     }
   };
 
-  const handleCommentSubmit = async (e: React.FormEvent, isAnonymous: boolean = false) => {
+  const handleCommentSubmit = async (e: React.FormEvent, isAnonymous: boolean = false, parentId?: string) => {
     e.preventDefault();
 
     if (!selectedPost) return;
@@ -427,6 +429,7 @@ const CourseDetail = () => {
         post_id: selectedPost.id,
         is_anonymous: user ? isAnonymous : true,
         display_name: user && !isAnonymous ? null : "unknown_ant",
+        parent_id: parentId || null,
       };
 
       // Only set user_id if logged in and not posting anonymously

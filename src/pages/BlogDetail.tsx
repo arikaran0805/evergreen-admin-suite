@@ -46,6 +46,7 @@ interface Comment {
   user_id: string | null;
   is_anonymous: boolean;
   display_name: string | null;
+  parent_id: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -188,11 +189,12 @@ const BlogDetail = () => {
           status,
           is_anonymous,
           display_name,
+          parent_id,
           profiles:user_id (full_name, avatar_url)
         `)
         .eq("post_id", id)
         .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setComments(data || []);
@@ -201,7 +203,7 @@ const BlogDetail = () => {
     }
   };
 
-  const handleSubmitComment = async (e: React.FormEvent, isAnonymous: boolean = false) => {
+  const handleSubmitComment = async (e: React.FormEvent, isAnonymous: boolean = false, parentId?: string) => {
     e.preventDefault();
 
     if (!newComment.trim()) return;
@@ -213,6 +215,7 @@ const BlogDetail = () => {
         content: newComment.trim(),
         is_anonymous: user ? isAnonymous : true,
         display_name: user && !isAnonymous ? null : "unknown_ant",
+        parent_id: parentId || null,
       };
 
       if (user) {
