@@ -9,7 +9,6 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
 import Courses from "./pages/Courses";
-import BlogDetail from "./pages/BlogDetail";
 import CourseDetail from "./pages/CourseDetail";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -71,7 +70,6 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/courses" element={<Courses />} />
-        <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/course/:slug" element={<CourseDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
