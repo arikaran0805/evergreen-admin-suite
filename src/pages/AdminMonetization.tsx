@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -42,7 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, DollarSign } from "lucide-react";
+import { Plus, Edit2, Trash2, DollarSign, Code, Upload, Copy, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 interface Ad {
@@ -86,6 +88,16 @@ const AdminMonetization = () => {
     priority: 0,
   });
 
+  // Embed code generator state
+  const [embedImageUrl, setEmbedImageUrl] = useState("");
+  const [embedRedirectUrl, setEmbedRedirectUrl] = useState("");
+  const [embedWidth, setEmbedWidth] = useState("300");
+  const [embedHeight, setEmbedHeight] = useState("250");
+  const [embedAltText, setEmbedAltText] = useState("");
+  const [generatedEmbedCode, setGeneratedEmbedCode] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<{ name: string; url: string }[]>([]);
+
   useEffect(() => {
     checkAdminAccess();
   }, []);
@@ -111,6 +123,7 @@ const AdminMonetization = () => {
     }
 
     fetchAds();
+    fetchUploadedImages();
   };
 
   const fetchAds = async () => {
@@ -125,6 +138,97 @@ const AdminMonetization = () => {
       setAds(data || []);
     }
     setLoading(false);
+  };
+
+  // Fetch uploaded ad images
+  const fetchUploadedImages = async () => {
+    try {
+      const { data, error } = await supabase.storage.from("ad-images").list();
+      if (error) throw error;
+      
+      const images = data
+        .filter(file => file.name !== ".emptyFolderPlaceholder")
+        .map(file => ({
+          name: file.name,
+          url: supabase.storage.from("ad-images").getPublicUrl(file.name).data.publicUrl
+        }));
+      setUploadedImages(images);
+    } catch (error) {
+      console.error("Error fetching uploaded images:", error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Please upload a JPG, PNG, GIF, or WebP image", variant: "destructive" });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please upload an image smaller than 5MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+      const { error } = await supabase.storage.from("ad-images").upload(fileName, file);
+      
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage.from("ad-images").getPublicUrl(fileName);
+      setEmbedImageUrl(publicUrl);
+      
+      // Get image dimensions
+      const img = new Image();
+      img.onload = () => {
+        setEmbedWidth(img.width.toString());
+        setEmbedHeight(img.height.toString());
+      };
+      img.src = URL.createObjectURL(file);
+
+      toast({ title: "Image uploaded", description: "Ad image uploaded successfully" });
+      fetchUploadedImages();
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDeleteImage = async (fileName: string) => {
+    try {
+      const { error } = await supabase.storage.from("ad-images").remove([fileName]);
+      if (error) throw error;
+      toast({ title: "Deleted", description: "Image deleted successfully" });
+      fetchUploadedImages();
+      // Clear the URL if it matches the deleted image
+      if (embedImageUrl.includes(fileName)) {
+        setEmbedImageUrl("");
+      }
+    } catch (error: any) {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const generateEmbedCode = () => {
+    if (!embedImageUrl) {
+      toast({ title: "Error", description: "Please enter an image URL", variant: "destructive" });
+      return;
+    }
+    const code = embedRedirectUrl
+      ? `<a href="${embedRedirectUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;">
+  <img src="${embedImageUrl}" alt="${embedAltText || 'Advertisement'}" width="${embedWidth}" height="${embedHeight}" style="max-width:100%;height:auto;border:0;" />
+</a>`
+      : `<img src="${embedImageUrl}" alt="${embedAltText || 'Advertisement'}" width="${embedWidth}" height="${embedHeight}" style="max-width:100%;height:auto;border:0;" />`;
+    setGeneratedEmbedCode(code);
+    toast({ title: "Code Generated", description: "Embed code has been generated successfully" });
   };
 
   const openCreateDialog = () => {
@@ -227,121 +331,345 @@ const AdminMonetization = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-foreground">Monetization</h1>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" /> Add Ad
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold text-foreground">Monetization</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Ads</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{ads.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Ads</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {ads.filter((a) => a.is_active).length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Placements Used</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {new Set(ads.map((a) => a.placement)).size}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Tabs defaultValue="ads" className="w-full">
+          <TabsList>
+            <TabsTrigger value="ads" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Ad Management
+            </TabsTrigger>
+            <TabsTrigger value="embed" className="flex items-center gap-2">
+              <Code className="h-4 w-4" />
+              Embed Code Generator
+            </TabsTrigger>
+          </TabsList>
 
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading...</div>
-        ) : ads.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No ads configured yet.</p>
-              <Button className="mt-4" onClick={openCreateDialog}>
-                Create Your First Ad
+          {/* Ad Management Tab */}
+          <TabsContent value="ads" className="space-y-6">
+            <div className="flex justify-end">
+              <Button onClick={openCreateDialog}>
+                <Plus className="h-4 w-4 mr-2" /> Add Ad
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Placement</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Schedule</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ads.map((ad) => (
-                  <TableRow key={ad.id}>
-                    <TableCell className="font-medium">{ad.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {PLACEMENTS.find((p) => p.value === ad.placement)?.label || ad.placement}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{ad.priority}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={ad.is_active}
-                        onCheckedChange={() => toggleActive(ad)}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Ads</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{ads.length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Active Ads</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">
+                    {ads.filter((a) => a.is_active).length}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Placements Used</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {new Set(ads.map((a) => a.placement)).size}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            ) : ads.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No ads configured yet.</p>
+                  <Button className="mt-4" onClick={openCreateDialog}>
+                    Create Your First Ad
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Placement</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Schedule</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ads.map((ad) => (
+                      <TableRow key={ad.id}>
+                        <TableCell className="font-medium">{ad.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {PLACEMENTS.find((p) => p.value === ad.placement)?.label || ad.placement}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{ad.priority}</TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={ad.is_active}
+                            onCheckedChange={() => toggleActive(ad)}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {ad.start_date || ad.end_date ? (
+                            <>
+                              {ad.start_date && format(new Date(ad.start_date), "MMM d")}
+                              {ad.start_date && ad.end_date && " - "}
+                              {ad.end_date && format(new Date(ad.end_date), "MMM d")}
+                            </>
+                          ) : (
+                            "Always"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => openEditDialog(ad)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedAd(ad);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Embed Code Generator Tab */}
+          <TabsContent value="embed" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  Embed Code Generator
+                </CardTitle>
+                <CardDescription>Generate embed code for custom image ads with redirect links</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Image Upload Section */}
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                  <Label className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload Ad Image
+                  </Label>
+                  <div className="flex gap-4">
+                    <Input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="cursor-pointer"
+                    />
+                    {uploadingImage && <RefreshCw className="h-5 w-5 animate-spin text-primary" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload JPG, PNG, GIF, or WebP (max 5MB). Image dimensions will be auto-detected.</p>
+                  
+                  {/* Uploaded Images Gallery */}
+                  {uploadedImages.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">Previously Uploaded Images</Label>
+                      <div className="grid grid-cols-4 md:grid-cols-6 gap-2 max-h-[200px] overflow-y-auto">
+                        {uploadedImages.map((img) => (
+                          <div 
+                            key={img.name} 
+                            className={`relative group cursor-pointer border rounded overflow-hidden ${embedImageUrl === img.url ? 'ring-2 ring-primary' : ''}`}
+                            onClick={() => setEmbedImageUrl(img.url)}
+                          >
+                            <img src={img.url} alt={img.name} className="w-full h-16 object-cover" />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.name); }}
+                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="embed_image_url">Image URL</Label>
+                      <Input
+                        id="embed_image_url"
+                        placeholder="https://example.com/ad-image.jpg"
+                        value={embedImageUrl}
+                        onChange={(e) => setEmbedImageUrl(e.target.value)}
                       />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {ad.start_date || ad.end_date ? (
-                        <>
-                          {ad.start_date && format(new Date(ad.start_date), "MMM d")}
-                          {ad.start_date && ad.end_date && " - "}
-                          {ad.end_date && format(new Date(ad.end_date), "MMM d")}
-                        </>
-                      ) : (
-                        "Always"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => openEditDialog(ad)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          setSelectedAd(ad);
-                          setDeleteDialogOpen(true);
+                      <p className="text-xs text-muted-foreground">URL of the ad image to display (auto-filled when uploading)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="embed_redirect_url">Redirect URL</Label>
+                      <Input
+                        id="embed_redirect_url"
+                        placeholder="https://example.com/landing-page"
+                        value={embedRedirectUrl}
+                        onChange={(e) => setEmbedRedirectUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">URL to redirect when the ad is clicked</p>
+                    </div>
+                    
+                    {/* Preset Ad Sizes Dropdown */}
+                    <div className="space-y-2">
+                      <Label>Preset Ad Sizes</Label>
+                      <Select
+                        onValueChange={(value) => {
+                          if (value !== "custom") {
+                            const [w, h] = value.split("x");
+                            setEmbedWidth(w);
+                            setEmbedHeight(h);
+                          }
                         }}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        )}
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a preset size or use custom" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="300x250">Medium Rectangle (300×250)</SelectItem>
+                          <SelectItem value="336x280">Large Rectangle (336×280)</SelectItem>
+                          <SelectItem value="728x90">Leaderboard (728×90)</SelectItem>
+                          <SelectItem value="970x90">Large Leaderboard (970×90)</SelectItem>
+                          <SelectItem value="160x600">Wide Skyscraper (160×600)</SelectItem>
+                          <SelectItem value="300x600">Half Page (300×600)</SelectItem>
+                          <SelectItem value="320x50">Mobile Banner (320×50)</SelectItem>
+                          <SelectItem value="320x100">Large Mobile Banner (320×100)</SelectItem>
+                          <SelectItem value="468x60">Banner (468×60)</SelectItem>
+                          <SelectItem value="250x250">Square (250×250)</SelectItem>
+                          <SelectItem value="200x200">Small Square (200×200)</SelectItem>
+                          <SelectItem value="120x600">Skyscraper (120×600)</SelectItem>
+                          <SelectItem value="custom">Custom Size</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="embed_width">Width (px)</Label>
+                        <Input
+                          id="embed_width"
+                          type="number"
+                          placeholder="300"
+                          value={embedWidth}
+                          onChange={(e) => setEmbedWidth(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="embed_height">Height (px)</Label>
+                        <Input
+                          id="embed_height"
+                          type="number"
+                          placeholder="250"
+                          value={embedHeight}
+                          onChange={(e) => setEmbedHeight(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="embed_alt_text">Alt Text</Label>
+                      <Input
+                        id="embed_alt_text"
+                        placeholder="Advertisement"
+                        value={embedAltText}
+                        onChange={(e) => setEmbedAltText(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={generateEmbedCode} className="w-full">
+                      <Code className="mr-2 h-4 w-4" />
+                      Generate Embed Code
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Generated Embed Code</Label>
+                      <Textarea
+                        placeholder="Generated embed code will appear here..."
+                        rows={10}
+                        value={generatedEmbedCode}
+                        readOnly
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (generatedEmbedCode) {
+                          navigator.clipboard.writeText(generatedEmbedCode);
+                          toast({ title: "Copied!", description: "Embed code copied to clipboard" });
+                        }
+                      }}
+                      disabled={!generatedEmbedCode}
+                      className="w-full"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Embed Code
+                    </Button>
+                    {embedImageUrl && (
+                      <div className="space-y-2">
+                        <Label>Preview</Label>
+                        <div className="border rounded-lg p-4 bg-muted/20 flex items-center justify-center min-h-[150px]">
+                          {embedRedirectUrl ? (
+                            <a href={embedRedirectUrl} target="_blank" rel="noopener noreferrer">
+                              <img 
+                                src={embedImageUrl} 
+                                alt={embedAltText || "Advertisement"} 
+                                style={{ maxWidth: `${embedWidth}px`, maxHeight: `${embedHeight}px`, objectFit: "contain" }}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23ddd' width='200' height='150'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage Error%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
+                            </a>
+                          ) : (
+                            <img 
+                              src={embedImageUrl} 
+                              alt={embedAltText || "Advertisement"} 
+                              style={{ maxWidth: `${embedWidth}px`, maxHeight: `${embedHeight}px`, objectFit: "contain" }}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23ddd' width='200' height='150'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage Error%3C/text%3E%3C/svg%3E";
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
