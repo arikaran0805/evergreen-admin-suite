@@ -1,14 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { ArrowRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon } from "lucide-react";
+import { ArrowRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { Input } from "@/components/ui/input";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [siteName, setSiteName] = useState("EmojiLearn");
@@ -17,9 +19,17 @@ const Index = () => {
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity and deeper understanding.");
   const [heroHighlightText, setHeroHighlightText] = useState("Any Subject");
   const [heroHighlightColor, setHeroHighlightColor] = useState("#10b981");
+  const [searchQuery, setSearchQuery] = useState("");
   const [socialLinks, setSocialLinks] = useState({
     twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
   });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/courses?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   // Scroll animation hooks
   const heroAnimation = useScrollAnimation({ threshold: 0.2 });
@@ -119,94 +129,54 @@ const Index = () => {
         </div>
 
         <div className="container px-4 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-8 items-center">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-8">
-              {/* Eyebrow */}
-              <div className="inline-flex items-center gap-3 px-1">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-100" />
-                  <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse delay-200" />
-                </div>
-                <span className="text-sm font-mono uppercase tracking-[0.3em] text-muted-foreground">
-                  Knowledge Awaits
-                </span>
-              </div>
-
-              {/* Main Headline - Dramatic Typography */}
-              <div className="space-y-2">
-                <h1 className="text-6xl md:text-8xl lg:text-9xl font-black leading-[0.85] tracking-tighter">
-                  <span className="block text-foreground">{heroHeadline.split(heroHighlightText)[0]}</span>
-                  <span 
-                    className="block relative"
-                    style={{ color: heroHighlightColor }}
-                  >
-                    {heroHighlightText}
-                    <svg className="absolute -bottom-2 left-0 w-full h-4" viewBox="0 0 200 12" preserveAspectRatio="none">
-                      <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke={heroHighlightColor} strokeWidth="3" strokeLinecap="round" className="animate-[dash_2s_ease-in-out_infinite]" />
-                    </svg>
-                  </span>
-                  <span className="block text-foreground">{heroHeadline.split(heroHighlightText)[1]}</span>
-                </h1>
-              </div>
-
-              {/* Subheadline */}
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-light">
-                {heroSubheadline}
-              </p>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-4 pt-4">
-                <Link to="/courses">
-                  <Button size="lg" className="h-16 px-10 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-none group relative overflow-hidden">
-                    <span className="relative z-10 flex items-center gap-2">
-                      Explore Courses
-                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                    <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  </Button>
-                </Link>
-                <Button size="lg" variant="outline" className="h-16 px-10 text-lg font-bold rounded-none border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
-                  <Compass className="mr-2 h-5 w-5" />
-                  Take a Tour
+          <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
+            {/* Big Search Box - Centered */}
+            <form onSubmit={handleSearch} className="w-full max-w-2xl">
+              <div className="relative">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search courses, lessons, topics..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-16 md:h-20 pl-16 pr-6 text-lg md:text-xl rounded-full border-2 border-border bg-card shadow-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
+                />
+                <Button 
+                  type="submit"
+                  size="lg"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-12 md:h-16 px-6 md:px-8 rounded-full bg-primary hover:bg-primary/90"
+                >
+                  <Search className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Search</span>
                 </Button>
               </div>
-            </div>
+            </form>
 
-            {/* Right Side - Abstract Knowledge Constellation */}
-            <div className="lg:col-span-5 relative h-[500px] hidden lg:block">
-              <div className="absolute inset-0 flex items-center justify-center">
-                {/* Central hub */}
-                <div className="relative w-40 h-40">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-accent animate-[spin_20s_linear_infinite]" />
-                  <div className="absolute inset-2 rounded-full bg-background flex items-center justify-center">
-                    <Hexagon className="w-16 h-16 text-primary" strokeWidth={1.5} />
-                  </div>
-                </div>
-                
-                {/* Orbiting elements */}
-                <div className="absolute w-[400px] h-[400px] animate-[spin_30s_linear_infinite]">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-card border-2 border-primary flex items-center justify-center shadow-lg">
-                    <span className="text-2xl">📚</span>
-                  </div>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-card border-2 border-accent flex items-center justify-center shadow-lg">
-                    <span className="text-2xl">🎯</span>
-                  </div>
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-card border-2 border-primary flex items-center justify-center shadow-lg">
-                    <span className="text-2xl">💡</span>
-                  </div>
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-card border-2 border-accent flex items-center justify-center shadow-lg">
-                    <span className="text-2xl">🚀</span>
-                  </div>
-                </div>
-                
-                {/* Connection lines */}
-                <svg className="absolute w-[400px] h-[400px] animate-[spin_30s_linear_infinite_reverse]" viewBox="0 0 400 400">
-                  <circle cx="200" cy="200" r="150" fill="none" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="10 10" />
-                  <circle cx="200" cy="200" r="100" fill="none" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="5 5" />
-                </svg>
-              </div>
+            {/* Main Headline - Single Line Below Search */}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight whitespace-nowrap">
+              <span className="text-foreground">{heroHeadline.replace(heroHighlightText, '')}</span>
+              <span style={{ color: heroHighlightColor }}>{heroHighlightText}</span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed font-light">
+              {heroSubheadline}
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Link to="/courses">
+                <Button size="lg" className="h-14 px-8 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-full group">
+                  <span className="flex items-center gap-2">
+                    Explore Courses
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Button>
+              </Link>
+              <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-full border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
+                <Compass className="mr-2 h-5 w-5" />
+                Take a Tour
+              </Button>
             </div>
           </div>
         </div>
