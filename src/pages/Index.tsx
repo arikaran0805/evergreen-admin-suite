@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
@@ -22,6 +22,37 @@ const Index = () => {
   const [socialLinks, setSocialLinks] = useState({
     twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
   });
+  const [placeholder, setPlaceholder] = useState("");
+  const placeholderTexts = ["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."];
+  const placeholderIndex = useRef(0);
+  const charIndex = useRef(0);
+  const isDeleting = useRef(false);
+
+  useEffect(() => {
+    const typewriterInterval = setInterval(() => {
+      const currentText = placeholderTexts[placeholderIndex.current];
+      
+      if (!isDeleting.current) {
+        setPlaceholder(currentText.slice(0, charIndex.current + 1));
+        charIndex.current++;
+        
+        if (charIndex.current === currentText.length) {
+          isDeleting.current = true;
+          setTimeout(() => {}, 1500);
+        }
+      } else {
+        setPlaceholder(currentText.slice(0, charIndex.current - 1));
+        charIndex.current--;
+        
+        if (charIndex.current === 0) {
+          isDeleting.current = false;
+          placeholderIndex.current = (placeholderIndex.current + 1) % placeholderTexts.length;
+        }
+      }
+    }, isDeleting.current ? 50 : 100);
+
+    return () => clearInterval(typewriterInterval);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +181,7 @@ const Index = () => {
               <div className="relative flex items-center h-14 md:h-16 rounded-full border-2 border-primary bg-card shadow-lg transition-shadow duration-300 focus-within:shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
                 <input
                   type="text"
-                  placeholder="Search courses, lessons, topics..."
+                  placeholder={placeholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-full pl-6 pr-14 text-lg bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground"
