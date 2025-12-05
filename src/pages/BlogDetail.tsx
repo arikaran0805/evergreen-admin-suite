@@ -43,11 +43,13 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  user_id: string;
+  user_id: string | null;
+  is_anonymous: boolean;
+  display_name: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 interface RelatedPost {
@@ -179,7 +181,13 @@ const BlogDetail = () => {
       const { data, error } = await supabase
         .from("comments")
         .select(`
-          *,
+          id,
+          content,
+          created_at,
+          user_id,
+          status,
+          is_anonymous,
+          display_name,
           profiles:user_id (full_name, avatar_url)
         `)
         .eq("post_id", id)
@@ -193,30 +201,28 @@ const BlogDetail = () => {
     }
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
+  const handleSubmitComment = async (e: React.FormEvent, isAnonymous: boolean = false) => {
     e.preventDefault();
-
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please login to comment",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (!newComment.trim()) return;
 
     setSubmitting(true);
     try {
+      const commentData: any = {
+        post_id: id,
+        content: newComment.trim(),
+        status: "pending",
+        is_anonymous: user ? isAnonymous : true,
+        display_name: user && !isAnonymous ? null : "unknown_ant",
+      };
+
+      if (user) {
+        commentData.user_id = user.id;
+      }
+
       const { error } = await supabase
         .from("comments")
-        .insert({
-          post_id: id,
-          user_id: user.id,
-          content: newComment.trim(),
-          status: "pending",
-        });
+        .insert(commentData);
 
       if (error) throw error;
 
