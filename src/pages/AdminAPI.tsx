@@ -137,54 +137,59 @@ const AdminAPI = () => {
   };
 
   const fetchAdsenseConfig = async () => {
+    // Use ad_settings table as single source of truth
     const { data } = await supabase
-      .from("api_integrations")
-      .select("*")
-      .eq("provider", "google_adsense")
-      .maybeSingle();
+      .from("ad_settings")
+      .select("setting_key, setting_value")
+      .in("setting_key", ["google_ad_client", "auto_ads"]);
     
     if (data) {
+      const clientSetting = data.find(s => s.setting_key === "google_ad_client");
+      const autoAdsSetting = data.find(s => s.setting_key === "auto_ads");
       setAdsenseConfig({
-        clientId: (data.config as Record<string, string>)?.client_id || "",
-        autoAds: (data.config as Record<string, string>)?.auto_ads === "true",
+        clientId: clientSetting?.setting_value || "",
+        autoAds: autoAdsSetting?.setting_value === "true",
       });
     }
   };
 
   const saveAdsenseConfig = async () => {
     setSavingAdsense(true);
-    const config = {
-      client_id: adsenseConfig.clientId,
-      auto_ads: adsenseConfig.autoAds.toString(),
-    };
+    
+    try {
+      // Update google_ad_client in ad_settings
+      const { error: clientError } = await supabase
+        .from("ad_settings")
+        .update({ setting_value: adsenseConfig.clientId, updated_at: new Date().toISOString() })
+        .eq("setting_key", "google_ad_client");
 
-    const { data: existing } = await supabase
-      .from("api_integrations")
-      .select("id")
-      .eq("provider", "google_adsense")
-      .maybeSingle();
+      if (clientError) throw clientError;
 
-    let error;
-    if (existing) {
-      ({ error } = await supabase
-        .from("api_integrations")
-        .update({ config, is_active: !!adsenseConfig.clientId })
-        .eq("id", existing.id));
-    } else {
-      ({ error } = await supabase.from("api_integrations").insert({
-        name: "Google AdSense",
-        provider: "google_adsense",
-        config,
-        is_active: !!adsenseConfig.clientId,
-      }));
-    }
+      // Check if auto_ads setting exists, if not create it
+      const { data: existingAutoAds } = await supabase
+        .from("ad_settings")
+        .select("id")
+        .eq("setting_key", "auto_ads")
+        .maybeSingle();
 
-    setSavingAdsense(false);
-    if (error) {
-      toast({ title: "Error", description: "Failed to save AdSense config", variant: "destructive" });
-    } else {
+      if (existingAutoAds) {
+        await supabase
+          .from("ad_settings")
+          .update({ setting_value: adsenseConfig.autoAds.toString(), updated_at: new Date().toISOString() })
+          .eq("setting_key", "auto_ads");
+      } else {
+        await supabase.from("ad_settings").insert({
+          setting_key: "auto_ads",
+          setting_value: adsenseConfig.autoAds.toString(),
+          description: "Enable Google Auto Ads",
+        });
+      }
+
       toast({ title: "Success", description: "AdSense configuration saved" });
-      fetchIntegrations();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save AdSense config", variant: "destructive" });
+    } finally {
+      setSavingAdsense(false);
     }
   };
 
