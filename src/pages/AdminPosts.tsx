@@ -27,6 +27,9 @@ interface Post {
   created_at: string;
   parent_id: string | null;
   category_id: string | null;
+  categories: {
+    slug: string;
+  } | null;
 }
 
 const AdminPosts = () => {
@@ -74,7 +77,7 @@ const AdminPosts = () => {
     try {
       const { data, error } = await supabase
         .from("posts")
-        .select("id, title, slug, status, published_at, created_at, parent_id, category_id")
+        .select("id, title, slug, status, published_at, created_at, parent_id, category_id, categories:category_id(slug)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -185,7 +188,17 @@ const AdminPosts = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => window.open(`/category/${post.slug}`, "_blank")}
+                        onClick={() => {
+                          if (post.categories?.slug) {
+                            window.open(`/category/${post.categories.slug}?lesson=${post.slug}`, "_blank");
+                          } else {
+                            toast({
+                              title: "No Category",
+                              description: "This post doesn't have a category assigned.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>

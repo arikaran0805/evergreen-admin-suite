@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,8 @@ const commentSchema = z.object({
 
 const CategoryDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const lessonSlug = searchParams.get("lesson");
   const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -128,6 +130,16 @@ const CategoryDetail = () => {
     fetchSiteSettings();
     fetchFooterCategories();
   }, [slug]);
+
+  // Auto-select lesson from URL query param
+  useEffect(() => {
+    if (lessonSlug && posts.length > 0 && !selectedPost) {
+      const lessonToSelect = posts.find(p => p.slug === lessonSlug);
+      if (lessonToSelect) {
+        handleLessonClick(lessonToSelect);
+      }
+    }
+  }, [lessonSlug, posts]);
 
   useEffect(() => {
     if (selectedPost) {
