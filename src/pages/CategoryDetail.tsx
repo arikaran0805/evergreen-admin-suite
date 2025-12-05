@@ -1114,6 +1114,7 @@ const CategoryDetail = () => {
           onOpenChange={setShareDialogOpen}
           title={selectedPost.title}
           url={window.location.href}
+          postId={selectedPost.id}
         />
       )}
 
