@@ -897,6 +897,38 @@ const AdminAPI = () => {
                       />
                       <p className="text-xs text-muted-foreground">URL to redirect when the ad is clicked</p>
                     </div>
+                    {/* Preset Ad Sizes Dropdown */}
+                    <div className="space-y-2">
+                      <Label>Preset Ad Sizes</Label>
+                      <Select
+                        onValueChange={(value) => {
+                          if (value !== "custom") {
+                            const [w, h] = value.split("x");
+                            setEmbedWidth(w);
+                            setEmbedHeight(h);
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a preset size or use custom" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="300x250">Medium Rectangle (300×250)</SelectItem>
+                          <SelectItem value="336x280">Large Rectangle (336×280)</SelectItem>
+                          <SelectItem value="728x90">Leaderboard (728×90)</SelectItem>
+                          <SelectItem value="970x90">Large Leaderboard (970×90)</SelectItem>
+                          <SelectItem value="160x600">Wide Skyscraper (160×600)</SelectItem>
+                          <SelectItem value="300x600">Half Page (300×600)</SelectItem>
+                          <SelectItem value="320x50">Mobile Banner (320×50)</SelectItem>
+                          <SelectItem value="320x100">Large Mobile Banner (320×100)</SelectItem>
+                          <SelectItem value="468x60">Banner (468×60)</SelectItem>
+                          <SelectItem value="250x250">Square (250×250)</SelectItem>
+                          <SelectItem value="200x200">Small Square (200×200)</SelectItem>
+                          <SelectItem value="120x600">Skyscraper (120×600)</SelectItem>
+                          <SelectItem value="custom">Custom Size</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="embed_width">Width (px)</Label>
