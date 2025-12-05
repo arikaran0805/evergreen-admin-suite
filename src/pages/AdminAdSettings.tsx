@@ -5,10 +5,59 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
-import { Save, RefreshCw, DollarSign, LayoutGrid, FileCode } from "lucide-react";
+import { Save, RefreshCw, DollarSign, LayoutGrid, FileCode, Eye, Monitor, Smartphone, CheckCircle, AlertCircle } from "lucide-react";
+
+interface AdPreviewBoxProps {
+  label: string;
+  slot: string;
+  client: string;
+  type: "horizontal" | "sidebar" | "mobile";
+  thirdParty?: string;
+}
+
+const AdPreviewBox = ({ label, slot, client, type, thirdParty }: AdPreviewBoxProps) => {
+  const isConfigured = (slot && slot.length > 0) || (thirdParty && thirdParty.length > 0);
+  const hasClient = client && client.length > 0;
+  const isThirdParty = thirdParty && thirdParty.length > 0;
+  
+  const heightClass = type === "sidebar" ? "h-[250px]" : type === "mobile" ? "h-[100px]" : "h-[90px]";
+  
+  return (
+    <div 
+      className={`${heightClass} border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-4 transition-colors ${
+        isConfigured && hasClient 
+          ? "border-primary/50 bg-primary/5" 
+          : isThirdParty 
+            ? "border-amber-500/50 bg-amber-500/5"
+            : "border-muted-foreground/30 bg-muted/20"
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        {isConfigured && hasClient ? (
+          <CheckCircle className="h-4 w-4 text-primary" />
+        ) : isThirdParty ? (
+          <CheckCircle className="h-4 w-4 text-amber-500" />
+        ) : (
+          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+        )}
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      {isThirdParty ? (
+        <span className="text-xs text-amber-600">Third-party code</span>
+      ) : isConfigured && hasClient ? (
+        <span className="text-xs text-primary">Slot: {slot.substring(0, 10)}...</span>
+      ) : (
+        <span className="text-xs text-muted-foreground">
+          {!hasClient ? "Missing Ad Client" : "No slot configured"}
+        </span>
+      )}
+    </div>
+  );
+};
 
 interface AdSetting {
   id: string;
@@ -270,6 +319,145 @@ const AdminAdSettings = () => {
                 If provided, this code will be used instead of AdSense for the sidebar middle position
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Separator />
+
+        {/* Ad Preview Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Ad Preview
+            </CardTitle>
+            <CardDescription>
+              Preview how your ads will appear on your site (mock placeholders)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="desktop" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="desktop" className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4" />
+                  Desktop
+                </TabsTrigger>
+                <TabsTrigger value="mobile" className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  Mobile
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="desktop">
+                <div className="grid grid-cols-3 gap-6">
+                  {/* Main Content Area */}
+                  <div className="col-span-2 space-y-4">
+                    <div className="bg-muted/30 rounded-lg p-4 border">
+                      <h3 className="font-semibold text-lg mb-2">Article Title</h3>
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                    </div>
+                    
+                    {/* In-Content Top Ad */}
+                    <AdPreviewBox 
+                      label="In-Content Top" 
+                      slot={getSettingValue("in_content_top_slot")}
+                      client={getSettingValue("google_ad_client")}
+                      type="horizontal"
+                    />
+                    
+                    <div className="bg-muted/30 rounded-lg p-4 border">
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-5/6 mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                    </div>
+                    
+                    {/* In-Content Middle Ad */}
+                    <AdPreviewBox 
+                      label="In-Content Middle" 
+                      slot={getSettingValue("in_content_middle_slot")}
+                      client={getSettingValue("google_ad_client")}
+                      type="horizontal"
+                    />
+                    
+                    <div className="bg-muted/30 rounded-lg p-4 border">
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-4/5 mb-2"></div>
+                    </div>
+                    
+                    {/* In-Content Bottom Ad */}
+                    <AdPreviewBox 
+                      label="In-Content Bottom" 
+                      slot={getSettingValue("in_content_bottom_slot")}
+                      client={getSettingValue("google_ad_client")}
+                      type="horizontal"
+                    />
+                  </div>
+                  
+                  {/* Sidebar */}
+                  <div className="space-y-4">
+                    <AdPreviewBox 
+                      label="Sidebar Top" 
+                      slot={getSettingValue("sidebar_top_slot")}
+                      client={getSettingValue("google_ad_client")}
+                      type="sidebar"
+                    />
+                    <AdPreviewBox 
+                      label="Sidebar Middle" 
+                      slot={getSettingValue("sidebar_middle_slot")}
+                      client={getSettingValue("google_ad_client")}
+                      type="sidebar"
+                      thirdParty={getSettingValue("third_party_sidebar_code")}
+                    />
+                    <AdPreviewBox 
+                      label="Sidebar Bottom" 
+                      slot={getSettingValue("sidebar_bottom_slot")}
+                      client={getSettingValue("google_ad_client")}
+                      type="sidebar"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="mobile">
+                <div className="max-w-sm mx-auto space-y-4">
+                  <div className="bg-muted/30 rounded-lg p-4 border">
+                    <h3 className="font-semibold text-lg mb-2">Article Title</h3>
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                  </div>
+                  
+                  <AdPreviewBox 
+                    label="In-Content Top" 
+                    slot={getSettingValue("in_content_top_slot")}
+                    client={getSettingValue("google_ad_client")}
+                    type="mobile"
+                  />
+                  
+                  <div className="bg-muted/30 rounded-lg p-4 border">
+                    <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-5/6"></div>
+                  </div>
+                  
+                  <AdPreviewBox 
+                    label="In-Content Middle" 
+                    slot={getSettingValue("in_content_middle_slot")}
+                    client={getSettingValue("google_ad_client")}
+                    type="mobile"
+                  />
+                  
+                  <div className="bg-muted/30 rounded-lg p-4 border">
+                    <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                  </div>
+                  
+                  <AdPreviewBox 
+                    label="In-Content Bottom" 
+                    slot={getSettingValue("in_content_bottom_slot")}
+                    client={getSettingValue("google_ad_client")}
+                    type="mobile"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
