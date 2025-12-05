@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Twitter, Copy, Check, Share2, Linkedin } from "lucide-react";
+import { Facebook, Copy, Check, Share2, Linkedin } from "lucide-react";
 import { trackPostShare } from "@/lib/shareAnalytics";
 
 interface ShareTooltipProps {
@@ -100,6 +100,12 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
     </svg>
   );
 
+  const XIcon = () => (
+    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  );
+
   return (
     <div ref={containerRef} className="relative inline-block" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {children || (
@@ -110,7 +116,7 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       
       {open && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 z-50">
-          <div className="bg-white border border-border rounded-2xl shadow-lg p-2 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2">
+          <div className="bg-popover text-popover-foreground border border-border rounded-md shadow-md px-3 py-1.5">
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -145,7 +151,7 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
                 className="h-8 w-8 text-foreground hover:bg-muted"
                 onClick={() => handleShare("twitter")}
               >
-                <Twitter className="h-4 w-4" />
+                <XIcon />
               </Button>
               
               <Button
