@@ -10,7 +10,7 @@ const TooltipProvider = ({ children, ...props }: React.ComponentPropsWithoutRef<
 );
 
 const Tooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => (
-  <TooltipPrimitive.Root disableHoverableContent {...props}>
+  <TooltipPrimitive.Root {...props}>
     {children}
   </TooltipPrimitive.Root>
 );
