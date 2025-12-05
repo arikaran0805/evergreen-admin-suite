@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
 import Courses from "./pages/Courses";
 import BlogDetail from "./pages/BlogDetail";
-import CategoryDetail from "./pages/CategoryDetail";
+import CourseDetail from "./pages/CourseDetail";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
@@ -72,7 +72,7 @@ const AppContent = () => {
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/blog/:id" element={<BlogDetail />} />
-        <Route path="/course/:slug" element={<CategoryDetail />} />
+        <Route path="/course/:slug" element={<CourseDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/terms" element={<Terms />} />

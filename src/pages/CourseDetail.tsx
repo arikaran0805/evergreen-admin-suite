@@ -31,7 +31,7 @@ import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 
-interface Category {
+interface Course {
   id: string;
   name: string;
   slug: string;
@@ -74,12 +74,12 @@ const commentSchema = z.object({
     .max(1000, { message: "Comment must be less than 1000 characters" })
 });
 
-const CategoryDetail = () => {
+const CourseDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const lessonSlug = searchParams.get("lesson");
   const navigate = useNavigate();
-  const [category, setCategory] = useState<Category | null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [recentCourses, setRecentCourses] = useState<any[]>([]);
   const [allTags, setAllTags] = useState<Array<{id: string; name: string; slug: string}>>([]);
@@ -109,8 +109,8 @@ const CategoryDetail = () => {
   const formattedLearners = learnersCount.toLocaleString();
 
   useEffect(() => {
-    document.title = category ? `${category.name} - BlogHub` : "BlogHub - Course";
-  }, [category]);
+    document.title = course ? `${course.name} - BlogHub` : "BlogHub - Course";
+  }, [course]);
 
   useEffect(() => {
     // Check authentication
@@ -126,7 +126,7 @@ const CategoryDetail = () => {
   }, []);
 
   useEffect(() => {
-    fetchCategoryAndPosts();
+    fetchCourseAndLessons();
     fetchRecentCourses();
     fetchSiteSettings();
     fetchFooterCategories();
@@ -181,19 +181,19 @@ const CategoryDetail = () => {
     }
   };
 
-  const fetchCategoryAndPosts = async () => {
+  const fetchCourseAndLessons = async () => {
     try {
-      // Fetch category
-      const { data: categoryData, error: categoryError } = await supabase
+      // Fetch course
+      const { data: courseData, error: courseError } = await supabase
         .from("courses")
         .select("*")
         .eq("slug", slug)
         .single();
 
-      if (categoryError) throw categoryError;
-      setCategory(categoryData);
+      if (courseError) throw courseError;
+      setCourse(courseData);
 
-      // Fetch posts in this category
+      // Fetch posts in this course
       const { data: postsData, error: postsError } = await supabase
         .from("posts")
         .select(`
@@ -208,7 +208,7 @@ const CategoryDetail = () => {
           parent_id,
           profiles:author_id (full_name)
         `)
-        .eq("category_id", categoryData.id)
+        .eq("category_id", courseData.id)
         .eq("status", "published")
         .order("lesson_order", { ascending: true })
         .order("created_at", { ascending: true });
@@ -536,7 +536,7 @@ const CategoryDetail = () => {
     );
   }
 
-  if (!category) {
+  if (!course) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -553,11 +553,11 @@ const CategoryDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title={`${category.name} - Course`}
-        description={category.description || `Explore ${category.name} courses and lessons. Join ${formattedLearners} learners in this comprehensive learning path.`}
-        keywords={`${category.name}, course, learning, tutorial, lessons`}
-        ogTitle={`${category.name} Course`}
-        ogDescription={category.description || `Learn ${category.name} with our comprehensive course materials`}
+        title={`${course.name} - Course`}
+        description={course.description || `Explore ${course.name} courses and lessons. Join ${formattedLearners} learners in this comprehensive learning path.`}
+        keywords={`${course.name}, course, learning, tutorial, lessons`}
+        ogTitle={`${course.name} Course`}
+        ogDescription={course.description || `Learn ${course.name} with our comprehensive course materials`}
       />
       <Header />
 
@@ -869,12 +869,12 @@ const CategoryDetail = () => {
                     <div className="relative w-full h-64 mb-8 rounded-lg overflow-hidden">
                       <img 
                         src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&h=400&fit=crop"
-                        alt={category.name}
+                        alt={course.name}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent flex items-end">
                         <div className="p-8 w-full">
-                          <h2 className="text-4xl font-bold mb-2 text-foreground">{category.name}</h2>
+                          <h2 className="text-4xl font-bold mb-2 text-foreground">{course.name}</h2>
                           <div className="flex items-center gap-2 text-foreground/80">
                             <Users className="h-5 w-5" />
                             <span className="text-lg font-semibold">{formattedLearners} learners</span>
@@ -884,18 +884,18 @@ const CategoryDetail = () => {
                     </div>
 
                     {/* Course Overview - Default View */}
-                    {category.featured_image && (
+                    {course.featured_image && (
                       <img 
-                        src={category.featured_image} 
-                        alt={category.name}
+                        src={course.featured_image} 
+                        alt={course.name}
                         className="w-full h-auto rounded-lg mb-8 shadow-md"
                       />
                     )}
-                    {category.description && (
+                    {course.description && (
                       <div className="py-4 mb-8">
                         <div 
                           className="prose prose-lg max-w-none text-foreground leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: category.description }}
+                          dangerouslySetInnerHTML={{ __html: course.description }}
                         />
                       </div>
                     )}
@@ -1143,4 +1143,4 @@ const CategoryDetail = () => {
   );
 };
 
-export default CategoryDetail;
+export default CourseDetail;
