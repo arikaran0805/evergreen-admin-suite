@@ -881,26 +881,66 @@ const CourseDetail = () => {
                       googleAdSlot={adSettings.inContentBottomSlot}
                     />
 
-                    {/* Tags */}
-                    {allTags.length > 0 && (
-                      <div className="mt-8">
-                        <div className="flex items-center gap-2 mb-4">
-                          <Tag className="h-5 w-5 text-primary" />
-                          <h3 className="font-bold text-lg">Tags</h3>
+                    {/* Bottom Line with Tags and Icons */}
+                    <div className="mt-8 pt-6 border-t border-border">
+                      <div className="flex items-center justify-between">
+                        {/* Tags on left */}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {allTags.length > 0 && (
+                            <>
+                              <span className="font-medium">tag:</span>
+                              <span>{allTags.map(tag => tag.name).join(', ')}</span>
+                            </>
+                          )}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {allTags.map((tag) => (
-                            <Badge 
-                              key={tag.id} 
-                              variant="secondary"
-                              className="bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 cursor-pointer transition-all duration-300"
-                            >
-                              {tag.name}
-                            </Badge>
-                          ))}
+                        
+                        {/* Icons on right */}
+                        <div className="flex items-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 hover:bg-transparent"
+                                  onClick={() => setCommentDialogOpen(true)}
+                                >
+                                  <MessageSquare className="h-5 w-5 text-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <ShareTooltip 
+                            url={`${window.location.origin}/course/${course?.slug}?lesson=${selectedPost.slug}`}
+                            title={selectedPost.title}
+                            postId={selectedPost.id}
+                          />
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 hover:bg-transparent"
+                                  onClick={handleLikeToggle}
+                                  disabled={likingPost}
+                                >
+                                  <ThumbsUp className={`h-5 w-5 text-foreground ${hasLiked ? 'fill-current' : ''}`} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Lesson Navigation */}
                     <div className="mt-12 pt-8 border-t-2 border-border">
