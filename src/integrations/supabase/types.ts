@@ -161,26 +161,32 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          display_name: string | null
           id: string
+          is_anonymous: boolean
           post_id: string
           status: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
           created_at?: string
+          display_name?: string | null
           id?: string
+          is_anonymous?: boolean
           post_id: string
           status?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
           created_at?: string
+          display_name?: string | null
           id?: string
+          is_anonymous?: boolean
           post_id?: string
           status?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

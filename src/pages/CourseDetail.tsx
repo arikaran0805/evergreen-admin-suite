@@ -59,12 +59,14 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  user_id: string;
+  user_id: string | null;
   status: string;
+  is_anonymous: boolean;
+  display_name: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 const commentSchema = z.object({
@@ -392,6 +394,8 @@ const CourseDetail = () => {
           created_at,
           user_id,
           status,
+          is_anonymous,
+          display_name,
           profiles:user_id (full_name, avatar_url)
         `)
         .eq("post_id", postId)
@@ -407,18 +411,8 @@ const CourseDetail = () => {
     }
   };
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent, isAnonymous: boolean = false) => {
     e.preventDefault();
-
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to post a comment.",
-        variant: "destructive",
-      });
-      navigate("/auth");
-      return;
-    }
 
     if (!selectedPost) return;
 
@@ -428,14 +422,22 @@ const CourseDetail = () => {
 
       setSubmittingComment(true);
 
+      const commentData: any = {
+        content: validated.content,
+        post_id: selectedPost.id,
+        status: "pending", // Comments need approval by default
+        is_anonymous: user ? isAnonymous : true,
+        display_name: user && !isAnonymous ? null : "unknown_ant",
+      };
+
+      // Only set user_id if logged in and not posting anonymously
+      if (user) {
+        commentData.user_id = user.id;
+      }
+
       const { error } = await supabase
         .from("comments")
-        .insert({
-          content: validated.content,
-          post_id: selectedPost.id,
-          user_id: user.id,
-          status: "pending", // Comments need approval by default
-        });
+        .insert(commentData);
 
       if (error) throw error;
 

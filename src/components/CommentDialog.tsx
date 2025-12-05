@@ -8,20 +8,23 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ThumbsUp, ThumbsDown, Reply } from "lucide-react";
+import { MessageSquare, ThumbsUp, ThumbsDown, Reply, User } from "lucide-react";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
 
 interface Comment {
   id: string;
   content: string;
   created_at: string;
-  user_id: string;
+  user_id: string | null;
+  is_anonymous: boolean;
+  display_name: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 interface CommentDialogProps {
@@ -31,7 +34,7 @@ interface CommentDialogProps {
   user: any;
   newComment: string;
   setNewComment: (value: string) => void;
-  onSubmitComment: (e: React.FormEvent) => void;
+  onSubmitComment: (e: React.FormEvent, isAnonymous: boolean) => void;
   submitting: boolean;
 }
 
@@ -45,6 +48,30 @@ const CommentDialog = ({
   onSubmitComment,
   submitting,
 }: CommentDialogProps) => {
+  const [postAnonymously, setPostAnonymously] = useState(false);
+
+  const getDisplayName = (comment: Comment) => {
+    // If user chose to be anonymous or there's no user_id
+    if (comment.is_anonymous || !comment.user_id) {
+      return comment.display_name || "unknown_ant";
+    }
+    // If logged in user with profile
+    return comment.profiles?.full_name || "unknown_ant";
+  };
+
+  const getAvatarFallback = (comment: Comment) => {
+    const name = getDisplayName(comment);
+    if (name === "unknown_ant") {
+      return "🐜";
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmitComment(e, postAnonymously);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -59,37 +86,47 @@ const CommentDialog = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Comment Form */}
-          {user ? (
-            <div>
-              <form onSubmit={onSubmitComment} className="space-y-4">
-                <Textarea
-                  placeholder="Share your thoughts..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={4}
-                  required
-                  className="border-primary/20 focus:border-primary"
-                />
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  {submitting ? "Submitting..." : "Post Comment"}
-                </Button>
-              </form>
-            </div>
-          ) : (
-            <div className="text-center p-6 bg-muted/50 rounded-lg">
-              <p className="text-muted-foreground mb-4">
-                Please login to leave a comment
-              </p>
-              <Link to="/auth">
-                <Button className="bg-primary hover:bg-primary/90">Login</Button>
-              </Link>
-            </div>
-          )}
+          {/* Comment Form - Available to everyone */}
+          <div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Textarea
+                placeholder="Share your thoughts..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                rows={4}
+                required
+                className="border-primary/20 focus:border-primary"
+              />
+              
+              {/* Anonymous option for logged-in users */}
+              {user && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="anonymous"
+                    checked={postAnonymously}
+                    onCheckedChange={(checked) => setPostAnonymously(checked as boolean)}
+                  />
+                  <Label htmlFor="anonymous" className="text-sm text-muted-foreground cursor-pointer">
+                    Post anonymously (hide my name)
+                  </Label>
+                </div>
+              )}
+              
+              {!user && (
+                <p className="text-sm text-muted-foreground">
+                  Posting as <span className="font-medium">unknown_ant</span> 🐜
+                </p>
+              )}
+              
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {submitting ? "Submitting..." : "Post Comment"}
+              </Button>
+            </form>
+          </div>
 
           {/* Comments List */}
           <div className="space-y-4">
@@ -97,17 +134,20 @@ const CommentDialog = ({
               <div key={comment.id} className="p-4 bg-muted/30 rounded-lg">
                 <div className="flex gap-4">
                   <Avatar>
-                    <AvatarImage
-                      src={comment.profiles?.avatar_url || undefined}
-                    />
+                    {!comment.is_anonymous && comment.user_id && comment.profiles?.avatar_url ? (
+                      <AvatarImage src={comment.profiles.avatar_url} />
+                    ) : null}
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {comment.profiles?.full_name?.charAt(0) || "U"}
+                      {getAvatarFallback(comment)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold">
-                        {comment.profiles?.full_name || "Anonymous"}
+                      <span className="font-semibold flex items-center gap-1">
+                        {getDisplayName(comment)}
+                        {(comment.is_anonymous || !comment.user_id) && (
+                          <span className="text-base">🐜</span>
+                        )}
                       </span>
                       <span className="text-sm text-muted-foreground">
                         {format(new Date(comment.created_at), "MMM d, yyyy")}
