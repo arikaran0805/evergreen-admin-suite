@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
-import { Save, RefreshCw, DollarSign, LayoutGrid, FileCode, Eye, Monitor, Smartphone, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
+import { Save, RefreshCw, DollarSign, LayoutGrid, FileCode, Eye, Monitor, Smartphone, CheckCircle, AlertCircle } from "lucide-react";
 
 interface AdPreviewBoxProps {
   label: string;
@@ -68,7 +67,6 @@ interface AdSetting {
 }
 
 const AdminAdSettings = () => {
-  const navigate = useNavigate();
   const [settings, setSettings] = useState<AdSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -159,13 +157,7 @@ const AdminAdSettings = () => {
           <div>
             <h1 className="text-3xl font-bold">Ad Settings</h1>
             <p className="text-muted-foreground mt-1">
-              Configure Google AdSense and third-party ad integration.{" "}
-              <span 
-                className="text-primary cursor-pointer hover:underline inline-flex items-center gap-1"
-                onClick={() => navigate("/admin/api")}
-              >
-                API & Integrations <ExternalLink className="h-3 w-3" />
-              </span>
+              Configure Google AdSense and third-party ad integration
             </p>
           </div>
           <Button onClick={handleSave} disabled={saving}>
