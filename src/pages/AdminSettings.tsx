@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp } from "lucide-react";
 import { z } from "zod";
 
 const urlSchema = z.string().url().optional().or(z.literal(""));
@@ -1178,6 +1178,148 @@ const AdminSettings = () => {
                   <Button variant="outline" onClick={() => navigate("/admin/api")}>
                     Manage API Keys
                   </Button>
+                </div>
+
+                <Separator />
+
+                <div className="rounded-lg bg-muted p-4">
+                  <h3 className="font-semibold mb-2">Backup & Restore</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Export or import all settings for backup purposes
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const settings = {
+                          siteName,
+                          siteDescription,
+                          siteUrl,
+                          logoUrl,
+                          heroHeadline,
+                          heroSubheadline,
+                          heroHighlightText,
+                          heroHighlightColor,
+                          twitterUrl,
+                          facebookUrl,
+                          instagramUrl,
+                          linkedinUrl,
+                          youtubeUrl,
+                          githubUrl,
+                          emailNotifications,
+                          adminEmail,
+                          requireEmailVerification,
+                          allowPublicRegistration,
+                          metaTitle,
+                          metaDescription,
+                          metaKeywords,
+                          ogTitle,
+                          ogDescription,
+                          ogImage,
+                          twitterCardType,
+                          twitterSite,
+                          schemaType,
+                          schemaContactEmail,
+                          schemaPhone,
+                          schemaAddress,
+                          exportedAt: new Date().toISOString(),
+                        };
+                        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `site-settings-${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast({
+                          title: "Settings Exported",
+                          description: "Your settings have been downloaded as a JSON file",
+                        });
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Settings
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline">
+                          <FileUp className="h-4 w-4 mr-2" />
+                          Import Settings
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Import Settings</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will replace your current settings with the imported ones. Make sure to export your current settings first as a backup.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="py-4">
+                          <Input
+                            type="file"
+                            accept=".json"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  try {
+                                    const imported = JSON.parse(event.target?.result as string);
+                                    if (imported.siteName) setSiteName(imported.siteName);
+                                    if (imported.siteDescription) setSiteDescription(imported.siteDescription);
+                                    if (imported.siteUrl) setSiteUrl(imported.siteUrl);
+                                    if (imported.logoUrl) setLogoUrl(imported.logoUrl);
+                                    if (imported.heroHeadline) setHeroHeadline(imported.heroHeadline);
+                                    if (imported.heroSubheadline) setHeroSubheadline(imported.heroSubheadline);
+                                    if (imported.heroHighlightText) setHeroHighlightText(imported.heroHighlightText);
+                                    if (imported.heroHighlightColor) setHeroHighlightColor(imported.heroHighlightColor);
+                                    if (imported.twitterUrl) setTwitterUrl(imported.twitterUrl);
+                                    if (imported.facebookUrl) setFacebookUrl(imported.facebookUrl);
+                                    if (imported.instagramUrl) setInstagramUrl(imported.instagramUrl);
+                                    if (imported.linkedinUrl) setLinkedinUrl(imported.linkedinUrl);
+                                    if (imported.youtubeUrl) setYoutubeUrl(imported.youtubeUrl);
+                                    if (imported.githubUrl) setGithubUrl(imported.githubUrl);
+                                    if (typeof imported.emailNotifications === 'boolean') setEmailNotifications(imported.emailNotifications);
+                                    if (imported.adminEmail) setAdminEmail(imported.adminEmail);
+                                    if (typeof imported.requireEmailVerification === 'boolean') setRequireEmailVerification(imported.requireEmailVerification);
+                                    if (typeof imported.allowPublicRegistration === 'boolean') setAllowPublicRegistration(imported.allowPublicRegistration);
+                                    if (imported.metaTitle) setMetaTitle(imported.metaTitle);
+                                    if (imported.metaDescription) setMetaDescription(imported.metaDescription);
+                                    if (imported.metaKeywords) setMetaKeywords(imported.metaKeywords);
+                                    if (imported.ogTitle) setOgTitle(imported.ogTitle);
+                                    if (imported.ogDescription) setOgDescription(imported.ogDescription);
+                                    if (imported.ogImage) setOgImage(imported.ogImage);
+                                    if (imported.twitterCardType) setTwitterCardType(imported.twitterCardType);
+                                    if (imported.twitterSite) setTwitterSite(imported.twitterSite);
+                                    if (imported.schemaType) setSchemaType(imported.schemaType);
+                                    if (imported.schemaContactEmail) setSchemaContactEmail(imported.schemaContactEmail);
+                                    if (imported.schemaPhone) setSchemaPhone(imported.schemaPhone);
+                                    if (imported.schemaAddress) setSchemaAddress(imported.schemaAddress);
+                                    toast({
+                                      title: "Settings Imported",
+                                      description: "Settings loaded. Click Save to apply changes.",
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Import Failed",
+                                      description: "Invalid settings file format",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                };
+                                reader.readAsText(file);
+                              }
+                            }}
+                          />
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Close</AlertDialogCancel>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardContent>
             </Card>
