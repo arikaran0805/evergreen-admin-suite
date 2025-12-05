@@ -155,7 +155,13 @@ const Index = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-full pl-5 pr-12 text-base bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground"
                 />
-                <button type="submit" className="absolute right-4 text-muted-foreground hover:text-primary transition-colors">
+                <button 
+                  type="submit" 
+                  className="absolute right-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  onClick={() => {
+                    navigate(`/courses${searchQuery.trim() ? `?search=${encodeURIComponent(searchQuery.trim())}` : ''}`);
+                  }}
+                >
                   <Search className="h-5 w-5" />
                 </button>
               </div>
