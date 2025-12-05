@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit } from "lucide-react";
+import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit, Info } from "lucide-react";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RecentPost {
   id: string;
@@ -26,10 +27,19 @@ interface RecentPost {
   } | null;
 }
 
+interface PostStats {
+  [postId: string]: {
+    views: number;
+    likes: number;
+    comments: number;
+  };
+}
+
 const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
+  const [postStats, setPostStats] = useState<PostStats>({});
   const [filterType, setFilterType] = useState<"posted" | "edited">("posted");
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -146,8 +156,70 @@ const Admin = () => {
 
       if (postsError) throw postsError;
       setRecentPosts(postsData || []);
+      
+      // Fetch stats for each post
+      if (postsData && postsData.length > 0) {
+        await fetchPostStats(postsData.map(p => p.id));
+      }
     } catch (error: any) {
       console.error("Error fetching recent posts:", error);
+    }
+  };
+
+  const fetchPostStats = async (postIds: string[]) => {
+    try {
+      const statsMap: PostStats = {};
+      
+      // Initialize stats for all posts
+      postIds.forEach(id => {
+        statsMap[id] = { views: 0, likes: 0, comments: 0 };
+      });
+
+      // Fetch views counts
+      const { data: viewsData } = await supabase
+        .from("post_views")
+        .select("post_id")
+        .in("post_id", postIds);
+      
+      if (viewsData) {
+        viewsData.forEach(view => {
+          if (statsMap[view.post_id]) {
+            statsMap[view.post_id].views++;
+          }
+        });
+      }
+
+      // Fetch likes counts
+      const { data: likesData } = await supabase
+        .from("post_likes")
+        .select("post_id")
+        .in("post_id", postIds);
+      
+      if (likesData) {
+        likesData.forEach(like => {
+          if (statsMap[like.post_id]) {
+            statsMap[like.post_id].likes++;
+          }
+        });
+      }
+
+      // Fetch comments counts
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select("post_id")
+        .in("post_id", postIds);
+      
+      if (commentsData) {
+        commentsData.forEach(comment => {
+          if (statsMap[comment.post_id]) {
+            statsMap[comment.post_id].comments++;
+          }
+        });
+      }
+
+      setPostStats(statsMap);
+    } catch (error) {
+      console.error("Error fetching post stats:", error);
     }
   };
 
@@ -314,12 +386,41 @@ const Admin = () => {
                         View
                       </Button>
                     )}
-                    <Link to={`/admin/posts`}>
+                    <Link to={`/admin/posts/edit/${post.id}`}>
                       <Button size="sm" variant="outline" className="gap-1">
                         <Edit className="h-3 w-3" />
                         Edit
                       </Button>
                     </Link>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="gap-1 px-2">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="p-3">
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Views:</span>
+                              <span className="font-medium">{postStats[post.id]?.views || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Likes:</span>
+                              <span className="font-medium">{postStats[post.id]?.likes || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Comments:</span>
+                              <span className="font-medium">{postStats[post.id]?.comments || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Last Updated:</span>
+                              <span className="font-medium">{format(new Date(post.updated_at), "MMM d, yyyy")}</span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               ))
