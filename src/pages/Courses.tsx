@@ -41,10 +41,10 @@ const Courses = () => {
       const formattedCourses = data.map((category: any) => ({
         id: category.id,
         title: category.name,
-        excerpt: category.description || 'Explore this course category and learn new skills',
+        excerpt: category.description || 'Explore this course and learn new skills',
         category: category.name,
         image: '/placeholder.svg',
-        date: 'Course Category',
+        date: 'Course',
         author: 'Emojilearn Team',
         slug: category.slug
       }));
@@ -155,7 +155,7 @@ const Courses = () => {
               </div>
               
               <div>
-                <h3 className="font-semibold mb-4">Categories</h3>
+                <h3 className="font-semibold mb-4">Courses</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {footerCategories.map((category) => (
                     <li key={category.slug}>

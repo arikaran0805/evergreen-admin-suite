@@ -552,7 +552,7 @@ const CategoryDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title={`${category.name} - Course Category`}
+        title={`${category.name} - Course`}
         description={category.description || `Explore ${category.name} courses and lessons. Join ${formattedLearners} learners in this comprehensive learning path.`}
         keywords={`${category.name}, course, learning, tutorial, lessons`}
         ogTitle={`${category.name} Course`}
@@ -963,7 +963,7 @@ const CategoryDetail = () => {
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Categories</h3>
+              <h3 className="font-semibold mb-4">Courses</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 {footerCategories.map((category) => (
                   <li key={category.slug}>
