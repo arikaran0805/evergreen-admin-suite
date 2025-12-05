@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
+import { Switch } from "@/components/ui/switch";
 import { Save, RefreshCw, DollarSign, LayoutGrid, FileCode, Eye, Monitor, Smartphone, CheckCircle, AlertCircle } from "lucide-react";
 
 interface AdPreviewBoxProps {
@@ -182,7 +183,7 @@ const AdminAdSettings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="google_ad_client">Publisher ID (Ad Client)</Label>
                 <Input
@@ -194,6 +195,19 @@ const AdminAdSettings = () => {
                 <p className="text-xs text-muted-foreground">
                   {getSetting("google_ad_client")?.description}
                 </p>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="auto_ads" className="text-base">Enable Auto Ads</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Let Google automatically place and optimize ads on your site
+                  </p>
+                </div>
+                <Switch
+                  id="auto_ads"
+                  checked={getSettingValue("auto_ads") === "true"}
+                  onCheckedChange={(checked) => handleChange("auto_ads", checked.toString())}
+                />
               </div>
             </div>
           </CardContent>
