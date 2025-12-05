@@ -144,7 +144,7 @@ const AdminCategories = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-foreground">Courses</h1>
-          <Button onClick={() => navigate("/admin/categories/new")}>
+          <Button onClick={() => navigate("/admin/courses/new")}>
             <Plus className="mr-2 h-4 w-4" /> New Course
           </Button>
         </div>
@@ -163,7 +163,7 @@ const AdminCategories = () => {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/categories/${category.id}`)}>
+                    <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/courses/${category.id}`)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <TooltipProvider>

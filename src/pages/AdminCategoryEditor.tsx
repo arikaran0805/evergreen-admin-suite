@@ -120,7 +120,7 @@ const AdminCategoryEditor = () => {
         toast({ title: "Course created successfully" });
       }
       
-      navigate("/admin/categories");
+      navigate("/admin/courses");
     } catch (error: any) {
       toast({ title: "Error saving course", description: error.message, variant: "destructive" });
     }
@@ -147,7 +147,7 @@ const AdminCategoryEditor = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate("/admin/categories")}>
+          <Button variant="outline" onClick={() => navigate("/admin/courses")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Courses
           </Button>
@@ -251,7 +251,7 @@ const AdminCategoryEditor = () => {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => navigate("/admin/categories")}
+                onClick={() => navigate("/admin/courses")}
               >
                 Cancel
               </Button>
