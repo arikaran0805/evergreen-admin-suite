@@ -134,12 +134,22 @@ const CourseDetail = () => {
     fetchFooterCategories();
   }, [slug]);
 
-  // Auto-select lesson from URL query param
+  // Auto-select lesson from URL query param (supports browser back/forward)
   useEffect(() => {
-    if (lessonSlug && posts.length > 0 && !selectedPost) {
+    if (lessonSlug && posts.length > 0) {
       const lessonToSelect = posts.find(p => p.slug === lessonSlug);
-      if (lessonToSelect) {
-        handleLessonClick(lessonToSelect);
+      if (lessonToSelect && selectedPost?.slug !== lessonSlug) {
+        // Directly fetch content and set state without triggering another URL update
+        if (lessonToSelect.parent_id) {
+          setExpandedParents(new Set([lessonToSelect.parent_id]));
+        } else {
+          const hasChildren = posts.some(p => p.parent_id === lessonToSelect.id);
+          if (hasChildren) {
+            setExpandedParents(new Set([lessonToSelect.id]));
+          }
+        }
+        fetchPostContent(lessonToSelect);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   }, [lessonSlug, posts]);
@@ -376,9 +386,9 @@ const CourseDetail = () => {
     // Check if this lesson has children
     const hasChildren = posts.some(p => p.parent_id === post.id);
     
-    // Helper to update URL with lesson slug
+    // Helper to update URL with lesson slug (adds to browser history)
     const updateUrlWithLesson = (lessonSlug: string) => {
-      navigate(`/course/${slug}?lesson=${lessonSlug}`, { replace: true });
+      navigate(`/course/${slug}?lesson=${lessonSlug}`);
     };
     
     // If clicking a sub-lesson, only keep its parent expanded
