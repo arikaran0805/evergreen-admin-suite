@@ -364,9 +364,17 @@ const AdminAPI = () => {
                   />
                   <Label htmlFor="auto-ads">Enable Auto Ads</Label>
                 </div>
-                <Button onClick={saveAdsenseConfig} disabled={savingAdsense}>
-                  {savingAdsense ? "Saving..." : "Save Configuration"}
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Button onClick={saveAdsenseConfig} disabled={savingAdsense}>
+                    {savingAdsense ? "Saving..." : "Save Configuration"}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/ad-settings")}>
+                    Manage Ad Slots
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  For detailed ad slot configuration and preview, visit the <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate("/admin/ad-settings")}>Ad Settings</span> page.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
