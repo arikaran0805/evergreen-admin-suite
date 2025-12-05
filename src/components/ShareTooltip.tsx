@@ -78,10 +78,14 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
 
   const handleMouseEnter = () => {
     setOpen(true);
-    // Add click listener to close when clicking outside
     setTimeout(() => {
       document.addEventListener("click", handleClickOutside);
     }, 0);
+  };
+
+  const handleMouseLeave = () => {
+    setOpen(false);
+    document.removeEventListener("click", handleClickOutside);
   };
 
   const WhatsAppIcon = () => (
@@ -97,7 +101,7 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   );
 
   return (
-    <div ref={containerRef} className="relative inline-block">
+    <div ref={containerRef} className="relative inline-block" onMouseLeave={handleMouseLeave}>
       <div onMouseEnter={handleMouseEnter}>
         {children || (
           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
