@@ -728,6 +728,7 @@ export type Database = {
           schema_phone: string | null
           schema_same_as: string[] | null
           schema_type: string | null
+          search_placeholders: string[] | null
           site_description: string | null
           site_name: string
           site_url: string | null
@@ -760,6 +761,7 @@ export type Database = {
           schema_phone?: string | null
           schema_same_as?: string[] | null
           schema_type?: string | null
+          search_placeholders?: string[] | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null
@@ -792,6 +794,7 @@ export type Database = {
           schema_phone?: string | null
           schema_same_as?: string[] | null
           schema_type?: string | null
+          search_placeholders?: string[] | null
           site_description?: string | null
           site_name?: string
           site_url?: string | null

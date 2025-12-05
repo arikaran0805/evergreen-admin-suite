@@ -48,6 +48,7 @@ const AdminSettings = () => {
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
   const [heroHighlightText, setHeroHighlightText] = useState("Think Differently");
   const [heroHighlightColor, setHeroHighlightColor] = useState("#22c55e");
+  const [searchPlaceholders, setSearchPlaceholders] = useState<string[]>(["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
   
   // Social Media Links
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -134,6 +135,7 @@ const AdminSettings = () => {
       setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity, creativity, and deeper understanding.");
       setHeroHighlightText(data.hero_highlight_text || "Think Differently");
       setHeroHighlightColor(data.hero_highlight_color || "#22c55e");
+      setSearchPlaceholders((data as any).search_placeholders || ["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
       setTwitterUrl(data.twitter_url || "");
       setFacebookUrl(data.facebook_url || "");
       setInstagramUrl(data.instagram_url || "");
@@ -232,6 +234,7 @@ const AdminSettings = () => {
             hero_subheadline: heroSubheadline,
             hero_highlight_text: heroHighlightText,
             hero_highlight_color: heroHighlightColor,
+            search_placeholders: searchPlaceholders.filter(p => p.trim()),
           })
           .eq("id", settingsId);
 
@@ -249,6 +252,7 @@ const AdminSettings = () => {
             hero_subheadline: heroSubheadline,
             hero_highlight_text: heroHighlightText,
             hero_highlight_color: heroHighlightColor,
+            search_placeholders: searchPlaceholders.filter(p => p.trim()),
           })
           .select()
           .single();
@@ -577,6 +581,21 @@ const AdminSettings = () => {
                       <p className="text-sm text-muted-foreground">
                         Choose a color for the highlighted text (default: green #22c55e)
                       </p>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label>Search Bar Placeholder Texts</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Add placeholder texts that cycle through in the search bar (one per line)
+                      </p>
+                      <Textarea
+                        value={searchPlaceholders.join('\n')}
+                        onChange={(e) => setSearchPlaceholders(e.target.value.split('\n'))}
+                        placeholder="Search courses...&#10;Find lessons...&#10;Explore topics..."
+                        rows={4}
+                      />
                     </div>
                   </div>
                 </div>

@@ -23,13 +23,14 @@ const Index = () => {
     twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
   });
   const [placeholder, setPlaceholder] = useState("");
-  const placeholderTexts = ["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."];
+  const [placeholderTexts, setPlaceholderTexts] = useState<string[]>(["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
   const placeholderIndex = useRef(0);
   const charIndex = useRef(0);
   const isDeleting = useRef(false);
 
   useEffect(() => {
     const typewriterInterval = setInterval(() => {
+      if (placeholderTexts.length === 0) return;
       const currentText = placeholderTexts[placeholderIndex.current];
       
       if (!isDeleting.current) {
@@ -52,7 +53,7 @@ const Index = () => {
     }, isDeleting.current ? 50 : 100);
 
     return () => clearInterval(typewriterInterval);
-  }, []);
+  }, [placeholderTexts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +106,7 @@ const Index = () => {
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, site_description, hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url')
+      .select('site_name, site_description, hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url, search_placeholders')
       .limit(1)
       .maybeSingle();
     
@@ -116,6 +117,9 @@ const Index = () => {
       setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity and deeper understanding.");
       setHeroHighlightText(data.hero_highlight_text || "Any Subject");
       setHeroHighlightColor(data.hero_highlight_color || "#10b981");
+      if ((data as any).search_placeholders && (data as any).search_placeholders.length > 0) {
+        setPlaceholderTexts((data as any).search_placeholders);
+      }
       setSocialLinks({
         twitter: data.twitter_url || "",
         facebook: data.facebook_url || "",
