@@ -10,6 +10,8 @@ interface AdSettings {
   inContentMiddleSlot: string;
   inContentBottomSlot: string;
   thirdPartySidebarCode: string;
+  showPreviewAds: boolean;
+  adRedirectUrl: string;
 }
 
 const defaultSettings: AdSettings = {
@@ -21,6 +23,8 @@ const defaultSettings: AdSettings = {
   inContentMiddleSlot: "",
   inContentBottomSlot: "",
   thirdPartySidebarCode: "",
+  showPreviewAds: false,
+  adRedirectUrl: "",
 };
 
 export const useAdSettings = () => {
@@ -66,6 +70,12 @@ export const useAdSettings = () => {
             break;
           case "third_party_sidebar_code":
             settingsMap.thirdPartySidebarCode = item.setting_value || "";
+            break;
+          case "show_preview_ads":
+            settingsMap.showPreviewAds = item.setting_value === "true";
+            break;
+          case "ad_redirect_url":
+            settingsMap.adRedirectUrl = item.setting_value || "";
             break;
         }
       });
