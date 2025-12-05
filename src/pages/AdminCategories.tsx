@@ -6,6 +6,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Star } from "lucide-react";
 
 interface Category {
@@ -20,21 +21,9 @@ interface Category {
 const AdminCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [previewCategory, setPreviewCategory] = useState<Category | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const toggleExpand = (id: string) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
 
   useEffect(() => {
     checkAdminAccess();
@@ -141,15 +130,15 @@ const AdminCategories = () => {
                 {category.description && (
                   <div>
                     <div 
-                      className={`text-sm break-words prose prose-sm max-w-none ${!expandedCards.has(category.id) ? "line-clamp-3" : ""}`}
+                      className="text-sm break-words prose prose-sm max-w-none line-clamp-3"
                       dangerouslySetInnerHTML={{ __html: category.description }}
                     />
                     {category.description.length > 150 && (
                       <button
-                        onClick={() => toggleExpand(category.id)}
+                        onClick={() => setPreviewCategory(category)}
                         className="text-xs text-primary hover:underline mt-1"
                       >
-                        {expandedCards.has(category.id) ? "Read less" : "Read more"}
+                        Read more
                       </button>
                     )}
                   </div>
@@ -169,6 +158,24 @@ const AdminCategories = () => {
             </Card>
           ))}
         </div>
+
+        {/* Preview Dialog */}
+        <Dialog open={!!previewCategory} onOpenChange={() => setPreviewCategory(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">{previewCategory?.name}</DialogTitle>
+              {previewCategory?.level && (
+                <p className="text-sm text-muted-foreground">Level: {previewCategory.level}</p>
+              )}
+            </DialogHeader>
+            {previewCategory?.description && (
+              <div 
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: previewCategory.description }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
