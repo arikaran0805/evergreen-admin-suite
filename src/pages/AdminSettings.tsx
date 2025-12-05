@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search } from "lucide-react";
 import { z } from "zod";
 
 const urlSchema = z.string().url().optional().or(z.literal(""));
@@ -50,6 +50,16 @@ const AdminSettings = () => {
   // Security Settings
   const [requireEmailVerification, setRequireEmailVerification] = useState(false);
   const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
+  
+  // SEO Settings
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [metaKeywords, setMetaKeywords] = useState("");
+  const [ogImage, setOgImage] = useState("");
+  const [ogTitle, setOgTitle] = useState("");
+  const [ogDescription, setOgDescription] = useState("");
+  const [twitterCardType, setTwitterCardType] = useState("summary_large_image");
+  const [twitterSite, setTwitterSite] = useState("");
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -110,6 +120,15 @@ const AdminSettings = () => {
       setLinkedinUrl(data.linkedin_url || "");
       setYoutubeUrl(data.youtube_url || "");
       setGithubUrl(data.github_url || "");
+      // SEO Settings
+      setMetaTitle(data.meta_title || "");
+      setMetaDescription(data.meta_description || "");
+      setMetaKeywords(data.meta_keywords || "");
+      setOgImage(data.og_image || "");
+      setOgTitle(data.og_title || "");
+      setOgDescription(data.og_description || "");
+      setTwitterCardType(data.twitter_card_type || "summary_large_image");
+      setTwitterSite(data.twitter_site || "");
     }
   };
 
@@ -311,6 +330,41 @@ const AdminSettings = () => {
     }
   };
 
+  const handleSaveSEO = async () => {
+    setSaving(true);
+    try {
+      if (!settingsId) {
+        toast({ title: "Error", description: "Settings not found", variant: "destructive" });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from("site_settings")
+        .update({
+          meta_title: metaTitle,
+          meta_description: metaDescription,
+          meta_keywords: metaKeywords,
+          og_image: ogImage,
+          og_title: ogTitle,
+          og_description: ogDescription,
+          twitter_card_type: twitterCardType,
+          twitter_site: twitterSite,
+        })
+        .eq("id", settingsId);
+
+      if (error) throw error;
+      toast({ title: "SEO settings saved successfully" });
+    } catch (error: any) {
+      toast({
+        title: "Error saving SEO settings",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
 
   return (
@@ -326,7 +380,7 @@ const AdminSettings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-[700px]">
+          <TabsList className="grid w-full grid-cols-6 lg:w-[840px]">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               General
@@ -334,6 +388,10 @@ const AdminSettings = () => {
             <TabsTrigger value="social" className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Social
+            </TabsTrigger>
+            <TabsTrigger value="seo" className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              SEO
             </TabsTrigger>
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -608,6 +666,145 @@ const AdminSettings = () => {
 
                 <Button onClick={handleSaveSocial} disabled={saving} className="bg-primary w-full">
                   {saving ? "Saving..." : "Save Social Media Links"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SEO Settings */}
+          <TabsContent value="seo" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  Basic Meta Tags
+                </CardTitle>
+                <CardDescription>
+                  Default meta tags that will be used across your site
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="meta_title">Meta Title</Label>
+                  <Input
+                    id="meta_title"
+                    value={metaTitle}
+                    onChange={(e) => setMetaTitle(e.target.value)}
+                    placeholder="Your Site Title - Best Blog Platform"
+                    maxLength={60}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {metaTitle.length}/60 characters (recommended)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="meta_description">Meta Description</Label>
+                  <Textarea
+                    id="meta_description"
+                    value={metaDescription}
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                    placeholder="A brief description of your site that appears in search results"
+                    rows={3}
+                    maxLength={160}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {metaDescription.length}/160 characters (recommended)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="meta_keywords">Meta Keywords</Label>
+                  <Input
+                    id="meta_keywords"
+                    value={metaKeywords}
+                    onChange={(e) => setMetaKeywords(e.target.value)}
+                    placeholder="blog, technology, lifestyle, education"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Comma-separated keywords
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Open Graph Tags</CardTitle>
+                <CardDescription>
+                  Settings for social media sharing (Facebook, LinkedIn, etc.)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="og_title">OG Title</Label>
+                  <Input
+                    id="og_title"
+                    value={ogTitle}
+                    onChange={(e) => setOgTitle(e.target.value)}
+                    placeholder="Title that appears when shared on social media"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="og_description">OG Description</Label>
+                  <Textarea
+                    id="og_description"
+                    value={ogDescription}
+                    onChange={(e) => setOgDescription(e.target.value)}
+                    placeholder="Description that appears when shared on social media"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="og_image">OG Image URL</Label>
+                  <Input
+                    id="og_image"
+                    value={ogImage}
+                    onChange={(e) => setOgImage(e.target.value)}
+                    placeholder="https://example.com/og-image.jpg"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Recommended size: 1200x630px
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Twitter Card Settings</CardTitle>
+                <CardDescription>
+                  Settings for Twitter/X sharing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="twitter_card_type">Twitter Card Type</Label>
+                  <Input
+                    id="twitter_card_type"
+                    value={twitterCardType}
+                    onChange={(e) => setTwitterCardType(e.target.value)}
+                    placeholder="summary_large_image"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Common values: summary, summary_large_image
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="twitter_site">Twitter Site Handle</Label>
+                  <Input
+                    id="twitter_site"
+                    value={twitterSite}
+                    onChange={(e) => setTwitterSite(e.target.value)}
+                    placeholder="@yoursitehandle"
+                  />
+                </div>
+
+                <Button onClick={handleSaveSEO} disabled={saving} className="bg-primary w-full">
+                  {saving ? "Saving..." : "Save SEO Settings"}
                 </Button>
               </CardContent>
             </Card>
