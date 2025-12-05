@@ -6,9 +6,8 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Check, X, Trash2, MessageSquare, AlertCircle, CheckCircle, XCircle, 
-  Search, User, UserX, Reply, ThumbsUp, ThumbsDown, Eye, ExternalLink,
-  CornerDownRight, Send, Shield
+  Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
+  ExternalLink, Send, Shield
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,34 +131,6 @@ const AdminComments = () => {
     }
   };
 
-  const handleApprove = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("comments")
-        .update({ status: "approved" })
-        .eq("id", id);
-      if (error) throw error;
-      toast({ title: "Comment approved" });
-      fetchComments();
-    } catch (error: any) {
-      toast({ title: "Error approving comment", description: error.message, variant: "destructive" });
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("comments")
-        .update({ status: "rejected" })
-        .eq("id", id);
-      if (error) throw error;
-      toast({ title: "Comment rejected" });
-      fetchComments();
-    } catch (error: any) {
-      toast({ title: "Error rejecting comment", description: error.message, variant: "destructive" });
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this comment? This will also delete all replies.")) return;
     try {
@@ -238,9 +209,6 @@ const AdminComments = () => {
     topLevel: topLevelComments.length,
     replies: comments.filter(c => c.parent_id).length,
     anonymous: comments.filter(c => c.is_anonymous).length,
-    pending: comments.filter(c => c.status === "pending").length,
-    approved: comments.filter(c => c.status === "approved").length,
-    rejected: comments.filter(c => c.status === "rejected").length,
   };
 
   const getAuthorDisplay = (comment: Comment) => {
@@ -330,21 +298,6 @@ const AdminComments = () => {
                 </p>
               </div>
 
-              {/* Status Badge */}
-              <Badge 
-                variant={
-                  comment.status === "approved" ? "default" : 
-                  comment.status === "pending" ? "secondary" : 
-                  "destructive"
-                }
-                className={
-                  comment.status === "approved" ? "bg-green-500 hover:bg-green-600" :
-                  comment.status === "pending" ? "bg-orange-500 hover:bg-orange-600" :
-                  ""
-                }
-              >
-                {comment.status.charAt(0).toUpperCase() + comment.status.slice(1)}
-              </Badge>
             </div>
           </CardHeader>
           
@@ -374,25 +327,6 @@ const AdminComments = () => {
 
             {/* Actions */}
             <div className="flex gap-2 flex-wrap pt-2 border-t border-border/50">
-              {comment.status !== "approved" && (
-                <Button 
-                  size="sm" 
-                  onClick={() => handleApprove(comment.id)}
-                  className="bg-green-500 hover:bg-green-600"
-                >
-                  <Check className="mr-1 h-4 w-4" /> Approve
-                </Button>
-              )}
-              {comment.status !== "rejected" && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => handleReject(comment.id)}
-                  className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
-                >
-                  <X className="mr-1 h-4 w-4" /> Reject
-                </Button>
-              )}
               <Button 
                 size="sm" 
                 variant="outline"
@@ -484,7 +418,7 @@ const AdminComments = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -532,42 +466,6 @@ const AdminComments = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-yellow-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Pending</p>
-                  <p className="text-xl font-bold text-yellow-500">{stats.pending}</p>
-                </div>
-                <AlertCircle className="h-6 w-6 text-yellow-500/60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-green-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Approved</p>
-                  <p className="text-xl font-bold text-green-500">{stats.approved}</p>
-                </div>
-                <CheckCircle className="h-6 w-6 text-green-500/60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-red-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Rejected</p>
-                  <p className="text-xl font-bold text-red-500">{stats.rejected}</p>
-                </div>
-                <XCircle className="h-6 w-6 text-red-500/60" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Search */}
@@ -584,13 +482,9 @@ const AdminComments = () => {
 
         {/* Tabs for filtering */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="pending">
-              Pending {stats.pending > 0 && <Badge className="ml-1 bg-yellow-500">{stats.pending}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="replies">With Replies</TabsTrigger>
             <TabsTrigger value="anonymous">Anonymous</TabsTrigger>
           </TabsList>
 
