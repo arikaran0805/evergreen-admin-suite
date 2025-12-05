@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
-  ExternalLink, Send, Shield
+  ExternalLink, Send, Shield, XCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -209,6 +209,7 @@ const AdminComments = () => {
     topLevel: topLevelComments.length,
     replies: comments.filter(c => c.parent_id).length,
     anonymous: comments.filter(c => c.is_anonymous).length,
+    rejected: comments.filter(c => c.status === "rejected").length,
   };
 
   const getAuthorDisplay = (comment: Comment) => {
@@ -418,7 +419,7 @@ const AdminComments = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Card className="border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -466,6 +467,18 @@ const AdminComments = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border-red-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Rejected</p>
+                  <p className="text-xl font-bold text-red-500">{stats.rejected}</p>
+                </div>
+                <XCircle className="h-6 w-6 text-red-500/60" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Search */}
@@ -482,10 +495,11 @@ const AdminComments = () => {
 
         {/* Tabs for filtering */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="replies">With Replies</TabsTrigger>
             <TabsTrigger value="anonymous">Anonymous</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
