@@ -251,6 +251,7 @@ const CommentDialog = ({
   // Organize and sort comments into threads
   const topLevelComments = useMemo(() => {
     const filtered = comments.filter(c => !c.parent_id);
+    console.log("Sort by:", sortBy, "Filtered comments:", filtered.length);
     
     return [...filtered].sort((a, b) => {
       if (sortBy === "newest") {
@@ -440,7 +441,7 @@ const CommentDialog = ({
                 <SelectTrigger className="w-[120px] h-8">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]">
                   <SelectItem value="newest">Newest</SelectItem>
                   <SelectItem value="oldest">Oldest</SelectItem>
                   <SelectItem value="most_liked">Most Liked</SelectItem>
