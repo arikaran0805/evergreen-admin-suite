@@ -400,10 +400,25 @@ const CommentDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Comments ({comments.length})
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Comments ({comments.length})
+            </DialogTitle>
+            {/* Sort Options - Top Right */}
+            {comments.length > 0 && (
+              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most_liked") => setSortBy(value)}>
+                <SelectTrigger className="w-[120px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="most_liked">Most Liked</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <DialogDescription>
             Share your thoughts and join the discussion
           </DialogDescription>
@@ -412,7 +427,7 @@ const CommentDialog = ({
         <div className="space-y-6">
           {/* Comment Form */}
           <div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <Textarea
                 placeholder="Share your thoughts..."
                 value={newComment}
@@ -422,54 +437,41 @@ const CommentDialog = ({
                 className="border-primary/20 focus:border-primary"
               />
               
-              {user && (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="anonymous"
-                    checked={postAnonymously}
-                    onCheckedChange={(checked) => setPostAnonymously(checked as boolean)}
-                  />
-                  <Label htmlFor="anonymous" className="text-sm text-muted-foreground cursor-pointer">
-                    Post anonymously (hide my name)
-                  </Label>
+              <div className="flex items-center justify-between">
+                <div>
+                  {user && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="anonymous"
+                        checked={postAnonymously}
+                        onCheckedChange={(checked) => setPostAnonymously(checked as boolean)}
+                      />
+                      <Label htmlFor="anonymous" className="text-sm text-muted-foreground cursor-pointer">
+                        Post anonymously (hide my name)
+                      </Label>
+                    </div>
+                  )}
+                  
+                  {!user && (
+                    <p className="text-sm text-muted-foreground">
+                      Posting as <span className="font-medium">unknown_ant</span>
+                    </p>
+                  )}
                 </div>
-              )}
-              
-              {!user && (
-                <p className="text-sm text-muted-foreground">
-                  Posting as <span className="font-medium">unknown_ant</span>
-                </p>
-              )}
-              
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="bg-primary hover:bg-primary/90"
-              >
-                {submitting ? "Submitting..." : "Post Comment"}
-              </Button>
+                
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {submitting ? "Submitting..." : "Post Comment"}
+                </Button>
+              </div>
             </form>
           </div>
 
           {/* Comments List */}
           <div className="space-y-4">
-            {/* Sort Options */}
-            {comments.length > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Sort by</span>
-                <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most_liked") => setSortBy(value)}>
-                  <SelectTrigger className="w-[140px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
-                    <SelectItem value="most_liked">Most Liked</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            
             {topLevelComments.map((comment) => (
               <div key={comment.id}>
                 {renderComment(comment)}
