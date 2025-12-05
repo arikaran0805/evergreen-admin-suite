@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Webhook, Key, Globe, Copy, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Webhook, Key, Copy, Eye, EyeOff } from "lucide-react";
 
 interface WebhookType {
   id: string;
@@ -50,13 +50,6 @@ const AdminAPI = () => {
   const [loading, setLoading] = useState(true);
   const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
   const [integrations, setIntegrations] = useState<APIIntegration[]>([]);
-  
-  // AdSense state
-  const [adsenseConfig, setAdsenseConfig] = useState({
-    clientId: "",
-    autoAds: false,
-  });
-  const [savingAdsense, setSavingAdsense] = useState(false);
 
   // Webhook dialog state
   const [webhookDialog, setWebhookDialog] = useState(false);
@@ -111,7 +104,7 @@ const AdminAPI = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchWebhooks(), fetchIntegrations(), fetchAdsenseConfig()]);
+    await Promise.all([fetchWebhooks(), fetchIntegrations()]);
     setLoading(false);
   };
 
@@ -133,63 +126,6 @@ const AdminAPI = () => {
         ...item,
         config: (item.config || {}) as Record<string, unknown>
       })));
-    }
-  };
-
-  const fetchAdsenseConfig = async () => {
-    // Use ad_settings table as single source of truth
-    const { data } = await supabase
-      .from("ad_settings")
-      .select("setting_key, setting_value")
-      .in("setting_key", ["google_ad_client", "auto_ads"]);
-    
-    if (data) {
-      const clientSetting = data.find(s => s.setting_key === "google_ad_client");
-      const autoAdsSetting = data.find(s => s.setting_key === "auto_ads");
-      setAdsenseConfig({
-        clientId: clientSetting?.setting_value || "",
-        autoAds: autoAdsSetting?.setting_value === "true",
-      });
-    }
-  };
-
-  const saveAdsenseConfig = async () => {
-    setSavingAdsense(true);
-    
-    try {
-      // Update google_ad_client in ad_settings
-      const { error: clientError } = await supabase
-        .from("ad_settings")
-        .update({ setting_value: adsenseConfig.clientId, updated_at: new Date().toISOString() })
-        .eq("setting_key", "google_ad_client");
-
-      if (clientError) throw clientError;
-
-      // Check if auto_ads setting exists, if not create it
-      const { data: existingAutoAds } = await supabase
-        .from("ad_settings")
-        .select("id")
-        .eq("setting_key", "auto_ads")
-        .maybeSingle();
-
-      if (existingAutoAds) {
-        await supabase
-          .from("ad_settings")
-          .update({ setting_value: adsenseConfig.autoAds.toString(), updated_at: new Date().toISOString() })
-          .eq("setting_key", "auto_ads");
-      } else {
-        await supabase.from("ad_settings").insert({
-          setting_key: "auto_ads",
-          setting_value: adsenseConfig.autoAds.toString(),
-          description: "Enable Google Auto Ads",
-        });
-      }
-
-      toast({ title: "Success", description: "AdSense configuration saved" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to save AdSense config", variant: "destructive" });
-    } finally {
-      setSavingAdsense(false);
     }
   };
 
@@ -328,61 +264,14 @@ const AdminAPI = () => {
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">API & Integrations</h1>
-          <p className="text-muted-foreground">Manage webhooks, AdSense, and external API integrations</p>
+          <p className="text-muted-foreground">Manage webhooks and external API integrations</p>
         </div>
 
-        <Tabs defaultValue="adsense" className="space-y-4">
+        <Tabs defaultValue="webhooks" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="adsense">Google AdSense</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="integrations">External APIs</TabsTrigger>
           </TabsList>
-
-          {/* Google AdSense Tab */}
-          <TabsContent value="adsense">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Google AdSense Configuration
-                </CardTitle>
-                <CardDescription>Configure your Google AdSense account for displaying ads</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="adsense-client">AdSense Publisher ID (ca-pub-xxxxx)</Label>
-                  <Input
-                    id="adsense-client"
-                    placeholder="ca-pub-1234567890123456"
-                    value={adsenseConfig.clientId}
-                    onChange={(e) => setAdsenseConfig({ ...adsenseConfig, clientId: e.target.value })}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Find your Publisher ID in your AdSense account under Account → Account information
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="auto-ads"
-                    checked={adsenseConfig.autoAds}
-                    onCheckedChange={(checked) => setAdsenseConfig({ ...adsenseConfig, autoAds: checked })}
-                  />
-                  <Label htmlFor="auto-ads">Enable Auto Ads</Label>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Button onClick={saveAdsenseConfig} disabled={savingAdsense}>
-                    {savingAdsense ? "Saving..." : "Save Configuration"}
-                  </Button>
-                  <Button variant="outline" onClick={() => navigate("/admin/ad-settings")}>
-                    Manage Ad Slots
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mt-4">
-                  For detailed ad slot configuration and preview, visit the <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate("/admin/ad-settings")}>Ad Settings</span> page.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Webhooks Tab */}
           <TabsContent value="webhooks">
