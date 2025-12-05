@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { 
   Check, X, Trash2, MessageSquare, AlertCircle, CheckCircle, XCircle, 
   Search, User, UserX, Reply, ThumbsUp, ThumbsDown, Eye, ExternalLink,
-  CornerDownRight
+  CornerDownRight, Send, Shield
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -49,6 +50,10 @@ const AdminComments = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -62,6 +67,8 @@ const AdminComments = () => {
       navigate("/auth");
       return;
     }
+
+    setCurrentUserId(session.user.id);
 
     const { data: roleData } = await supabase
       .from("user_roles")
@@ -165,6 +172,34 @@ const AdminComments = () => {
       fetchComments();
     } catch (error: any) {
       toast({ title: "Error deleting comment", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleSubmitReply = async (parentComment: Comment) => {
+    if (!replyContent.trim() || !currentUserId) return;
+    
+    setSubmittingReply(true);
+    try {
+      const { error } = await supabase.from("comments").insert({
+        content: replyContent.trim(),
+        post_id: parentComment.post_id,
+        parent_id: parentComment.id,
+        user_id: currentUserId,
+        is_anonymous: false,
+        display_name: "Admin",
+        status: "approved" // Admin replies are auto-approved
+      });
+
+      if (error) throw error;
+      
+      toast({ title: "Reply posted successfully" });
+      setReplyContent("");
+      setReplyingTo(null);
+      fetchComments();
+    } catch (error: any) {
+      toast({ title: "Error posting reply", description: error.message, variant: "destructive" });
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
@@ -360,12 +395,57 @@ const AdminComments = () => {
               )}
               <Button 
                 size="sm" 
+                variant="outline"
+                onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                className="border-primary text-primary hover:bg-primary/10"
+              >
+                <Reply className="mr-1 h-4 w-4" /> Reply
+              </Button>
+              <Button 
+                size="sm" 
                 variant="destructive" 
                 onClick={() => handleDelete(comment.id)}
               >
                 <Trash2 className="mr-1 h-4 w-4" /> Delete
               </Button>
             </div>
+
+            {/* Reply Form */}
+            {replyingTo === comment.id && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
+                <div className="flex items-center gap-2 text-sm text-primary">
+                  <Shield className="h-4 w-4" />
+                  <span className="font-medium">Reply as Admin</span>
+                </div>
+                <Textarea
+                  placeholder="Write your reply..."
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  className="min-h-[100px] resize-none"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setReplyingTo(null);
+                      setReplyContent("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSubmitReply(comment)}
+                    disabled={!replyContent.trim() || submittingReply}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Send className="mr-1 h-4 w-4" />
+                    {submittingReply ? "Posting..." : "Post Reply"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
