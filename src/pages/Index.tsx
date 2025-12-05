@@ -110,32 +110,9 @@ const Index = () => {
           <div className="absolute bottom-32 left-[20%] w-12 h-12 border-4 border-primary/30 rotate-12 animate-[bounce_5s_ease-in-out_infinite_1s]" />
           <div className="absolute top-1/2 right-[8%] w-20 h-20 border-4 border-accent/20 rounded-full animate-[pulse_3s_ease-in-out_infinite]" />
           
-          {/* Floating Particles */}
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-primary/40 animate-float"
-              style={{
-                width: `${Math.random() * 6 + 2}px`,
-                height: `${Math.random() * 6 + 2}px`,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDuration: `${Math.random() * 10 + 10}s`,
-                animationDelay: `${Math.random() * 5}s`,
-              }}
-            />
-          ))}
-          
-          {/* Glowing orbs that drift */}
-          <div className="absolute top-[20%] left-[15%] w-3 h-3 rounded-full bg-primary/60 blur-[2px] animate-drift" />
-          <div className="absolute top-[60%] left-[70%] w-4 h-4 rounded-full bg-accent/50 blur-[3px] animate-drift-reverse" />
-          <div className="absolute top-[40%] left-[85%] w-2 h-2 rounded-full bg-primary/50 blur-[1px] animate-drift" style={{ animationDelay: '3s' }} />
-          <div className="absolute top-[75%] left-[25%] w-3 h-3 rounded-full bg-accent/40 blur-[2px] animate-drift-reverse" style={{ animationDelay: '5s' }} />
-          <div className="absolute top-[15%] left-[60%] w-2 h-2 rounded-full bg-primary/70 blur-[1px] animate-drift" style={{ animationDelay: '7s' }} />
-          
           {/* Gradient orbs */}
-          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-primary/8 to-transparent rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-radial from-accent/5 to-transparent rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }} />
+          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-primary/8 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-radial from-accent/5 to-transparent rounded-full blur-3xl" />
           
           {/* Grid pattern */}
           <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[size:80px_80px] opacity-30" />
@@ -174,6 +151,27 @@ const Index = () => {
                 </h1>
               </div>
 
+              {/* Subheadline */}
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-light">
+                {heroSubheadline}
+              </p>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-4 pt-4">
+                <Link to="/courses">
+                  <Button size="lg" className="h-16 px-10 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-none group relative overflow-hidden">
+                    <span className="relative z-10 flex items-center gap-2">
+                      Explore Courses
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="h-16 px-10 text-lg font-bold rounded-none border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
+                  <Compass className="mr-2 h-5 w-5" />
+                  Take a Tour
+                </Button>
+              </div>
             </div>
 
             {/* Right Side - Abstract Knowledge Constellation */}
