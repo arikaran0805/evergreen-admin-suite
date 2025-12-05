@@ -78,25 +78,45 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0) translateX(0)", opacity: "0.4" },
+          "25%": { transform: "translateY(-20px) translateX(10px)", opacity: "0.8" },
+          "50%": { transform: "translateY(-10px) translateX(-5px)", opacity: "0.6" },
+          "75%": { transform: "translateY(-30px) translateX(5px)", opacity: "0.9" },
+        },
+        "drift": {
+          "0%": { transform: "translate(0, 0)" },
+          "25%": { transform: "translate(30px, -20px)" },
+          "50%": { transform: "translate(60px, 10px)" },
+          "75%": { transform: "translate(20px, 30px)" },
+          "100%": { transform: "translate(0, 0)" },
+        },
+        "drift-reverse": {
+          "0%": { transform: "translate(0, 0)" },
+          "25%": { transform: "translate(-20px, 30px)" },
+          "50%": { transform: "translate(-40px, -10px)" },
+          "75%": { transform: "translate(-10px, -20px)" },
+          "100%": { transform: "translate(0, 0)" },
+        },
+        "pulse-slow": {
+          "0%, 100%": { opacity: "0.5", transform: "scale(1)" },
+          "50%": { opacity: "0.8", transform: "scale(1.05)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "float": "float 15s ease-in-out infinite",
+        "drift": "drift 20s ease-in-out infinite",
+        "drift-reverse": "drift-reverse 18s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 8s ease-in-out infinite",
       },
     },
   },

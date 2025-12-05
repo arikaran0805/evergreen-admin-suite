@@ -110,9 +110,32 @@ const Index = () => {
           <div className="absolute bottom-32 left-[20%] w-12 h-12 border-4 border-primary/30 rotate-12 animate-[bounce_5s_ease-in-out_infinite_1s]" />
           <div className="absolute top-1/2 right-[8%] w-20 h-20 border-4 border-accent/20 rounded-full animate-[pulse_3s_ease-in-out_infinite]" />
           
+          {/* Floating Particles */}
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-primary/40 animate-float"
+              style={{
+                width: `${Math.random() * 6 + 2}px`,
+                height: `${Math.random() * 6 + 2}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDuration: `${Math.random() * 10 + 10}s`,
+                animationDelay: `${Math.random() * 5}s`,
+              }}
+            />
+          ))}
+          
+          {/* Glowing orbs that drift */}
+          <div className="absolute top-[20%] left-[15%] w-3 h-3 rounded-full bg-primary/60 blur-[2px] animate-drift" />
+          <div className="absolute top-[60%] left-[70%] w-4 h-4 rounded-full bg-accent/50 blur-[3px] animate-drift-reverse" />
+          <div className="absolute top-[40%] left-[85%] w-2 h-2 rounded-full bg-primary/50 blur-[1px] animate-drift" style={{ animationDelay: '3s' }} />
+          <div className="absolute top-[75%] left-[25%] w-3 h-3 rounded-full bg-accent/40 blur-[2px] animate-drift-reverse" style={{ animationDelay: '5s' }} />
+          <div className="absolute top-[15%] left-[60%] w-2 h-2 rounded-full bg-primary/70 blur-[1px] animate-drift" style={{ animationDelay: '7s' }} />
+          
           {/* Gradient orbs */}
-          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-primary/8 to-transparent rounded-full blur-3xl" />
-          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-radial from-accent/5 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-primary/8 to-transparent rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-radial from-accent/5 to-transparent rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }} />
           
           {/* Grid pattern */}
           <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[size:80px_80px] opacity-30" />
