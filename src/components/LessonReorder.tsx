@@ -279,7 +279,7 @@ export default function LessonReorder() {
               setSelectedParentId("");
             }}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
+                <SelectValue placeholder="Select a course" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (

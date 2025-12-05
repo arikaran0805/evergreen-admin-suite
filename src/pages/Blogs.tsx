@@ -162,7 +162,7 @@ const Blogs = () => {
                   title={post.title}
                   excerpt={post.excerpt || ""}
                   image={post.featured_image || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800"}
-                  category={post.courses?.name || "Uncategorized"}
+                  category={post.courses?.name || "General"}
                   date={post.published_at || new Date().toISOString()}
                   author={post.profiles?.full_name || "Anonymous"}
                 />
