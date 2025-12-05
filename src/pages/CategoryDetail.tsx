@@ -762,7 +762,10 @@ const CategoryDetail = () => {
                     </div>
 
                     {/* In-Content Ad - Top (Below title and header) */}
-                    <InContentAdTop />
+                    <InContentAdTop 
+                      googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
+                      googleAdSlot="1234567890"
+                    />
 
                     {/* Featured Image */}
                     {selectedPost.featured_image && (
@@ -777,10 +780,15 @@ const CategoryDetail = () => {
                     <ContentWithAds 
                       htmlContent={selectedPost.content || ''}
                       insertAfterParagraph={3}
+                      googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
+                      googleAdSlot="2345678901"
                     />
 
                     {/* In-Content Ad - Bottom (Before tags/navigation) */}
-                    <InContentAdBottom />
+                    <InContentAdBottom 
+                      googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
+                      googleAdSlot="3456789012"
+                    />
 
                     {/* Tags */}
                     {allTags.length > 0 && (
@@ -894,15 +902,23 @@ const CategoryDetail = () => {
           <aside className="lg:w-[300px] flex-shrink-0">
             <div className="sticky top-4 space-y-1">
               {/* SidebarAdTop - Always Google AdSense */}
-              <SidebarAdTop />
+              <SidebarAdTop 
+                googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
+                googleAdSlot="4567890123"
+              />
               
               {/* SidebarAdMiddle - 3rd party if provided, else Google AdSense */}
               <SidebarAdMiddle 
+                googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
+                googleAdSlot="5678901234"
                 thirdPartyAdCode={undefined} // Pass third-party ad code here when available
               />
               
               {/* SidebarAdBottom - Always Google AdSense */}
-              <SidebarAdBottom />
+              <SidebarAdBottom 
+                googleAdClient="ca-pub-XXXXXXXXXXXXXXXX"
+                googleAdSlot="6789012345"
+              />
             </div>
           </aside>
         </div>
