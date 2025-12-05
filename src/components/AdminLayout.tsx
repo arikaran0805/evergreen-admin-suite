@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, FileText, FolderTree, Tags, Users, UserCog, 
@@ -6,6 +6,7 @@ import {
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,9 +35,30 @@ const adminMenuItems = [
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        setUserProfile(data);
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -71,7 +93,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       >
         <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
           {sidebarOpen && (
-            <h2 className="text-xl font-bold text-sidebar-foreground">Admin Panel</h2>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={userProfile?.avatar_url || undefined} alt={userProfile?.full_name || "User"} />
+                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs">
+                  {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-semibold text-sidebar-foreground truncate max-w-[140px]">
+                {userProfile?.full_name || "Admin"}
+              </span>
+            </div>
           )}
           <Button
             variant="ghost"
