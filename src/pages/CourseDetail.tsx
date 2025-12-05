@@ -889,6 +889,7 @@ const CourseDetail = () => {
                           {allTags.length > 0 && (
                             <>
                               <span className="font-medium">tag:</span>
+                              <Tag className="h-4 w-4" />
                               <span>{allTags.map(tag => tag.name).join(', ')}</span>
                             </>
                           )}
@@ -943,7 +944,7 @@ const CourseDetail = () => {
                     </div>
 
                     {/* Lesson Navigation */}
-                    <div className="mt-12 pt-8 border-t-2 border-border">
+                    <div className="mt-8">
                       <div className="flex items-center justify-between gap-4">
                         {hasPrevious ? (
                           <Button 
