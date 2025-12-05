@@ -67,7 +67,7 @@ const Header = () => {
     // Fetch categories
     const fetchCourses = async () => {
       const { data, error } = await supabase
-        .from('categories')
+        .from('courses')
         .select('id, name, slug')
         .order('created_at', { ascending: false })
         .limit(5);

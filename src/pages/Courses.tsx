@@ -33,7 +33,7 @@ const Courses = () => {
   const fetchCourses = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('categories')
+      .from('courses')
       .select('id, name, slug, description')
       .order('name', { ascending: true });
 
@@ -55,7 +55,7 @@ const Courses = () => {
 
   const fetchFooterCategories = async () => {
     const { data, error } = await supabase
-      .from('categories')
+      .from('courses')
       .select('name, slug')
       .order('created_at', { ascending: false })
       .limit(5);

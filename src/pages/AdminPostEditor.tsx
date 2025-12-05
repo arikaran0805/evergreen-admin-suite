@@ -109,14 +109,14 @@ const AdminPostEditor = () => {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("*")
         .order("name");
 
       if (error) throw error;
       setCategories(data || []);
     } catch (error: any) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching courses:", error);
     }
   };
 

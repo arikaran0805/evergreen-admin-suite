@@ -43,7 +43,7 @@ const Index = () => {
 
   const fetchFeaturedCourses = async () => {
     const { data, error } = await supabase
-      .from('categories')
+      .from('courses')
       .select('id, name, slug, description, level')
       .eq('featured', true)
       .order('name', { ascending: true })
@@ -69,7 +69,7 @@ const Index = () => {
   const fetchLatestPosts = async () => {
     const { data, error } = await supabase
       .from('posts')
-      .select('id, title, slug, excerpt, featured_image, created_at, category_id, categories(name)')
+      .select('id, title, slug, excerpt, featured_image, created_at, category_id, courses(name)')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .limit(6);
@@ -79,7 +79,7 @@ const Index = () => {
         id: post.id,
         title: post.title,
         excerpt: post.excerpt || 'Read this article to learn more',
-        category: post.categories?.name || 'General',
+        category: post.courses?.name || 'General',
         image: post.featured_image || '/placeholder.svg',
         date: new Date(post.created_at).toLocaleDateString(),
         author: 'BlogHub Team',
@@ -91,7 +91,7 @@ const Index = () => {
 
   const fetchFooterCategories = async () => {
     const { data, error } = await supabase
-      .from('categories')
+      .from('courses')
       .select('name, slug')
       .order('created_at', { ascending: false })
       .limit(5);

@@ -22,7 +22,7 @@ interface RecentPost {
   profiles: {
     full_name: string | null;
   };
-  categories: {
+  courses: {
     slug: string;
   } | null;
 }
@@ -150,7 +150,7 @@ const Admin = () => {
           created_at,
           updated_at,
           profiles:author_id (full_name),
-          categories:category_id (slug)
+          courses:category_id (slug)
         `)
         .order(orderField, { ascending: false })
         .limit(7);
@@ -388,8 +388,8 @@ const Admin = () => {
                     <Badge variant={post.status === "published" ? "default" : "secondary"} className="shrink-0">
                       {post.status}
                     </Badge>
-                    {post.categories?.slug ? (
-                      <Link to={`/category/${post.categories.slug}?lesson=${post.slug}`} target="_blank">
+                    {post.courses?.slug ? (
+                      <Link to={`/category/${post.courses.slug}?lesson=${post.slug}`} target="_blank">
                         <Button size="sm" variant="outline" className="gap-1">
                           <Eye className="h-3 w-3" />
                           View

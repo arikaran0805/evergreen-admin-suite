@@ -168,7 +168,7 @@ const CategoryDetail = () => {
   const fetchFooterCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("name, slug")
         .order("name", { ascending: true })
         .limit(6);
@@ -176,7 +176,7 @@ const CategoryDetail = () => {
       if (error) throw error;
       setFooterCategories(data || []);
     } catch (error) {
-      console.error("Error fetching footer categories:", error);
+      console.error("Error fetching footer courses:", error);
     }
   };
 
@@ -184,7 +184,7 @@ const CategoryDetail = () => {
     try {
       // Fetch category
       const { data: categoryData, error: categoryError } = await supabase
-        .from("categories")
+        .from("courses")
         .select("*")
         .eq("slug", slug)
         .single();
@@ -228,7 +228,7 @@ const CategoryDetail = () => {
   const fetchRecentCourses = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
+        .from("courses")
         .select("id, name, slug, description")
         .neq("slug", slug)
         .order("created_at", { ascending: false })
