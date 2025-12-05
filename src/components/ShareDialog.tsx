@@ -10,15 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Facebook, Twitter, Instagram, Mail, Copy, Check } from "lucide-react";
+import { trackPostShare } from "@/lib/shareAnalytics";
 
 interface ShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   url: string;
+  postId?: string;
 }
 
-const ShareDialog = ({ open, onOpenChange, title, url }: ShareDialogProps) => {
+const ShareDialog = ({ open, onOpenChange, title, url, postId }: ShareDialogProps) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
@@ -36,6 +38,9 @@ const ShareDialog = ({ open, onOpenChange, title, url }: ShareDialogProps) => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      if (postId) {
+        trackPostShare(postId, "copy_link");
+      }
       toast({
         title: "Link copied!",
         description: "The link has been copied to your clipboard.",
@@ -53,6 +58,9 @@ const ShareDialog = ({ open, onOpenChange, title, url }: ShareDialogProps) => {
   const handleShare = (platform: string) => {
     const link = shareLinks[platform as keyof typeof shareLinks];
     if (link) {
+      if (postId) {
+        trackPostShare(postId, platform);
+      }
       window.open(link, "_blank", "noopener,noreferrer");
     }
   };

@@ -32,6 +32,7 @@ interface PostStats {
     views: number;
     likes: number;
     comments: number;
+    shares: number;
   };
 }
 
@@ -172,7 +173,7 @@ const Admin = () => {
       
       // Initialize stats for all posts
       postIds.forEach(id => {
-        statsMap[id] = { views: 0, likes: 0, comments: 0 };
+        statsMap[id] = { views: 0, likes: 0, comments: 0, shares: 0 };
       });
 
       // Fetch views counts
@@ -213,6 +214,20 @@ const Admin = () => {
         commentsData.forEach(comment => {
           if (statsMap[comment.post_id]) {
             statsMap[comment.post_id].comments++;
+          }
+        });
+      }
+
+      // Fetch shares counts
+      const { data: sharesData } = await supabase
+        .from("post_shares")
+        .select("post_id")
+        .in("post_id", postIds);
+      
+      if (sharesData) {
+        sharesData.forEach(share => {
+          if (statsMap[share.post_id]) {
+            statsMap[share.post_id].shares++;
           }
         });
       }
@@ -412,6 +427,10 @@ const Admin = () => {
                             <div className="flex items-center justify-between gap-4">
                               <span className="text-muted-foreground">Comments:</span>
                               <span className="font-medium">{postStats[post.id]?.comments || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Shares:</span>
+                              <span className="font-medium">{postStats[post.id]?.shares || 0}</span>
                             </div>
                             <div className="flex items-center justify-between gap-4">
                               <span className="text-muted-foreground">Last Updated:</span>
