@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Menu, User, LogOut } from "lucide-react";
+import { Search, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -26,8 +26,17 @@ const Header = () => {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({ site_name: "BlogHub" });
+  const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     // Get initial session
@@ -114,163 +123,252 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex h-16 items-center justify-between px-4">
-        {/* Logo and Brand */}
-        <Link to="/" className="flex items-center gap-2 group">
-          {siteSettings.logo_url ? (
-            <img 
-              src={siteSettings.logo_url} 
-              alt={siteSettings.site_name} 
-              className="h-10 w-auto transition-transform group-hover:scale-105" 
-            />
-          ) : (
-            <>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow transition-transform group-hover:scale-105">
-                <span className="text-xl font-bold text-primary-foreground">
-                  {siteSettings.site_name.charAt(0)}
-                </span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent hidden sm:inline">
-                {siteSettings.site_name}
-              </span>
-            </>
-          )}
-        </Link>
+    <header 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled 
+          ? 'bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-lg' 
+          : 'bg-transparent'
+      }`}
+    >
+      <div className="container mx-auto px-6 lg:px-12">
+        <div className="flex h-20 items-center justify-between">
+          {/* Logo and Brand */}
+          <Link to="/" className="flex items-center gap-3 group relative">
+            {siteSettings.logo_url ? (
+              <img 
+                src={siteSettings.logo_url} 
+                alt={siteSettings.site_name} 
+                className="h-10 w-auto transition-all duration-300 group-hover:scale-110" 
+              />
+            ) : (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full transition-all duration-300 group-hover:bg-primary/40" />
+                  <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                    <span className="text-2xl font-black text-primary-foreground tracking-tight">
+                      {siteSettings.site_name.charAt(0)}
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden sm:flex flex-col">
+                  <span className="text-xl font-black tracking-tight text-foreground">
+                    {siteSettings.site_name}
+                  </span>
+                  <span className="text-[10px] font-medium tracking-[0.2em] text-muted-foreground uppercase">
+                    Learn & Grow
+                  </span>
+                </div>
+              </>
+            )}
+          </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          {courses.map((course) => (
-            <Link
-              key={course.id}
-              to={`/course/${course.slug}`}
-              className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
-            >
-              {course.name}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Search, Theme Toggle, User Menu and Mobile Menu */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="hover:bg-secondary">
-            <Search className="h-5 w-5" />
-          </Button>
-          
-          <ThemeToggle />
-
-          {/* User Menu - Desktop */}
-          {user ? (
-            <div className="hidden md:flex items-center gap-2">
-              {isAdmin && (
-                <Badge className="bg-primary text-primary-foreground shadow-md">
-                  Admin
-                </Badge>
-              )}
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {courses.map((course, index) => (
+              <Link
+                key={course.id}
+                to={`/course/${course.slug}`}
+                className="relative px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-all duration-300 group"
+              >
+                <span className="relative z-10">{course.name}</span>
+                <span className="absolute inset-0 bg-primary/10 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-300" />
+                <span className="absolute bottom-1 left-4 right-4 h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+              </Link>
+            ))}
+            {courses.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hover:bg-secondary">
-                    <User className="h-5 w-5" />
-                  </Button>
+                  <button className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-all duration-300 group">
+                    <span>More</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="cursor-pointer">
-                          <User className="mr-2 h-4 w-4" />
-                          View Admin Site
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
+                <DropdownMenuContent align="center" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
+                    <Link to="/courses" className="cursor-pointer">
+                      All Courses
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                  <DropdownMenuItem asChild>
+                    <Link to="/about" className="cursor-pointer">
+                      About Us
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/contact" className="cursor-pointer">
+                      Contact
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          ) : (
-            <Button asChild variant="default" className="hidden md:flex">
-              <Link to="/auth">Login</Link>
-            </Button>
-          )}
+            )}
+          </nav>
 
-          {/* Mobile Menu */}
-          <Sheet>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-64">
-              <nav className="flex flex-col gap-4 mt-8">
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2">
+            {/* Search Button */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
+            >
+              <Search className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+            </Button>
+            
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
+            {/* User Menu - Desktop */}
+            {user ? (
+              <div className="hidden md:flex items-center gap-2">
                 {isAdmin && (
-                  <div className="mb-2">
-                    <Badge className="bg-primary text-primary-foreground shadow-md">
-                      Admin User
-                    </Badge>
-                  </div>
+                  <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg border-0 px-3 py-1">
+                    Admin
+                  </Badge>
                 )}
-                {courses.map((course) => (
-                  <Link
-                    key={course.id}
-                    to={`/course/${course.slug}`}
-                    className="text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
-                  >
-                    {course.name}
-                  </Link>
-                ))}
-                <div className="border-t pt-4 mt-4">
-                  {user ? (
-                    <>
-                      {isAdmin && (
-                        <Link
-                          to="/admin"
-                          className="flex items-center gap-2 text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
-                        >
-                          <User className="h-4 w-4" />
-                          View Admin Site
-                        </Link>
-                      )}
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-2 text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
-                      >
-                        <User className="h-4 w-4" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300"
+                    >
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">My Account</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="cursor-pointer">
+                            <User className="mr-2 h-4 w-4" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
                         Profile
                       </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2 w-full text-left"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <Link
-                      to="/auth"
-                      className="text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2 block"
-                    >
-                      Login
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <Button 
+                asChild 
+                className="hidden md:flex h-10 px-6 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+              >
+                <Link to="/auth">Get Started</Link>
+              </Button>
+            )}
+
+            {/* Mobile Menu */}
+            <Sheet>
+              <SheetTrigger asChild className="lg:hidden">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-10 w-10 rounded-xl hover:bg-primary/10"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 border-l border-border/50">
+                <div className="flex flex-col h-full">
+                  <div className="py-6 border-b border-border/50">
+                    <Link to="/" className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80">
+                        <span className="text-lg font-black text-primary-foreground">
+                          {siteSettings.site_name.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-lg font-bold">{siteSettings.site_name}</span>
                     </Link>
-                  )}
+                  </div>
+                  
+                  <nav className="flex-1 py-6">
+                    {isAdmin && (
+                      <div className="mb-4 px-2">
+                        <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+                          Admin User
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      {courses.map((course) => (
+                        <Link
+                          key={course.id}
+                          to={`/course/${course.slug}`}
+                          className="flex items-center px-4 py-3 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 rounded-xl transition-all duration-300"
+                        >
+                          {course.name}
+                        </Link>
+                      ))}
+                      <Link
+                        to="/courses"
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 rounded-xl transition-all duration-300"
+                      >
+                        All Courses
+                      </Link>
+                    </div>
+                  </nav>
+                  
+                  <div className="py-6 border-t border-border/50 space-y-2">
+                    {user ? (
+                      <>
+                        {isAdmin && (
+                          <Link
+                            to="/admin"
+                            className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 rounded-xl transition-all duration-300"
+                          >
+                            <User className="h-5 w-5" />
+                            Admin Dashboard
+                          </Link>
+                        )}
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 rounded-xl transition-all duration-300"
+                        >
+                          <User className="h-5 w-5" />
+                          Profile
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-3 px-4 py-3 text-base font-medium text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-300 w-full text-left"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <Button 
+                        asChild 
+                        className="w-full h-12 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-semibold"
+                      >
+                        <Link to="/auth">Get Started</Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </nav>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
