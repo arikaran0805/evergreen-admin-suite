@@ -110,7 +110,7 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, views =
   );
 
   if (slug) {
-    const linkPath = linkType === "category" ? `/category/${slug}` : `/blog/${slug}`;
+    const linkPath = linkType === "category" ? `/course/${slug}` : `/blog/${slug}`;
     return (
       <Link to={linkPath} className="block">
         {CardContent}

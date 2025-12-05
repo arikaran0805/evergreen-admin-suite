@@ -143,7 +143,7 @@ const Header = () => {
           {courses.map((course) => (
             <Link
               key={course.id}
-              to={`/category/${course.slug}`}
+              to={`/course/${course.slug}`}
               className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
             >
               {course.name}
@@ -224,7 +224,7 @@ const Header = () => {
                 {courses.map((course) => (
                   <Link
                     key={course.id}
-                    to={`/category/${course.slug}`}
+                    to={`/course/${course.slug}`}
                     className="text-base font-medium text-foreground/80 hover:text-primary transition-colors py-2"
                   >
                     {course.name}
