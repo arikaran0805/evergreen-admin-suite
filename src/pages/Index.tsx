@@ -6,6 +6,7 @@ import SEOHead from "@/components/SEOHead";
 import { ArrowRight, ArrowUpRight, Compass, Star, Circle, Triangle, Square, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
@@ -19,6 +20,12 @@ const Index = () => {
   const [socialLinks, setSocialLinks] = useState({
     twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
   });
+
+  // Scroll animation hooks
+  const heroAnimation = useScrollAnimation({ threshold: 0.2 });
+  const coursesAnimation = useScrollAnimation({ threshold: 0.1 });
+  const ctaAnimation = useScrollAnimation({ threshold: 0.2 });
+  const footerAnimation = useScrollAnimation({ threshold: 0.1 });
 
   useEffect(() => {
     fetchFeaturedCourses();
@@ -86,7 +93,12 @@ const Index = () => {
       <Header />
 
       {/* Hero Section - Dramatic Editorial Style */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      <section 
+        ref={heroAnimation.ref}
+        className={`relative min-h-[90vh] flex items-center overflow-hidden transition-all duration-1000 ${
+          heroAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}
+      >
         {/* Geometric Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Large rotating circle */}
@@ -207,7 +219,12 @@ const Index = () => {
       </section>
 
       {/* Featured Courses - Magazine Layout */}
-      <section className="py-32 relative">
+      <section 
+        ref={coursesAnimation.ref}
+        className={`py-32 relative transition-all duration-1000 delay-200 ${
+          coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
+        }`}
+      >
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         
         <div className="container px-4">
@@ -280,7 +297,12 @@ const Index = () => {
       </section>
 
       {/* Journey CTA - Full Bleed */}
-      <section className="relative py-40 overflow-hidden bg-foreground text-background">
+      <section 
+        ref={ctaAnimation.ref}
+        className={`relative py-40 overflow-hidden bg-foreground text-background transition-all duration-1000 delay-300 ${
+          ctaAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
+        }`}
+      >
         {/* Background pattern */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--background)/0.1)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--background)/0.1)_1px,transparent_1px)] bg-[size:60px_60px]" />
@@ -336,7 +358,12 @@ const Index = () => {
       </section>
 
       {/* Footer - Minimal Editorial */}
-      <footer className="bg-background border-t border-border">
+      <footer 
+        ref={footerAnimation.ref}
+        className={`bg-background border-t border-border transition-all duration-1000 delay-200 ${
+          footerAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}
+      >
         <div className="container px-4">
           {/* Main Footer */}
           <div className="py-20 grid grid-cols-1 md:grid-cols-12 gap-12">
