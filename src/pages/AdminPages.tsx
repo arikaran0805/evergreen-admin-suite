@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Edit, Trash2, Eye, Info } from "lucide-react";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,8 @@ interface Page {
   slug: string;
   content: string;
   status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const AdminPages = () => {
@@ -188,10 +192,38 @@ const AdminPages = () => {
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>{page.title}</span>
-                  <div className="space-x-2">
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open(`/${page.slug}`, "_blank")}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(page)}>
                       <Edit className="h-4 w-4" />
                     </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="p-3">
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Status:</span>
+                              <span className="font-medium">{page.status}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Created:</span>
+                              <span className="font-medium">{format(new Date(page.created_at), "MMM d, yyyy")}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Last Updated:</span>
+                              <span className="font-medium">{format(new Date(page.updated_at), "MMM d, yyyy")}</span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button variant="destructive" size="sm" onClick={() => handleDelete(page.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
