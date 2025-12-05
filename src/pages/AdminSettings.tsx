@@ -49,6 +49,11 @@ const AdminSettings = () => {
   const [heroHighlightText, setHeroHighlightText] = useState("Think Differently");
   const [heroHighlightColor, setHeroHighlightColor] = useState("#22c55e");
   const [searchPlaceholders, setSearchPlaceholders] = useState<string[]>(["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
+  const [heroQuickLinks, setHeroQuickLinks] = useState<{label: string; slug: string; highlighted: boolean}[]>([
+    { label: "Python", slug: "python-for-data-science", highlighted: true },
+    { label: "Statistics", slug: "statistics", highlighted: false },
+    { label: "AI & ML", slug: "ai-ml", highlighted: false }
+  ]);
   
   // Social Media Links
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -136,6 +141,11 @@ const AdminSettings = () => {
       setHeroHighlightText(data.hero_highlight_text || "Think Differently");
       setHeroHighlightColor(data.hero_highlight_color || "#22c55e");
       setSearchPlaceholders((data as any).search_placeholders || ["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
+      setHeroQuickLinks((data as any).hero_quick_links || [
+        { label: "Python", slug: "python-for-data-science", highlighted: true },
+        { label: "Statistics", slug: "statistics", highlighted: false },
+        { label: "AI & ML", slug: "ai-ml", highlighted: false }
+      ]);
       setTwitterUrl(data.twitter_url || "");
       setFacebookUrl(data.facebook_url || "");
       setInstagramUrl(data.instagram_url || "");
@@ -235,6 +245,7 @@ const AdminSettings = () => {
             hero_highlight_text: heroHighlightText,
             hero_highlight_color: heroHighlightColor,
             search_placeholders: searchPlaceholders.filter(p => p.trim()),
+            hero_quick_links: heroQuickLinks.filter(l => l.label.trim() && l.slug.trim()),
           })
           .eq("id", settingsId);
 
@@ -253,6 +264,7 @@ const AdminSettings = () => {
             hero_highlight_text: heroHighlightText,
             hero_highlight_color: heroHighlightColor,
             search_placeholders: searchPlaceholders.filter(p => p.trim()),
+            hero_quick_links: heroQuickLinks.filter(l => l.label.trim() && l.slug.trim()),
           })
           .select()
           .single();
@@ -596,6 +608,65 @@ const AdminSettings = () => {
                         placeholder="Search courses...&#10;Find lessons...&#10;Explore topics..."
                         rows={4}
                       />
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Quick Links (Course Pills)</Label>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Add quick course links that appear below the search bar
+                        </p>
+                      </div>
+                      {heroQuickLinks.map((link, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <Input
+                            value={link.label}
+                            onChange={(e) => {
+                              const updated = [...heroQuickLinks];
+                              updated[index].label = e.target.value;
+                              setHeroQuickLinks(updated);
+                            }}
+                            placeholder="Label (e.g., Python)"
+                            className="flex-1"
+                          />
+                          <Input
+                            value={link.slug}
+                            onChange={(e) => {
+                              const updated = [...heroQuickLinks];
+                              updated[index].slug = e.target.value;
+                              setHeroQuickLinks(updated);
+                            }}
+                            placeholder="Course slug"
+                            className="flex-1"
+                          />
+                          <Checkbox
+                            checked={link.highlighted}
+                            onCheckedChange={(checked) => {
+                              const updated = [...heroQuickLinks];
+                              updated[index].highlighted = !!checked;
+                              setHeroQuickLinks(updated);
+                            }}
+                          />
+                          <Label className="text-xs w-16">Highlight</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setHeroQuickLinks(heroQuickLinks.filter((_, i) => i !== index))}
+                            className="text-destructive"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setHeroQuickLinks([...heroQuickLinks, { label: "", slug: "", highlighted: false }])}
+                      >
+                        Add Quick Link
+                      </Button>
                     </div>
                   </div>
                 </div>

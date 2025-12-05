@@ -712,6 +712,7 @@ export type Database = {
           hero_headline: string | null
           hero_highlight_color: string | null
           hero_highlight_text: string | null
+          hero_quick_links: Json | null
           hero_subheadline: string | null
           id: string
           instagram_url: string | null
@@ -745,6 +746,7 @@ export type Database = {
           hero_headline?: string | null
           hero_highlight_color?: string | null
           hero_highlight_text?: string | null
+          hero_quick_links?: Json | null
           hero_subheadline?: string | null
           id?: string
           instagram_url?: string | null
@@ -778,6 +780,7 @@ export type Database = {
           hero_headline?: string | null
           hero_highlight_color?: string | null
           hero_highlight_text?: string | null
+          hero_quick_links?: Json | null
           hero_subheadline?: string | null
           id?: string
           instagram_url?: string | null
