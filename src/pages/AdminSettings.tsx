@@ -20,6 +20,10 @@ import { z } from "zod";
 
 const urlSchema = z.string().url().optional().or(z.literal(""));
 
+// Settings export version - increment when adding new settings fields
+const SETTINGS_VERSION = "1.0.0";
+const COMPATIBLE_VERSIONS = ["1.0.0"]; // List of versions that can be imported
+
 const AdminSettings = () => {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
@@ -1222,7 +1226,11 @@ const AdminSettings = () => {
                           schemaContactEmail,
                           schemaPhone,
                           schemaAddress,
-                          exportedAt: new Date().toISOString(),
+                          _meta: {
+                            version: SETTINGS_VERSION,
+                            exportedAt: new Date().toISOString(),
+                            appName: "BlogHub Settings",
+                          },
                         };
                         const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
                         const url = URL.createObjectURL(blob);
@@ -1267,6 +1275,24 @@ const AdminSettings = () => {
                                 reader.onload = (event) => {
                                   try {
                                     const imported = JSON.parse(event.target?.result as string);
+                                    
+                                    // Version compatibility check
+                                    const importedVersion = imported._meta?.version;
+                                    if (!importedVersion) {
+                                      toast({
+                                        title: "Warning",
+                                        description: "This backup has no version info. Some settings may not import correctly.",
+                                        variant: "destructive",
+                                      });
+                                    } else if (!COMPATIBLE_VERSIONS.includes(importedVersion)) {
+                                      toast({
+                                        title: "Incompatible Version",
+                                        description: `This backup is version ${importedVersion}, which is not compatible with the current version (${SETTINGS_VERSION}).`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+                                    
                                     if (imported.siteName) setSiteName(imported.siteName);
                                     if (imported.siteDescription) setSiteDescription(imported.siteDescription);
                                     if (imported.siteUrl) setSiteUrl(imported.siteUrl);
@@ -1297,9 +1323,12 @@ const AdminSettings = () => {
                                     if (imported.schemaContactEmail) setSchemaContactEmail(imported.schemaContactEmail);
                                     if (imported.schemaPhone) setSchemaPhone(imported.schemaPhone);
                                     if (imported.schemaAddress) setSchemaAddress(imported.schemaAddress);
+                                    const exportDate = imported._meta?.exportedAt 
+                                      ? new Date(imported._meta.exportedAt).toLocaleDateString() 
+                                      : "unknown date";
                                     toast({
                                       title: "Settings Imported",
-                                      description: "Settings loaded. Click Save to apply changes.",
+                                      description: `Loaded v${imported._meta?.version || "unknown"} backup from ${exportDate}. Click Save to apply.`,
                                     });
                                   } catch (error) {
                                     toast({
