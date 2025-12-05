@@ -17,6 +17,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import ShareDialog from "@/components/ShareDialog";
 import CommentDialog from "@/components/CommentDialog";
 import AdDisplay from "@/components/AdDisplay";
+import {
+  SidebarAdTop,
+  SidebarAdMiddle,
+  SidebarAdBottom,
+  InContentAdTop,
+  InContentAdBottom,
+  ContentWithAds
+} from "@/components/ads";
 
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
@@ -753,6 +761,9 @@ const CategoryDetail = () => {
                       </div>
                     </div>
 
+                    {/* In-Content Ad - Top (Below title and header) */}
+                    <InContentAdTop />
+
                     {/* Featured Image */}
                     {selectedPost.featured_image && (
                       <img 
@@ -762,19 +773,14 @@ const CategoryDetail = () => {
                       />
                     )}
 
-                    {/* Lesson Content */}
-                    <ContentWithCodeCopy 
-                      content={selectedPost.content || ''}
-                      className="prose prose-lg max-w-none leading-relaxed"
+                    {/* Lesson Content with In-Content Middle Ad (after 3rd paragraph) */}
+                    <ContentWithAds 
+                      htmlContent={selectedPost.content || ''}
+                      insertAfterParagraph={3}
                     />
 
-                    {/* Advertisement Placeholder */}
-                    <Card className="mt-8 border-2 border-dashed border-primary/20 bg-muted/30">
-                      <CardContent className="p-8 text-center">
-                        <p className="text-sm text-muted-foreground font-medium">Advertisement</p>
-                        <p className="text-xs text-muted-foreground mt-1">300x250</p>
-                      </CardContent>
-                    </Card>
+                    {/* In-Content Ad - Bottom (Before tags/navigation) */}
+                    <InContentAdBottom />
 
                     {/* Tags */}
                     {allTags.length > 0 && (
@@ -887,9 +893,16 @@ const CategoryDetail = () => {
           {/* RIGHT SIDEBAR - Ads Only */}
           <aside className="lg:w-[300px] flex-shrink-0">
             <div className="sticky top-4 space-y-1">
-              <AdDisplay placement="sidebar" className="rounded-lg overflow-hidden" />
-              <AdDisplay placement="sidebar-2" className="rounded-lg overflow-hidden" />
-              <AdDisplay placement="sidebar-3" className="rounded-lg overflow-hidden" />
+              {/* SidebarAdTop - Always Google AdSense */}
+              <SidebarAdTop />
+              
+              {/* SidebarAdMiddle - 3rd party if provided, else Google AdSense */}
+              <SidebarAdMiddle 
+                thirdPartyAdCode={undefined} // Pass third-party ad code here when available
+              />
+              
+              {/* SidebarAdBottom - Always Google AdSense */}
+              <SidebarAdBottom />
             </div>
           </aside>
         </div>
