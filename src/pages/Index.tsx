@@ -130,25 +130,33 @@ const Index = () => {
 
         <div className="container px-4 relative z-10">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
-            {/* Big Search Box - Centered */}
-            <form onSubmit={handleSearch} className="w-full max-w-2xl">
-              <div className="relative">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search courses, lessons, topics..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-16 md:h-20 pl-16 pr-6 text-lg md:text-xl rounded-full border-2 border-border bg-card shadow-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
-                />
-                <Button 
-                  type="submit"
-                  size="lg"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-12 md:h-16 px-6 md:px-8 rounded-full bg-primary hover:bg-primary/90"
-                >
-                  <Search className="h-5 w-5 md:mr-2" />
-                  <span className="hidden md:inline">Search</span>
-                </Button>
+            {/* Big Search Box - Centered with Gradient Border */}
+            <form onSubmit={handleSearch} className="w-full max-w-2xl group">
+              <div className="relative p-[3px] rounded-full bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-shift shadow-xl shadow-primary/20">
+                <div className="relative bg-card rounded-full">
+                  <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground z-10" />
+                  <Input
+                    type="text"
+                    placeholder=""
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-16 md:h-20 pl-16 pr-32 md:pr-40 text-lg md:text-xl rounded-full border-0 bg-transparent focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                  {/* Animated Placeholder */}
+                  {!searchQuery && (
+                    <div className="absolute left-16 top-1/2 -translate-y-1/2 text-lg md:text-xl text-muted-foreground pointer-events-none whitespace-nowrap overflow-hidden animate-typing">
+                      Search courses, lessons, topics...
+                    </div>
+                  )}
+                  <Button 
+                    type="submit"
+                    size="lg"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 h-12 md:h-16 px-6 md:px-8 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
+                  >
+                    <Search className="h-5 w-5 md:mr-2" />
+                    <span className="hidden md:inline">Search</span>
+                  </Button>
+                </div>
               </div>
             </form>
 
