@@ -68,7 +68,6 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
     }
   };
 
-  // Close on click outside
   const handleClickOutside = (e: MouseEvent) => {
     if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
       setOpen(false);
@@ -115,8 +114,8 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       )}
       
       {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 z-50">
-          <div className="bg-popover text-popover-foreground border border-border rounded-md shadow-md px-3 py-1.5">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 z-50 animate-in fade-in-0 zoom-in-95 data-[side=top]:slide-in-from-bottom-2">
+          <div className="rounded-2xl border border-border bg-white px-4 py-2 text-sm text-foreground shadow-lg">
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -180,8 +179,10 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
             </div>
           </div>
           {/* Arrow */}
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-[6px]">
-            <div className="w-3 h-3 bg-white border-r border-b border-border rotate-45 transform" />
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-0">
+            <svg width="12" height="6" viewBox="0 0 12 6" className="fill-white drop-shadow-sm">
+              <path d="M6 6L0 0H12L6 6Z" />
+            </svg>
           </div>
         </div>
       )}
