@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import SEOHead from "@/components/SEOHead";
-import { ArrowRight, Play, BookOpen, Users, Award, ChevronRight, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Sparkles, GraduationCap, Zap } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, Star, Circle, Triangle, Square, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 
@@ -80,146 +80,197 @@ const Index = () => {
     }
   };
 
-  const stats = [
-    { icon: Users, value: "50K+", label: "Active Learners" },
-    { icon: BookOpen, value: "200+", label: "Courses" },
-    { icon: Award, value: "95%", label: "Success Rate" },
-  ];
-
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <SEOHead />
-      
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-0 w-72 h-72 bg-primary/3 rounded-full blur-3xl" />
-      </div>
-
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative pt-8 pb-20 md:pt-16 md:pb-32">
-        <div className="container px-4">
-          <div className="max-w-5xl mx-auto">
-            {/* Badge */}
-            <div className="flex justify-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-                <span className="text-sm font-medium text-primary">The Visual Learning Platform</span>
+      {/* Hero Section - Dramatic Editorial Style */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        {/* Geometric Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Large rotating circle */}
+          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full border-[60px] border-primary/10 animate-[spin_60s_linear_infinite]" />
+          
+          {/* Floating shapes */}
+          <div className="absolute top-20 left-[10%] w-24 h-24 bg-primary/20 rotate-45 animate-[bounce_4s_ease-in-out_infinite]" />
+          <div className="absolute top-40 right-[15%] w-16 h-16 rounded-full bg-accent/30 animate-[bounce_3s_ease-in-out_infinite_0.5s]" />
+          <div className="absolute bottom-32 left-[20%] w-12 h-12 border-4 border-primary/30 rotate-12 animate-[bounce_5s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-1/2 right-[8%] w-20 h-20 border-4 border-accent/20 rounded-full animate-[pulse_3s_ease-in-out_infinite]" />
+          
+          {/* Gradient orbs */}
+          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-primary/8 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-radial from-accent/5 to-transparent rounded-full blur-3xl" />
+          
+          {/* Grid pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[size:80px_80px] opacity-30" />
+        </div>
+
+        <div className="container px-4 relative z-10">
+          <div className="grid lg:grid-cols-12 gap-8 items-center">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-8">
+              {/* Eyebrow */}
+              <div className="inline-flex items-center gap-3 px-1">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-100" />
+                  <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse delay-200" />
+                </div>
+                <span className="text-sm font-mono uppercase tracking-[0.3em] text-muted-foreground">
+                  Knowledge Awaits
+                </span>
+              </div>
+
+              {/* Main Headline - Dramatic Typography */}
+              <div className="space-y-2">
+                <h1 className="text-6xl md:text-8xl lg:text-9xl font-black leading-[0.85] tracking-tighter">
+                  <span className="block text-foreground">{heroHeadline.split(heroHighlightText)[0]}</span>
+                  <span 
+                    className="block relative"
+                    style={{ color: heroHighlightColor }}
+                  >
+                    {heroHighlightText}
+                    <svg className="absolute -bottom-2 left-0 w-full h-4" viewBox="0 0 200 12" preserveAspectRatio="none">
+                      <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke={heroHighlightColor} strokeWidth="3" strokeLinecap="round" className="animate-[dash_2s_ease-in-out_infinite]" />
+                    </svg>
+                  </span>
+                  <span className="block text-foreground">{heroHeadline.split(heroHighlightText)[1]}</span>
+                </h1>
+              </div>
+
+              {/* Subheadline */}
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-light">
+                {heroSubheadline}
+              </p>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-4 pt-4">
+                <Link to="/courses">
+                  <Button size="lg" className="h-16 px-10 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-none group relative overflow-hidden">
+                    <span className="relative z-10 flex items-center gap-2">
+                      Explore Courses
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="h-16 px-10 text-lg font-bold rounded-none border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
+                  <Compass className="mr-2 h-5 w-5" />
+                  Take a Tour
+                </Button>
               </div>
             </div>
 
-            {/* Main Headline */}
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-center leading-[0.9] tracking-tight mb-6">
-              <span className="block text-foreground">
-                {heroHeadline.split(heroHighlightText)[0]}
-              </span>
-              <span 
-                className="block bg-clip-text text-transparent bg-gradient-to-r from-primary via-emerald-400 to-teal-400"
-                style={{ 
-                  backgroundImage: `linear-gradient(135deg, ${heroHighlightColor}, ${heroHighlightColor}88, ${heroHighlightColor})`
-                }}
-              >
-                {heroHighlightText}
-              </span>
-              <span className="block text-foreground">
-                {heroHeadline.split(heroHighlightText)[1]}
-              </span>
-            </h1>
-
-            {/* Subheadline */}
-            <p className="text-lg md:text-xl text-muted-foreground text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-              {heroSubheadline}
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-              <Link to="/courses">
-                <Button size="lg" className="h-14 px-8 text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group">
-                  Start Learning Free
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-semibold border-2 hover:bg-muted/50 group">
-                <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                Watch Demo
-              </Button>
-            </div>
-
-            {/* Stats */}
-            <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center group">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <stat.icon className="h-5 w-5 text-primary" />
-                    <span className="text-3xl md:text-4xl font-black text-foreground">{stat.value}</span>
+            {/* Right Side - Abstract Knowledge Constellation */}
+            <div className="lg:col-span-5 relative h-[500px] hidden lg:block">
+              <div className="absolute inset-0 flex items-center justify-center">
+                {/* Central hub */}
+                <div className="relative w-40 h-40">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-accent animate-[spin_20s_linear_infinite]" />
+                  <div className="absolute inset-2 rounded-full bg-background flex items-center justify-center">
+                    <Hexagon className="w-16 h-16 text-primary" strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm text-muted-foreground">{stat.label}</span>
                 </div>
-              ))}
+                
+                {/* Orbiting elements */}
+                <div className="absolute w-[400px] h-[400px] animate-[spin_30s_linear_infinite]">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-card border-2 border-primary flex items-center justify-center shadow-lg">
+                    <span className="text-2xl">📚</span>
+                  </div>
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-card border-2 border-accent flex items-center justify-center shadow-lg">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-card border-2 border-primary flex items-center justify-center shadow-lg">
+                    <span className="text-2xl">💡</span>
+                  </div>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-card border-2 border-accent flex items-center justify-center shadow-lg">
+                    <span className="text-2xl">🚀</span>
+                  </div>
+                </div>
+                
+                {/* Connection lines */}
+                <svg className="absolute w-[400px] h-[400px] animate-[spin_30s_linear_infinite_reverse]" viewBox="0 0 400 400">
+                  <circle cx="200" cy="200" r="150" fill="none" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="10 10" />
+                  <circle cx="200" cy="200" r="100" fill="none" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="5 5" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="absolute top-20 left-10 text-6xl opacity-20 animate-bounce delay-100">📚</div>
-        <div className="absolute top-40 right-10 text-5xl opacity-20 animate-bounce delay-300">🎯</div>
-        <div className="absolute bottom-20 left-20 text-4xl opacity-20 animate-bounce delay-500">💡</div>
-        <div className="absolute bottom-40 right-20 text-5xl opacity-20 animate-bounce delay-700">🚀</div>
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+          <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Scroll</span>
+          <div className="w-px h-12 bg-gradient-to-b from-muted-foreground to-transparent" />
+        </div>
       </section>
 
-      {/* Featured Courses */}
-      <section className="py-20 md:py-28 bg-muted/30">
+      {/* Featured Courses - Magazine Layout */}
+      <section className="py-32 relative">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+        
         <div className="container px-4">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-1 w-12 bg-primary rounded-full" />
-                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Explore</span>
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-px bg-primary" />
+                <span className="font-mono text-sm uppercase tracking-[0.2em] text-primary">Featured</span>
               </div>
-              <h2 className="text-4xl md:text-5xl font-black text-foreground">Featured Courses</h2>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tight text-foreground">
+                Trending<br />
+                <span className="text-muted-foreground/50">Courses</span>
+              </h2>
             </div>
-            <Link to="/courses">
-              <Button variant="ghost" className="group text-muted-foreground hover:text-primary">
-                View All Courses
-                <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
+            <Link to="/courses" className="group flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+              <span className="font-medium">View All</span>
+              <ArrowUpRight className="h-5 w-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Course Grid - Asymmetric */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
             {featuredCourses.map((course, index) => (
-              <Link key={course.id} to={`/courses/${course.slug}`} className="group">
-                <div className="relative h-full bg-card rounded-2xl border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1">
-                  {/* Image */}
-                  <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={course.image} 
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 text-xs font-semibold bg-primary/90 text-primary-foreground rounded-full">
+              <Link 
+                key={course.id} 
+                to={`/courses/${course.slug}`}
+                className={`group relative overflow-hidden bg-card ${index === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+              >
+                <div className={`relative ${index === 0 ? 'h-[600px]' : 'h-[300px]'} overflow-hidden`}>
+                  <img 
+                    src={course.image}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/20 to-transparent" />
+                  
+                  {/* Content overlay */}
+                  <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end">
+                    {/* Level badge */}
+                    <div className="mb-4">
+                      <span className="inline-block px-3 py-1 text-xs font-mono uppercase tracking-wider bg-primary text-primary-foreground">
                         {course.level}
                       </span>
                     </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                    
+                    <h3 className={`font-black text-background mb-2 ${index === 0 ? 'text-4xl md:text-5xl' : 'text-2xl'}`}>
                       {course.title}
                     </h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                    <p className={`text-background/70 ${index === 0 ? 'text-lg max-w-lg' : 'text-sm'} line-clamp-2`}>
                       {course.description}
                     </p>
-                    <div className="flex items-center text-primary font-medium text-sm group-hover:gap-2 transition-all">
-                      Start Learning
-                      <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    
+                    {/* Arrow indicator */}
+                    <div className="mt-4 flex items-center gap-2 text-primary">
+                      <span className="text-sm font-medium">Start Learning</span>
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform" />
                     </div>
+                  </div>
+                  
+                  {/* Index number */}
+                  <div className="absolute top-6 right-6 font-mono text-background/30 text-6xl font-black">
+                    {String(index + 1).padStart(2, '0')}
                   </div>
                 </div>
               </Link>
@@ -228,109 +279,127 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Ready to Start Your Journey */}
-      <section className="py-24 md:py-32 relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      {/* Journey CTA - Full Bleed */}
+      <section className="relative py-40 overflow-hidden bg-foreground text-background">
+        {/* Background pattern */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--background)/0.1)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--background)/0.1)_1px,transparent_1px)] bg-[size:60px_60px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-gradient-radial from-primary/20 to-transparent rounded-full blur-3xl" />
+        </div>
         
-        <div className="container px-4 relative">
+        {/* Floating geometric accents */}
+        <div className="absolute top-20 left-20">
+          <Triangle className="w-16 h-16 text-primary/30 rotate-12" strokeWidth={1} />
+        </div>
+        <div className="absolute bottom-20 right-20">
+          <Circle className="w-20 h-20 text-accent/30" strokeWidth={1} />
+        </div>
+        <div className="absolute top-1/3 right-1/4">
+          <Square className="w-12 h-12 text-primary/20 rotate-45" strokeWidth={1} />
+        </div>
+        
+        <div className="container px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Icon */}
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 mb-8 rotate-3 hover:rotate-0 transition-transform duration-300">
-              <GraduationCap className="h-10 w-10 text-primary" />
+            {/* Sparkle icon */}
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-background/20 mb-8">
+              <Sparkles className="w-10 h-10 text-primary" />
             </div>
-
-            <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6">
-              Ready to Start Your
-              <span className="block text-primary">Learning Journey?</span>
+            
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 leading-[0.9]">
+              Ready to<br />
+              <span className="text-primary">Transform</span><br />
+              Your Mind?
             </h2>
             
-            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Join thousands of learners who've transformed their understanding through our visual-first approach. No boring textbooks, just engaging content.
+            <p className="text-xl md:text-2xl text-background/60 max-w-2xl mx-auto mb-12 leading-relaxed">
+              Join a community of curious minds exploring knowledge through engaging visual experiences.
             </p>
 
-            {/* Features */}
-            <div className="flex flex-wrap justify-center gap-4 mb-10">
-              {["Free to Start", "No Credit Card", "Instant Access", "Learn at Your Pace"].map((feature, i) => (
-                <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">{feature}</span>
+            {/* Features strip */}
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
+              {["Free to Start", "Self-Paced", "Certificate Ready", "24/7 Access"].map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-background/70">
+                  <Star className="w-4 h-4 text-primary fill-primary" />
+                  <span className="font-medium">{item}</span>
                 </div>
               ))}
             </div>
 
             <Link to="/courses">
-              <Button size="lg" className="h-16 px-12 text-lg font-bold bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 group">
-                Explore All Courses
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
+              <Button size="lg" className="h-16 px-12 text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-none group">
+                Begin Your Journey
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </div>
         </div>
-
-        {/* Floating Elements */}
-        <div className="absolute top-1/4 left-10 text-5xl opacity-10">🎓</div>
-        <div className="absolute bottom-1/4 right-10 text-5xl opacity-10">✨</div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-card border-t border-border">
-        <div className="container px-4 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Brand */}
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-                  <span className="text-xl">📖</span>
+      {/* Footer - Minimal Editorial */}
+      <footer className="bg-background border-t border-border">
+        <div className="container px-4">
+          {/* Main Footer */}
+          <div className="py-20 grid grid-cols-1 md:grid-cols-12 gap-12">
+            {/* Brand Column */}
+            <div className="md:col-span-4 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-foreground flex items-center justify-center">
+                  <span className="text-2xl">📖</span>
                 </div>
-                <span className="text-xl font-black text-foreground">{siteName}</span>
+                <span className="text-2xl font-black text-foreground">{siteName}</span>
               </div>
-              <p className="text-muted-foreground text-sm mb-6">
+              <p className="text-muted-foreground leading-relaxed max-w-sm">
                 {siteDescription}
               </p>
+              
               {/* Social Links */}
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 {socialLinks.twitter && (
-                  <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('twitter')} className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('twitter')} 
+                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
                     <Twitter className="h-4 w-4" />
                   </a>
                 )}
                 {socialLinks.facebook && (
-                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('facebook')} className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('facebook')} 
+                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
                     <Facebook className="h-4 w-4" />
                   </a>
                 )}
                 {socialLinks.instagram && (
-                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('instagram')} className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('instagram')} 
+                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
                     <Instagram className="h-4 w-4" />
                   </a>
                 )}
                 {socialLinks.linkedin && (
-                  <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('linkedin')} className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('linkedin')} 
+                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
                     <Linkedin className="h-4 w-4" />
                   </a>
                 )}
                 {socialLinks.youtube && (
-                  <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('youtube')} className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('youtube')} 
+                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
                     <Youtube className="h-4 w-4" />
                   </a>
                 )}
                 {socialLinks.github && (
-                  <a href={socialLinks.github} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('github')} className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <a href={socialLinks.github} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('github')} 
+                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
                     <Github className="h-4 w-4" />
                   </a>
                 )}
               </div>
             </div>
 
-            {/* Courses */}
-            <div>
-              <h4 className="font-bold text-foreground mb-4">Popular Courses</h4>
-              <ul className="space-y-3">
+            {/* Links */}
+            <div className="md:col-span-2">
+              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Courses</h4>
+              <ul className="space-y-4">
                 {footerCategories.map((cat) => (
                   <li key={cat.slug}>
-                    <Link to={`/courses/${cat.slug}`} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <Link to={`/courses/${cat.slug}`} className="text-foreground hover:text-primary transition-colors">
                       {cat.name}
                     </Link>
                   </li>
@@ -338,36 +407,43 @@ const Index = () => {
               </ul>
             </div>
 
-            {/* Company */}
-            <div>
-              <h4 className="font-bold text-foreground mb-4">Company</h4>
-              <ul className="space-y-3">
-                <li><Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
-                <li><Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
-                <li><Link to="/courses" className="text-sm text-muted-foreground hover:text-primary transition-colors">All Courses</Link></li>
+            <div className="md:col-span-2">
+              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Company</h4>
+              <ul className="space-y-4">
+                <li><Link to="/about" className="text-foreground hover:text-primary transition-colors">About</Link></li>
+                <li><Link to="/contact" className="text-foreground hover:text-primary transition-colors">Contact</Link></li>
+                <li><Link to="/courses" className="text-foreground hover:text-primary transition-colors">All Courses</Link></li>
               </ul>
             </div>
 
-            {/* Legal */}
-            <div>
-              <h4 className="font-bold text-foreground mb-4">Legal</h4>
-              <ul className="space-y-3">
-                <li><Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link></li>
+            <div className="md:col-span-2">
+              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Legal</h4>
+              <ul className="space-y-4">
+                <li><Link to="/privacy" className="text-foreground hover:text-primary transition-colors">Privacy</Link></li>
+                <li><Link to="/terms" className="text-foreground hover:text-primary transition-colors">Terms</Link></li>
               </ul>
+            </div>
+
+            {/* Newsletter teaser */}
+            <div className="md:col-span-2">
+              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Stay Updated</h4>
+              <p className="text-sm text-muted-foreground mb-4">Get notified about new courses and features.</p>
+              <Link to="/contact">
+                <Button variant="outline" size="sm" className="rounded-none border-foreground text-foreground hover:bg-foreground hover:text-background">
+                  Subscribe
+                </Button>
+              </Link>
             </div>
           </div>
 
           {/* Bottom Bar */}
-          <div className="mt-12 pt-8 border-t border-border">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-muted-foreground">
-                © {new Date().getFullYear()} {siteName}. All rights reserved.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Made with 💚 for visual learners everywhere
-              </p>
-            </div>
+          <div className="py-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} {siteName}. All rights reserved.
+            </p>
+            <p className="text-sm text-muted-foreground font-mono">
+              Crafted with passion for learning
+            </p>
           </div>
         </div>
       </footer>
