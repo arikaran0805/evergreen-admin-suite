@@ -425,7 +425,6 @@ const CourseDetail = () => {
       const commentData: any = {
         content: validated.content,
         post_id: selectedPost.id,
-        status: "pending", // Comments need approval by default
         is_anonymous: user ? isAnonymous : true,
         display_name: user && !isAnonymous ? null : "unknown_ant",
       };
@@ -442,16 +441,12 @@ const CourseDetail = () => {
       if (error) throw error;
 
       toast({
-        title: "Comment Submitted",
-        description: "Your comment has been submitted for review.",
+        title: "Comment Posted",
+        description: "Your comment has been posted.",
       });
 
       setCommentContent("");
-      
-      // Refresh comments after a short delay
-      setTimeout(() => {
-        fetchComments(selectedPost.id);
-      }, 500);
+      fetchComments(selectedPost.id);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -468,6 +463,51 @@ const CourseDetail = () => {
       }
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleEditComment = async (commentId: string, newContent: string) => {
+    try {
+      const validated = commentSchema.parse({ content: newContent });
+
+      const { error } = await supabase
+        .from("comments")
+        .update({ content: validated.content })
+        .eq("id", commentId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      toast({ title: "Comment updated" });
+      if (selectedPost) fetchComments(selectedPost.id);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error instanceof z.ZodError ? error.errors[0].message : "Failed to update comment",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      toast({ title: "Comment deleted" });
+      if (selectedPost) fetchComments(selectedPost.id);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1138,6 +1178,8 @@ const CourseDetail = () => {
           newComment={commentContent}
           setNewComment={setCommentContent}
           onSubmitComment={handleCommentSubmit}
+          onEditComment={handleEditComment}
+          onDeleteComment={handleDeleteComment}
           submitting={submittingComment}
         />
       )}

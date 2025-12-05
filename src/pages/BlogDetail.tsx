@@ -211,7 +211,6 @@ const BlogDetail = () => {
       const commentData: any = {
         post_id: id,
         content: newComment.trim(),
-        status: "pending",
         is_anonymous: user ? isAnonymous : true,
         display_name: user && !isAnonymous ? null : "unknown_ant",
       };
@@ -227,11 +226,12 @@ const BlogDetail = () => {
       if (error) throw error;
 
       toast({
-        title: "Comment submitted",
-        description: "Your comment is pending approval",
+        title: "Comment posted",
+        description: "Your comment has been posted.",
       });
 
       setNewComment("");
+      fetchComments();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -240,6 +240,49 @@ const BlogDetail = () => {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditComment = async (commentId: string, newContent: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .update({ content: newContent.trim() })
+        .eq("id", commentId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      toast({ title: "Comment updated" });
+      fetchComments();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update comment",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      toast({ title: "Comment deleted" });
+      fetchComments();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment",
+        variant: "destructive",
+      });
     }
   };
 
@@ -520,6 +563,8 @@ const BlogDetail = () => {
         newComment={newComment}
         setNewComment={setNewComment}
         onSubmitComment={handleSubmitComment}
+        onEditComment={handleEditComment}
+        onDeleteComment={handleDeleteComment}
         submitting={submitting}
       />
 
