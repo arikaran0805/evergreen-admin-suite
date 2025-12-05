@@ -889,7 +889,7 @@ const CourseDetail = () => {
                           {allTags.length > 0 && (
                             <>
                               <Tag className="h-5 w-5 text-primary" />
-                              <span className="font-medium text-primary">Tag:</span>
+                              <span className="font-medium text-primary">Tags:</span>
                               <div className="flex items-center gap-2">
                                 {allTags.map((tag, index) => (
                                   <span key={tag.id} className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-full">{tag.name}</span>
