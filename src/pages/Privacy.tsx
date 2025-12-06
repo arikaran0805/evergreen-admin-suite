@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -9,15 +9,14 @@ const Privacy = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <Layout>
       <SEOHead 
         title="Privacy Policy - How We Protect Your Data"
         description="Learn how BlogHub collects, uses, and protects your personal information. Read our comprehensive Privacy Policy to understand your data rights."
         keywords="privacy policy, data protection, personal information, privacy rights, GDPR"
       />
-      <Header />
       
-      <main className="container px-4 py-16 max-w-4xl mx-auto">
+      <div className="container px-4 py-16 max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-foreground">Privacy Policy</h1>
         
         <Card className="mb-8">
@@ -143,14 +142,8 @@ const Privacy = () => {
             </div>
           </CardContent>
         </Card>
-      </main>
-
-      <footer className="border-t border-border py-8 bg-card">
-        <div className="container px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 BlogHub. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

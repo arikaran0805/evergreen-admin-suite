@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 
 const About = () => {
@@ -8,15 +8,14 @@ const About = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <Layout>
       <SEOHead 
         title="About Us - Our Story and Mission"
         description="Learn about BlogHub's mission to democratize knowledge and inspire curious minds. Discover our values, team, and commitment to quality content."
         keywords="about us, our mission, our story, company values, team"
       />
-      <Header />
 
-      <main className="container px-4 py-16">
+      <div className="container px-4 py-16">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left: Logo with Cloud Background */}
@@ -85,8 +84,8 @@ const About = () => {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
