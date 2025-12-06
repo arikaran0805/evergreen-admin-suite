@@ -645,8 +645,8 @@ const CourseDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-8">
-          <p className="text-center">Loading...</p>
+        <div className="container mx-auto px-4 pt-32 text-center">
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -656,7 +656,7 @@ const CourseDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-8 text-center">
+        <div className="container mx-auto px-4 pt-32 text-center">
           <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           <Link to="/">
             <Button className="bg-primary hover:bg-primary/90">Back to Home</Button>
@@ -678,7 +678,7 @@ const CourseDetail = () => {
       <Header />
 
       {/* 3-Column Layout */}
-      <div className="w-full pt-20">
+      <div className="w-full pt-24">
         <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
