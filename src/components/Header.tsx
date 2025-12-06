@@ -130,7 +130,7 @@ const Header = () => {
       }`}
     >
       {/* Primary Header */}
-      <div className="border-b border-border">
+      <div>
         <div className="container mx-auto px-6 lg:px-12">
           <div className="flex h-16 items-center justify-between">
             {/* Logo and Brand */}
@@ -346,12 +346,6 @@ const Header = () => {
                 <span className="absolute inset-0 bg-primary/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300" />
               </Link>
             ))}
-            <Link
-              to="/courses"
-              className="relative px-3 py-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-all duration-300 whitespace-nowrap"
-            >
-              View All →
-            </Link>
           </nav>
         </div>
       </div>
