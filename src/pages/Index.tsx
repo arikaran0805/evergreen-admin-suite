@@ -222,7 +222,7 @@ const Index = () => {
             {/* CTA */}
             <div className="flex justify-center pt-4">
               <Link to="/courses">
-                <Button size="lg" className="h-14 px-8 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-full group">
+                <Button size="lg" className="h-14 px-10 text-lg font-bold rounded-full group bg-gradient-to-r from-primary via-emerald-500 to-teal-500 text-primary-foreground hover:opacity-90 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300">
                   <span className="flex items-center gap-2">
                     <Compass className="h-5 w-5" />
                     Find Learning Path
