@@ -122,17 +122,11 @@ const Header = () => {
   };
 
   return (
-    <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-background/90 backdrop-blur-xl shadow-lg' 
-          : 'bg-transparent'
-      }`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-50">
       {/* Primary Header */}
-      <div>
+      <div className="bg-background border-b border-border">
         <div className="container mx-auto px-6 lg:px-12">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-14 items-center justify-between">
             {/* Logo and Brand */}
             <Link to="/" className="flex items-center gap-3 group relative">
               {siteSettings.logo_url ? (
@@ -333,7 +327,7 @@ const Header = () => {
       </div>
 
       {/* Secondary Header - Courses Navigation */}
-      <div className="hidden lg:block bg-muted/30 border-b border-border/20">
+      <div className="hidden lg:block bg-muted/50 border-b border-border">
         <div className="container mx-auto px-6 lg:px-12">
           <nav className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
             {courses.map((course) => (
