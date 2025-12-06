@@ -194,7 +194,8 @@ const Index = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-full pl-6 pr-14 text-lg bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground"
                 />
-                <button type="submit" className="absolute right-3 p-2 rounded-full text-muted-foreground hover:text-primary hover:border hover:border-primary transition-all">
+                <button type="submit" className="absolute right-3 p-2 rounded-full border border-transparent text-muted-foreground hover:text-primary hover:border-primary transition-all group/search flex items-center gap-2">
+                  <span className="hidden group-hover/search:inline text-sm font-medium">Search Lessons</span>
                   <Search className="h-5 w-5" />
                 </button>
               </div>
