@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import BlogCard from "@/components/BlogCard";
 import SEOHead from "@/components/SEOHead";
-import AdDisplay from "@/components/AdDisplay";
 import { supabase } from "@/integrations/supabase/client";
 
 const Courses = () => {
@@ -46,18 +45,13 @@ const Courses = () => {
       />
 
       <div className="container px-12 md:px-16 lg:px-24 py-16">
-        <div className="flex flex-col lg:flex-row justify-between items-start gap-6 mb-12">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              All Courses
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Browse through all our course categories and start learning
-            </p>
-          </div>
-          <div className="hidden lg:block">
-            <AdDisplay placement="courses-header" className="min-w-[300px] min-h-[80px]" />
-          </div>
+        <div className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            All Courses
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Browse through all our course categories and start learning
+          </p>
         </div>
 
         {loading ? (
