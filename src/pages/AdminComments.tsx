@@ -7,16 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
-  ExternalLink, Send, Shield, XCircle, X, Bold, Italic, Code, Link, Check
+  ExternalLink, Send, Shield, XCircle, X, Bold, Italic, Code, Link, Check,
+  ChevronDown, ChevronUp, BookOpen
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Comment {
   id: string;
@@ -35,6 +39,11 @@ interface Comment {
   posts: {
     title: string;
     slug: string;
+    category_id: string | null;
+    courses: {
+      name: string;
+      slug: string;
+    } | null;
   } | null;
 }
 
@@ -42,6 +51,14 @@ interface CommentReaction {
   comment_id: string;
   reaction_type: string;
   count: number;
+}
+
+interface CourseGroup {
+  courseId: string | null;
+  courseName: string;
+  courseSlug: string;
+  comments: Comment[];
+  totalComments: number;
 }
 
 const AdminComments = () => {
@@ -55,6 +72,7 @@ const AdminComments = () => {
   const [submittingReply, setSubmittingReply] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedComments, setSelectedComments] = useState<Set<string>>(new Set());
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -95,7 +113,7 @@ const AdminComments = () => {
         .select(`
           *,
           profiles:user_id (full_name, email),
-          posts:post_id (title, slug)
+          posts:post_id (title, slug, category_id, courses:category_id (name, slug))
         `)
         .order("created_at", { ascending: false });
 
@@ -116,7 +134,6 @@ const AdminComments = () => {
 
       if (error) throw error;
 
-      // Aggregate reactions by comment
       const reactionMap = new Map<string, { likes: number; dislikes: number }>();
       data?.forEach((reaction) => {
         const current = reactionMap.get(reaction.comment_id) || { likes: 0, dislikes: 0 };
@@ -136,9 +153,7 @@ const AdminComments = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this comment? This will also delete all replies.")) return;
     try {
-      // Delete replies first
       await supabase.from("comments").delete().eq("parent_id", id);
-      // Delete the comment
       const { error } = await supabase.from("comments").delete().eq("id", id);
       if (error) throw error;
       toast({ title: "Comment deleted" });
@@ -154,11 +169,9 @@ const AdminComments = () => {
     
     try {
       const ids = Array.from(selectedComments);
-      // Delete replies for all selected comments
       for (const id of ids) {
         await supabase.from("comments").delete().eq("parent_id", id);
       }
-      // Delete all selected comments
       const { error } = await supabase.from("comments").delete().in("id", ids);
       if (error) throw error;
       
@@ -180,14 +193,6 @@ const AdminComments = () => {
       }
       return newSet;
     });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedComments.size === filteredComments.length) {
-      setSelectedComments(new Set());
-    } else {
-      setSelectedComments(new Set(filteredComments.map(c => c.id)));
-    }
   };
 
   const handleReject = async (id: string) => {
@@ -230,7 +235,7 @@ const AdminComments = () => {
         user_id: currentUserId,
         is_anonymous: false,
         display_name: "Admin",
-        status: "approved" // Admin replies are auto-approved
+        status: "approved"
       });
 
       if (error) throw error;
@@ -246,12 +251,10 @@ const AdminComments = () => {
     }
   };
 
-  // Get replies for a comment
   const getReplies = (parentId: string) => {
     return comments.filter(c => c.parent_id === parentId);
   };
 
-  // Filter to only show top-level comments (not replies)
   const topLevelComments = comments.filter(c => !c.parent_id);
 
   const filteredComments = topLevelComments.filter((comment) => {
@@ -260,7 +263,8 @@ const AdminComments = () => {
       comment.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       comment.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       comment.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      comment.posts?.title?.toLowerCase().includes(searchQuery.toLowerCase());
+      comment.posts?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      comment.posts?.courses?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
     let matchesTab = false;
     if (activeTab === "all") {
@@ -276,12 +280,52 @@ const AdminComments = () => {
     return matchesSearch && matchesTab;
   });
 
+  // Group comments by course
+  const groupedByCourse = filteredComments.reduce<Map<string, CourseGroup>>((acc, comment) => {
+    const courseId = comment.posts?.category_id || "uncategorized";
+    const courseName = comment.posts?.courses?.name || "Uncategorized";
+    const courseSlug = comment.posts?.courses?.slug || "";
+    
+    if (!acc.has(courseId)) {
+      acc.set(courseId, {
+        courseId,
+        courseName,
+        courseSlug,
+        comments: [],
+        totalComments: 0
+      });
+    }
+    
+    const group = acc.get(courseId)!;
+    group.comments.push(comment);
+    group.totalComments = group.comments.length + group.comments.reduce((sum, c) => sum + getReplies(c.id).length, 0);
+    
+    return acc;
+  }, new Map());
+
+  const courseGroups = Array.from(groupedByCourse.values()).sort((a, b) => 
+    b.totalComments - a.totalComments
+  );
+
+  const toggleCourseExpand = (courseId: string) => {
+    setExpandedCourses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(courseId)) {
+        newSet.delete(courseId);
+      } else {
+        newSet.add(courseId);
+      }
+      return newSet;
+    });
+  };
+
   const stats = {
     total: comments.length,
     topLevel: topLevelComments.length,
     replies: comments.filter(c => c.parent_id).length,
     anonymous: comments.filter(c => c.is_anonymous).length,
     rejected: comments.filter(c => c.status === "rejected").length,
+    courses: courseGroups.length
   };
 
   const getAuthorDisplay = (comment: Comment) => {
@@ -317,7 +361,6 @@ const AdminComments = () => {
                 />
               )}
               <div className="flex-1 space-y-2">
-                {/* Author Info */}
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
                     author.isAnonymous 
@@ -355,7 +398,6 @@ const AdminComments = () => {
                   </div>
                 </div>
 
-                {/* Post Reference */}
                 {comment.posts && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>On:</span>
@@ -371,7 +413,6 @@ const AdminComments = () => {
                   </div>
                 )}
 
-                {/* Timestamp */}
                 <p className="text-xs text-muted-foreground">
                   {new Date(comment.created_at).toLocaleString('en-US', {
                     year: 'numeric',
@@ -382,17 +423,14 @@ const AdminComments = () => {
                   })}
                 </p>
               </div>
-
             </div>
           </CardHeader>
           
           <CardContent className="space-y-4">
-            {/* Comment Content */}
             <div className="bg-muted/30 p-4 rounded-lg">
               <p className="whitespace-pre-wrap text-sm">{comment.content}</p>
             </div>
 
-            {/* Reactions */}
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <ThumbsUp className="h-4 w-4 text-green-500" />
@@ -410,7 +448,6 @@ const AdminComments = () => {
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-2 flex-wrap pt-2 border-t border-border/50">
               <Button 
                 size="sm" 
@@ -448,7 +485,6 @@ const AdminComments = () => {
               </Button>
             </div>
 
-            {/* Reply Form */}
             {replyingTo === comment.id && (
               <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
                 <div className="flex items-center gap-2 text-sm text-primary">
@@ -531,7 +567,6 @@ const AdminComments = () => {
           </CardContent>
         </Card>
 
-        {/* Replies */}
         {!isReply && replies.length > 0 && (
           <div className="mt-2 space-y-2">
             {replies.map((reply) => (
@@ -540,6 +575,100 @@ const AdminComments = () => {
           </div>
         )}
       </div>
+    );
+  };
+
+  const CourseCard = ({ group }: { group: CourseGroup }) => {
+    const isExpanded = expandedCourses.has(group.courseId || "uncategorized");
+    const courseKey = group.courseId || "uncategorized";
+
+    return (
+      <Collapsible open={isExpanded} onOpenChange={() => toggleCourseExpand(courseKey)}>
+        <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{group.courseName}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {group.comments.length} {group.comments.length === 1 ? 'comment' : 'comments'}
+                      {group.totalComments > group.comments.length && (
+                        <span className="ml-1">
+                          ({group.totalComments - group.comments.length} {group.totalComments - group.comments.length === 1 ? 'reply' : 'replies'})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {group.courseSlug && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(`/course/${group.courseSlug}`, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Badge variant="secondary" className="text-lg font-bold px-3 py-1">
+                    {group.totalComments}
+                  </Badge>
+                  {isExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="space-y-4 border-t border-border/50 pt-4">
+                {/* Bulk Actions for this course */}
+                {group.comments.length > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={group.comments.every(c => selectedComments.has(c.id))}
+                        onCheckedChange={() => {
+                          const allSelected = group.comments.every(c => selectedComments.has(c.id));
+                          setSelectedComments(prev => {
+                            const newSet = new Set(prev);
+                            group.comments.forEach(c => {
+                              if (allSelected) {
+                                newSet.delete(c.id);
+                              } else {
+                                newSet.add(c.id);
+                              }
+                            });
+                            return newSet;
+                          });
+                        }}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        Select all in this course
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {group.comments.map((comment) => (
+                  <CommentCard key={comment.id} comment={comment} />
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     );
   };
 
@@ -562,11 +691,11 @@ const AdminComments = () => {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Comments Management</h1>
-          <p className="text-muted-foreground">Review, moderate, and manage user comments including anonymous posts and replies</p>
+          <p className="text-muted-foreground">Review, moderate, and manage user comments grouped by course</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <Card className="border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -575,6 +704,18 @@ const AdminComments = () => {
                   <p className="text-xl font-bold">{stats.total}</p>
                 </div>
                 <MessageSquare className="h-6 w-6 text-primary/60" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Courses</p>
+                  <p className="text-xl font-bold text-green-500">{stats.courses}</p>
+                </div>
+                <BookOpen className="h-6 w-6 text-green-500/60" />
               </div>
             </CardContent>
           </Card>
@@ -628,12 +769,29 @@ const AdminComments = () => {
           </Card>
         </div>
 
+        {/* Bulk Delete Button */}
+        {selectedComments.size > 0 && (
+          <div className="flex items-center justify-between p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <span className="text-sm font-medium">
+              {selectedComments.size} comment(s) selected
+            </span>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+            >
+              <Trash2 className="mr-1 h-4 w-4" />
+              Delete Selected
+            </Button>
+          </div>
+        )}
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search comments by content, author name, email, or post title..."
+            placeholder="Search comments by content, author, post title, or course name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -650,7 +808,7 @@ const AdminComments = () => {
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
-            {filteredComments.length === 0 ? (
+            {courseGroups.length === 0 ? (
               <Alert>
                 <MessageSquare className="h-4 w-4" />
                 <AlertDescription>
@@ -661,33 +819,8 @@ const AdminComments = () => {
               </Alert>
             ) : (
               <div className="space-y-4">
-                {/* Bulk Actions Bar */}
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={selectedComments.size === filteredComments.length && filteredComments.length > 0}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {selectedComments.size > 0 
-                        ? `${selectedComments.size} selected` 
-                        : "Select all"}
-                    </span>
-                  </div>
-                  {selectedComments.size > 0 && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleBulkDelete}
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Delete Selected ({selectedComments.size})
-                    </Button>
-                  )}
-                </div>
-
-                {filteredComments.map((comment) => (
-                  <CommentCard key={comment.id} comment={comment} />
+                {courseGroups.map((group) => (
+                  <CourseCard key={group.courseId || "uncategorized"} group={group} />
                 ))}
               </div>
             )}
