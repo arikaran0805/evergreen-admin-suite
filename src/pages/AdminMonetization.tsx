@@ -103,6 +103,7 @@ const AdminMonetization = () => {
   const [announcementMessage, setAnnouncementMessage] = useState("");
   const [announcementLinkText, setAnnouncementLinkText] = useState("");
   const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
+  const [announcementBgColor, setAnnouncementBgColor] = useState("#22c55e");
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
 
   useEffect(() => {
@@ -137,7 +138,7 @@ const AdminMonetization = () => {
   const fetchAnnouncementSettings = async () => {
     const { data, error } = await supabase
       .from("site_settings")
-      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url")
+      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color")
       .limit(1)
       .maybeSingle();
 
@@ -146,6 +147,7 @@ const AdminMonetization = () => {
       setAnnouncementMessage(data.announcement_message || "");
       setAnnouncementLinkText(data.announcement_link_text || "");
       setAnnouncementLinkUrl(data.announcement_link_url || "");
+      setAnnouncementBgColor(data.announcement_bg_color || "#22c55e");
     }
   };
 
@@ -158,6 +160,7 @@ const AdminMonetization = () => {
         announcement_message: announcementMessage,
         announcement_link_text: announcementLinkText,
         announcement_link_url: announcementLinkUrl,
+        announcement_bg_color: announcementBgColor,
       })
       .eq("id", (await supabase.from("site_settings").select("id").limit(1).single()).data?.id);
 
@@ -771,13 +774,36 @@ const AdminMonetization = () => {
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <Label htmlFor="announcement-bg-color">Background Color</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <input
+                        type="color"
+                        id="announcement-bg-color"
+                        value={announcementBgColor}
+                        onChange={(e) => setAnnouncementBgColor(e.target.value)}
+                        className="w-12 h-10 rounded border cursor-pointer"
+                      />
+                      <Input
+                        value={announcementBgColor}
+                        onChange={(e) => setAnnouncementBgColor(e.target.value)}
+                        placeholder="#22c55e"
+                        className="w-32"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Choose a background color for the announcement bar</p>
+                  </div>
                 </div>
 
                 {/* Preview */}
                 <div className="space-y-2">
                   <Label>Preview</Label>
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm font-medium">
+                    <div 
+                      className="py-2 px-4 text-center text-sm font-medium text-white"
+                      style={{ backgroundColor: announcementBgColor }}
+                    >
                       <span>{announcementMessage || "Your announcement message here..."}</span>
                       {announcementLinkText && (
                         <span className="ml-2 underline underline-offset-2 font-semibold">
