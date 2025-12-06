@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit, Info, DollarSign } from "lucide-react";
+import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit, Info } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -334,12 +334,6 @@ const Admin = () => {
               <Button className="w-full justify-start" variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
                 Manage Pages
-              </Button>
-            </Link>
-            <Link to="/admin/monetization">
-              <Button className="w-full justify-start" variant="outline">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Monetization
               </Button>
             </Link>
           </div>
