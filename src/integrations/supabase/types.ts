@@ -706,6 +706,7 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          announcement_bg_color: string | null
           announcement_enabled: boolean | null
           announcement_link_text: string | null
           announcement_link_url: string | null
@@ -744,6 +745,7 @@ export type Database = {
           youtube_url: string | null
         }
         Insert: {
+          announcement_bg_color?: string | null
           announcement_enabled?: boolean | null
           announcement_link_text?: string | null
           announcement_link_url?: string | null
@@ -782,6 +784,7 @@ export type Database = {
           youtube_url?: string | null
         }
         Update: {
+          announcement_bg_color?: string | null
           announcement_enabled?: boolean | null
           announcement_link_text?: string | null
           announcement_link_url?: string | null
