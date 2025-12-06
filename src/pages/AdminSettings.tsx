@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 
 const urlSchema = z.string().url().optional().or(z.literal(""));
@@ -54,6 +55,7 @@ const AdminSettings = () => {
     { label: "Statistics", slug: "statistics", highlighted: false },
     { label: "AI & ML", slug: "ai-ml", highlighted: false }
   ]);
+  const [courses, setCourses] = useState<{id: string; name: string; slug: string}[]>([]);
   
   // Social Media Links
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -114,8 +116,16 @@ const AdminSettings = () => {
       return;
     }
 
-    await loadSettings();
+    await Promise.all([loadSettings(), loadCourses()]);
     setLoading(false);
+  };
+
+  const loadCourses = async () => {
+    const { data } = await supabase
+      .from("courses")
+      .select("id, name, slug")
+      .order("name");
+    if (data) setCourses(data);
   };
 
   const loadSettings = async () => {
@@ -631,16 +641,29 @@ const AdminSettings = () => {
                             placeholder="Label (e.g., Python)"
                             className="flex-1"
                           />
-                          <Input
+                          <Select
                             value={link.slug}
-                            onChange={(e) => {
+                            onValueChange={(value) => {
                               const updated = [...heroQuickLinks];
-                              updated[index].slug = e.target.value;
+                              updated[index].slug = value;
+                              const selectedCourse = courses.find(c => c.slug === value);
+                              if (selectedCourse && !updated[index].label) {
+                                updated[index].label = selectedCourse.name;
+                              }
                               setHeroQuickLinks(updated);
                             }}
-                            placeholder="Course slug"
-                            className="flex-1"
-                          />
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select a course" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {courses.map((course) => (
+                                <SelectItem key={course.id} value={course.slug}>
+                                  {course.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <Checkbox
                             checked={link.highlighted}
                             onCheckedChange={(checked) => {
