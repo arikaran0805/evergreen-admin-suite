@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Menu, User, LogOut } from "lucide-react";
+import { Search, Menu, User, LogOut, Shield, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -173,9 +173,9 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setSearchOpen(true)}
-                className="relative h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
+                className="relative h-10 w-10 rounded-full hover:bg-muted transition-all duration-200"
               >
-                <Search className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-primary" />
+                <Search className="h-[18px] w-[18px] text-foreground/80" strokeWidth={1.5} />
               </Button>
 
               {/* Search Dialog */}
@@ -186,20 +186,25 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
 
               {/* User Menu - Desktop */}
               {user ? (
-                <div className="hidden md:flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-1">
                   {isAdmin && (
-                    <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg border-0 px-3 py-1">
-                      Admin
-                    </Badge>
+                    <Button 
+                      asChild
+                      className="h-8 px-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200"
+                    >
+                      <Link to="/admin">
+                        <Shield className="h-4 w-4" strokeWidth={1.5} />
+                      </Link>
+                    </Button>
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
+                        className="h-10 w-10 rounded-full hover:bg-muted transition-all duration-200"
                       >
-                        <User className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-primary" />
+                        <UserCircle className="h-[22px] w-[22px] text-foreground/80" strokeWidth={1.5} />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
