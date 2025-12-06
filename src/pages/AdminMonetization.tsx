@@ -44,7 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, DollarSign, Code, Upload, Copy, RefreshCw, Megaphone } from "lucide-react";
+import { Plus, Edit2, Trash2, DollarSign, Code, Upload, Copy, RefreshCw, Megaphone, CheckCircle, XCircle, CalendarClock } from "lucide-react";
 import { format } from "date-fns";
 
 interface Ad {
@@ -832,7 +832,48 @@ const AdminMonetization = () => {
 
                 {/* Preview */}
                 <div className="space-y-2">
-                  <Label>Preview</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Preview</Label>
+                    {(() => {
+                      const now = new Date();
+                      const startDate = announcementStartDate ? new Date(announcementStartDate) : null;
+                      const endDate = announcementEndDate ? new Date(announcementEndDate) : null;
+                      
+                      if (!announcementEnabled) {
+                        return (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <XCircle className="h-3 w-3" />
+                            Disabled
+                          </Badge>
+                        );
+                      }
+                      
+                      if (endDate && now > endDate) {
+                        return (
+                          <Badge variant="destructive" className="flex items-center gap-1">
+                            <XCircle className="h-3 w-3" />
+                            Expired
+                          </Badge>
+                        );
+                      }
+                      
+                      if (startDate && now < startDate) {
+                        return (
+                          <Badge variant="outline" className="flex items-center gap-1 text-amber-600 border-amber-600">
+                            <CalendarClock className="h-3 w-3" />
+                            Upcoming
+                          </Badge>
+                        );
+                      }
+                      
+                      return (
+                        <Badge className="flex items-center gap-1 bg-primary">
+                          <CheckCircle className="h-3 w-3" />
+                          Active
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                   <div className="border rounded-lg overflow-hidden">
                     <div 
                       className="py-2 px-4 text-center text-sm font-medium text-white"
