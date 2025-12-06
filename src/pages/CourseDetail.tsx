@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdSettings } from "@/hooks/useAdSettings";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, Flag, Edit } from "lucide-react";
@@ -106,6 +107,11 @@ const CourseDetail = () => {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+
+  const handleAnnouncementVisibility = useCallback((visible: boolean) => {
+    setShowAnnouncement(visible);
+  }, []);
 
   // Calculate learners count
   const learnersCount = Math.floor(Math.random() * 15000) + 5000;
@@ -643,9 +649,12 @@ const CourseDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 pt-32 text-center">
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="fixed top-0 left-0 right-0 z-[60]">
+          <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
+        </div>
+        <Header announcementVisible={showAnnouncement} />
+        <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -654,9 +663,12 @@ const CourseDetail = () => {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 pt-32 text-center">
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="fixed top-0 left-0 right-0 z-[60]">
+          <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
+        </div>
+        <Header announcementVisible={showAnnouncement} />
+        <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
           <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           <Link to="/">
             <Button className="bg-primary hover:bg-primary/90">Back to Home</Button>
@@ -667,7 +679,7 @@ const CourseDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <SEOHead 
         title={`${course.name} - Course`}
         description={course.description || `Explore ${course.name} courses and lessons. Join ${formattedLearners} learners in this comprehensive learning path.`}
@@ -675,15 +687,18 @@ const CourseDetail = () => {
         ogTitle={`${course.name} Course`}
         ogDescription={course.description || `Learn ${course.name} with our comprehensive course materials`}
       />
-      <Header />
+      <div className="fixed top-0 left-0 right-0 z-[60]">
+        <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
+      </div>
+      <Header announcementVisible={showAnnouncement} />
 
       {/* 3-Column Layout */}
-      <div className="w-full pt-24">
+      <div className={`w-full ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
         <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:w-64 bg-green-50 border-r border-green-100 flex-shrink-0">
-            <div className="sticky top-24">
+            <div className={`sticky ${showAnnouncement ? 'top-32' : 'top-24'}`}>
               <div className="px-6 py-4 border-b border-green-100 bg-green-100/50">
                 <div 
                   className="flex items-center gap-2 cursor-pointer hover:text-green-700 transition-colors"
