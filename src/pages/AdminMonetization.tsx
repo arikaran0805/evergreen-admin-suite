@@ -104,6 +104,7 @@ const AdminMonetization = () => {
   const [announcementLinkText, setAnnouncementLinkText] = useState("");
   const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
   const [announcementBgColor, setAnnouncementBgColor] = useState("#22c55e");
+  const [announcementTextColor, setAnnouncementTextColor] = useState("#ffffff");
   const [announcementStartDate, setAnnouncementStartDate] = useState("");
   const [announcementEndDate, setAnnouncementEndDate] = useState("");
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
@@ -140,7 +141,7 @@ const AdminMonetization = () => {
   const fetchAnnouncementSettings = async () => {
     const { data, error } = await supabase
       .from("site_settings")
-      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color, announcement_start_date, announcement_end_date")
+      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color, announcement_text_color, announcement_start_date, announcement_end_date")
       .limit(1)
       .maybeSingle();
 
@@ -150,6 +151,7 @@ const AdminMonetization = () => {
       setAnnouncementLinkText(data.announcement_link_text || "");
       setAnnouncementLinkUrl(data.announcement_link_url || "");
       setAnnouncementBgColor(data.announcement_bg_color || "#22c55e");
+      setAnnouncementTextColor(data.announcement_text_color || "#ffffff");
       setAnnouncementStartDate(data.announcement_start_date ? data.announcement_start_date.split("T")[0] : "");
       setAnnouncementEndDate(data.announcement_end_date ? data.announcement_end_date.split("T")[0] : "");
     }
@@ -165,6 +167,7 @@ const AdminMonetization = () => {
         announcement_link_text: announcementLinkText,
         announcement_link_url: announcementLinkUrl,
         announcement_bg_color: announcementBgColor,
+        announcement_text_color: announcementTextColor,
         announcement_start_date: announcementStartDate || null,
         announcement_end_date: announcementEndDate || null,
       })
@@ -801,6 +804,26 @@ const AdminMonetization = () => {
                     <p className="text-xs text-muted-foreground mt-1">Choose a background color for the announcement bar</p>
                   </div>
 
+                  <div>
+                    <Label htmlFor="announcement-text-color">Text Color</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <input
+                        type="color"
+                        id="announcement-text-color"
+                        value={announcementTextColor}
+                        onChange={(e) => setAnnouncementTextColor(e.target.value)}
+                        className="w-12 h-10 rounded border cursor-pointer"
+                      />
+                      <Input
+                        value={announcementTextColor}
+                        onChange={(e) => setAnnouncementTextColor(e.target.value)}
+                        placeholder="#ffffff"
+                        className="w-32"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Choose a text color for better contrast</p>
+                  </div>
+
                   <Separator />
 
                   <div className="space-y-2">
@@ -876,8 +899,8 @@ const AdminMonetization = () => {
                   </div>
                   <div className="border rounded-lg overflow-hidden">
                     <div 
-                      className="py-2 px-4 text-center text-sm font-medium text-white"
-                      style={{ backgroundColor: announcementBgColor }}
+                      className="py-2 px-4 text-center text-sm font-medium"
+                      style={{ backgroundColor: announcementBgColor, color: announcementTextColor }}
                     >
                       <span>{announcementMessage || "Your announcement message here..."}</span>
                       {announcementLinkText && (
