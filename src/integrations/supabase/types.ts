@@ -713,6 +713,7 @@ export type Database = {
           announcement_link_url: string | null
           announcement_message: string | null
           announcement_start_date: string | null
+          announcement_text_color: string | null
           created_at: string
           facebook_url: string | null
           github_url: string | null
@@ -754,6 +755,7 @@ export type Database = {
           announcement_link_url?: string | null
           announcement_message?: string | null
           announcement_start_date?: string | null
+          announcement_text_color?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
@@ -795,6 +797,7 @@ export type Database = {
           announcement_link_url?: string | null
           announcement_message?: string | null
           announcement_start_date?: string | null
+          announcement_text_color?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null

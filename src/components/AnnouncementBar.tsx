@@ -10,6 +10,7 @@ interface AnnouncementSettings {
   announcement_link_text: string | null;
   announcement_link_url: string | null;
   announcement_bg_color: string | null;
+  announcement_text_color: string | null;
   announcement_start_date: string | null;
   announcement_end_date: string | null;
 }
@@ -26,7 +27,7 @@ export const AnnouncementBar = ({ onVisibilityChange }: AnnouncementBarProps) =>
     const fetchSettings = async () => {
       const { data } = await supabase
         .from("site_settings")
-        .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color, announcement_start_date, announcement_end_date")
+        .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color, announcement_text_color, announcement_start_date, announcement_end_date")
         .limit(1)
         .maybeSingle();
 
@@ -60,11 +61,12 @@ export const AnnouncementBar = ({ onVisibilityChange }: AnnouncementBarProps) =>
 
   const isExternalLink = settings.announcement_link_url?.startsWith("http");
   const bgColor = settings.announcement_bg_color || "#22c55e";
+  const textColor = settings.announcement_text_color || "#ffffff";
 
   return (
     <div 
-      className="py-2 px-4 text-center text-sm font-medium relative text-white"
-      style={{ backgroundColor: bgColor }}
+      className="py-2 px-4 text-center text-sm font-medium relative"
+      style={{ backgroundColor: bgColor, color: textColor }}
     >
       <div className="container mx-auto flex items-center justify-center gap-2">
         <span>{settings.announcement_message}</span>
@@ -92,7 +94,8 @@ export const AnnouncementBar = ({ onVisibilityChange }: AnnouncementBarProps) =>
         variant="ghost"
         size="icon"
         onClick={handleClose}
-        className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 text-white hover:bg-white/20"
+        className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 hover:bg-black/10"
+        style={{ color: textColor }}
       >
         <X className="h-4 w-4" />
       </Button>
