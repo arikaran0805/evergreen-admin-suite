@@ -333,7 +333,7 @@ const Header = () => {
       </div>
 
       {/* Secondary Header - Courses Navigation */}
-      <div className="hidden lg:block border-b border-border/20">
+      <div className="hidden lg:block bg-muted/30 border-b border-border/20">
         <div className="container mx-auto px-6 lg:px-12">
           <nav className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
             {courses.map((course) => (
