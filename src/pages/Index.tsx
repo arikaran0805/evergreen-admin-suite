@@ -186,7 +186,7 @@ const Index = () => {
 
             {/* Search Bar with Green Border */}
             <form onSubmit={handleSearch} className="w-full max-w-2xl mt-4">
-              <div className="relative flex items-center h-14 md:h-16 rounded-full border border-border bg-card shadow-lg transition-shadow duration-300 focus-within:shadow-[0_0_20px_hsl(var(--primary)/0.2)] focus-within:border-primary">
+              <div className="relative flex items-center h-14 md:h-16 rounded-full border border-border bg-card shadow-lg transition-all duration-300 hover:bg-muted/50 hover:shadow-xl focus-within:shadow-[0_0_20px_hsl(var(--primary)/0.2)] focus-within:border-primary">
                 <input
                   type="text"
                   placeholder={placeholder}
