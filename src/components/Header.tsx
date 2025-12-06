@@ -136,18 +136,11 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
             {/* Logo and Brand */}
             <Link to="/" className="flex items-center gap-3 group relative">
               {siteSettings.logo_url ? (
-                <>
-                  <img 
-                    src={siteSettings.logo_url} 
-                    alt={siteSettings.site_name} 
-                    className="h-10 w-auto transition-all duration-300 group-hover:scale-105" 
-                  />
-                  <div className="hidden sm:flex flex-col">
-                    <span className="text-xl font-black tracking-tight text-foreground">
-                      {siteSettings.site_name}
-                    </span>
-                  </div>
-                </>
+                <img 
+                  src={siteSettings.logo_url} 
+                  alt={siteSettings.site_name} 
+                  className="h-10 w-auto transition-all duration-300 group-hover:scale-105" 
+                />
               ) : (
                 <>
                   <div className="relative">
