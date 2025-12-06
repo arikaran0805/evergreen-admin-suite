@@ -706,6 +706,10 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          announcement_enabled: boolean | null
+          announcement_link_text: string | null
+          announcement_link_url: string | null
+          announcement_message: string | null
           created_at: string
           facebook_url: string | null
           github_url: string | null
@@ -740,6 +744,10 @@ export type Database = {
           youtube_url: string | null
         }
         Insert: {
+          announcement_enabled?: boolean | null
+          announcement_link_text?: string | null
+          announcement_link_url?: string | null
+          announcement_message?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
@@ -774,6 +782,10 @@ export type Database = {
           youtube_url?: string | null
         }
         Update: {
+          announcement_enabled?: boolean | null
+          announcement_link_text?: string | null
+          announcement_link_url?: string | null
+          announcement_message?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
