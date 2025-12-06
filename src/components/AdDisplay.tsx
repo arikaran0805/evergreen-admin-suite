@@ -63,8 +63,13 @@ const AdDisplay = ({ placement, className = "" }: AdDisplayProps) => {
       <img 
         src={ad.image_url} 
         alt={ad.name || "Advertisement"} 
-        className="max-w-full h-auto"
+        className="max-w-full h-auto object-contain"
         loading="lazy"
+        onError={(e) => {
+          // Hide container if image fails to load
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'none';
+        }}
       />
     );
 
