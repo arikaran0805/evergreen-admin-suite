@@ -26,6 +26,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminPlaceholder from "./pages/AdminPlaceholder";
 import AdminAuthors from "./pages/AdminAuthors";
 import AdminMedia from "./pages/AdminMedia";
+import AdminMonetization from "./pages/AdminMonetization";
 import AdminRedirects from "./pages/AdminRedirects";
 import AdminAPI from "./pages/AdminAPI";
 import AdminSettings from "./pages/AdminSettings";
@@ -91,6 +92,7 @@ const AppContent = () => {
         <Route path="/admin/tags" element={<AdminTags />} />
         <Route path="/admin/authors" element={<AdminAuthors />} />
         <Route path="/admin/media" element={<AdminMedia />} />
+        <Route path="/admin/monetization" element={<AdminMonetization />} />
         <Route path="/admin/redirects" element={<AdminRedirects />} />
         <Route path="/admin/api" element={<AdminAPI />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />

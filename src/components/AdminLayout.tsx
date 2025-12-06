@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
-  MessageSquare, Image, Link2, Key, Webhook, 
+  MessageSquare, Image, DollarSign, Link2, Key, Webhook, 
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, Layers, GraduationCap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const adminMenuItems = [
   { icon: UserCog, label: "Authors/Admins", path: "/admin/authors" },
   { icon: MessageSquare, label: "Comments", path: "/admin/comments" },
   { icon: Image, label: "Media Library", path: "/admin/media" },
+  { icon: DollarSign, label: "Monetization", path: "/admin/monetization" },
   { icon: Link2, label: "Redirects", path: "/admin/redirects" },
   { icon: Key, label: "API & Integrations", path: "/admin/api" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
