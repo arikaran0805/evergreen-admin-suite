@@ -159,7 +159,10 @@ const Header = () => {
               )}
             </Link>
 
-            {/* Right Side Actions - Positioned closer */}
+            {/* Spacer to push icons to the right */}
+            <div className="flex-1" />
+
+            {/* Right Side Actions - Positioned to rightmost side */}
             <div className="flex items-center gap-1">
               {/* Search Button */}
               <Button 
