@@ -247,11 +247,11 @@ const Index = () => {
       {/* Featured Courses - Clean Card Grid */}
       <section 
         ref={coursesAnimation.ref}
-        className={`py-24 lg:py-32 relative transition-all duration-1000 delay-200 px-4 md:px-8 lg:px-16 ${
+        className={`py-24 lg:py-32 relative transition-all duration-1000 delay-200 px-6 md:px-16 lg:px-32 xl:px-52 ${
           coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
-        <div className="container px-4">
+        <div className="max-w-[1600px] mx-auto">
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div className="space-y-3">
@@ -330,11 +330,11 @@ const Index = () => {
       {/* Journey CTA - Split Layout */}
       <section 
         ref={ctaAnimation.ref}
-        className={`relative py-24 lg:py-32 overflow-hidden transition-all duration-1000 delay-300 px-4 md:px-8 lg:px-16 ${
+        className={`relative py-24 lg:py-32 overflow-hidden transition-all duration-1000 delay-300 px-6 md:px-16 lg:px-32 xl:px-52 ${
           ctaAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
-        <div className="container px-4">
+        <div className="max-w-[1600px] mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left Side - Illustration */}
             <div className="relative order-2 lg:order-1">
