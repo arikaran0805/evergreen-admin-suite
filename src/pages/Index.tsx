@@ -170,7 +170,7 @@ const Index = () => {
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
             {/* Main Headline with Curved Line */}
             <div className="space-y-2">
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">
                 <span className="text-foreground">{heroHeadline.replace(heroHighlightText, '')}</span>
                 <span 
                   className="relative inline-block"
