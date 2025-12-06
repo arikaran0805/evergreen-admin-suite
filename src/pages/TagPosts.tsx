@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import BlogCard from "@/components/BlogCard";
 import SEOHead from "@/components/SEOHead";
 import { Tag, ArrowLeft } from "lucide-react";
@@ -87,13 +87,11 @@ const TagPosts = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <Layout>
       <SEOHead 
         title={`Posts tagged "${tagName}"`}
         description={`Browse all posts tagged with ${tagName}`}
       />
-      
-      <Header />
 
       <div className="container px-4 py-16">
         <div className="max-w-4xl mx-auto">
@@ -144,7 +142,7 @@ const TagPosts = () => {
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

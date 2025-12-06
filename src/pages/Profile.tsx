@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import { z } from "zod";
 
 const profileSchema = z.object({
@@ -167,20 +167,17 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
+      <Layout>
         <div className="container mx-auto px-4 py-8">
           <p className="text-center">Loading...</p>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+    <Layout>
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-4xl font-bold mb-8 text-foreground">My Profile</h1>
 
         {/* Profile Information */}
@@ -285,8 +282,8 @@ const Profile = () => {
             </form>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

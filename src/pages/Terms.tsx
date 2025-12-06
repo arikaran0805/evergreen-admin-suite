@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -9,15 +9,14 @@ const Terms = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <Layout>
       <SEOHead 
         title="Terms of Service - Legal Agreement"
         description="Read BlogHub's Terms of Service. Understand the legal agreement between you and BlogHub regarding the use of our platform and services."
         keywords="terms of service, legal agreement, terms and conditions, user agreement"
       />
-      <Header />
       
-      <main className="container px-4 py-16 max-w-4xl mx-auto">
+      <div className="container px-4 py-16 max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-foreground">Terms of Service</h1>
         
         <Card className="mb-8">
@@ -128,14 +127,8 @@ const Terms = () => {
             </div>
           </CardContent>
         </Card>
-      </main>
-
-      <footer className="border-t border-border py-8 bg-card">
-        <div className="container px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 BlogHub. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

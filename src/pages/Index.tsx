@@ -2,10 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { ArrowRight, Compass, Star, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Hexagon, Search } from "lucide-react";
+import { ArrowRight, Compass, Star, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
@@ -136,11 +136,10 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className="min-h-screen bg-background overflow-hidden flex flex-col">
       <SEOHead />
       <Header />
-
-      {/* Hero Section - Dramatic Editorial Style */}
+      <main className="flex-1 pt-24">
       <section 
         ref={heroAnimation.ref}
         className={`relative min-h-[90vh] flex items-center overflow-hidden transition-all duration-1000 ${
@@ -433,124 +432,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+      </main>
 
-      {/* Footer - Minimal Editorial */}
-      <footer 
-        ref={footerAnimation.ref}
-        className={`bg-background border-t border-border transition-all duration-1000 delay-200 ${
-          footerAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}
-      >
-        <div className="container px-4">
-          {/* Main Footer */}
-          <div className="py-12 grid grid-cols-1 md:grid-cols-12 gap-12">
-            {/* Brand Column */}
-            <div className="md:col-span-4 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-foreground flex items-center justify-center">
-                  <span className="text-2xl">📖</span>
-                </div>
-                <span className="text-2xl font-black text-foreground">{siteName}</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed max-w-sm">
-                {siteDescription}
-              </p>
-              
-              {/* Social Links */}
-              <div className="flex gap-2">
-                {socialLinks.twitter && (
-                  <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('twitter')} 
-                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
-                    <Twitter className="h-4 w-4" />
-                  </a>
-                )}
-                {socialLinks.facebook && (
-                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('facebook')} 
-                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
-                    <Facebook className="h-4 w-4" />
-                  </a>
-                )}
-                {socialLinks.instagram && (
-                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('instagram')} 
-                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
-                    <Instagram className="h-4 w-4" />
-                  </a>
-                )}
-                {socialLinks.linkedin && (
-                  <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('linkedin')} 
-                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
-                    <Linkedin className="h-4 w-4" />
-                  </a>
-                )}
-                {socialLinks.youtube && (
-                  <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('youtube')} 
-                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
-                    <Youtube className="h-4 w-4" />
-                  </a>
-                )}
-                {socialLinks.github && (
-                  <a href={socialLinks.github} target="_blank" rel="noopener noreferrer" onClick={() => trackSocialMediaClick('github')} 
-                     className="w-10 h-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-colors">
-                    <Github className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Links */}
-            <div className="md:col-span-2">
-              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Courses</h4>
-              <ul className="space-y-4">
-                {footerCategories.map((cat) => (
-                  <li key={cat.slug}>
-                    <Link to={`/courses/${cat.slug}`} className="text-foreground hover:text-primary transition-colors">
-                      {cat.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="md:col-span-2">
-              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Company</h4>
-              <ul className="space-y-4">
-                <li><Link to="/about" className="text-foreground hover:text-primary transition-colors">About</Link></li>
-                <li><Link to="/contact" className="text-foreground hover:text-primary transition-colors">Contact</Link></li>
-                <li><Link to="/courses" className="text-foreground hover:text-primary transition-colors">All Courses</Link></li>
-              </ul>
-            </div>
-
-            <div className="md:col-span-2">
-              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Legal</h4>
-              <ul className="space-y-4">
-                <li><Link to="/privacy" className="text-foreground hover:text-primary transition-colors">Privacy</Link></li>
-                <li><Link to="/terms" className="text-foreground hover:text-primary transition-colors">Terms</Link></li>
-              </ul>
-            </div>
-
-            {/* Newsletter teaser */}
-            <div className="md:col-span-2">
-              <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">Stay Updated</h4>
-              <p className="text-sm text-muted-foreground mb-4">Get notified about new courses and features.</p>
-              <Link to="/contact">
-                <Button variant="outline" size="sm" className="rounded-none border-foreground text-foreground hover:bg-foreground hover:text-background">
-                  Subscribe
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="py-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} {siteName}. All rights reserved.
-            </p>
-            <p className="text-sm text-muted-foreground font-mono">
-              Crafted with passion for learning
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

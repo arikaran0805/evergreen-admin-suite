@@ -9,9 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdSettings } from "@/hooks/useAdSettings";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, Facebook, Twitter, Linkedin, Youtube, Instagram, Github, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, Flag, Edit } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, Flag, Edit } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1134,143 +1135,7 @@ const CourseDetail = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-12 bg-card mt-12">
-        <div className="container px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                {siteSettings?.logo_url ? (
-                  <img src={siteSettings.logo_url} alt={siteSettings.site_name} className="h-10 w-auto" />
-                ) : (
-                  <>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary shadow-glow">
-                      <span className="text-xl font-bold text-primary-foreground">
-                        {siteSettings?.site_name?.charAt(0) || 'B'}
-                      </span>
-                    </div>
-                    <span className="text-xl font-bold text-primary">{siteSettings?.site_name || 'BlogHub'}</span>
-                  </>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {siteSettings?.site_description || 'Inspiring stories and ideas for curious minds.'}
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Courses</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {footerCategories.map((category) => (
-                  <li key={category.slug}>
-                    <Link to={`/course/${category.slug}`} className="hover:text-primary transition-colors">
-                      {category.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
-                <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-                <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-                <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Connect</h3>
-              <div className="flex flex-col gap-2">
-                {siteSettings?.twitter_url && (
-                  <a 
-                    href={siteSettings.twitter_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => handleSocialClick("twitter")}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="Twitter"
-                  >
-                    <Twitter className="h-5 w-5" />
-                    <span>Twitter</span>
-                  </a>
-                )}
-                {siteSettings?.facebook_url && (
-                  <a 
-                    href={siteSettings.facebook_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => handleSocialClick("facebook")}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="Facebook"
-                  >
-                    <Facebook className="h-5 w-5" />
-                    <span>Facebook</span>
-                  </a>
-                )}
-                {siteSettings?.instagram_url && (
-                  <a 
-                    href={siteSettings.instagram_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => handleSocialClick("instagram")}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="Instagram"
-                  >
-                    <Instagram className="h-5 w-5" />
-                    <span>Instagram</span>
-                  </a>
-                )}
-                {siteSettings?.linkedin_url && (
-                  <a 
-                    href={siteSettings.linkedin_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => handleSocialClick("linkedin")}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="LinkedIn"
-                  >
-                    <Linkedin className="h-5 w-5" />
-                    <span>LinkedIn</span>
-                  </a>
-                )}
-                {siteSettings?.youtube_url && (
-                  <a 
-                    href={siteSettings.youtube_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => handleSocialClick("youtube")}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="YouTube"
-                  >
-                    <Youtube className="h-5 w-5" />
-                    <span>YouTube</span>
-                  </a>
-                )}
-                {siteSettings?.github_url && (
-                  <a 
-                    href={siteSettings.github_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => handleSocialClick("github")}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="GitHub"
-                  >
-                    <Github className="h-5 w-5" />
-                    <span>GitHub</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} {siteSettings?.site_name || 'BlogHub'}. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       <style>{`
         .prose {

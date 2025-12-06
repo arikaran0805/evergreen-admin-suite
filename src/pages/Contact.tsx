@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,15 +13,14 @@ const Contact = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <Layout>
       <SEOHead 
         title="Contact Us - Get In Touch"
         description="Have a question or want to work together? Contact BlogHub team through email, phone, or our contact form. We'd love to hear from you."
         keywords="contact, get in touch, email, support, help"
       />
-      <Header />
 
-      <main className="container px-4 py-16">
+      <div className="container px-4 py-16">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Get in Touch</h1>
@@ -117,8 +116,8 @@ const Contact = () => {
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
