@@ -247,7 +247,7 @@ const Index = () => {
       {/* Featured Courses - Clean Card Grid */}
       <section 
         ref={coursesAnimation.ref}
-        className={`py-24 lg:py-32 relative transition-all duration-1000 delay-200 ${
+        className={`py-24 lg:py-32 relative transition-all duration-1000 delay-200 px-4 md:px-8 lg:px-16 ${
           coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
@@ -330,7 +330,7 @@ const Index = () => {
       {/* Journey CTA - Split Layout */}
       <section 
         ref={ctaAnimation.ref}
-        className={`relative py-24 lg:py-32 overflow-hidden transition-all duration-1000 delay-300 ${
+        className={`relative py-24 lg:py-32 overflow-hidden transition-all duration-1000 delay-300 px-4 md:px-8 lg:px-16 ${
           ctaAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
