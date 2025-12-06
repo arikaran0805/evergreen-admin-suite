@@ -44,7 +44,7 @@ const Courses = () => {
         description="Explore all our course categories"
       />
 
-      <div className="container px-4 py-16">
+      <div className="container px-8 md:px-12 lg:px-16 py-16">
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             All Courses
@@ -55,7 +55,7 @@ const Courses = () => {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-96 bg-card rounded-lg animate-pulse" />
             ))}
@@ -70,7 +70,7 @@ const Courses = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {courses.map((course) => (
               <BlogCard key={course.id} {...course} linkType="category" />
             ))}
