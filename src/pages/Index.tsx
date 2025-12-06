@@ -197,7 +197,7 @@ const Index = () => {
                 {heroQuickLinks.map((link) => (
                   <Link
                     key={link.slug}
-                    to={`/courses/${link.slug}`}
+                    to={`/course/${link.slug}`}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       link.highlighted
                         ? 'bg-primary text-primary-foreground hover:bg-primary/90'
@@ -265,7 +265,7 @@ const Index = () => {
             {featuredCourses.map((course, index) => (
               <Link 
                 key={course.id} 
-                to={`/courses/${course.slug}`}
+                to={`/course/${course.slug}`}
                 style={{ transitionDelay: coursesAnimation.isVisible ? `${index * 100}ms` : '0ms' }}
                 className={`group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 ${
                   coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
