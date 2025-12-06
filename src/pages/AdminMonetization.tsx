@@ -44,7 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, DollarSign, Code, Upload, Copy, RefreshCw } from "lucide-react";
+import { Plus, Edit2, Trash2, DollarSign, Code, Upload, Copy, RefreshCw, Megaphone } from "lucide-react";
 import { format } from "date-fns";
 
 interface Ad {
@@ -98,6 +98,13 @@ const AdminMonetization = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ name: string; url: string }[]>([]);
 
+  // Announcement bar settings
+  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState("");
+  const [announcementLinkText, setAnnouncementLinkText] = useState("");
+  const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+
   useEffect(() => {
     checkAdminAccess();
   }, []);
@@ -124,6 +131,42 @@ const AdminMonetization = () => {
 
     fetchAds();
     fetchUploadedImages();
+    fetchAnnouncementSettings();
+  };
+
+  const fetchAnnouncementSettings = async () => {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url")
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && data) {
+      setAnnouncementEnabled(data.announcement_enabled || false);
+      setAnnouncementMessage(data.announcement_message || "");
+      setAnnouncementLinkText(data.announcement_link_text || "");
+      setAnnouncementLinkUrl(data.announcement_link_url || "");
+    }
+  };
+
+  const saveAnnouncementSettings = async () => {
+    setSavingAnnouncement(true);
+    const { error } = await supabase
+      .from("site_settings")
+      .update({
+        announcement_enabled: announcementEnabled,
+        announcement_message: announcementMessage,
+        announcement_link_text: announcementLinkText,
+        announcement_link_url: announcementLinkUrl,
+      })
+      .eq("id", (await supabase.from("site_settings").select("id").limit(1).single()).data?.id);
+
+    if (error) {
+      toast({ title: "Failed to save settings", variant: "destructive" });
+    } else {
+      toast({ title: "Announcement settings saved" });
+    }
+    setSavingAnnouncement(false);
   };
 
   const fetchAds = async () => {
@@ -342,6 +385,10 @@ const AdminMonetization = () => {
             <TabsTrigger value="embed" className="flex items-center gap-2">
               <Code className="h-4 w-4" />
               Embed Code Generator
+            </TabsTrigger>
+            <TabsTrigger value="announcement" className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Announcement Bar
             </TabsTrigger>
           </TabsList>
 
@@ -666,6 +713,91 @@ const AdminMonetization = () => {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Announcement Bar Tab */}
+          <TabsContent value="announcement" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-primary" />
+                  Announcement Bar Settings
+                </CardTitle>
+                <CardDescription>Configure the sticky announcement bar that appears at the top of your site</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
+                  <div className="space-y-0.5">
+                    <Label>Enable Announcement Bar</Label>
+                    <p className="text-sm text-muted-foreground">Show announcement bar to all visitors</p>
+                  </div>
+                  <Switch
+                    checked={announcementEnabled}
+                    onCheckedChange={setAnnouncementEnabled}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="announcement-message">Message</Label>
+                    <Input
+                      id="announcement-message"
+                      value={announcementMessage}
+                      onChange={(e) => setAnnouncementMessage(e.target.value)}
+                      placeholder="🎉 New courses available! Learn the latest skills today."
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Use emojis to make your message stand out</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="announcement-link-text">Link Text (optional)</Label>
+                      <Input
+                        id="announcement-link-text"
+                        value={announcementLinkText}
+                        onChange={(e) => setAnnouncementLinkText(e.target.value)}
+                        placeholder="Explore now →"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="announcement-link-url">Link URL</Label>
+                      <Input
+                        id="announcement-link-url"
+                        value={announcementLinkUrl}
+                        onChange={(e) => setAnnouncementLinkUrl(e.target.value)}
+                        placeholder="/courses"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div className="space-y-2">
+                  <Label>Preview</Label>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm font-medium">
+                      <span>{announcementMessage || "Your announcement message here..."}</span>
+                      {announcementLinkText && (
+                        <span className="ml-2 underline underline-offset-2 font-semibold">
+                          {announcementLinkText}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <Button onClick={saveAnnouncementSettings} disabled={savingAnnouncement}>
+                  {savingAnnouncement ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Announcement Settings"
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
