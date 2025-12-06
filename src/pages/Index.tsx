@@ -219,20 +219,17 @@ const Index = () => {
               </div>
             )}
 
-            {/* CTAs */}
-            <div className="flex flex-wrap justify-center gap-4 pt-4">
+            {/* CTA */}
+            <div className="flex justify-center pt-4">
               <Link to="/courses">
                 <Button size="lg" className="h-14 px-8 text-lg font-bold bg-foreground text-background hover:bg-foreground/90 rounded-full group">
                   <span className="flex items-center gap-2">
-                    Explore Courses
+                    <Compass className="h-5 w-5" />
+                    Find Learning Path
                     <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-full border-2 border-foreground hover:bg-foreground hover:text-background transition-colors">
-                <Compass className="mr-2 h-5 w-5" />
-                Take a Tour
-              </Button>
             </div>
           </div>
         </div>
