@@ -51,7 +51,9 @@ interface Ad {
   id: string;
   name: string;
   placement: string;
-  ad_code: string;
+  ad_code: string | null;
+  image_url: string | null;
+  redirect_url: string | null;
   is_active: boolean;
   start_date: string | null;
   end_date: string | null;
@@ -82,11 +84,14 @@ const AdminMonetization = () => {
     name: "",
     placement: "sidebar",
     ad_code: "",
+    image_url: "",
+    redirect_url: "",
     is_active: true,
     start_date: "",
     end_date: "",
     priority: 0,
   });
+  const [adImageUploading, setAdImageUploading] = useState(false);
 
   // Embed code generator state
   const [embedImageUrl, setEmbedImageUrl] = useState("");
@@ -292,6 +297,8 @@ const AdminMonetization = () => {
       name: "",
       placement: "sidebar",
       ad_code: "",
+      image_url: "",
+      redirect_url: "",
       is_active: true,
       start_date: "",
       end_date: "",
@@ -305,7 +312,9 @@ const AdminMonetization = () => {
     setFormData({
       name: ad.name,
       placement: ad.placement,
-      ad_code: ad.ad_code,
+      ad_code: ad.ad_code || "",
+      image_url: ad.image_url || "",
+      redirect_url: ad.redirect_url || "",
       is_active: ad.is_active,
       start_date: ad.start_date ? ad.start_date.split("T")[0] : "",
       end_date: ad.end_date ? ad.end_date.split("T")[0] : "",
@@ -314,16 +323,57 @@ const AdminMonetization = () => {
     setDialogOpen(true);
   };
 
+  const handleAdImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Please upload a JPG, PNG, GIF, or WebP image", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please upload an image smaller than 5MB", variant: "destructive" });
+      return;
+    }
+
+    setAdImageUploading(true);
+    try {
+      const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+      const { error } = await supabase.storage.from("ad-images").upload(fileName, file);
+      
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage.from("ad-images").getPublicUrl(fileName);
+      setFormData({ ...formData, image_url: publicUrl });
+      
+      toast({ title: "Image uploaded", description: "Ad image uploaded successfully" });
+      fetchUploadedImages();
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    } finally {
+      setAdImageUploading(false);
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.ad_code.trim()) {
-      toast({ title: "Name and Ad Code are required", variant: "destructive" });
+    if (!formData.name.trim()) {
+      toast({ title: "Name is required", variant: "destructive" });
+      return;
+    }
+
+    if (!formData.image_url && !formData.ad_code?.trim()) {
+      toast({ title: "Image URL or Ad Code is required", variant: "destructive" });
       return;
     }
 
     const adData = {
       name: formData.name.trim(),
       placement: formData.placement,
-      ad_code: formData.ad_code,
+      ad_code: formData.ad_code || null,
+      image_url: formData.image_url || null,
+      redirect_url: formData.redirect_url || null,
       is_active: formData.is_active,
       start_date: formData.start_date || null,
       end_date: formData.end_date || null,
@@ -964,17 +1014,68 @@ const AdminMonetization = () => {
               </div>
             </div>
 
+            {/* Image Upload Section */}
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
+              <Label className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Ad Image
+              </Label>
+              <div className="flex gap-4 items-center">
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleAdImageUpload}
+                  disabled={adImageUploading}
+                  className="cursor-pointer"
+                />
+                {adImageUploading && <RefreshCw className="h-5 w-5 animate-spin text-primary" />}
+              </div>
+              <Input
+                placeholder="Or paste image URL directly..."
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              />
+              {formData.image_url && (
+                <div className="mt-2">
+                  <img 
+                    src={formData.image_url} 
+                    alt="Ad preview" 
+                    className="max-h-32 rounded border object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
             <div>
-              <Label htmlFor="ad_code">Ad Code (HTML/JavaScript)</Label>
-              <Textarea
-                id="ad_code"
-                value={formData.ad_code}
-                onChange={(e) => setFormData({ ...formData, ad_code: e.target.value })}
-                placeholder="Paste your ad code here..."
-                rows={6}
-                className="font-mono text-sm"
+              <Label htmlFor="redirect_url">Redirect URL (where to go when clicked)</Label>
+              <Input
+                id="redirect_url"
+                value={formData.redirect_url}
+                onChange={(e) => setFormData({ ...formData, redirect_url: e.target.value })}
+                placeholder="https://example.com/landing-page"
               />
             </div>
+
+            <Separator />
+
+            <details className="text-sm">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                Advanced: Custom HTML/JS Ad Code (optional)
+              </summary>
+              <div className="mt-3">
+                <Textarea
+                  id="ad_code"
+                  value={formData.ad_code}
+                  onChange={(e) => setFormData({ ...formData, ad_code: e.target.value })}
+                  placeholder="Paste custom ad code here (overrides image if provided)..."
+                  rows={4}
+                  className="font-mono text-sm"
+                />
+              </div>
+            </details>
 
             <div className="grid grid-cols-3 gap-4">
               <div>

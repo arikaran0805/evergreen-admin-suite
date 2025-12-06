@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 interface Ad {
   id: string;
   name: string;
-  ad_code: string;
+  ad_code: string | null;
+  image_url: string | null;
+  redirect_url: string | null;
   placement: string;
   priority: number;
 }
@@ -26,7 +28,7 @@ const AdDisplay = ({ placement, className = "" }: AdDisplayProps) => {
     
     const { data, error } = await supabase
       .from("ads")
-      .select("id, name, ad_code, placement, priority")
+      .select("id, name, ad_code, image_url, redirect_url, placement, priority")
       .eq("placement", placement)
       .eq("is_active", true)
       .or(`start_date.is.null,start_date.lte.${now}`)
@@ -42,15 +44,53 @@ const AdDisplay = ({ placement, className = "" }: AdDisplayProps) => {
 
   if (!ad) return null;
 
-  return (
-    <div 
-      className={`ad-container ad-${placement} ${className}`}
-      data-ad-id={ad.id}
-      data-ad-placement={placement}
-    >
-      <div dangerouslySetInnerHTML={{ __html: ad.ad_code }} />
-    </div>
-  );
+  // If there's custom ad code, use that (for AdSense or other scripts)
+  if (ad.ad_code) {
+    return (
+      <div 
+        className={`ad-container ad-${placement} ${className}`}
+        data-ad-id={ad.id}
+        data-ad-placement={placement}
+      >
+        <div dangerouslySetInnerHTML={{ __html: ad.ad_code }} />
+      </div>
+    );
+  }
+
+  // Otherwise, render image ad with optional redirect
+  if (ad.image_url) {
+    const imageElement = (
+      <img 
+        src={ad.image_url} 
+        alt={ad.name || "Advertisement"} 
+        className="max-w-full h-auto"
+        loading="lazy"
+      />
+    );
+
+    return (
+      <div 
+        className={`ad-container ad-${placement} ${className}`}
+        data-ad-id={ad.id}
+        data-ad-placement={placement}
+      >
+        {ad.redirect_url ? (
+          <a 
+            href={ad.redirect_url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block"
+          >
+            {imageElement}
+          </a>
+        ) : (
+          imageElement
+        )}
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default AdDisplay;
