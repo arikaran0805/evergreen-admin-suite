@@ -126,27 +126,27 @@ const Header = () => {
       {/* Primary Header */}
       <div className="bg-background border-b border-border">
         <div className="container mx-auto px-6 lg:px-12">
-          <div className="flex h-14 items-center justify-between">
+          <div className="flex h-16 items-center justify-between">
             {/* Logo and Brand */}
             <Link to="/" className="flex items-center gap-3 group relative">
               {siteSettings.logo_url ? (
                 <img 
                   src={siteSettings.logo_url} 
                   alt={siteSettings.site_name} 
-                  className="h-10 w-auto transition-all duration-300 group-hover:scale-110" 
+                  className="h-12 w-auto transition-all duration-300 group-hover:scale-105" 
                 />
               ) : (
                 <>
                   <div className="relative">
                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full transition-all duration-300 group-hover:bg-primary/40" />
-                    <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                      <span className="text-xl font-black text-primary-foreground tracking-tight">
+                    <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                      <span className="text-2xl font-black text-primary-foreground tracking-tight">
                         {siteSettings.site_name.charAt(0)}
                       </span>
                     </div>
                   </div>
                   <div className="hidden sm:flex flex-col">
-                    <span className="text-lg font-black tracking-tight text-foreground">
+                    <span className="text-xl font-black tracking-tight text-foreground">
                       {siteSettings.site_name}
                     </span>
                     <span className="text-[10px] font-medium tracking-[0.2em] text-muted-foreground uppercase">
@@ -157,15 +157,15 @@ const Header = () => {
               )}
             </Link>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-2">
+            {/* Right Side Actions - Positioned closer */}
+            <div className="flex items-center gap-1">
               {/* Search Button */}
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative h-9 w-9 rounded-lg hover:bg-primary/10 transition-all duration-300 group"
+                className="relative h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
               >
-                <Search className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                <Search className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-primary" />
               </Button>
               
               {/* Theme Toggle */}
@@ -184,9 +184,9 @@ const Header = () => {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-9 w-9 rounded-lg hover:bg-primary/10 transition-all duration-300"
+                        className="h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
                       >
-                        <User className="h-4 w-4" />
+                        <User className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-primary" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
@@ -237,9 +237,9 @@ const Header = () => {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-9 w-9 rounded-lg hover:bg-primary/10"
+                    className="h-10 w-10 rounded-xl hover:bg-primary/10 group"
                   >
-                    <Menu className="h-4 w-4" />
+                    <Menu className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-primary" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 border-l border-border/50">
