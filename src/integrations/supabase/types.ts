@@ -43,38 +43,44 @@ export type Database = {
       }
       ads: {
         Row: {
-          ad_code: string
+          ad_code: string | null
           created_at: string
           end_date: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           name: string
           placement: string
           priority: number
+          redirect_url: string | null
           start_date: string | null
           updated_at: string
         }
         Insert: {
-          ad_code: string
+          ad_code?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name: string
           placement: string
           priority?: number
+          redirect_url?: string | null
           start_date?: string | null
           updated_at?: string
         }
         Update: {
-          ad_code?: string
+          ad_code?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name?: string
           placement?: string
           priority?: number
+          redirect_url?: string | null
           start_date?: string | null
           updated_at?: string
         }
