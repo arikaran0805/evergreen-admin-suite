@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { SearchDialog } from "./SearchDialog";
 
 interface SiteSettings {
   site_name: string;
@@ -27,6 +28,7 @@ const Header = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({ site_name: "BlogHub" });
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -163,10 +165,14 @@ const Header = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
+                onClick={() => setSearchOpen(true)}
                 className="relative h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300 group"
               >
                 <Search className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-primary" />
               </Button>
+
+              {/* Search Dialog */}
+              <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
               
               {/* Theme Toggle */}
               <ThemeToggle />
