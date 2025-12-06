@@ -44,8 +44,8 @@ const Courses = () => {
         description="Explore all our course categories"
       />
 
-      <div className="container px-8 md:px-12 lg:px-16 py-16">
-        <div className="max-w-4xl mx-auto text-center mb-12">
+      <div className="container px-12 md:px-16 lg:px-24 py-16">
+        <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             All Courses
           </h1>
