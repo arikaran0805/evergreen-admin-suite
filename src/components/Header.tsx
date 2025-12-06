@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Menu, User, LogOut } from "lucide-react";
+import AdDisplay from "@/components/AdDisplay";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -163,8 +164,10 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
               )}
             </Link>
 
-            {/* Spacer to push icons to the right */}
-            <div className="flex-1" />
+            {/* Header Ad Placement */}
+            <div className="hidden lg:flex flex-1 justify-center">
+              <AdDisplay placement="header-banner" className="max-h-[60px]" />
+            </div>
 
             {/* Right Side Actions - Positioned to rightmost side */}
             <div className="flex items-center gap-1">
