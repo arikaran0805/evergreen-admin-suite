@@ -247,7 +247,7 @@ const Index = () => {
       {/* Featured Courses - Clean Card Grid */}
       <section 
         ref={coursesAnimation.ref}
-        className={`py-24 lg:py-32 relative transition-all duration-1000 delay-200 px-6 md:px-16 lg:px-32 xl:px-52 ${
+        className={`py-12 lg:py-16 relative transition-all duration-1000 delay-200 px-6 md:px-16 lg:px-32 xl:px-52 ${
           coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
@@ -330,7 +330,7 @@ const Index = () => {
       {/* Journey CTA - Split Layout */}
       <section 
         ref={ctaAnimation.ref}
-        className={`relative py-24 lg:py-32 overflow-hidden transition-all duration-1000 delay-300 px-6 md:px-16 lg:px-32 xl:px-52 ${
+        className={`relative py-12 lg:py-16 overflow-hidden transition-all duration-1000 delay-300 px-6 md:px-16 lg:px-32 xl:px-52 ${
           ctaAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
         }`}
       >
@@ -454,7 +454,7 @@ const Index = () => {
       >
         <div className="container px-4">
           {/* Main Footer */}
-          <div className="py-20 grid grid-cols-1 md:grid-cols-12 gap-12">
+          <div className="py-12 grid grid-cols-1 md:grid-cols-12 gap-12">
             {/* Brand Column */}
             <div className="md:col-span-4 space-y-6">
               <div className="flex items-center gap-3">
