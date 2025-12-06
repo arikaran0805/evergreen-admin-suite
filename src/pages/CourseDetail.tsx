@@ -677,12 +677,12 @@ const CourseDetail = () => {
       <Header />
 
       {/* 3-Column Layout */}
-      <div className="w-full">
+      <div className="w-full pt-20">
         <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:w-64 bg-green-50 border-r border-green-100 flex-shrink-0">
-            <div className="sticky top-4">
+            <div className="sticky top-24">
               <div className="px-6 py-4 border-b border-green-100 bg-green-100/50">
                 <div 
                   className="flex items-center gap-2 cursor-pointer hover:text-green-700 transition-colors"
