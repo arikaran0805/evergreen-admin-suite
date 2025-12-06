@@ -11,17 +11,11 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 const Index = () => {
   const navigate = useNavigate();
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
-  const [footerCategories, setFooterCategories] = useState<any[]>([]);
-  const [siteName, setSiteName] = useState("EmojiLearn");
-  const [siteDescription, setSiteDescription] = useState("Learn through visuals that stick.");
   const [heroHeadline, setHeroHeadline] = useState("Master Any Subject");
   const [heroSubheadline, setHeroSubheadline] = useState("Learn through emojis, visuals, and stories that spark clarity and deeper understanding.");
   const [heroHighlightText, setHeroHighlightText] = useState("Any Subject");
   const [heroHighlightColor, setHeroHighlightColor] = useState("#10b981");
   const [searchQuery, setSearchQuery] = useState("");
-  const [socialLinks, setSocialLinks] = useState({
-    twitter: "", facebook: "", instagram: "", linkedin: "", youtube: "", github: "",
-  });
   const [placeholder, setPlaceholder] = useState("");
   const [placeholderTexts, setPlaceholderTexts] = useState<string[]>(["Search courses...", "Find lessons...", "Explore topics...", "Learn something new..."]);
   const [heroQuickLinks, setHeroQuickLinks] = useState<{label: string; slug: string; highlighted: boolean}[]>([]);
@@ -67,11 +61,9 @@ const Index = () => {
   const heroAnimation = useScrollAnimation({ threshold: 0.2 });
   const coursesAnimation = useScrollAnimation({ threshold: 0.1 });
   const ctaAnimation = useScrollAnimation({ threshold: 0.2 });
-  const footerAnimation = useScrollAnimation({ threshold: 0.1 });
 
   useEffect(() => {
     fetchFeaturedCourses();
-    fetchFooterCategories();
     fetchSiteSettings();
   }, []);
 
@@ -95,25 +87,14 @@ const Index = () => {
     }
   };
 
-  const fetchFooterCategories = async () => {
-    const { data, error } = await supabase
-      .from('courses')
-      .select('name, slug')
-      .order('created_at', { ascending: false })
-      .limit(5);
-    if (!error && data) setFooterCategories(data);
-  };
-
   const fetchSiteSettings = async () => {
     const { data } = await supabase
       .from('site_settings')
-      .select('site_name, site_description, hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, twitter_url, facebook_url, instagram_url, linkedin_url, youtube_url, github_url, search_placeholders, hero_quick_links')
+      .select('hero_headline, hero_subheadline, hero_highlight_text, hero_highlight_color, search_placeholders, hero_quick_links')
       .limit(1)
       .maybeSingle();
     
     if (data) {
-      setSiteName(data.site_name || "EmojiLearn");
-      setSiteDescription(data.site_description || "Learn through visuals that stick.");
       setHeroHeadline(data.hero_headline || "Master Any Subject");
       setHeroSubheadline(data.hero_subheadline || "Learn through emojis, visuals, and stories that spark clarity and deeper understanding.");
       setHeroHighlightText(data.hero_highlight_text || "Any Subject");
@@ -124,14 +105,6 @@ const Index = () => {
       if ((data as any).hero_quick_links && (data as any).hero_quick_links.length > 0) {
         setHeroQuickLinks((data as any).hero_quick_links);
       }
-      setSocialLinks({
-        twitter: data.twitter_url || "",
-        facebook: data.facebook_url || "",
-        instagram: data.instagram_url || "",
-        linkedin: data.linkedin_url || "",
-        youtube: data.youtube_url || "",
-        github: data.github_url || "",
-      });
     }
   };
 
