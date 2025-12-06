@@ -131,7 +131,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
     <header className={`fixed left-0 right-0 z-50 transition-all duration-300 ${announcementVisible ? 'top-9' : 'top-0'}`}>
       {/* Primary Header */}
       <div className="bg-background border-b border-border">
-        <div className="w-full px-4">
+        <div className="container mx-auto px-6 lg:px-12">
           <div className="flex h-16 items-center justify-between">
             {/* Logo and Brand */}
             <Link to="/" className="flex items-center gap-3 group relative">
@@ -341,7 +341,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
 
       {/* Secondary Header - Courses Navigation */}
       <div className="hidden lg:block bg-muted border-b border-border">
-        <div className="w-full px-4">
+        <div className="container mx-auto px-6 lg:px-12">
           <nav className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
             {courses.map((course) => (
               <Link
