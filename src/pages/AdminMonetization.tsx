@@ -104,6 +104,8 @@ const AdminMonetization = () => {
   const [announcementLinkText, setAnnouncementLinkText] = useState("");
   const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
   const [announcementBgColor, setAnnouncementBgColor] = useState("#22c55e");
+  const [announcementStartDate, setAnnouncementStartDate] = useState("");
+  const [announcementEndDate, setAnnouncementEndDate] = useState("");
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
 
   useEffect(() => {
@@ -138,7 +140,7 @@ const AdminMonetization = () => {
   const fetchAnnouncementSettings = async () => {
     const { data, error } = await supabase
       .from("site_settings")
-      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color")
+      .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color, announcement_start_date, announcement_end_date")
       .limit(1)
       .maybeSingle();
 
@@ -148,6 +150,8 @@ const AdminMonetization = () => {
       setAnnouncementLinkText(data.announcement_link_text || "");
       setAnnouncementLinkUrl(data.announcement_link_url || "");
       setAnnouncementBgColor(data.announcement_bg_color || "#22c55e");
+      setAnnouncementStartDate(data.announcement_start_date ? data.announcement_start_date.split("T")[0] : "");
+      setAnnouncementEndDate(data.announcement_end_date ? data.announcement_end_date.split("T")[0] : "");
     }
   };
 
@@ -161,6 +165,8 @@ const AdminMonetization = () => {
         announcement_link_text: announcementLinkText,
         announcement_link_url: announcementLinkUrl,
         announcement_bg_color: announcementBgColor,
+        announcement_start_date: announcementStartDate || null,
+        announcement_end_date: announcementEndDate || null,
       })
       .eq("id", (await supabase.from("site_settings").select("id").limit(1).single()).data?.id);
 
@@ -793,6 +799,34 @@ const AdminMonetization = () => {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Choose a background color for the announcement bar</p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label>Scheduling (Optional)</Label>
+                    <p className="text-xs text-muted-foreground">Set start and end dates to automatically show/hide the announcement</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="announcement-start-date">Start Date</Label>
+                        <Input
+                          id="announcement-start-date"
+                          type="date"
+                          value={announcementStartDate}
+                          onChange={(e) => setAnnouncementStartDate(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="announcement-end-date">End Date</Label>
+                        <Input
+                          id="announcement-end-date"
+                          type="date"
+                          value={announcementEndDate}
+                          onChange={(e) => setAnnouncementEndDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Leave empty to show the announcement indefinitely when enabled</p>
                   </div>
                 </div>
 

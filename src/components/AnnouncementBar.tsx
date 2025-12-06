@@ -10,6 +10,8 @@ interface AnnouncementSettings {
   announcement_link_text: string | null;
   announcement_link_url: string | null;
   announcement_bg_color: string | null;
+  announcement_start_date: string | null;
+  announcement_end_date: string | null;
 }
 
 interface AnnouncementBarProps {
@@ -24,13 +26,23 @@ export const AnnouncementBar = ({ onVisibilityChange }: AnnouncementBarProps) =>
     const fetchSettings = async () => {
       const { data } = await supabase
         .from("site_settings")
-        .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color")
+        .select("announcement_enabled, announcement_message, announcement_link_text, announcement_link_url, announcement_bg_color, announcement_start_date, announcement_end_date")
         .limit(1)
         .maybeSingle();
 
       if (data) {
         setSettings(data);
-        const visible = data.announcement_enabled && !!data.announcement_message;
+        
+        // Check if announcement should be visible based on scheduling
+        const now = new Date();
+        const startDate = data.announcement_start_date ? new Date(data.announcement_start_date) : null;
+        const endDate = data.announcement_end_date ? new Date(data.announcement_end_date) : null;
+        
+        let withinSchedule = true;
+        if (startDate && now < startDate) withinSchedule = false;
+        if (endDate && now > endDate) withinSchedule = false;
+        
+        const visible = data.announcement_enabled && !!data.announcement_message && withinSchedule;
         setIsVisible(visible);
         onVisibilityChange?.(visible);
       }

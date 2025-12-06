@@ -708,9 +708,11 @@ export type Database = {
         Row: {
           announcement_bg_color: string | null
           announcement_enabled: boolean | null
+          announcement_end_date: string | null
           announcement_link_text: string | null
           announcement_link_url: string | null
           announcement_message: string | null
+          announcement_start_date: string | null
           created_at: string
           facebook_url: string | null
           github_url: string | null
@@ -747,9 +749,11 @@ export type Database = {
         Insert: {
           announcement_bg_color?: string | null
           announcement_enabled?: boolean | null
+          announcement_end_date?: string | null
           announcement_link_text?: string | null
           announcement_link_url?: string | null
           announcement_message?: string | null
+          announcement_start_date?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
@@ -786,9 +790,11 @@ export type Database = {
         Update: {
           announcement_bg_color?: string | null
           announcement_enabled?: boolean | null
+          announcement_end_date?: string | null
           announcement_link_text?: string | null
           announcement_link_url?: string | null
           announcement_message?: string | null
+          announcement_start_date?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
