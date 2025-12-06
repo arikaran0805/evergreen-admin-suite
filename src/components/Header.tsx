@@ -130,7 +130,7 @@ const Header = () => {
       }`}
     >
       {/* Primary Header */}
-      <div className="border-b border-border/30">
+      <div className="border-b border-border">
         <div className="container mx-auto px-6 lg:px-12">
           <div className="flex h-16 items-center justify-between">
             {/* Logo and Brand */}
