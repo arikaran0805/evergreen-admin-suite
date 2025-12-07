@@ -25,12 +25,8 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
   // Use actual rating or show nothing if no reviews
   const displayRating = rating && rating > 0 ? rating.toFixed(1) : null;
   
-  // Level icons config
-  const levelConfig = {
-    Beginner: { icon: Sparkles },
-    Intermediate: { icon: TrendingUp },
-    Advanced: { icon: Flame },
-  };
+  // Check if level is valid
+  const validLevels = ["Beginner", "Intermediate", "Advanced"];
 
   const CardContent = (
     <Card className="group overflow-hidden border border-primary/10 hover:border-primary/30 transition-all duration-500 bg-gradient-to-br from-primary/5 via-background to-background hover:shadow-[0_20px_50px_hsl(var(--primary)/0.15)] backdrop-blur-sm hover:-translate-y-2 hover:scale-[1.02] cursor-pointer h-full flex flex-col">
@@ -75,25 +71,25 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
           dangerouslySetInnerHTML={{ __html: excerpt }}
         />
 
-        {/* Level Display Below Description */}
-        {level && levelConfig[level] && (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            {(() => {
-              const LevelIcon = levelConfig[level].icon;
-              return (
-                <>
-                  <LevelIcon className="h-4 w-4" />
-                  <span>{level}</span>
-                </>
-              );
-            })()}
-          </div>
-        )}
+        {/* Level and Get Started Row */}
+        <div className="flex items-center justify-between mt-auto">
+          {/* Level Display - Left */}
+          {level && validLevels.includes(level) ? (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              {level === "Beginner" && <Sparkles className="h-4 w-4" />}
+              {level === "Intermediate" && <TrendingUp className="h-4 w-4" />}
+              {level === "Advanced" && <Flame className="h-4 w-4" />}
+              <span>{level}</span>
+            </div>
+          ) : (
+            <div />
+          )}
 
-        {/* Get Started Text Link */}
-        <div className="flex items-center gap-1 text-primary font-medium group-hover:gap-2 transition-all duration-300 mt-auto">
-          <span>Get Started</span>
-          <ArrowRight className="h-4 w-4" />
+          {/* Get Started Text Link - Right */}
+          <div className="flex items-center gap-1 text-primary font-medium group-hover:gap-2 transition-all duration-300">
+            <span>Get Started</span>
+            <ArrowRight className="h-4 w-4" />
+          </div>
         </div>
       </div>
     </Card>

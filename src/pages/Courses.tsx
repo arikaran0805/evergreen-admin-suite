@@ -17,6 +17,7 @@ interface CourseWithStats {
   date: string;
   author: string;
   slug: string;
+  level?: "Beginner" | "Intermediate" | "Advanced";
   enrollmentCount: number;
   averageRating: number;
   reviewCount: number;
@@ -163,6 +164,7 @@ const Courses = () => {
                 linkType="category"
                 views={course.enrollmentCount}
                 rating={course.averageRating}
+                level={course.level}
               />
             ))}
           </div>
