@@ -23,6 +23,9 @@ interface Bookmark {
     excerpt: string | null;
     featured_image: string | null;
     category_id: string | null;
+    courses?: {
+      slug: string;
+    } | null;
   } | null;
 }
 
@@ -65,7 +68,10 @@ export const useBookmarks = () => {
             slug,
             excerpt,
             featured_image,
-            category_id
+            category_id,
+            courses:category_id (
+              slug
+            )
           )
         `)
         .eq('user_id', uid)
@@ -144,7 +150,10 @@ export const useBookmarks = () => {
               slug,
               excerpt,
               featured_image,
-              category_id
+              category_id,
+              courses:category_id (
+                slug
+              )
             )
           `)
           .single();
