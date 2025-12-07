@@ -8,8 +8,22 @@ import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+interface CourseWithStats {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  image: string;
+  date: string;
+  author: string;
+  slug: string;
+  enrollmentCount: number;
+  averageRating: number;
+  reviewCount: number;
+}
+
 const Courses = () => {
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<CourseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -22,21 +36,46 @@ const Courses = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('courses')
-      .select('id, name, slug, description, featured_image')
+      .select('id, name, slug, description, featured_image, level')
       .order('name', { ascending: true });
 
     if (!error && data) {
-      const formattedCourses = data.map((category: any) => ({
-        id: category.id,
-        title: category.name,
-        excerpt: category.description || 'Explore this course and learn new skills',
-        category: category.name,
-        image: category.featured_image || '/placeholder.svg',
-        date: 'Course',
-        author: 'Emojilearn Team',
-        slug: category.slug
-      }));
-      setCourses(formattedCourses);
+      // Fetch enrollment counts and ratings for each course
+      const coursesWithStats = await Promise.all(
+        data.map(async (course: any) => {
+          // Get enrollment count
+          const { count: enrollmentCount } = await supabase
+            .from("course_enrollments")
+            .select("*", { count: "exact", head: true })
+            .eq("course_id", course.id);
+
+          // Get reviews for average rating
+          const { data: reviews } = await supabase
+            .from("course_reviews")
+            .select("rating")
+            .eq("course_id", course.id);
+
+          const averageRating = reviews && reviews.length > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            : 0;
+
+          return {
+            id: course.id,
+            title: course.name,
+            excerpt: course.description || 'Explore this course and learn new skills',
+            category: course.name,
+            image: course.featured_image || '/placeholder.svg',
+            date: 'Course',
+            author: 'Emojilearn Team',
+            slug: course.slug,
+            level: course.level,
+            enrollmentCount: enrollmentCount || 0,
+            averageRating,
+            reviewCount: reviews?.length || 0,
+          };
+        })
+      );
+      setCourses(coursesWithStats);
     }
     setLoading(false);
   };
@@ -118,7 +157,13 @@ const Courses = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCourses.map((course) => (
-              <BlogCard key={course.id} {...course} linkType="category" />
+              <BlogCard 
+                key={course.id} 
+                {...course} 
+                linkType="category"
+                views={course.enrollmentCount}
+                rating={course.averageRating}
+              />
             ))}
           </div>
         )}
