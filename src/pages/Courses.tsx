@@ -17,7 +17,7 @@ interface CourseWithStats {
   date: string;
   author: string;
   slug: string;
-  level?: "Beginner" | "Intermediate" | "Advanced";
+  level?: string;
   enrollmentCount: number;
   averageRating: number;
   reviewCount: number;
