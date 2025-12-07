@@ -520,13 +520,13 @@ const Profile = () => {
                       <CardContent className="p-4 flex items-center gap-4">
                         <div 
                           className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 cursor-pointer"
-                          onClick={() => navigate(`/course/${bookmark.posts?.category_id}?lesson=${bookmark.posts?.slug}`)}
+                          onClick={() => navigate(`/course/${bookmark.posts?.courses?.slug}?lesson=${bookmark.posts?.slug}`)}
                         >
                           <FileText className="h-6 w-6 text-primary" />
                         </div>
                         <div 
                           className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => navigate(`/course/${bookmark.posts?.category_id}?lesson=${bookmark.posts?.slug}`)}
+                          onClick={() => navigate(`/course/${bookmark.posts?.courses?.slug}?lesson=${bookmark.posts?.slug}`)}
                         >
                           <h4 className="font-semibold truncate">{bookmark.posts?.title}</h4>
                           <p className="text-sm text-muted-foreground line-clamp-1">
