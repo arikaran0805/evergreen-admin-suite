@@ -732,7 +732,7 @@ const CourseDetail = () => {
             <div className={`sticky ${showAnnouncement ? 'top-32' : 'top-24'}`}>
               <div className="px-6 py-4 border-b border-green-100 bg-green-100/50">
                 <div 
-                  className="flex items-center gap-2 cursor-pointer hover:text-green-700 transition-colors"
+                  className="flex items-center justify-center gap-2 cursor-pointer hover:text-green-700 transition-colors"
                   onClick={() => setSelectedPost(null)}
                 >
                   <BookOpen className="h-5 w-5 text-green-700" />
