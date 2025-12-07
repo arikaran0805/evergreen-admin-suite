@@ -80,7 +80,7 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
         </div>
 
         <div 
-          className="text-sm text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground/80 transition-colors duration-300 flex-1 prose prose-sm max-w-none"
+          className="text-sm text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground/80 transition-colors duration-300 h-[4.5rem] prose prose-sm max-w-none"
           dangerouslySetInnerHTML={{ __html: excerpt }}
         />
 
