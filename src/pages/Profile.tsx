@@ -10,12 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import Layout from "@/components/Layout";
 import { z } from "zod";
 import { 
   LayoutDashboard, 
   BookOpen, 
   Bookmark, 
+  BookmarkX,
   MessageSquare, 
   Settings, 
   Award,
@@ -26,7 +28,8 @@ import {
   User,
   Bell,
   Shield,
-  LogOut
+  LogOut,
+  FileText
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -67,6 +70,7 @@ const Profile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
 
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
@@ -426,18 +430,137 @@ const Profile = () => {
     </div>
   );
 
-  const renderBookmarks = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Bookmarks</h2>
-      <Card>
-        <CardContent className="text-center py-12">
-          <Bookmark className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No bookmarks yet</h3>
-          <p className="text-muted-foreground">Save lessons and courses for quick access.</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const renderBookmarks = () => {
+    const courseBookmarks = bookmarks.filter(b => b.course_id);
+    const lessonBookmarks = bookmarks.filter(b => b.post_id);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Bookmarks</h2>
+          <Badge variant="secondary">{bookmarks.length} Saved</Badge>
+        </div>
+        
+        {bookmarksLoading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading bookmarks...</p>
+          </div>
+        ) : bookmarks.length > 0 ? (
+          <div className="space-y-6">
+            {/* Course Bookmarks */}
+            {courseBookmarks.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Courses ({courseBookmarks.length})
+                </h3>
+                <div className="grid gap-4">
+                  {courseBookmarks.map((bookmark) => (
+                    <Card 
+                      key={bookmark.id}
+                      className="hover:shadow-md transition-shadow"
+                    >
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div 
+                          className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/course/${bookmark.courses?.slug}`)}
+                        >
+                          {bookmark.courses?.featured_image ? (
+                            <img 
+                              src={bookmark.courses.featured_image} 
+                              alt={bookmark.courses.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => navigate(`/course/${bookmark.courses?.slug}`)}
+                        >
+                          <h4 className="font-semibold truncate">{bookmark.courses?.name}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {bookmark.courses?.description || 'No description'}
+                          </p>
+                          <Badge variant="outline" className="mt-1">
+                            {bookmark.courses?.level || 'Beginner'}
+                          </Badge>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => toggleBookmark(bookmark.course_id || undefined)}
+                          className="flex-shrink-0"
+                        >
+                          <BookmarkX className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lesson Bookmarks */}
+            {lessonBookmarks.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Lessons ({lessonBookmarks.length})
+                </h3>
+                <div className="grid gap-4">
+                  {lessonBookmarks.map((bookmark) => (
+                    <Card 
+                      key={bookmark.id}
+                      className="hover:shadow-md transition-shadow"
+                    >
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div 
+                          className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/course/${bookmark.posts?.category_id}?lesson=${bookmark.posts?.slug}`)}
+                        >
+                          <FileText className="h-6 w-6 text-primary" />
+                        </div>
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => navigate(`/course/${bookmark.posts?.category_id}?lesson=${bookmark.posts?.slug}`)}
+                        >
+                          <h4 className="font-semibold truncate">{bookmark.posts?.title}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {bookmark.posts?.excerpt || 'No description'}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => toggleBookmark(undefined, bookmark.post_id || undefined)}
+                          className="flex-shrink-0"
+                        >
+                          <BookmarkX className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Bookmark className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No bookmarks yet</h3>
+              <p className="text-muted-foreground mb-4">Save lessons and courses for quick access.</p>
+              <Button onClick={() => navigate('/courses')}>Browse Courses</Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
 
   const renderDiscussions = () => (
     <div className="space-y-6">

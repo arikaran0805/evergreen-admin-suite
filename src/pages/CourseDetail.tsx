@@ -9,13 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdSettings } from "@/hooks/useAdSettings";
 import { useCourseStats } from "@/hooks/useCourseStats";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import CourseReviewDialog from "@/components/CourseReviewDialog";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, Flag, Edit, Star, UserPlus, UserCheck } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -109,6 +110,7 @@ const CourseDetail = () => {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
+  const { isBookmarked, toggleBookmark } = useBookmarks();
   const [showAnnouncement, setShowAnnouncement] = useState(false);
 
   // Course stats hook
@@ -914,6 +916,25 @@ const CourseDetail = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 hover:bg-transparent"
+                                onClick={() => toggleBookmark(undefined, selectedPost?.id)}
+                              >
+                                {isBookmarked(undefined, selectedPost?.id) ? (
+                                  <BookmarkCheck className="h-5 w-5 text-primary fill-primary" />
+                                ) : (
+                                  <Bookmark className="h-5 w-5 text-foreground" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{isBookmarked(undefined, selectedPost?.id) ? 'Remove bookmark' : 'Add bookmark'}</p>
+                            </TooltipContent>
+                          </Tooltip>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
@@ -925,10 +946,6 @@ const CourseDetail = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Bookmark className="mr-2 h-4 w-4" />
-                                <span>Bookmark</span>
-                              </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Flag className="mr-2 h-4 w-4" />
                                 <span>Report</span>
@@ -1148,6 +1165,22 @@ const CourseDetail = () => {
                             {enrolling ? "Enrolling..." : "Enroll Now"}
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          onClick={() => toggleBookmark(course?.id)}
+                        >
+                          {isBookmarked(course?.id) ? (
+                            <>
+                              <BookmarkCheck className="h-4 w-4 mr-2 text-primary" />
+                              Saved
+                            </>
+                          ) : (
+                            <>
+                              <Bookmark className="h-4 w-4 mr-2" />
+                              Save Course
+                            </>
+                          )}
+                        </Button>
                         <CourseReviewDialog
                           reviews={courseReviews}
                           averageRating={courseStats.averageRating}
