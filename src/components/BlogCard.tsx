@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowRight, Star } from "lucide-react";
+import { Users, ArrowRight, Star, Sparkles, TrendingUp, Flame } from "lucide-react";
 
 interface BlogCardProps {
   title: string;
@@ -27,11 +27,11 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
   // Use actual rating or show nothing if no reviews
   const displayRating = rating && rating > 0 ? rating.toFixed(1) : null;
   
-  // Level badge colors
-  const levelColors = {
-    Beginner: "bg-green-500/90 hover:bg-green-500",
-    Intermediate: "bg-orange-500/90 hover:bg-orange-500",
-    Advanced: "bg-red-500/90 hover:bg-red-500",
+  // Level badge colors and icons
+  const levelConfig = {
+    Beginner: { color: "bg-green-500/90 hover:bg-green-500", icon: Sparkles },
+    Intermediate: { color: "bg-orange-500/90 hover:bg-orange-500", icon: TrendingUp },
+    Advanced: { color: "bg-red-500/90 hover:bg-red-500", icon: Flame },
   };
 
   const CardContent = (
@@ -47,15 +47,6 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
         
         {/* Shimmer Effect */}
         <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        
-        {/* Course Name Badge in Top Left - Only for Courses */}
-        {linkType === "category" && (
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-background/90 text-foreground border-0 shadow-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300 font-semibold">
-              {title}
-            </Badge>
-          </div>
-        )}
       </div>
 
       {/* Content */}
@@ -87,11 +78,17 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
         />
 
         {/* Level Badge Below Description - Only for Courses */}
-        {level && linkType === "category" && (
+        {level && linkType === "category" && levelConfig[level] && (
           <div className="flex justify-start">
-            <Badge className={`${levelColors[level]} text-white border-0 shadow-md`}>
-              {level}
-            </Badge>
+            {(() => {
+              const LevelIcon = levelConfig[level].icon;
+              return (
+                <Badge className={`${levelConfig[level].color} text-white border-0 shadow-md flex items-center gap-1.5`}>
+                  <LevelIcon className="h-3.5 w-3.5" />
+                  {level}
+                </Badge>
+              );
+            })()}
           </div>
         )}
 
