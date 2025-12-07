@@ -88,7 +88,15 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
         <div className="flex items-center justify-between mt-auto">
           {/* Level Display - Left */}
           {level ? (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground group-hover:text-primary transition-colors duration-300">
+            <div className={`flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 ${
+              level.toLowerCase().includes("beginner") && !level.toLowerCase().includes("intermediate") && !level.toLowerCase().includes("advanced")
+                ? "group-hover:text-emerald-500"
+                : level.toLowerCase().includes("intermediate") && !level.toLowerCase().includes("beginner") && !level.toLowerCase().includes("advanced")
+                  ? "group-hover:text-amber-500"
+                  : level.toLowerCase().includes("advanced") && !level.toLowerCase().includes("beginner") && !level.toLowerCase().includes("intermediate")
+                    ? "group-hover:text-red-500"
+                    : "group-hover:text-purple-500"
+            }`}>
               {getLevelIcon()}
               <span>{level}</span>
             </div>
