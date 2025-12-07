@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Users, ArrowRight, Star, Sparkles, TrendingUp, Flame } from "lucide-react";
+import { Users, ArrowRight, Star, Sparkles, TrendingUp, Flame, Layers } from "lucide-react";
 
 interface BlogCardProps {
   title: string;
@@ -14,7 +14,7 @@ interface BlogCardProps {
   views?: number;
   linkType?: "blog" | "category" | "lesson";
   rating?: number;
-  level?: "Beginner" | "Intermediate" | "Advanced";
+  level?: string;
 }
 
 const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonSlug, views = 0, linkType = "blog", rating, level }: BlogCardProps) => {
@@ -25,8 +25,21 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
   // Use actual rating or show nothing if no reviews
   const displayRating = rating && rating > 0 ? rating.toFixed(1) : null;
   
-  // Check if level is valid
-  const validLevels = ["Beginner", "Intermediate", "Advanced"];
+  // Get icon for level
+  const getLevelIcon = () => {
+    if (!level) return null;
+    if (level.toLowerCase().includes("beginner") && !level.toLowerCase().includes("intermediate") && !level.toLowerCase().includes("advanced")) {
+      return <Sparkles className="h-4 w-4" />;
+    }
+    if (level.toLowerCase().includes("intermediate") && !level.toLowerCase().includes("beginner") && !level.toLowerCase().includes("advanced")) {
+      return <TrendingUp className="h-4 w-4" />;
+    }
+    if (level.toLowerCase().includes("advanced") && !level.toLowerCase().includes("beginner") && !level.toLowerCase().includes("intermediate")) {
+      return <Flame className="h-4 w-4" />;
+    }
+    // For mixed levels like "Beginner - Advanced"
+    return <Layers className="h-4 w-4" />;
+  };
 
   const CardContent = (
     <Card className="group overflow-hidden border border-primary/10 hover:border-primary/30 transition-all duration-500 bg-gradient-to-br from-primary/5 via-background to-background hover:shadow-[0_20px_50px_hsl(var(--primary)/0.15)] backdrop-blur-sm hover:-translate-y-2 hover:scale-[1.02] cursor-pointer h-full flex flex-col">
@@ -74,11 +87,9 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
         {/* Level and Get Started Row */}
         <div className="flex items-center justify-between mt-auto">
           {/* Level Display - Left */}
-          {level && validLevels.includes(level) ? (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              {level === "Beginner" && <Sparkles className="h-4 w-4" />}
-              {level === "Intermediate" && <TrendingUp className="h-4 w-4" />}
-              {level === "Advanced" && <Flame className="h-4 w-4" />}
+          {level ? (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground group-hover:text-primary transition-colors duration-300">
+              {getLevelIcon()}
               <span>{level}</span>
             </div>
           ) : (
