@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Users, ArrowRight, Star, Sparkles, TrendingUp, Flame } from "lucide-react";
 
 interface BlogCardProps {
@@ -27,11 +25,11 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
   // Use actual rating or show nothing if no reviews
   const displayRating = rating && rating > 0 ? rating.toFixed(1) : null;
   
-  // Level badge colors and icons
+  // Level icons config
   const levelConfig = {
-    Beginner: { color: "bg-green-500/90 hover:bg-green-500", icon: Sparkles },
-    Intermediate: { color: "bg-orange-500/90 hover:bg-orange-500", icon: TrendingUp },
-    Advanced: { color: "bg-red-500/90 hover:bg-red-500", icon: Flame },
+    Beginner: { icon: Sparkles },
+    Intermediate: { icon: TrendingUp },
+    Advanced: { icon: Flame },
   };
 
   const CardContent = (
@@ -77,31 +75,26 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
           dangerouslySetInnerHTML={{ __html: excerpt }}
         />
 
-        {/* Level Badge Below Description - Only for Courses */}
-        {level && linkType === "category" && levelConfig[level] && (
-          <div className="flex justify-start">
+        {/* Level Display Below Description */}
+        {level && levelConfig[level] && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             {(() => {
               const LevelIcon = levelConfig[level].icon;
               return (
-                <Badge className={`${levelConfig[level].color} text-white border-0 shadow-md flex items-center gap-1.5`}>
-                  <LevelIcon className="h-3.5 w-3.5" />
-                  {level}
-                </Badge>
+                <>
+                  <LevelIcon className="h-4 w-4" />
+                  <span>{level}</span>
+                </>
               );
             })()}
           </div>
         )}
 
-        {/* Get Started Button */}
-        <Button 
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300 font-semibold group-hover:shadow-[0_4px_20px_hsl(var(--primary)/0.4)] relative overflow-hidden group/button mt-auto"
-        >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            Get Started
-            <ArrowRight className="h-4 w-4 group-hover/button:translate-x-1 transition-transform duration-300" />
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/20 to-primary/0 -translate-x-full group-hover/button:translate-x-full transition-transform duration-700" />
-        </Button>
+        {/* Get Started Text Link */}
+        <div className="flex items-center gap-1 text-primary font-medium group-hover:gap-2 transition-all duration-300 mt-auto">
+          <span>Get Started</span>
+          <ArrowRight className="h-4 w-4" />
+        </div>
       </div>
     </Card>
   );
