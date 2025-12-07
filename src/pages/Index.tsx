@@ -4,9 +4,21 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { ArrowRight, Compass, Star, Search } from "lucide-react";
+import BlogCard from "@/components/BlogCard";
+import { ArrowRight, Compass, Search, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+
+interface FeaturedCourse {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  slug: string;
+  level?: string;
+  enrollmentCount: number;
+  averageRating: number;
+}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -76,14 +88,38 @@ const Index = () => {
       .limit(6);
 
     if (!error && data) {
-      setFeaturedCourses(data.map((course: any) => ({
-        id: course.id,
-        title: course.name,
-        description: course.description || 'Explore this course',
-        image: course.featured_image || '/placeholder.svg',
-        slug: course.slug,
-        level: course.level || 'Beginner'
-      })));
+      // Fetch enrollment counts and ratings for each course
+      const coursesWithStats = await Promise.all(
+        data.map(async (course: any) => {
+          // Get enrollment count
+          const { count: enrollmentCount } = await supabase
+            .from('course_enrollments')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', course.id);
+
+          // Get average rating
+          const { data: reviews } = await supabase
+            .from('course_reviews')
+            .select('rating')
+            .eq('course_id', course.id);
+
+          const avgRating = reviews && reviews.length > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            : 0;
+
+          return {
+            id: course.id,
+            title: course.name,
+            description: course.description || 'Explore this course',
+            image: course.featured_image || '/placeholder.svg',
+            slug: course.slug,
+            level: course.level,
+            enrollmentCount: enrollmentCount || 0,
+            averageRating: avgRating
+          };
+        })
+      );
+      setFeaturedCourses(coursesWithStats);
     }
   };
 
@@ -233,56 +269,30 @@ const Index = () => {
             </Link>
           </div>
 
-          {/* Course Grid - Clean Equal Cards */}
+          {/* Course Grid - Using BlogCard */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredCourses.map((course, index) => (
-              <Link 
-                key={course.id} 
-                to={`/course/${course.slug}`}
+              <div 
+                key={course.id}
                 style={{ transitionDelay: coursesAnimation.isVisible ? `${index * 100}ms` : '0ms' }}
-                className={`group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 ${
+                className={`transition-all duration-500 ${
                   coursesAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
               >
-                {/* Image Container */}
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={course.image}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
-                  
-                  {/* Level badge */}
-                  <div className="absolute top-4 left-4">
-                    <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-primary/90 text-primary-foreground rounded-full">
-                      {course.level}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Content */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                    {course.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
-                    {course.description}
-                  </p>
-                  
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Star className="h-4 w-4 text-primary fill-primary" />
-                      <span>Top Rated</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
-                      <span>Learn</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
+                <BlogCard
+                  title={course.title}
+                  excerpt={course.description}
+                  category=""
+                  image={course.image}
+                  date=""
+                  author=""
+                  slug={course.slug}
+                  views={course.enrollmentCount}
+                  linkType="category"
+                  rating={course.averageRating}
+                  level={course.level}
+                />
+              </div>
             ))}
           </div>
         </div>
