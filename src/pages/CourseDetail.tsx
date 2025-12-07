@@ -898,24 +898,6 @@ const CourseDetail = () => {
                               <p>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</p>
                             </TooltipContent>
                           </Tooltip>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 hover:bg-transparent"
-                                  onClick={handleLikeToggle}
-                                  disabled={likingPost}
-                                >
-                                  <ThumbsUp className={`h-5 w-5 text-foreground ${hasLiked ? 'fill-current' : ''}`} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button 
@@ -946,6 +928,13 @@ const CourseDetail = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={handleLikeToggle}
+                                disabled={likingPost}
+                              >
+                                <ThumbsUp className={`mr-2 h-4 w-4 ${hasLiked ? 'fill-current' : ''}`} />
+                                <span>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</span>
+                              </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Flag className="mr-2 h-4 w-4" />
                                 <span>Report</span>
@@ -1039,41 +1028,30 @@ const CourseDetail = () => {
                             postId={selectedPost.id}
                           />
                           
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 hover:bg-transparent"
-                                  onClick={handleLikeToggle}
-                                  disabled={likingPost}
-                                >
-                                  <ThumbsUp className={`h-5 w-5 text-foreground ${hasLiked ? 'fill-current' : ''}`} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 hover:bg-transparent"
-                                >
-                                  <Edit className="h-5 w-5 text-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Suggest Changes</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 hover:bg-transparent"
+                              >
+                                <MoreVertical className="h-5 w-5 text-foreground" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={handleLikeToggle}
+                                disabled={likingPost}
+                              >
+                                <ThumbsUp className={`mr-2 h-4 w-4 ${hasLiked ? 'fill-current' : ''}`} />
+                                <span>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Suggest Changes</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
