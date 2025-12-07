@@ -20,13 +20,12 @@ interface BlogCardProps {
 }
 
 const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonSlug, views = 0, linkType = "blog", rating, level }: BlogCardProps) => {
-  // Calculate learners from views or use a simulated count
-  const learnersCount = views > 0 ? views : Math.floor(Math.random() * 15000) + 5000;
+  // Use actual enrollment count from views prop
+  const learnersCount = views;
   const formattedLearners = learnersCount.toLocaleString();
   
-  // Default rating if not provided
-  const courseRating = rating || (Math.random() * 1.5 + 3.5);
-  const displayRating = courseRating.toFixed(1);
+  // Use actual rating or show nothing if no reviews
+  const displayRating = rating && rating > 0 ? rating.toFixed(1) : null;
   
   // Level badge colors
   const levelColors = {
@@ -67,14 +66,14 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
 
         {/* View Count and Rating Row */}
         <div className="flex items-center justify-between">
-          {/* Learners Count - Left */}
+          {/* Enrolled Count - Left */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground group-hover:text-primary transition-colors duration-300">
             <Users className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-300" />
-            <span className="font-medium">{formattedLearners}</span>
+            <span className="font-medium">{formattedLearners} enrolled</span>
           </div>
 
-          {/* Rating - Right */}
-          {linkType === "category" && (
+          {/* Rating - Right (only show if there are reviews) */}
+          {linkType === "category" && displayRating && (
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold text-foreground">{displayRating}</span>
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform duration-300" />

@@ -8,12 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdSettings } from "@/hooks/useAdSettings";
+import { useCourseStats } from "@/hooks/useCourseStats";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, Flag, Edit } from "lucide-react";
+import CourseReviewDialog from "@/components/CourseReviewDialog";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, Flag, Edit, Star, UserPlus, UserCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -109,13 +111,42 @@ const CourseDetail = () => {
   const { settings: adSettings } = useAdSettings();
   const [showAnnouncement, setShowAnnouncement] = useState(false);
 
+  // Course stats hook
+  const {
+    stats: courseStats,
+    reviews: courseReviews,
+    enrolling,
+    enroll,
+    unenroll,
+    submitReview,
+    deleteReview,
+  } = useCourseStats(course?.id, user);
+
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
   }, []);
 
-  // Calculate learners count
-  const learnersCount = Math.floor(Math.random() * 15000) + 5000;
-  const formattedLearners = learnersCount.toLocaleString();
+  const handleEnroll = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to enroll in this course.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const success = await enroll();
+    if (success) {
+      toast({ title: "Successfully enrolled!", description: "You can now access all course materials." });
+    }
+  };
+
+  const handleUnenroll = async () => {
+    const success = await unenroll();
+    if (success) {
+      toast({ title: "Unenrolled", description: "You have been unenrolled from this course." });
+    }
+  };
 
   useEffect(() => {
     document.title = course ? `${course.name} - BlogHub` : "BlogHub - Course";
@@ -682,7 +713,7 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead 
         title={`${course.name} - Course`}
-        description={course.description || `Explore ${course.name} courses and lessons. Join ${formattedLearners} learners in this comprehensive learning path.`}
+        description={course.description || `Explore ${course.name} courses and lessons. Join ${courseStats.enrollmentCount.toLocaleString()} learners in this comprehensive learning path.`}
         keywords={`${course.name}, course, learning, tutorial, lessons`}
         ogTitle={`${course.name} Course`}
         ogDescription={course.description || `Learn ${course.name} with our comprehensive course materials`}
@@ -706,6 +737,18 @@ const CourseDetail = () => {
                 >
                   <BookOpen className="h-5 w-5 text-green-700" />
                   <h2 className="font-semibold text-lg text-green-900">Course Lessons</h2>
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-xs text-green-700">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5" />
+                    <span>{courseStats.enrollmentCount} enrolled</span>
+                  </div>
+                  {courseStats.averageRating > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                      <span>{courseStats.averageRating.toFixed(1)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -1079,9 +1122,68 @@ const CourseDetail = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent flex items-end">
                         <div className="p-8 w-full">
                           <h2 className="text-4xl font-bold mb-2 text-foreground">{course.name}</h2>
-                          <div className="flex items-center gap-2 text-foreground/80">
-                            <Users className="h-5 w-5" />
-                            <span className="text-lg font-semibold">{formattedLearners} learners</span>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-foreground/80">
+                              <Users className="h-5 w-5" />
+                              <span className="text-lg font-semibold">{courseStats.enrollmentCount.toLocaleString()} enrolled</span>
+                            </div>
+                            {courseStats.averageRating > 0 && (
+                              <CourseReviewDialog
+                                reviews={courseReviews}
+                                averageRating={courseStats.averageRating}
+                                reviewCount={courseStats.reviewCount}
+                                userReview={courseStats.userReview}
+                                isEnrolled={courseStats.isEnrolled}
+                                isAuthenticated={!!user}
+                                onSubmitReview={submitReview}
+                                onDeleteReview={deleteReview}
+                              >
+                                <button className="flex items-center gap-1.5 text-foreground/80 hover:text-foreground transition-colors">
+                                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-lg font-semibold">{courseStats.averageRating.toFixed(1)}</span>
+                                  <span className="text-sm">({courseStats.reviewCount} reviews)</span>
+                                </button>
+                              </CourseReviewDialog>
+                            )}
+                          </div>
+                          {/* Enroll/Unenroll Button */}
+                          <div className="mt-4">
+                            {courseStats.isEnrolled ? (
+                              <Button
+                                variant="outline"
+                                onClick={handleUnenroll}
+                                disabled={enrolling}
+                                className="bg-background/80 hover:bg-background"
+                              >
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                {enrolling ? "Processing..." : "Enrolled"}
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={handleEnroll}
+                                disabled={enrolling}
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                {enrolling ? "Enrolling..." : "Enroll Now"}
+                              </Button>
+                            )}
+                            {/* Rate Course Button */}
+                            <CourseReviewDialog
+                              reviews={courseReviews}
+                              averageRating={courseStats.averageRating}
+                              reviewCount={courseStats.reviewCount}
+                              userReview={courseStats.userReview}
+                              isEnrolled={courseStats.isEnrolled}
+                              isAuthenticated={!!user}
+                              onSubmitReview={submitReview}
+                              onDeleteReview={deleteReview}
+                            >
+                              <Button variant="outline" className="ml-2 bg-background/80 hover:bg-background">
+                                <Star className="h-4 w-4 mr-2" />
+                                {courseStats.userReview ? "Update Review" : "Rate Course"}
+                              </Button>
+                            </CourseReviewDialog>
                           </div>
                         </div>
                       </div>
