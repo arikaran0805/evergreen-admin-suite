@@ -5,11 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdSettings } from "@/hooks/useAdSettings";
 import { useCourseStats } from "@/hooks/useCourseStats";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useCourseProgress } from "@/hooks/useCourseProgress";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
@@ -123,6 +125,9 @@ const CourseDetail = () => {
     submitReview,
     deleteReview,
   } = useCourseStats(course?.id, user);
+
+  // Course progress hook
+  const { progress, markLessonViewed } = useCourseProgress(course?.id);
 
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
@@ -411,6 +416,11 @@ const CourseDetail = () => {
       if (error) throw error;
       setSelectedPost(data);
       await fetchLikeData(post.id);
+      
+      // Mark lesson as viewed for progress tracking
+      if (user) {
+        markLessonViewed(post.id);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -740,6 +750,15 @@ const CourseDetail = () => {
                   <BookOpen className="h-5 w-5 text-green-700" />
                   <h2 className="font-semibold text-lg text-green-900">Course Lessons</h2>
                 </div>
+                {user && progress.totalLessons > 0 && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-green-700 mb-1">
+                      <span>{progress.viewedLessons}/{progress.totalLessons} lessons</span>
+                      <span>{progress.percentage}%</span>
+                    </div>
+                    <Progress value={progress.percentage} className="h-1.5 bg-green-200 [&>div]:bg-green-600" />
+                  </div>
+                )}
               </div>
               
               <ScrollArea className="h-[calc(100vh-200px)]">
