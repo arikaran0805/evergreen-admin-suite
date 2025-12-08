@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { CourseProgressDisplay } from "@/components/CourseProgressDisplay";
 import Layout from "@/components/Layout";
 import { z } from "zod";
 import { 
@@ -63,6 +64,7 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -105,6 +107,7 @@ const Profile = () => {
         setFullName(profile.full_name || "");
         setAvatarUrl(profile.avatar_url || "");
         setEmail(profile.email);
+        setUserId(session.user.id);
       }
 
       // Fetch enrolled courses
@@ -351,7 +354,13 @@ const Profile = () => {
                         {enrollment.courses?.level || 'Beginner'}
                       </Badge>
                     </div>
-                    <Progress value={0} className="mt-2 h-1.5" />
+                    {userId && enrollment.courses?.id && (
+                      <CourseProgressDisplay 
+                        courseId={enrollment.courses.id} 
+                        userId={userId} 
+                        className="mt-2"
+                      />
+                    )}
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -411,6 +420,13 @@ const Profile = () => {
                       Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
                     </span>
                   </div>
+                  {userId && enrollment.courses?.id && (
+                    <CourseProgressDisplay 
+                      courseId={enrollment.courses.id} 
+                      userId={userId} 
+                      className="mt-3"
+                    />
+                  )}
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
