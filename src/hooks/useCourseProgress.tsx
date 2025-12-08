@@ -8,6 +8,12 @@ interface CourseProgress {
   percentage: number;
 }
 
+interface LessonStatus {
+  lessonId: string;
+  viewed: boolean;
+  completed: boolean;
+}
+
 export const useCourseProgress = (courseId: string | undefined) => {
   const [progress, setProgress] = useState<CourseProgress>({
     totalLessons: 0,
@@ -15,6 +21,7 @@ export const useCourseProgress = (courseId: string | undefined) => {
     completedLessons: 0,
     percentage: 0,
   });
+  const [lessonStatuses, setLessonStatuses] = useState<Map<string, LessonStatus>>(new Map());
   const [loading, setLoading] = useState(true);
 
   const fetchProgress = useCallback(async () => {
@@ -40,6 +47,7 @@ export const useCourseProgress = (courseId: string | undefined) => {
           completedLessons: 0,
           percentage: 0,
         });
+        setLessonStatuses(new Map());
         setLoading(false);
         return;
       }
@@ -55,6 +63,17 @@ export const useCourseProgress = (courseId: string | undefined) => {
       const completedLessons = progressData?.filter(p => p.completed).length || 0;
       const total = totalLessons || 0;
       const percentage = total > 0 ? Math.round((viewedLessons / total) * 100) : 0;
+
+      // Build lesson status map
+      const statusMap = new Map<string, LessonStatus>();
+      progressData?.forEach(p => {
+        statusMap.set(p.lesson_id, {
+          lessonId: p.lesson_id,
+          viewed: true,
+          completed: p.completed,
+        });
+      });
+      setLessonStatuses(statusMap);
 
       setProgress({
         totalLessons: total,
@@ -126,25 +145,13 @@ export const useCourseProgress = (courseId: string | undefined) => {
     }
   }, [courseId, fetchProgress]);
 
-  const isLessonViewed = useCallback(async (lessonId: string): Promise<boolean> => {
-    if (!courseId) return false;
+  const isLessonCompleted = useCallback((lessonId: string): boolean => {
+    return lessonStatuses.get(lessonId)?.completed || false;
+  }, [lessonStatuses]);
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-
-      const { data } = await supabase
-        .from('lesson_progress')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
-
-      return !!data;
-    } catch (error) {
-      return false;
-    }
-  }, [courseId]);
+  const isLessonViewed = useCallback((lessonId: string): boolean => {
+    return lessonStatuses.has(lessonId);
+  }, [lessonStatuses]);
 
   useEffect(() => {
     fetchProgress();
@@ -153,8 +160,10 @@ export const useCourseProgress = (courseId: string | undefined) => {
   return {
     progress,
     loading,
+    lessonStatuses,
     markLessonViewed,
     markLessonCompleted,
+    isLessonCompleted,
     isLessonViewed,
     refetch: fetchProgress,
   };
