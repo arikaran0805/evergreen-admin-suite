@@ -18,7 +18,7 @@ import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import CourseReviewDialog from "@/components/CourseReviewDialog";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck, CheckCircle, Circle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -127,7 +127,8 @@ const CourseDetail = () => {
   } = useCourseStats(course?.id, user);
 
   // Course progress hook
-  const { progress, markLessonViewed } = useCourseProgress(course?.id);
+  const { progress, markLessonViewed, markLessonCompleted, isLessonCompleted } = useCourseProgress(course?.id);
+  const [markingComplete, setMarkingComplete] = useState(false);
 
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
@@ -996,6 +997,42 @@ const CourseDetail = () => {
                       googleAdClient={adSettings.googleAdClient}
                       googleAdSlot={adSettings.inContentBottomSlot}
                     />
+
+                    {/* Mark as Complete Button */}
+                    {user && selectedPost && (
+                      <div className="mt-8 flex justify-center">
+                        <Button
+                          variant={isLessonCompleted(selectedPost.id) ? "outline" : "default"}
+                          size="lg"
+                          className={`gap-2 ${isLessonCompleted(selectedPost.id) ? 'border-green-500 text-green-600 hover:bg-green-50' : 'bg-green-600 hover:bg-green-700'}`}
+                          disabled={markingComplete}
+                          onClick={async () => {
+                            setMarkingComplete(true);
+                            const completed = !isLessonCompleted(selectedPost.id);
+                            const success = await markLessonCompleted(selectedPost.id, completed);
+                            if (success) {
+                              toast({
+                                title: completed ? "Lesson completed!" : "Lesson marked as incomplete",
+                                description: completed ? "Great job! Keep up the good work." : "You can mark it complete anytime.",
+                              });
+                            }
+                            setMarkingComplete(false);
+                          }}
+                        >
+                          {isLessonCompleted(selectedPost.id) ? (
+                            <>
+                              <CheckCircle className="h-5 w-5 fill-green-500" />
+                              Completed
+                            </>
+                          ) : (
+                            <>
+                              <Circle className="h-5 w-5" />
+                              Mark as Complete
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Bottom Line with Tags and Icons */}
                     <div className="mt-8 pt-6 border-t border-border">
