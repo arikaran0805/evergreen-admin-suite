@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { CourseProgressDisplay } from "@/components/CourseProgressDisplay";
+import { CareerPathSelector, CareerPath, careerPaths, getCareerPath } from "@/components/CareerPathSelector";
+import { CareerReadinessCard } from "@/components/CareerReadinessCard";
 import Layout from "@/components/Layout";
 import { z } from "zod";
 import { 
@@ -30,7 +32,9 @@ import {
   Bell,
   Shield,
   LogOut,
-  FileText
+  FileText,
+  Sparkles,
+  Target
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -69,6 +73,8 @@ const Profile = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [allCourses, setAllCourses] = useState<any[]>([]);
+  const [selectedCareer, setSelectedCareer] = useState<CareerPath>('data-science');
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -128,6 +134,15 @@ const Profile = () => {
 
       if (enrollments) {
         setEnrolledCourses(enrollments);
+      }
+
+      // Fetch all courses for recommendations
+      const { data: courses } = await supabase
+        .from("courses")
+        .select("id, name, slug, description, featured_image, level");
+
+      if (courses) {
+        setAllCourses(courses);
       }
     } catch (error: any) {
       toast({
@@ -253,24 +268,83 @@ const Profile = () => {
     );
   }
 
+  // Get career-related data
+  const currentCareer = getCareerPath(selectedCareer);
+  const careerRelatedSlugs = currentCareer?.relatedSlugs || [];
+  
+  const enrolledInCareer = enrolledCourses.filter(e => 
+    careerRelatedSlugs.includes(e.courses?.slug)
+  ).length;
+  
+  const recommendedCourses = allCourses.filter(course => 
+    careerRelatedSlugs.includes(course.slug) && 
+    !enrolledCourses.some(e => e.courses?.id === course.id)
+  );
+
+  const careerEnrolledCourses = enrolledCourses.filter(e => 
+    careerRelatedSlugs.includes(e.courses?.slug)
+  );
+
   const renderDashboard = () => (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl">
-        <Avatar className="h-16 w-16 border-2 border-primary">
-          <AvatarImage src={avatarUrl} alt={fullName} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-            {fullName?.charAt(0)?.toUpperCase() || 'U'}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Welcome back, {fullName || 'Learner'}!</h2>
-          <p className="text-muted-foreground">Continue your learning journey</p>
+      {/* Top Section: Welcome + Career Readiness */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Welcome Section - Left */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border">
+            <div className="flex items-start gap-4">
+              <Avatar className="h-16 w-16 border-2 border-primary ring-4 ring-primary/10">
+                <AvatarImage src={avatarUrl} alt={fullName} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                  {fullName?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium text-primary">Welcome back!</span>
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
+                <p className="text-muted-foreground mt-1">Continue your {currentCareer?.label} journey</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Career Path Selector */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-base">Career Path</CardTitle>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {careerRelatedSlugs.length} courses available
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CareerPathSelector 
+                selectedCareer={selectedCareer} 
+                onCareerChange={setSelectedCareer} 
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Career Readiness - Right */}
+        <div className="lg:col-span-2">
+          <CareerReadinessCard
+            selectedCareer={selectedCareer}
+            completedCourses={0}
+            totalRequiredCourses={careerRelatedSlugs.length}
+            enrolledInCareer={enrolledInCareer}
+          />
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-card border">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-3 rounded-lg bg-primary/10">
@@ -278,7 +352,7 @@ const Profile = () => {
             </div>
             <div>
               <p className="text-2xl font-bold">{enrolledCourses.length}</p>
-              <p className="text-sm text-muted-foreground">Enrolled Courses</p>
+              <p className="text-sm text-muted-foreground">Total Enrolled</p>
             </div>
           </CardContent>
         </Card>
@@ -288,8 +362,8 @@ const Profile = () => {
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">0</p>
-              <p className="text-sm text-muted-foreground">Completed</p>
+              <p className="text-2xl font-bold">{enrolledInCareer}</p>
+              <p className="text-sm text-muted-foreground">In Career Path</p>
             </div>
           </CardContent>
         </Card>
@@ -317,7 +391,51 @@ const Profile = () => {
         </Card>
       </div>
 
-      {/* Continue Learning */}
+      {/* Recommended for Career Path */}
+      {recommendedCourses.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              Recommended for {currentCareer?.label}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {recommendedCourses.map((course) => (
+                <div 
+                  key={course.id}
+                  className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/course/${course.slug}`)}
+                >
+                  <div className="w-14 h-14 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                    {course.featured_image ? (
+                      <img 
+                        src={course.featured_image} 
+                        alt={course.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{course.name}</h4>
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      {course.level || 'Beginner'}
+                    </Badge>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Continue Learning - Career Specific */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -326,9 +444,9 @@ const Profile = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {enrolledCourses.length > 0 ? (
+          {careerEnrolledCourses.length > 0 ? (
             <div className="space-y-4">
-              {enrolledCourses.slice(0, 3).map((enrollment) => (
+              {careerEnrolledCourses.slice(0, 3).map((enrollment) => (
                 <div 
                   key={enrollment.id}
                   className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
@@ -365,6 +483,14 @@ const Profile = () => {
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
               ))}
+            </div>
+          ) : enrolledCourses.length > 0 ? (
+            <div className="text-center py-8">
+              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No courses enrolled for {currentCareer?.label} path yet.</p>
+              <Button className="mt-4" onClick={() => navigate('/courses')}>
+                Explore {currentCareer?.label} Courses
+              </Button>
             </div>
           ) : (
             <div className="text-center py-8">
