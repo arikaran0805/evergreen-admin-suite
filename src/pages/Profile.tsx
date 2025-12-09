@@ -12,8 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { CourseProgressDisplay } from "@/components/CourseProgressDisplay";
-import { CareerPathSelector, CareerPath, careerPaths, getCareerPath } from "@/components/CareerPathSelector";
+import { CareerPath, getCareerPath } from "@/components/CareerPathSelector";
 import { CareerReadinessCard } from "@/components/CareerReadinessCard";
+import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
+import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import Layout from "@/components/Layout";
 import { z } from "zod";
 import { 
@@ -75,6 +77,7 @@ const Profile = () => {
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>([]);
   const [selectedCareer, setSelectedCareer] = useState<CareerPath>('data-science');
+  const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -310,26 +313,8 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Career Path Selector */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-base">Career Path</CardTitle>
-                </div>
-                <Badge variant="secondary" className="text-xs">
-                  {careerRelatedSlugs.length} courses available
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CareerPathSelector 
-                selectedCareer={selectedCareer} 
-                onCareerChange={setSelectedCareer} 
-              />
-            </CardContent>
-          </Card>
+          {/* Weekly Activity Tracker */}
+          <WeeklyActivityTracker />
         </div>
 
         {/* Career Readiness - Right */}
@@ -488,17 +473,29 @@ const Profile = () => {
             <div className="text-center py-8">
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No courses enrolled for {currentCareer?.label} path yet.</p>
-              <Button className="mt-4" onClick={() => navigate('/courses')}>
-                Explore {currentCareer?.label} Courses
+              <Button className="mt-4" onClick={() => setCareerDialogOpen(true)}>
+                Getting Started
               </Button>
+              <CareerSelectionDialog
+                open={careerDialogOpen}
+                onOpenChange={setCareerDialogOpen}
+                selectedCareer={selectedCareer}
+                onCareerSelect={setSelectedCareer}
+              />
             </div>
           ) : (
             <div className="text-center py-8">
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">You haven't enrolled in any courses yet.</p>
-              <Button className="mt-4" onClick={() => navigate('/courses')}>
-                Browse Courses
+              <Button className="mt-4" onClick={() => setCareerDialogOpen(true)}>
+                Getting Started
               </Button>
+              <CareerSelectionDialog
+                open={careerDialogOpen}
+                onOpenChange={setCareerDialogOpen}
+                selectedCareer={selectedCareer}
+                onCareerSelect={setSelectedCareer}
+              />
             </div>
           )}
         </CardContent>
