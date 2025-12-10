@@ -117,6 +117,10 @@ const Profile = () => {
         setAvatarUrl(profile.avatar_url || "");
         setEmail(profile.email);
         setUserId(session.user.id);
+        // Load saved career path
+        if ((profile as any).selected_career) {
+          setSelectedCareer((profile as any).selected_career as CareerPath);
+        }
       }
 
       // Fetch enrolled courses
@@ -259,6 +263,31 @@ const Profile = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
+  };
+
+  const handleCareerSelect = async (career: CareerPath) => {
+    setSelectedCareer(career);
+    
+    // Save to database
+    if (userId) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ selected_career: career } as any)
+        .eq("id", userId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save career preference",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Career Updated",
+          description: `Your career path has been set to ${getCareerPath(career)?.label}`,
+        });
+      }
+    }
   };
 
   if (loading) {
@@ -480,7 +509,7 @@ const Profile = () => {
                 open={careerDialogOpen}
                 onOpenChange={setCareerDialogOpen}
                 selectedCareer={selectedCareer}
-                onCareerSelect={setSelectedCareer}
+                onCareerSelect={handleCareerSelect}
               />
             </div>
           ) : (
@@ -494,7 +523,7 @@ const Profile = () => {
                 open={careerDialogOpen}
                 onOpenChange={setCareerDialogOpen}
                 selectedCareer={selectedCareer}
-                onCareerSelect={setSelectedCareer}
+                onCareerSelect={handleCareerSelect}
               />
             </div>
           )}
