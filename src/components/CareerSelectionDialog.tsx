@@ -33,7 +33,7 @@ export const CareerSelectionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">Choose Your Career Path</DialogTitle>
           <DialogDescription>
@@ -41,7 +41,7 @@ export const CareerSelectionDialog = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-3 py-4">
+        <div className="grid gap-3 py-4 overflow-y-auto flex-1 pr-2">
           {careerPaths.map((career) => {
             const Icon = career.icon;
             const isSelected = tempSelection === career.id;
@@ -77,7 +77,7 @@ export const CareerSelectionDialog = ({
           })}
         </div>
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
