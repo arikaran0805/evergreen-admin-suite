@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Target, Zap, TrendingUp, CheckCircle } from "lucide-react";
 import { CareerPath, getCareerPath } from "./CareerPathSelector";
 
@@ -9,13 +9,15 @@ interface CareerReadinessCardProps {
   completedCourses: number;
   totalRequiredCourses: number;
   enrolledInCareer: number;
+  onGetStarted?: () => void;
 }
 
 export const CareerReadinessCard = ({ 
   selectedCareer, 
   completedCourses, 
   totalRequiredCourses,
-  enrolledInCareer 
+  enrolledInCareer,
+  onGetStarted
 }: CareerReadinessCardProps) => {
   const career = getCareerPath(selectedCareer);
   const readinessPercentage = totalRequiredCourses > 0 
@@ -49,10 +51,15 @@ export const CareerReadinessCard = ({
               <p className="text-sm text-muted-foreground">Career Readiness</p>
             </div>
           </div>
-          <Badge variant="outline" className="gap-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1"
+            onClick={onGetStarted}
+          >
             <ReadinessIcon className="h-3 w-3" />
             {readiness.label}
-          </Badge>
+          </Button>
         </div>
 
         <div className="space-y-4">

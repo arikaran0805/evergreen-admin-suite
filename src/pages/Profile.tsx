@@ -353,6 +353,13 @@ const Profile = () => {
             completedCourses={0}
             totalRequiredCourses={careerRelatedSlugs.length}
             enrolledInCareer={enrolledInCareer}
+            onGetStarted={() => setCareerDialogOpen(true)}
+          />
+          <CareerSelectionDialog
+            open={careerDialogOpen}
+            onOpenChange={setCareerDialogOpen}
+            selectedCareer={selectedCareer}
+            onCareerSelect={handleCareerSelect}
           />
         </div>
       </div>
