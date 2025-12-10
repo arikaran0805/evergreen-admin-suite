@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, Brain, BarChart3, Code2, Layers } from "lucide-react";
+import { Database, Brain, BarChart3, Code2, Layers, Briefcase, Cloud, Server } from "lucide-react";
 
-export type CareerPath = 'data-science' | 'data-engineer' | 'ml-engineer' | 'analyst' | 'full-stack';
+export type CareerPath = 'data-science' | 'data-engineer' | 'ml-engineer' | 'analyst' | 'full-stack' | 'business-analyst' | 'devops-engineer' | 'cloud-architect';
 
 interface CareerPathOption {
   id: CareerPath;
@@ -46,6 +46,27 @@ export const careerPaths: CareerPathOption[] = [
     label: 'Full Stack', 
     icon: Code2,
     color: 'bg-pink-500/10 text-pink-500 border-pink-500/30',
+    relatedSlugs: ['database']
+  },
+  { 
+    id: 'business-analyst', 
+    label: 'Business Analyst', 
+    icon: Briefcase,
+    color: 'bg-teal-500/10 text-teal-500 border-teal-500/30',
+    relatedSlugs: ['statistics', 'database']
+  },
+  { 
+    id: 'devops-engineer', 
+    label: 'DevOps Engineer', 
+    icon: Server,
+    color: 'bg-red-500/10 text-red-500 border-red-500/30',
+    relatedSlugs: ['database', 'python-for-data-science']
+  },
+  { 
+    id: 'cloud-architect', 
+    label: 'Cloud Architect', 
+    icon: Cloud,
+    color: 'bg-sky-500/10 text-sky-500 border-sky-500/30',
     relatedSlugs: ['database']
   },
 ];
