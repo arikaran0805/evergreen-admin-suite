@@ -1,10 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { startOfWeek, endOfWeek, format, eachDayOfInterval, isSameDay, subDays } from "date-fns";
 
 interface DayActivity {
   day: string;
   shortDay: string;
+  date: Date;
   completed: boolean;
   lessonsCompleted: number;
 }
@@ -14,23 +18,114 @@ interface WeeklyActivityTrackerProps {
 }
 
 export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps) => {
-  // Get current week's days
+  const [weekDays, setWeekDays] = useState<DayActivity[]>([]);
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivityData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const today = new Date();
+      const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+      const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+
+      // Get lesson completions for this week
+      const { data: completions } = await supabase
+        .from('lesson_progress')
+        .select('viewed_at, completed')
+        .eq('user_id', user.id)
+        .eq('completed', true)
+        .gte('viewed_at', weekStart.toISOString())
+        .lte('viewed_at', weekEnd.toISOString());
+
+      // Create week days with activity data
+      const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const shortDayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+      const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
+        const dayCompletions = completions?.filter(c => 
+          isSameDay(new Date(c.viewed_at), date)
+        ) || [];
+
+        return {
+          day: dayNames[index],
+          shortDay: shortDayNames[index],
+          date,
+          completed: dayCompletions.length > 0,
+          lessonsCompleted: dayCompletions.length,
+        };
+      });
+
+      setWeekDays(activityDays);
+
+      // Calculate streak (consecutive days with completions ending today or yesterday)
+      const { data: allCompletions } = await supabase
+        .from('lesson_progress')
+        .select('viewed_at')
+        .eq('user_id', user.id)
+        .eq('completed', true)
+        .order('viewed_at', { ascending: false });
+
+      let currentStreak = 0;
+      let checkDate = today;
+      
+      // Check if user completed something today, if not start from yesterday
+      const todayCompletions = allCompletions?.filter(c => 
+        isSameDay(new Date(c.viewed_at), today)
+      ) || [];
+      
+      if (todayCompletions.length === 0) {
+        checkDate = subDays(today, 1);
+      }
+
+      // Count consecutive days
+      for (let i = 0; i < 365; i++) {
+        const dayCompletions = allCompletions?.filter(c => 
+          isSameDay(new Date(c.viewed_at), checkDate)
+        ) || [];
+
+        if (dayCompletions.length > 0) {
+          currentStreak++;
+          checkDate = subDays(checkDate, 1);
+        } else {
+          break;
+        }
+      }
+
+      setStreak(currentStreak);
+      setLoading(false);
+    };
+
+    fetchActivityData();
+  }, []);
+
   const today = new Date();
   const currentDayIndex = today.getDay();
-  
-  const weekDays: DayActivity[] = [
-    { day: 'Sunday', shortDay: 'S', completed: false, lessonsCompleted: 0 },
-    { day: 'Monday', shortDay: 'M', completed: false, lessonsCompleted: 0 },
-    { day: 'Tuesday', shortDay: 'T', completed: false, lessonsCompleted: 0 },
-    { day: 'Wednesday', shortDay: 'W', completed: false, lessonsCompleted: 0 },
-    { day: 'Thursday', shortDay: 'T', completed: false, lessonsCompleted: 0 },
-    { day: 'Friday', shortDay: 'F', completed: false, lessonsCompleted: 0 },
-    { day: 'Saturday', shortDay: 'S', completed: false, lessonsCompleted: 0 },
-  ];
-
-  // Calculate streak
-  const streak = 0;
   const completedDays = weekDays.filter(d => d.completed).length;
+
+  if (loading) {
+    return (
+      <Card className={cn("", className)}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">Weekly Activity</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
+            Loading activity...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={cn("", className)}>
@@ -56,6 +151,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
               <div
                 key={day.day}
                 className="flex flex-col items-center gap-1.5"
+                title={day.completed ? `${day.lessonsCompleted} lesson${day.lessonsCompleted > 1 ? 's' : ''} completed` : ''}
               >
                 <div
                   className={cn(
