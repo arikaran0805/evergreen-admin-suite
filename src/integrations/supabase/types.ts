@@ -486,6 +486,39 @@ export type Database = {
           },
         ]
       }
+      lesson_time_tracking: {
+        Row: {
+          course_id: string
+          created_at: string
+          duration_seconds: number
+          id: string
+          lesson_id: string
+          tracked_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          lesson_id: string
+          tracked_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          lesson_id?: string
+          tracked_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       media: {
         Row: {
           created_at: string

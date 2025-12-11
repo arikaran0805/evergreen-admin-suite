@@ -12,6 +12,7 @@ import { useAdSettings } from "@/hooks/useAdSettings";
 import { useCourseStats } from "@/hooks/useCourseStats";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
+import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
@@ -129,6 +130,9 @@ const CourseDetail = () => {
   // Course progress hook
   const { progress, markLessonViewed, markLessonCompleted, isLessonCompleted } = useCourseProgress(course?.id);
   const [markingComplete, setMarkingComplete] = useState(false);
+
+  // Time tracking hook
+  useLessonTimeTracking({ lessonId: selectedPost?.id, courseId: course?.id });
 
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
