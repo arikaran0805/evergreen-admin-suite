@@ -1,14 +1,54 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Target, Zap, TrendingUp, CheckCircle } from "lucide-react";
 import { CareerPath, getCareerPath } from "./CareerPathSelector";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+} from "recharts";
+
+// Define skill areas for each career path
+const careerSkillsMap: Record<CareerPath, string[]> = {
+  'data-science': ['Programming', 'Statistics', 'ML/AI', 'Data Viz', 'Domain Knowledge', 'Big Data'],
+  'data-engineer': ['Programming', 'Databases', 'ETL/Pipelines', 'Cloud', 'Big Data', 'DevOps'],
+  'ml-engineer': ['Programming', 'ML/AI', 'Statistics', 'MLOps', 'Cloud', 'Deep Learning'],
+  'analyst': ['Statistics', 'SQL', 'Data Viz', 'Excel', 'Communication', 'Domain Knowledge'],
+  'full-stack': ['Frontend', 'Backend', 'Databases', 'DevOps', 'APIs', 'Security'],
+  'business-analyst': ['Analysis', 'SQL', 'Communication', 'Domain Knowledge', 'Data Viz', 'Process'],
+  'devops-engineer': ['CI/CD', 'Cloud', 'Containers', 'Monitoring', 'Security', 'Scripting'],
+  'cloud-architect': ['Cloud', 'Networking', 'Security', 'Architecture', 'DevOps', 'Cost Mgmt'],
+};
+
+// Map course slugs to skills
+const courseSkillMapping: Record<string, string[]> = {
+  'python-for-data-science': ['Programming', 'Scripting', 'Backend'],
+  'statistics': ['Statistics', 'Analysis', 'Data Viz'],
+  'ai-ml': ['ML/AI', 'Deep Learning', 'MLOps'],
+  'database': ['Databases', 'SQL', 'ETL/Pipelines', 'Big Data'],
+};
+
+interface SkillData {
+  skill: string;
+  value: number;
+  fullMark: 100;
+}
 
 interface CareerReadinessCardProps {
   selectedCareer: CareerPath;
   completedCourses: number;
   totalRequiredCourses: number;
   enrolledInCareer: number;
+  completedCourseSlugs?: string[];
   onGetStarted?: () => void;
 }
 
@@ -17,6 +57,7 @@ export const CareerReadinessCard = ({
   completedCourses, 
   totalRequiredCourses,
   enrolledInCareer,
+  completedCourseSlugs = [],
   onGetStarted
 }: CareerReadinessCardProps) => {
   const career = getCareerPath(selectedCareer);
@@ -25,14 +66,51 @@ export const CareerReadinessCard = ({
     : 0;
   
   const getReadinessLevel = () => {
-    if (readinessPercentage >= 80) return { label: 'Job Ready', color: 'bg-green-500', icon: CheckCircle };
-    if (readinessPercentage >= 50) return { label: 'Intermediate', color: 'bg-yellow-500', icon: TrendingUp };
-    if (readinessPercentage >= 20) return { label: 'Beginner', color: 'bg-orange-500', icon: Zap };
-    return { label: 'Getting Started', color: 'bg-muted', icon: Target };
+    if (readinessPercentage >= 80) return { label: 'Job Ready', color: 'text-green-500', icon: CheckCircle };
+    if (readinessPercentage >= 50) return { label: 'Intermediate', color: 'text-yellow-500', icon: TrendingUp };
+    if (readinessPercentage >= 20) return { label: 'Beginner', color: 'text-orange-500', icon: Zap };
+    return { label: 'Getting Started', color: 'text-muted-foreground', icon: Target };
   };
 
   const readiness = getReadinessLevel();
   const ReadinessIcon = readiness.icon;
+
+  // Calculate skill values based on completed courses
+  const calculateSkillData = (): SkillData[] => {
+    const skills = careerSkillsMap[selectedCareer] || [];
+    
+    return skills.map(skill => {
+      // Check if any completed course contributes to this skill
+      let skillValue = 0;
+      completedCourseSlugs.forEach(slug => {
+        const courseSkills = courseSkillMapping[slug] || [];
+        if (courseSkills.includes(skill)) {
+          skillValue += 33; // Each course adds ~33% to a skill
+        }
+      });
+      
+      // Cap at 100
+      skillValue = Math.min(skillValue, 100);
+      
+      // Add a base value of 10 for visual appeal
+      if (skillValue === 0) skillValue = 10;
+      
+      return {
+        skill,
+        value: skillValue,
+        fullMark: 100,
+      };
+    });
+  };
+
+  const skillData = calculateSkillData();
+
+  const chartConfig: ChartConfig = {
+    value: {
+      label: "Proficiency",
+      color: "hsl(var(--primary))",
+    },
+  };
 
   if (!career) return null;
 
@@ -54,7 +132,7 @@ export const CareerReadinessCard = ({
           <Button 
             variant="outline" 
             size="sm" 
-            className="gap-1"
+            className={`gap-1 ${readiness.color}`}
             onClick={onGetStarted}
           >
             <ReadinessIcon className="h-3 w-3" />
@@ -62,47 +140,58 @@ export const CareerReadinessCard = ({
           </Button>
         </div>
 
-        <div className="space-y-4">
-          {/* Readiness Progress */}
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-muted-foreground">Career Progress</span>
-              <span className="font-semibold">{readinessPercentage}%</span>
-            </div>
-            <Progress value={readinessPercentage} className="h-3" />
-          </div>
+        {/* Radar Chart */}
+        <div className="h-[220px] w-full">
+          <ChartContainer config={chartConfig} className="h-full w-full">
+            <RadarChart data={skillData} cx="50%" cy="50%" outerRadius="70%">
+              <PolarGrid 
+                stroke="hsl(var(--border))" 
+                strokeDasharray="3 3"
+              />
+              <PolarAngleAxis 
+                dataKey="skill" 
+                tick={{ 
+                  fill: 'hsl(var(--muted-foreground))', 
+                  fontSize: 11,
+                  fontWeight: 500
+                }}
+                tickLine={false}
+              />
+              <PolarRadiusAxis 
+                angle={30} 
+                domain={[0, 100]} 
+                tick={false}
+                axisLine={false}
+              />
+              <Radar
+                name="Skills"
+                dataKey="value"
+                stroke="hsl(var(--primary))"
+                fill="hsl(var(--primary))"
+                fillOpacity={0.3}
+                strokeWidth={2}
+              />
+              <ChartTooltip 
+                content={<ChartTooltipContent />}
+                formatter={(value) => [`${value}%`, 'Proficiency']}
+              />
+            </RadarChart>
+          </ChartContainer>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="text-center p-3 rounded-lg bg-background/50">
-              <p className="text-2xl font-bold text-primary">{enrolledInCareer}</p>
-              <p className="text-xs text-muted-foreground">Enrolled</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-background/50">
-              <p className="text-2xl font-bold text-green-500">{completedCourses}</p>
-              <p className="text-xs text-muted-foreground">Completed</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-background/50">
-              <p className="text-2xl font-bold text-muted-foreground">{totalRequiredCourses}</p>
-              <p className="text-xs text-muted-foreground">Required</p>
-            </div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border mt-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-primary">{enrolledInCareer}</p>
+            <p className="text-xs text-muted-foreground">Enrolled</p>
           </div>
-
-          {/* Skills Progress Indicators */}
-          <div className="space-y-2 pt-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Skills Progress</p>
-            <div className="flex gap-1">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-2 flex-1 rounded-full transition-colors ${
-                    i < Math.ceil(readinessPercentage / 20) 
-                      ? 'bg-primary' 
-                      : 'bg-muted'
-                  }`}
-                />
-              ))}
-            </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-500">{completedCourses}</p>
+            <p className="text-xs text-muted-foreground">Completed</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold">{readinessPercentage}%</p>
+            <p className="text-xs text-muted-foreground">Ready</p>
           </div>
         </div>
       </CardContent>
