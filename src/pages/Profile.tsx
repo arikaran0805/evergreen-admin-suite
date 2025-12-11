@@ -76,6 +76,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>([]);
+  const [completedCourseSlugs, setCompletedCourseSlugs] = useState<string[]>([]);
   const [selectedCareer, setSelectedCareer] = useState<CareerPath>('data-science');
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -150,6 +151,45 @@ const Profile = () => {
 
       if (courses) {
         setAllCourses(courses);
+      }
+
+      // Fetch lesson progress to determine completed courses
+      const { data: lessonProgress } = await supabase
+        .from("lesson_progress")
+        .select("course_id, completed")
+        .eq("user_id", session.user.id)
+        .eq("completed", true);
+
+      // Fetch lesson counts per course
+      const { data: courseLessons } = await supabase
+        .from("posts")
+        .select("id, category_id");
+
+      if (lessonProgress && courseLessons && courses) {
+        // Count lessons per course
+        const lessonCountByCourse: Record<string, number> = {};
+        courseLessons.forEach(lesson => {
+          if (lesson.category_id) {
+            lessonCountByCourse[lesson.category_id] = (lessonCountByCourse[lesson.category_id] || 0) + 1;
+          }
+        });
+
+        // Count completed lessons per course
+        const completedByCourse: Record<string, number> = {};
+        lessonProgress.forEach(progress => {
+          completedByCourse[progress.course_id] = (completedByCourse[progress.course_id] || 0) + 1;
+        });
+
+        // Determine which courses are completed (all lessons done)
+        const completed = courses
+          .filter(course => {
+            const total = lessonCountByCourse[course.id] || 0;
+            const done = completedByCourse[course.id] || 0;
+            return total > 0 && done >= total;
+          })
+          .map(course => course.slug);
+
+        setCompletedCourseSlugs(completed);
       }
     } catch (error: any) {
       toast({
@@ -317,6 +357,12 @@ const Profile = () => {
     careerRelatedSlugs.includes(e.courses?.slug)
   );
 
+  // Calculate completed courses for the career path
+  const careerCompletedSlugs = completedCourseSlugs.filter(slug => 
+    careerRelatedSlugs.includes(slug)
+  );
+  const completedInCareer = careerCompletedSlugs.length;
+
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Top Section: Welcome + Career Readiness */}
@@ -350,9 +396,10 @@ const Profile = () => {
         <div className="lg:col-span-2">
           <CareerReadinessCard
             selectedCareer={selectedCareer}
-            completedCourses={0}
+            completedCourses={completedInCareer}
             totalRequiredCourses={careerRelatedSlugs.length}
             enrolledInCareer={enrolledInCareer}
+            completedCourseSlugs={careerCompletedSlugs}
             onGetStarted={() => setCareerDialogOpen(true)}
           />
           <CareerSelectionDialog
