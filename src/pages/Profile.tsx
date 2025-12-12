@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { CourseProgressDisplay } from "@/components/CourseProgressDisplay";
-import { CareerPath, getCareerPath } from "@/components/CareerPathSelector";
+import { useCareers } from "@/hooks/useCareers";
 import { CareerReadinessCard } from "@/components/CareerReadinessCard";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
@@ -77,7 +77,7 @@ const Profile = () => {
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>([]);
   const [completedCourseSlugs, setCompletedCourseSlugs] = useState<string[]>([]);
-  const [selectedCareer, setSelectedCareer] = useState<CareerPath>('data-science');
+  const [selectedCareer, setSelectedCareer] = useState<string>('data-science');
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -120,7 +120,7 @@ const Profile = () => {
         setUserId(session.user.id);
         // Load saved career path
         if ((profile as any).selected_career) {
-          setSelectedCareer((profile as any).selected_career as CareerPath);
+          setSelectedCareer((profile as any).selected_career as string);
         }
       }
 
@@ -305,14 +305,14 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  const handleCareerSelect = async (career: CareerPath) => {
-    setSelectedCareer(career);
+  const handleCareerSelect = async (careerSlug: string) => {
+    setSelectedCareer(careerSlug);
     
     // Save to database
     if (userId) {
       const { error } = await supabase
         .from("profiles")
-        .update({ selected_career: career } as any)
+        .update({ selected_career: careerSlug } as any)
         .eq("id", userId);
 
       if (error) {
@@ -324,7 +324,7 @@ const Profile = () => {
       } else {
         toast({
           title: "Career Updated",
-          description: `Your career path has been set to ${getCareerPath(career)?.label}`,
+          description: `Your career path has been updated`,
         });
       }
     }
@@ -340,9 +340,8 @@ const Profile = () => {
     );
   }
 
-  // Get career-related data
-  const currentCareer = getCareerPath(selectedCareer);
-  const careerRelatedSlugs = currentCareer?.relatedSlugs || [];
+  // Career data will be fetched via useCareers hook in child components
+  const careerRelatedSlugs: string[] = []; // Will be populated from database
   
   const enrolledInCareer = enrolledCourses.filter(e => 
     careerRelatedSlugs.includes(e.courses?.slug)
@@ -383,7 +382,7 @@ const Profile = () => {
                   <span className="text-sm font-medium text-primary">Welcome back!</span>
                 </div>
                 <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
-                <p className="text-muted-foreground mt-1">Continue your {currentCareer?.label} journey</p>
+                <p className="text-muted-foreground mt-1">Continue your learning journey</p>
               </div>
             </div>
           </div>
@@ -395,9 +394,9 @@ const Profile = () => {
         {/* Career Readiness - Right */}
         <div className="lg:col-span-2">
           <CareerReadinessCard
-            selectedCareer={selectedCareer}
+            selectedCareerSlug={selectedCareer}
             completedCourses={completedInCareer}
-            totalRequiredCourses={careerRelatedSlugs.length}
+            totalRequiredCourses={careerRelatedSlugs.length || 5}
             enrolledInCareer={enrolledInCareer}
             completedCourseSlugs={careerCompletedSlugs}
             onGetStarted={() => setCareerDialogOpen(true)}
@@ -405,7 +404,7 @@ const Profile = () => {
           <CareerSelectionDialog
             open={careerDialogOpen}
             onOpenChange={setCareerDialogOpen}
-            selectedCareer={selectedCareer}
+            selectedCareerSlug={selectedCareer}
             onCareerSelect={handleCareerSelect}
           />
         </div>
@@ -465,7 +464,7 @@ const Profile = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="h-5 w-5 text-yellow-500" />
-              Recommended for {currentCareer?.label}
+              Recommended Courses
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -555,14 +554,14 @@ const Profile = () => {
           ) : enrolledCourses.length > 0 ? (
             <div className="text-center py-8">
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No courses enrolled for {currentCareer?.label} path yet.</p>
+              <p className="text-muted-foreground">No courses enrolled for your career path yet.</p>
               <Button className="mt-4" onClick={() => setCareerDialogOpen(true)}>
                 Getting Started
               </Button>
               <CareerSelectionDialog
                 open={careerDialogOpen}
                 onOpenChange={setCareerDialogOpen}
-                selectedCareer={selectedCareer}
+                selectedCareerSlug={selectedCareer}
                 onCareerSelect={handleCareerSelect}
               />
             </div>
@@ -576,7 +575,7 @@ const Profile = () => {
               <CareerSelectionDialog
                 open={careerDialogOpen}
                 onOpenChange={setCareerDialogOpen}
-                selectedCareer={selectedCareer}
+                selectedCareerSlug={selectedCareer}
                 onCareerSelect={handleCareerSelect}
               />
             </div>

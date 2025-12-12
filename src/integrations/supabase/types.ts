@@ -209,6 +209,113 @@ export type Database = {
           },
         ]
       }
+      career_courses: {
+        Row: {
+          career_id: string
+          course_id: string
+          created_at: string
+          id: string
+          skill_contributions: Json | null
+        }
+        Insert: {
+          career_id: string
+          course_id: string
+          created_at?: string
+          id?: string
+          skill_contributions?: Json | null
+        }
+        Update: {
+          career_id?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          skill_contributions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_courses_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "career_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      career_skills: {
+        Row: {
+          career_id: string
+          created_at: string
+          display_order: number
+          id: string
+          skill_name: string
+        }
+        Insert: {
+          career_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          skill_name: string
+        }
+        Update: {
+          career_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          skill_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_skills_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      careers: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comment_reactions: {
         Row: {
           comment_id: string

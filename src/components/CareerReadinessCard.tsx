@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Target, Zap, TrendingUp, CheckCircle } from "lucide-react";
-import { CareerPath, getCareerPath } from "./CareerPathSelector";
+import { useCareers, Career } from "@/hooks/useCareers";
+import * as Icons from "lucide-react";
 import {
   ChartConfig,
   ChartContainer,
@@ -14,28 +15,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  ResponsiveContainer,
 } from "recharts";
-
-// Define skill areas for each career path
-const careerSkillsMap: Record<CareerPath, string[]> = {
-  'data-science': ['Programming', 'Statistics', 'ML/AI', 'Data Viz', 'Domain Knowledge', 'Big Data'],
-  'data-engineer': ['Programming', 'Databases', 'ETL/Pipelines', 'Cloud', 'Big Data', 'DevOps'],
-  'ml-engineer': ['Programming', 'ML/AI', 'Statistics', 'MLOps', 'Cloud', 'Deep Learning'],
-  'analyst': ['Statistics', 'SQL', 'Data Viz', 'Excel', 'Communication', 'Domain Knowledge'],
-  'full-stack': ['Frontend', 'Backend', 'Databases', 'DevOps', 'APIs', 'Security'],
-  'business-analyst': ['Analysis', 'SQL', 'Communication', 'Domain Knowledge', 'Data Viz', 'Process'],
-  'devops-engineer': ['CI/CD', 'Cloud', 'Containers', 'Monitoring', 'Security', 'Scripting'],
-  'cloud-architect': ['Cloud', 'Networking', 'Security', 'Architecture', 'DevOps', 'Cost Mgmt'],
-};
-
-// Map course slugs to skills
-const courseSkillMapping: Record<string, string[]> = {
-  'python-for-data-science': ['Programming', 'Scripting', 'Backend'],
-  'statistics': ['Statistics', 'Analysis', 'Data Viz'],
-  'ai-ml': ['ML/AI', 'Deep Learning', 'MLOps'],
-  'database': ['Databases', 'SQL', 'ETL/Pipelines', 'Big Data'],
-};
 
 interface SkillData {
   skill: string;
@@ -44,7 +24,7 @@ interface SkillData {
 }
 
 interface CareerReadinessCardProps {
-  selectedCareer: CareerPath;
+  selectedCareerSlug: string;
   completedCourses: number;
   totalRequiredCourses: number;
   enrolledInCareer: number;
@@ -53,14 +33,19 @@ interface CareerReadinessCardProps {
 }
 
 export const CareerReadinessCard = ({ 
-  selectedCareer, 
+  selectedCareerSlug, 
   completedCourses, 
   totalRequiredCourses,
   enrolledInCareer,
   completedCourseSlugs = [],
   onGetStarted
 }: CareerReadinessCardProps) => {
-  const career = getCareerPath(selectedCareer);
+  const { careers, getCareerBySlug, getCareerSkills, getCareerCourseSlugs, loading } = useCareers();
+  
+  const career = getCareerBySlug(selectedCareerSlug);
+  const skills = career ? getCareerSkills(career.id) : [];
+  const careerCourseSlugs = career ? getCareerCourseSlugs(career.id) : [];
+  
   const readinessPercentage = totalRequiredCourses > 0 
     ? Math.round((completedCourses / totalRequiredCourses) * 100) 
     : 0;
@@ -77,27 +62,28 @@ export const CareerReadinessCard = ({
 
   // Calculate skill values based on completed courses
   const calculateSkillData = (): SkillData[] => {
-    const skills = careerSkillsMap[selectedCareer] || [];
+    if (skills.length === 0) {
+      return [{ skill: 'No skills defined', value: 10, fullMark: 100 }];
+    }
     
     return skills.map(skill => {
       // Check if any completed course contributes to this skill
       let skillValue = 0;
-      completedCourseSlugs.forEach(slug => {
-        const courseSkills = courseSkillMapping[slug] || [];
-        if (courseSkills.includes(skill)) {
-          skillValue += 33; // Each course adds ~33% to a skill
-        }
-      });
+      const contributingCourses = completedCourseSlugs.filter(slug => 
+        careerCourseSlugs.includes(slug)
+      );
       
-      // Cap at 100
-      skillValue = Math.min(skillValue, 100);
+      // Each completed career course adds value to all skills proportionally
+      if (contributingCourses.length > 0) {
+        skillValue = Math.min((contributingCourses.length / Math.max(careerCourseSlugs.length, 1)) * 100, 100);
+      }
       
       // Add a base value of 10 for visual appeal
       if (skillValue === 0) skillValue = 10;
       
       return {
-        skill,
-        value: skillValue,
+        skill: skill.skill_name,
+        value: Math.round(skillValue),
         fullMark: 100,
       };
     });
@@ -112,9 +98,23 @@ export const CareerReadinessCard = ({
     },
   };
 
-  if (!career) return null;
+  const getIcon = (iconName: string) => {
+    const IconComponent = (Icons as any)[iconName];
+    return IconComponent ? <IconComponent className="h-6 w-6" /> : <Icons.Briefcase className="h-6 w-6" />;
+  };
 
-  const CareerIcon = career.icon;
+  if (loading || !career) {
+    return (
+      <Card className="bg-gradient-to-br from-card to-muted/30 border-2">
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-muted rounded" />
+            <div className="h-48 bg-muted rounded" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-gradient-to-br from-card to-muted/30 border-2">
@@ -122,10 +122,10 @@ export const CareerReadinessCard = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className={`p-3 rounded-xl ${career.color}`}>
-              <CareerIcon className="h-6 w-6" />
+              {getIcon(career.icon)}
             </div>
             <div>
-              <h3 className="font-bold text-lg">{career.label}</h3>
+              <h3 className="font-bold text-lg">{career.name}</h3>
               <p className="text-sm text-muted-foreground">Career Readiness</p>
             </div>
           </div>
