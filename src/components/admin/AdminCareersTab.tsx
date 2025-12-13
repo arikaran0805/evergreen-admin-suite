@@ -90,8 +90,6 @@ const AdminCareersTab = () => {
     courseSkillMappings: {} as Record<string, SkillContribution[]>, // courseId -> skill contributions
   });
   const [newSkill, setNewSkill] = useState("");
-  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
-  const [selectedCourseForMapping, setSelectedCourseForMapping] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -299,7 +297,6 @@ const AdminCareersTab = () => {
       courseSkillMappings: {},
     });
     setNewSkill("");
-    setSelectedCourseForMapping(null);
   };
 
   const addSkill = () => {
@@ -327,15 +324,9 @@ const AdminCareersTab = () => {
     }
   };
 
-  const openSkillMappingDialog = (courseId: string) => {
-    setSelectedCourseForMapping(courseId);
-    setMappingDialogOpen(true);
-  };
 
-  const updateSkillContribution = (skillName: string, contribution: number) => {
-    if (!selectedCourseForMapping) return;
-    
-    const currentMappings = formData.courseSkillMappings[selectedCourseForMapping] || [];
+  const updateSkillContribution = (courseId: string, skillName: string, contribution: number) => {
+    const currentMappings = formData.courseSkillMappings[courseId] || [];
     const existingIndex = currentMappings.findIndex(m => m.skill_name === skillName);
     
     let newMappings: SkillContribution[];
@@ -352,7 +343,7 @@ const AdminCareersTab = () => {
       ...formData,
       courseSkillMappings: {
         ...formData.courseSkillMappings,
-        [selectedCourseForMapping]: newMappings,
+        [courseId]: newMappings,
       },
     });
   };
@@ -360,10 +351,6 @@ const AdminCareersTab = () => {
   const getSkillContributionValue = (courseId: string, skillName: string): number => {
     const mappings = formData.courseSkillMappings[courseId] || [];
     return mappings.find(m => m.skill_name === skillName)?.contribution || 0;
-  };
-
-  const getCourseMappedSkillsCount = (courseId: string): number => {
-    return (formData.courseSkillMappings[courseId] || []).filter(m => m.contribution > 0).length;
   };
 
   const getIcon = (iconName: string) => {
@@ -560,47 +547,68 @@ const AdminCareersTab = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Associated Courses & Skill Mappings</Label>
-              <p className="text-xs text-muted-foreground">Select courses and map which skills each course contributes to</p>
-              <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
-                {courses.map((course) => {
-                  const isSelected = formData.courseIds.includes(course.id);
-                  const mappedCount = getCourseMappedSkillsCount(course.id);
-                  return (
-                    <div
-                      key={course.id}
-                      className={`flex items-center justify-between p-2 rounded ${
-                        isSelected ? "bg-primary/10" : "hover:bg-muted"
-                      }`}
-                    >
-                      <label className="flex items-center gap-2 cursor-pointer flex-1">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleCourse(course.id)}
-                          className="rounded"
-                        />
-                        <span className="text-sm">{course.name}</span>
-                      </label>
-                      {isSelected && formData.skills.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openSkillMappingDialog(course.id)}
-                          className="ml-2"
-                        >
-                          {mappedCount > 0 ? `${mappedCount} skills mapped` : "Map Skills"}
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
+              <Label>Associated Courses</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                {courses.map((course) => (
+                  <label
+                    key={course.id}
+                    className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted ${
+                      formData.courseIds.includes(course.id) ? "bg-primary/10" : ""
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.courseIds.includes(course.id)}
+                      onChange={() => toggleCourse(course.id)}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{course.name}</span>
+                  </label>
+                ))}
               </div>
-              {formData.skills.length === 0 && formData.courseIds.length > 0 && (
-                <p className="text-xs text-amber-500">Add skills first to enable skill mapping</p>
-              )}
             </div>
+
+            {/* Skill Mappings for Selected Courses */}
+            {formData.courseIds.length > 0 && formData.skills.length > 0 && (
+              <div className="space-y-2">
+                <Label>Skill Mappings for Selected Courses</Label>
+                <p className="text-xs text-muted-foreground">Set how much each course contributes to each skill (0-100%)</p>
+                <div className="space-y-3 max-h-64 overflow-y-auto border rounded-md p-3">
+                  {formData.courseIds.map((courseId) => {
+                    const course = courses.find(c => c.id === courseId);
+                    if (!course) return null;
+                    return (
+                      <div key={courseId} className="space-y-2 pb-3 border-b last:border-b-0">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm">{course.name}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pl-6">
+                          {formData.skills.map((skill) => (
+                            <div key={skill} className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground flex-1 truncate">{skill}</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={getSkillContributionValue(courseId, skill)}
+                                onChange={(e) => updateSkillContribution(courseId, skill, parseInt(e.target.value) || 0)}
+                                className="w-16 h-7 text-xs"
+                              />
+                              <span className="text-xs text-muted-foreground">%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {formData.skills.length === 0 && formData.courseIds.length > 0 && (
+              <p className="text-xs text-amber-500">Add skills first to enable skill mapping</p>
+            )}
           </div>
 
           <DialogFooter>
@@ -614,40 +622,6 @@ const AdminCareersTab = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Skill Mapping Dialog */}
-      <Dialog open={mappingDialogOpen} onOpenChange={setMappingDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              Map Skills for: {courses.find(c => c.id === selectedCourseForMapping)?.name}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Set how much completing this course contributes to each skill (0-100%)
-            </p>
-            {formData.skills.map((skill) => (
-              <div key={skill} className="flex items-center gap-3">
-                <Label className="w-32 text-sm">{skill}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={selectedCourseForMapping ? getSkillContributionValue(selectedCourseForMapping, skill) : 0}
-                  onChange={(e) => updateSkillContribution(skill, parseInt(e.target.value) || 0)}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
-            ))}
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setMappingDialogOpen(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
