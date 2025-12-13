@@ -40,7 +40,7 @@ export const CareerReadinessCard = ({
   completedCourseSlugs = [],
   onGetStarted
 }: CareerReadinessCardProps) => {
-  const { careers, getCareerBySlug, getCareerSkills, getCareerCourseSlugs, loading } = useCareers();
+  const { careers, getCareerBySlug, getCareerSkills, getCareerCourseSlugs, getSkillContributionsForCourse, loading } = useCareers();
   
   const career = getCareerBySlug(selectedCareerSlug);
   const skills = career ? getCareerSkills(career.id) : [];
@@ -60,26 +60,29 @@ export const CareerReadinessCard = ({
   const readiness = getReadinessLevel();
   const ReadinessIcon = readiness.icon;
 
-  // Calculate skill values based on completed courses
+  // Calculate skill values based on completed courses and their skill contributions
   const calculateSkillData = (): SkillData[] => {
-    if (skills.length === 0) {
+    if (!career || skills.length === 0) {
       return [{ skill: 'No skills defined', value: 10, fullMark: 100 }];
     }
     
     return skills.map(skill => {
-      // Check if any completed course contributes to this skill
       let skillValue = 0;
-      const contributingCourses = completedCourseSlugs.filter(slug => 
-        careerCourseSlugs.includes(slug)
-      );
       
-      // Each completed career course adds value to all skills proportionally
-      if (contributingCourses.length > 0) {
-        skillValue = Math.min((contributingCourses.length / Math.max(careerCourseSlugs.length, 1)) * 100, 100);
-      }
+      // For each completed course in this career, add its contribution to this skill
+      completedCourseSlugs.forEach(courseSlug => {
+        if (careerCourseSlugs.includes(courseSlug)) {
+          const contributions = getSkillContributionsForCourse(career.id, courseSlug);
+          const contribution = contributions.find(c => c.skill_name === skill.skill_name);
+          if (contribution) {
+            skillValue += contribution.contribution;
+          }
+        }
+      });
       
-      // Add a base value of 10 for visual appeal
-      if (skillValue === 0) skillValue = 10;
+      // Cap at 100 and ensure minimum of 5 for visual appeal
+      skillValue = Math.min(skillValue, 100);
+      if (skillValue === 0) skillValue = 5;
       
       return {
         skill: skill.skill_name,

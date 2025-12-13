@@ -18,10 +18,16 @@ export interface CareerSkill {
   display_order: number;
 }
 
+export interface SkillContribution {
+  skill_name: string;
+  contribution: number; // 0-100 percentage
+}
+
 export interface CareerCourse {
   id: string;
   career_id: string;
   course_id: string;
+  skill_contributions: SkillContribution[];
   course?: {
     id: string;
     name: string;
@@ -68,7 +74,17 @@ export const useCareers = () => {
           if (!coursesByCareer[cc.career_id]) {
             coursesByCareer[cc.career_id] = [];
           }
-          coursesByCareer[cc.career_id].push(cc);
+          // Parse skill_contributions from JSON
+          const skillContributions = Array.isArray(cc.skill_contributions) 
+            ? (cc.skill_contributions as unknown as SkillContribution[])
+            : [];
+          coursesByCareer[cc.career_id].push({
+            id: cc.id,
+            career_id: cc.career_id,
+            course_id: cc.course_id,
+            skill_contributions: skillContributions,
+            course: cc.course,
+          });
         });
         setCareerCourses(coursesByCareer);
       }
@@ -95,6 +111,15 @@ export const useCareers = () => {
     return careerCourses[careerId]?.map(cc => cc.course?.slug).filter(Boolean) as string[] || [];
   };
 
+  const getSkillContributionsForCourse = (careerId: string, courseSlug: string): SkillContribution[] => {
+    const careerCourse = careerCourses[careerId]?.find(cc => cc.course?.slug === courseSlug);
+    return careerCourse?.skill_contributions || [];
+  };
+
+  const getCareerCourses = (careerId: string) => {
+    return careerCourses[careerId] || [];
+  };
+
   return {
     careers,
     careerSkills,
@@ -104,6 +129,8 @@ export const useCareers = () => {
     getCareerById,
     getCareerSkills,
     getCareerCourseSlugs,
+    getSkillContributionsForCourse,
+    getCareerCourses,
     refetch: fetchCareers,
   };
 };
