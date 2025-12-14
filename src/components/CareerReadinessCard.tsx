@@ -1,8 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, Zap, TrendingUp, CheckCircle } from "lucide-react";
+import { Target, Zap, TrendingUp, CheckCircle, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { useCareers, Career } from "@/hooks/useCareers";
 import * as Icons from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ChartConfig,
   ChartContainer,
@@ -40,11 +43,13 @@ export const CareerReadinessCard = ({
   completedCourseSlugs = [],
   onGetStarted
 }: CareerReadinessCardProps) => {
-  const { careers, getCareerBySlug, getCareerSkills, getCareerCourseSlugs, getSkillContributionsForCourse, loading } = useCareers();
+  const { careers, getCareerBySlug, getCareerSkills, getCareerCourseSlugs, getSkillContributionsForCourse, getCareerCourses, loading } = useCareers();
+  const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   
   const career = getCareerBySlug(selectedCareerSlug);
   const skills = career ? getCareerSkills(career.id) : [];
   const careerCourseSlugs = career ? getCareerCourseSlugs(career.id) : [];
+  const careerCourses = career ? getCareerCourses(career.id) : [];
   
   const readinessPercentage = totalRequiredCourses > 0 
     ? Math.round((completedCourses / totalRequiredCourses) * 100) 
@@ -59,6 +64,28 @@ export const CareerReadinessCard = ({
 
   const readiness = getReadinessLevel();
   const ReadinessIcon = readiness.icon;
+
+  // Get courses that contribute to a specific skill with their contribution values
+  const getCoursesForSkill = (skillName: string) => {
+    const coursesForSkill: { slug: string; name: string; contribution: number; completed: boolean }[] = [];
+    
+    careerCourses.forEach(cc => {
+      if (cc.course) {
+        const contributions = cc.skill_contributions || [];
+        const contribution = contributions.find(c => c.skill_name === skillName);
+        if (contribution && contribution.contribution > 0) {
+          coursesForSkill.push({
+            slug: cc.course.slug,
+            name: cc.course.name,
+            contribution: contribution.contribution,
+            completed: completedCourseSlugs.includes(cc.course.slug)
+          });
+        }
+      }
+    });
+    
+    return coursesForSkill.sort((a, b) => b.contribution - a.contribution);
+  };
 
   // Calculate skill values based on completed courses and their skill contributions
   const calculateSkillData = (): SkillData[] => {
@@ -195,6 +222,78 @@ export const CareerReadinessCard = ({
           <div className="text-center">
             <p className="text-2xl font-bold">{readinessPercentage}%</p>
             <p className="text-xs text-muted-foreground">Ready</p>
+          </div>
+        </div>
+
+        {/* Skill Breakdown Section */}
+        <div className="pt-4 border-t border-border mt-4">
+          <p className="text-sm font-medium mb-3 flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary" />
+            Skill Improvement Paths
+          </p>
+          <div className="space-y-2">
+            {skillData.map((skill) => {
+              const coursesForSkill = getCoursesForSkill(skill.skill);
+              const incompleteCourses = coursesForSkill.filter(c => !c.completed);
+              const isExpanded = expandedSkill === skill.skill;
+              
+              return (
+                <Collapsible 
+                  key={skill.skill} 
+                  open={isExpanded}
+                  onOpenChange={(open) => setExpandedSkill(open ? skill.skill : null)}
+                >
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{skill.skill}</span>
+                        <Badge variant={skill.value >= 80 ? "default" : "secondary"} className="text-xs">
+                          {skill.value}%
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {incompleteCourses.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {incompleteCourses.length} course{incompleteCourses.length !== 1 ? 's' : ''} to improve
+                          </span>
+                        )}
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mt-2 ml-2 space-y-1">
+                      {coursesForSkill.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic py-1">No courses mapped to this skill yet</p>
+                      ) : (
+                        coursesForSkill.map((course) => (
+                          <div 
+                            key={course.slug}
+                            className={`flex items-center justify-between p-2 rounded text-xs ${
+                              course.completed 
+                                ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
+                                : 'bg-muted/30'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {course.completed ? (
+                                <CheckCircle className="h-3 w-3" />
+                              ) : (
+                                <div className="h-3 w-3 rounded-full border border-current" />
+                              )}
+                              <span>{course.name}</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              +{course.contribution}%
+                            </Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </div>
         </div>
       </CardContent>
