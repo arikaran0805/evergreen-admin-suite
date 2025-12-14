@@ -161,10 +161,11 @@ const Profile = () => {
         .eq("user_id", session.user.id)
         .eq("completed", true);
 
-      // Fetch lesson counts per course
+      // Fetch lesson counts per course (only published lessons count)
       const { data: courseLessons } = await supabase
         .from("posts")
-        .select("id, category_id");
+        .select("id, category_id")
+        .eq("status", "published");
 
       if (lessonProgress && courseLessons && courses) {
         // Count lessons per course
