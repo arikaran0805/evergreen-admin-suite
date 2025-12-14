@@ -83,6 +83,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
+  const { getCareerBySlug, getCareerCourseSlugs } = useCareers();
 
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
@@ -340,10 +341,11 @@ const Profile = () => {
     );
   }
 
-  // Career data will be fetched via useCareers hook in child components
-  const careerRelatedSlugs: string[] = []; // Will be populated from database
+  // Get career course slugs from database
+  const career = getCareerBySlug(selectedCareer);
+  const careerRelatedSlugs = career ? getCareerCourseSlugs(career.id) : [];
   
-  const enrolledInCareer = enrolledCourses.filter(e => 
+  const enrolledInCareer = enrolledCourses.filter(e =>
     careerRelatedSlugs.includes(e.courses?.slug)
   ).length;
   
