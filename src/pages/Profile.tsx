@@ -14,6 +14,7 @@ import { useBookmarks } from "@/hooks/useBookmarks";
 import { CourseProgressDisplay } from "@/components/CourseProgressDisplay";
 import { useCareers } from "@/hooks/useCareers";
 import { CareerReadinessCard } from "@/components/CareerReadinessCard";
+import { SkillMilestones } from "@/components/SkillMilestones";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import Layout from "@/components/Layout";
@@ -403,6 +404,10 @@ const Profile = () => {
             enrolledInCareer={enrolledInCareer}
             completedCourseSlugs={careerCompletedSlugs}
             onGetStarted={() => setCareerDialogOpen(true)}
+          />
+          <SkillMilestones 
+            completedCourses={completedInCareer}
+            readinessPercentage={careerRelatedSlugs.length > 0 ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) : 0}
           />
           <CareerSelectionDialog
             open={careerDialogOpen}
