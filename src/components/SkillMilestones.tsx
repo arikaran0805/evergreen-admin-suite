@@ -1,6 +1,8 @@
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Star, Zap, Target, Award, Crown, Flame, Medal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Star, Zap, Target, Crown, Flame, Medal, ChevronRight, Sparkles } from "lucide-react";
 
 interface Milestone {
   id: string;
@@ -15,6 +17,8 @@ interface Milestone {
 interface SkillMilestonesProps {
   completedCourses: number;
   readinessPercentage: number;
+  compact?: boolean;
+  onViewAll?: () => void;
 }
 
 const milestones: Milestone[] = [
@@ -74,16 +78,35 @@ const milestones: Milestone[] = [
   },
 ];
 
-export const SkillMilestones = ({ completedCourses, readinessPercentage }: SkillMilestonesProps) => {
+export const SkillMilestones = ({ completedCourses, readinessPercentage, compact = false, onViewAll }: SkillMilestonesProps) => {
+  const [celebratingId, setCelebratingId] = useState<string | null>(null);
+  const prevUnlockedRef = useRef<Set<string>>(new Set());
+
   const isMilestoneUnlocked = (milestone: Milestone): boolean => {
-    // First two milestones are based on completed courses
     if (milestone.id === 'first-step') return completedCourses >= 1;
     if (milestone.id === 'on-track') return completedCourses >= 3;
-    // Rest are based on readiness percentage
     return readinessPercentage >= milestone.threshold;
   };
 
-  const unlockedCount = milestones.filter(m => isMilestoneUnlocked(m)).length;
+  const unlockedMilestones = milestones.filter(m => isMilestoneUnlocked(m));
+  const unlockedIds = new Set(unlockedMilestones.map(m => m.id));
+
+  // Detect newly unlocked milestones
+  useEffect(() => {
+    const newlyUnlocked = [...unlockedIds].find(id => !prevUnlockedRef.current.has(id));
+    if (newlyUnlocked && prevUnlockedRef.current.size > 0) {
+      setCelebratingId(newlyUnlocked);
+      const timer = setTimeout(() => setCelebratingId(null), 2000);
+      return () => clearTimeout(timer);
+    }
+    prevUnlockedRef.current = unlockedIds;
+  }, [completedCourses, readinessPercentage]);
+
+  const displayMilestones = compact ? unlockedMilestones.slice(-3) : milestones;
+
+  if (compact && unlockedMilestones.length === 0) {
+    return null;
+  }
 
   return (
     <Card className="bg-gradient-to-br from-card to-muted/30 border-2 mt-4">
@@ -91,27 +114,44 @@ export const SkillMilestones = ({ completedCourses, readinessPercentage }: Skill
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            <h3 className="font-semibold text-sm">Milestones</h3>
+            <h3 className="font-semibold text-sm">{compact ? 'Recent Achievements' : 'Milestones'}</h3>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {unlockedCount}/{milestones.length}
-          </Badge>
+          {compact ? (
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={onViewAll}>
+              View All <ChevronRight className="h-3 w-3" />
+            </Button>
+          ) : (
+            <Badge variant="secondary" className="text-xs">
+              {unlockedMilestones.length}/{milestones.length}
+            </Badge>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          {milestones.map((milestone) => {
+        <div className={`grid ${compact ? 'grid-cols-3' : 'grid-cols-3 md:grid-cols-6'} gap-2`}>
+          {displayMilestones.map((milestone) => {
             const unlocked = isMilestoneUnlocked(milestone);
+            const isCelebrating = celebratingId === milestone.id;
+            
             return (
               <div
                 key={milestone.id}
-                className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
+                className={`relative flex flex-col items-center p-2 rounded-lg border transition-all ${
                   unlocked 
                     ? `${milestone.bgColor} border-transparent` 
                     : 'bg-muted/30 border-dashed border-border opacity-50'
-                }`}
+                } ${isCelebrating ? 'animate-bounce' : ''}`}
                 title={milestone.description}
               >
-                <div className={`p-2 rounded-full ${unlocked ? milestone.bgColor : 'bg-muted'}`}>
+                {/* Celebration sparkles */}
+                {isCelebrating && (
+                  <>
+                    <Sparkles className="absolute -top-1 -left-1 h-3 w-3 text-amber-400 animate-ping" />
+                    <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-400 animate-ping" style={{ animationDelay: '0.2s' }} />
+                    <Sparkles className="absolute -bottom-1 left-1/2 h-3 w-3 text-amber-400 animate-ping" style={{ animationDelay: '0.4s' }} />
+                  </>
+                )}
+                
+                <div className={`p-2 rounded-full ${unlocked ? milestone.bgColor : 'bg-muted'} ${isCelebrating ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
                   <span className={unlocked ? milestone.color : 'text-muted-foreground'}>
                     {milestone.icon}
                   </span>

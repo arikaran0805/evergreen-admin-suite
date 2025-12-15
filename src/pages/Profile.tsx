@@ -408,6 +408,8 @@ const Profile = () => {
           <SkillMilestones 
             completedCourses={completedInCareer}
             readinessPercentage={careerRelatedSlugs.length > 0 ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) : 0}
+            compact={true}
+            onViewAll={() => handleTabChange('achievements')}
           />
           <CareerSelectionDialog
             open={careerDialogOpen}
@@ -804,30 +806,60 @@ const Profile = () => {
     </div>
   );
 
-  const renderAchievements = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Achievements</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { name: 'First Steps', desc: 'Complete your first lesson', locked: true },
-          { name: 'Enrolled', desc: 'Enroll in your first course', locked: enrolledCourses.length === 0 },
-          { name: 'Bookworm', desc: 'Complete 5 courses', locked: true },
-          { name: 'Discussion Star', desc: 'Leave 10 comments', locked: true },
-        ].map((achievement, index) => (
-          <Card key={index} className={achievement.locked ? 'opacity-50' : ''}>
-            <CardContent className="p-4 text-center">
-              <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 ${achievement.locked ? 'bg-muted' : 'bg-primary/10'}`}>
-                <Award className={`h-6 w-6 ${achievement.locked ? 'text-muted-foreground' : 'text-primary'}`} />
-              </div>
-              <h4 className="font-medium text-sm">{achievement.name}</h4>
-              <p className="text-xs text-muted-foreground mt-1">{achievement.desc}</p>
-              {!achievement.locked && <Badge className="mt-2" variant="secondary">Unlocked</Badge>}
-            </CardContent>
-          </Card>
-        ))}
+  const renderAchievements = () => {
+    const readinessPercentage = careerRelatedSlugs.length > 0 
+      ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) 
+      : 0;
+
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Achievements</h2>
+        
+        {/* Skill Milestones - Full View */}
+        <SkillMilestones 
+          completedCourses={completedInCareer}
+          readinessPercentage={readinessPercentage}
+          compact={false}
+        />
+
+        {/* Additional Achievements */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              Learning Badges
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { name: 'First Lesson', desc: 'Complete your first lesson', locked: true },
+                { name: 'Enrolled', desc: 'Enroll in your first course', locked: enrolledCourses.length === 0 },
+                { name: 'Bookworm', desc: 'Complete 5 courses', locked: completedCourseSlugs.length < 5 },
+                { name: 'Discussion Star', desc: 'Leave 10 comments', locked: true },
+              ].map((achievement, index) => (
+                <div 
+                  key={index} 
+                  className={`p-4 rounded-lg border text-center transition-all ${
+                    achievement.locked 
+                      ? 'opacity-50 bg-muted/30 border-dashed' 
+                      : 'bg-primary/5 border-primary/20'
+                  }`}
+                >
+                  <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 ${
+                    achievement.locked ? 'bg-muted' : 'bg-primary/10'
+                  }`}>
+                    <Award className={`h-6 w-6 ${achievement.locked ? 'text-muted-foreground' : 'text-primary'}`} />
+                  </div>
+                  <h4 className="font-medium text-sm">{achievement.name}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">{achievement.desc}</p>
+                  {!achievement.locked && <Badge className="mt-2" variant="secondary">Unlocked</Badge>}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderNotifications = () => (
     <div className="space-y-6">
