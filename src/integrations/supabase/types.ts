@@ -970,27 +970,36 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_streak: number | null
           email: string
           full_name: string | null
           id: string
+          last_activity_date: string | null
+          max_streak: number | null
           selected_career: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_streak?: number | null
           email: string
           full_name?: string | null
           id: string
+          last_activity_date?: string | null
+          max_streak?: number | null
           selected_career?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_streak?: number | null
           email?: string
           full_name?: string | null
           id?: string
+          last_activity_date?: string | null
+          max_streak?: number | null
           selected_career?: string | null
           updated_at?: string
         }
