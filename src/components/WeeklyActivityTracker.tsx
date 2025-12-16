@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, CheckCircle, Clock } from "lucide-react";
+import { Activity, CheckCircle, Clock, Flame, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ const formatDuration = (minutes: number): string => {
 export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps) => {
   const [weekDays, setWeekDays] = useState<DayActivity[]>([]);
   const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
   const [totalWeekMinutes, setTotalWeekMinutes] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -117,6 +118,39 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       }
 
       setStreak(currentStreak);
+
+      // Get and update max streak from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('max_streak, current_streak, last_activity_date')
+        .eq('id', user.id)
+        .single();
+
+      const storedMaxStreak = (profile as any)?.max_streak || 0;
+      const lastActivityDate = (profile as any)?.last_activity_date;
+      const newMaxStreak = Math.max(currentStreak, storedMaxStreak);
+      setMaxStreak(newMaxStreak);
+
+      // Update profile with current streak and max streak if needed
+      if (currentStreak > storedMaxStreak) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            max_streak: currentStreak,
+            current_streak: currentStreak,
+            last_activity_date: todayStr
+          } as any)
+          .eq('id', user.id);
+      } else {
+        await supabase
+          .from('profiles')
+          .update({ 
+            current_streak: currentStreak,
+            last_activity_date: todayMinutes > 0 ? todayStr : lastActivityDate
+          } as any)
+          .eq('id', user.id);
+      }
+
       setLoading(false);
     };
 
@@ -153,9 +187,15 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
             <Activity className="h-5 w-5 text-primary" />
             <CardTitle className="text-base">Weekly Activity</CardTitle>
           </div>
-          <div className="flex items-center gap-1 text-sm">
-            <span className="font-bold text-primary">{streak}</span>
-            <span className="text-muted-foreground">day streak</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5" title="Current streak">
+              <Flame className={cn("h-5 w-5", streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
+              <span className={cn("font-bold", streak > 0 ? "text-orange-500" : "text-muted-foreground")}>{streak}</span>
+            </div>
+            <div className="flex items-center gap-1.5" title="Max streak">
+              <Trophy className={cn("h-4 w-4", maxStreak > 0 ? "text-yellow-500" : "text-muted-foreground")} />
+              <span className={cn("text-sm font-medium", maxStreak > 0 ? "text-yellow-500" : "text-muted-foreground")}>{maxStreak}</span>
+            </div>
           </div>
         </div>
       </CardHeader>
