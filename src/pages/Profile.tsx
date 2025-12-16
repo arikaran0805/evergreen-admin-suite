@@ -37,7 +37,9 @@ import {
   LogOut,
   FileText,
   Sparkles,
-  Target
+  Target,
+  Flame,
+  Trophy
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -80,6 +82,8 @@ const Profile = () => {
   const [completedCourseSlugs, setCompletedCourseSlugs] = useState<string[]>([]);
   const [selectedCareer, setSelectedCareer] = useState<string>('data-science');
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -124,6 +128,9 @@ const Profile = () => {
         if ((profile as any).selected_career) {
           setSelectedCareer((profile as any).selected_career as string);
         }
+        // Load streak data
+        setCurrentStreak((profile as any).current_streak || 0);
+        setMaxStreak((profile as any).max_streak || 0);
       }
 
       // Fetch enrolled courses
@@ -373,20 +380,45 @@ const Profile = () => {
         {/* Welcome Section - Left */}
         <div className="lg:col-span-3 space-y-4">
           <div className="p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border">
-            <div className="flex items-start gap-4">
-              <Avatar className="h-16 w-16 border-2 border-primary ring-4 ring-primary/10">
-                <AvatarImage src={avatarUrl} alt={fullName} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                  {fullName?.charAt(0)?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium text-primary">Welcome back!</span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-16 w-16 border-2 border-primary ring-4 ring-primary/10">
+                  <AvatarImage src={avatarUrl} alt={fullName} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                    {fullName?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-primary">Welcome back!</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
+                  <p className="text-muted-foreground mt-1">Continue your learning journey</p>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
-                <p className="text-muted-foreground mt-1">Continue your learning journey</p>
+              </div>
+              
+              {/* Streak Display */}
+              <div className="flex items-center gap-6 px-4 py-3 rounded-lg bg-background/50 border">
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-1.5">
+                    <Flame className={`h-6 w-6 ${currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                    <span className={`text-2xl font-bold ${currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                      {currentStreak}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Day Streak</span>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-1.5">
+                    <Trophy className={`h-5 w-5 ${maxStreak > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                    <span className={`text-2xl font-bold ${maxStreak > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                      {maxStreak}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Max Streak</span>
+                </div>
               </div>
             </div>
           </div>
