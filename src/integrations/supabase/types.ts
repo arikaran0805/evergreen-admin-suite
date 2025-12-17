@@ -975,8 +975,11 @@ export type Database = {
           full_name: string | null
           id: string
           last_activity_date: string | null
+          last_freeze_date: string | null
           max_streak: number | null
           selected_career: string | null
+          streak_freezes_available: number
+          streak_freezes_used: number
           updated_at: string
         }
         Insert: {
@@ -987,8 +990,11 @@ export type Database = {
           full_name?: string | null
           id: string
           last_activity_date?: string | null
+          last_freeze_date?: string | null
           max_streak?: number | null
           selected_career?: string | null
+          streak_freezes_available?: number
+          streak_freezes_used?: number
           updated_at?: string
         }
         Update: {
@@ -999,8 +1005,11 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_activity_date?: string | null
+          last_freeze_date?: string | null
           max_streak?: number | null
           selected_career?: string | null
+          streak_freezes_available?: number
+          streak_freezes_used?: number
           updated_at?: string
         }
         Relationships: []

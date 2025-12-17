@@ -119,25 +119,53 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
       setStreak(currentStreak);
 
-      // Get and update max streak from profile
+      // Get and update max streak from profile (including freeze info)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('max_streak, current_streak, last_activity_date')
+        .select('max_streak, current_streak, last_activity_date, last_freeze_date')
         .eq('id', user.id)
         .single();
 
       const storedMaxStreak = (profile as any)?.max_streak || 0;
       const lastActivityDate = (profile as any)?.last_activity_date;
-      const newMaxStreak = Math.max(currentStreak, storedMaxStreak);
+      const lastFreezeDate = (profile as any)?.last_freeze_date;
+
+      // Recalculate streak accounting for freeze dates
+      let recalculatedStreak = 0;
+      let streakCheckDate = today;
+      
+      // Check if user has activity today or used freeze today
+      const todayFrozen = lastFreezeDate === todayStr;
+      
+      if (todayMinutes === 0 && !todayFrozen) {
+        streakCheckDate = subDays(today, 1);
+      }
+
+      // Count consecutive days (activity OR freeze counts)
+      for (let i = 0; i < 365; i++) {
+        const dateStr = streakCheckDate.toISOString().split('T')[0];
+        const dayMinutes = Math.floor((dailyTotals.get(dateStr) || 0) / 60);
+        const wasFrozen = lastFreezeDate === dateStr;
+
+        if (dayMinutes > 0 || wasFrozen) {
+          recalculatedStreak++;
+          streakCheckDate = subDays(streakCheckDate, 1);
+        } else {
+          break;
+        }
+      }
+
+      setStreak(recalculatedStreak);
+      const newMaxStreak = Math.max(recalculatedStreak, storedMaxStreak);
       setMaxStreak(newMaxStreak);
 
       // Update profile with current streak and max streak if needed
-      if (currentStreak > storedMaxStreak) {
+      if (recalculatedStreak > storedMaxStreak) {
         await supabase
           .from('profiles')
           .update({ 
-            max_streak: currentStreak,
-            current_streak: currentStreak,
+            max_streak: recalculatedStreak,
+            current_streak: recalculatedStreak,
             last_activity_date: todayStr
           } as any)
           .eq('id', user.id);
@@ -145,7 +173,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         await supabase
           .from('profiles')
           .update({ 
-            current_streak: currentStreak,
+            current_streak: recalculatedStreak,
             last_activity_date: todayMinutes > 0 ? todayStr : lastActivityDate
           } as any)
           .eq('id', user.id);

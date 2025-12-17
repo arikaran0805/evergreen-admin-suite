@@ -39,7 +39,8 @@ import {
   Sparkles,
   Target,
   Flame,
-  Trophy
+  Trophy,
+  Snowflake
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -84,6 +85,8 @@ const Profile = () => {
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
+  const [streakFreezesAvailable, setStreakFreezesAvailable] = useState(2);
+  const [isFreezingStreak, setIsFreezingStreak] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -131,6 +134,7 @@ const Profile = () => {
         // Load streak data
         setCurrentStreak((profile as any).current_streak || 0);
         setMaxStreak((profile as any).max_streak || 0);
+        setStreakFreezesAvailable((profile as any).streak_freezes_available ?? 2);
       }
 
       // Fetch enrolled courses
@@ -315,6 +319,41 @@ const Profile = () => {
     navigate("/auth");
   };
 
+  const useStreakFreeze = async () => {
+    if (!userId || streakFreezesAvailable <= 0 || isFreezingStreak) return;
+
+    setIsFreezingStreak(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          streak_freezes_available: streakFreezesAvailable - 1,
+          streak_freezes_used: (await supabase.from('profiles').select('streak_freezes_used').eq('id', userId).single()).data?.streak_freezes_used + 1 || 1,
+          last_freeze_date: today,
+          last_activity_date: today, // Counts as activity to preserve streak
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setStreakFreezesAvailable(prev => prev - 1);
+      toast({
+        title: "Streak Frozen! ❄️",
+        description: "Your streak is protected for today. You won't lose your progress!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to use streak freeze",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFreezingStreak(false);
+    }
+  };
+
   const handleCareerSelect = async (careerSlug: string) => {
     setSelectedCareer(careerSlug);
     
@@ -405,7 +444,7 @@ const Profile = () => {
                     <Flame className="h-8 w-8 text-white" />
                   </div>
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col flex-1">
                   <span className="text-xs font-semibold tracking-widest text-rose-400 uppercase">Streak</span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-bold text-foreground">{currentStreak}</span>
@@ -413,6 +452,24 @@ const Profile = () => {
                   </div>
                   <span className="text-xs text-muted-foreground mt-0.5">
                     Max: {maxStreak} days
+                  </span>
+                </div>
+                {/* Streak Freeze Button */}
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={useStreakFreeze}
+                    disabled={streakFreezesAvailable <= 0 || isFreezingStreak}
+                    className={`p-2.5 rounded-full transition-all ${
+                      streakFreezesAvailable > 0 
+                        ? 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 hover:text-sky-300 cursor-pointer' 
+                        : 'bg-muted text-muted-foreground cursor-not-allowed'
+                    }`}
+                    title={streakFreezesAvailable > 0 ? "Use streak freeze" : "No freezes available"}
+                  >
+                    <Snowflake className={`h-5 w-5 ${isFreezingStreak ? 'animate-spin' : ''}`} />
+                  </button>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {streakFreezesAvailable} left
                   </span>
                 </div>
               </div>
