@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, CheckCircle, Clock, Flame, Trophy } from "lucide-react";
+import { Activity, Clock, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfWeek, endOfWeek, eachDayOfInterval, subDays } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, subDays, format } from "date-fns";
 
 interface DayActivity {
   day: string;
@@ -28,10 +28,9 @@ const formatDuration = (minutes: number): string => {
 
 export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps) => {
   const [weekDays, setWeekDays] = useState<DayActivity[]>([]);
-  const [streak, setStreak] = useState(0);
-  const [maxStreak, setMaxStreak] = useState(0);
   const [totalWeekMinutes, setTotalWeekMinutes] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [maxMinutes, setMaxMinutes] = useState(60); // Default max for scaling
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -56,9 +55,10 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       // Create week days with activity data
       const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const shortDayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       let weekTotal = 0;
+      let maxDayMinutes = 60; // Minimum scale
 
       const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
         const dateStr = date.toISOString().split('T')[0];
@@ -66,6 +66,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         const totalSeconds = dayTimeRecords.reduce((sum, t) => sum + t.duration_seconds, 0);
         const totalMinutes = Math.floor(totalSeconds / 60);
         weekTotal += totalMinutes;
+        if (totalMinutes > maxDayMinutes) maxDayMinutes = totalMinutes;
 
         return {
           day: dayNames[index],
@@ -78,8 +79,9 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
       setWeekDays(activityDays);
       setTotalWeekMinutes(weekTotal);
+      setMaxMinutes(Math.max(maxDayMinutes, 60)); // At least 60 min scale
 
-      // Calculate streak (consecutive days with activity)
+      // Calculate streak for profile update
       const { data: allTimeData } = await supabase
         .from('lesson_time_tracking')
         .select('tracked_date, duration_seconds')
@@ -93,31 +95,8 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
       });
 
-      let currentStreak = 0;
-      let checkDate = today;
-      
-      // Check if user has activity today
       const todayStr = today.toISOString().split('T')[0];
       const todayMinutes = Math.floor((dailyTotals.get(todayStr) || 0) / 60);
-      
-      if (todayMinutes === 0) {
-        checkDate = subDays(today, 1);
-      }
-
-      // Count consecutive days
-      for (let i = 0; i < 365; i++) {
-        const dateStr = checkDate.toISOString().split('T')[0];
-        const dayMinutes = Math.floor((dailyTotals.get(dateStr) || 0) / 60);
-
-        if (dayMinutes > 0) {
-          currentStreak++;
-          checkDate = subDays(checkDate, 1);
-        } else {
-          break;
-        }
-      }
-
-      setStreak(currentStreak);
 
       // Get and update max streak from profile (including freeze info)
       const { data: profile } = await supabase
@@ -134,14 +113,12 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       let recalculatedStreak = 0;
       let streakCheckDate = today;
       
-      // Check if user has activity today or used freeze today
       const todayFrozen = lastFreezeDate === todayStr;
       
       if (todayMinutes === 0 && !todayFrozen) {
         streakCheckDate = subDays(today, 1);
       }
 
-      // Count consecutive days (activity OR freeze counts)
       for (let i = 0; i < 365; i++) {
         const dateStr = streakCheckDate.toISOString().split('T')[0];
         const dayMinutes = Math.floor((dailyTotals.get(dateStr) || 0) / 60);
@@ -155,9 +132,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         }
       }
 
-      setStreak(recalculatedStreak);
       const newMaxStreak = Math.max(recalculatedStreak, storedMaxStreak);
-      setMaxStreak(newMaxStreak);
 
       // Update profile with current streak and max streak if needed
       if (recalculatedStreak > storedMaxStreak) {
@@ -188,6 +163,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
   const today = new Date();
   const currentDayIndex = today.getDay();
   const activeDays = weekDays.filter(d => d.hasActivity).length;
+  const avgMinutes = activeDays > 0 ? Math.round(totalWeekMinutes / activeDays) : 0;
 
   if (loading) {
     return (
@@ -199,7 +175,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
             Loading activity...
           </div>
         </CardContent>
@@ -209,76 +185,82 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
   return (
     <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
             <CardTitle className="text-base">Weekly Activity</CardTitle>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5" title="Current streak">
-              <Flame className={cn("h-5 w-5", streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
-              <span className={cn("font-bold", streak > 0 ? "text-orange-500" : "text-muted-foreground")}>{streak}</span>
-            </div>
-            <div className="flex items-center gap-1.5" title="Max streak">
-              <Trophy className={cn("h-4 w-4", maxStreak > 0 ? "text-yellow-500" : "text-muted-foreground")} />
-              <span className={cn("text-sm font-medium", maxStreak > 0 ? "text-yellow-500" : "text-muted-foreground")}>{maxStreak}</span>
-            </div>
-          </div>
+          <span className="text-2xl font-bold text-primary">{formatDuration(totalWeekMinutes)}</span>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between gap-2">
+      <CardContent className="space-y-4">
+        {/* Bar Chart */}
+        <div className="flex items-end justify-between gap-2 h-32">
           {weekDays.map((day, index) => {
             const isToday = index === currentDayIndex;
-            const isPast = index < currentDayIndex;
+            const heightPercent = maxMinutes > 0 ? (day.totalMinutes / maxMinutes) * 100 : 0;
             
             return (
               <div
                 key={day.day}
-                className="flex flex-col items-center gap-1.5"
-                title={day.hasActivity ? `${formatDuration(day.totalMinutes)} reading` : 'No activity'}
+                className="flex-1 flex flex-col items-center gap-1"
               >
-                <div
-                  className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center transition-all",
-                    day.hasActivity 
-                      ? "bg-primary text-primary-foreground" 
-                      : isToday
-                        ? "border-2 border-primary bg-primary/10"
-                        : isPast
-                          ? "bg-muted text-muted-foreground"
-                          : "border border-border bg-background"
-                  )}
+                <span className="text-xs text-muted-foreground mb-1">
+                  {day.totalMinutes > 0 ? formatDuration(day.totalMinutes) : ''}
+                </span>
+                <div 
+                  className="w-full relative flex items-end justify-center"
+                  style={{ height: '80px' }}
                 >
-                  {day.hasActivity ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <span className="text-xs font-medium">{day.shortDay}</span>
-                  )}
+                  <div
+                    className={cn(
+                      "w-full rounded-t-md transition-all duration-500",
+                      isToday 
+                        ? "bg-primary" 
+                        : day.hasActivity 
+                          ? "bg-primary/60" 
+                          : "bg-muted"
+                    )}
+                    style={{ 
+                      height: day.hasActivity ? `${Math.max(heightPercent, 8)}%` : '4px',
+                      minHeight: day.hasActivity ? '8px' : '4px'
+                    }}
+                  />
                 </div>
                 <span className={cn(
-                  "text-xs",
-                  isToday ? "font-semibold text-primary" : "text-muted-foreground"
+                  "text-xs font-medium",
+                  isToday ? "text-primary" : "text-muted-foreground"
                 )}>
-                  {isToday ? 'Today' : day.shortDay}
+                  {day.shortDay}
                 </span>
               </div>
             );
           })}
         </div>
-        
-        <div className="mt-4 pt-4 border-t space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>This week</span>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex items-center gap-1 text-muted-foreground mb-1">
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-xs">Total</span>
             </div>
-            <span className="font-semibold text-primary">{formatDuration(totalWeekMinutes)}</span>
+            <span className="font-semibold text-sm">{formatDuration(totalWeekMinutes)}</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Active days</span>
-            <span className="font-medium">{activeDays}/7</span>
+          <div className="flex flex-col items-center text-center">
+            <div className="flex items-center gap-1 text-muted-foreground mb-1">
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span className="text-xs">Avg/Day</span>
+            </div>
+            <span className="font-semibold text-sm">{formatDuration(avgMinutes)}</span>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <div className="flex items-center gap-1 text-muted-foreground mb-1">
+              <Activity className="h-3.5 w-3.5" />
+              <span className="text-xs">Active</span>
+            </div>
+            <span className="font-semibold text-sm">{activeDays}/7 days</span>
           </div>
         </div>
       </CardContent>
