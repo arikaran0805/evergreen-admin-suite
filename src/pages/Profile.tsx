@@ -399,25 +399,21 @@ const Profile = () => {
               </div>
               
               {/* Streak Display */}
-              <div className="flex items-center gap-6 px-4 py-3 rounded-lg bg-background/50 border">
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-1.5">
-                    <Flame className={`h-6 w-6 ${currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
-                    <span className={`text-2xl font-bold ${currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
-                      {currentStreak}
-                    </span>
+              <div className="flex items-center gap-4 px-5 py-4 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/10 border border-rose-500/20">
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+                    <Flame className="h-8 w-8 text-white" />
                   </div>
-                  <span className="text-xs text-muted-foreground">Day Streak</span>
                 </div>
-                <div className="h-8 w-px bg-border" />
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-1.5">
-                    <Trophy className={`h-5 w-5 ${maxStreak > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-                    <span className={`text-2xl font-bold ${maxStreak > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
-                      {maxStreak}
-                    </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold tracking-widest text-rose-400 uppercase">Streak</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-foreground">{currentStreak}</span>
+                    <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Days</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">Max Streak</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">
+                    Max: {maxStreak} days
+                  </span>
                 </div>
               </div>
             </div>
