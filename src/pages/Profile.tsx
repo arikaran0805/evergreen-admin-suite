@@ -438,7 +438,7 @@ const Profile = () => {
               </div>
               
               {/* Streak Display */}
-              <div className="flex items-center gap-4 px-5 py-4 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/10 border border-rose-500/20">
+              <div className="flex items-center gap-4 px-5 py-4 rounded-xl bg-background/50 border">
                 <div className="relative">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
                     <Flame className="h-8 w-8 text-white" />
