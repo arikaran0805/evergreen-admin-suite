@@ -17,6 +17,7 @@ import { CareerReadinessCard } from "@/components/CareerReadinessCard";
 import { SkillMilestones } from "@/components/SkillMilestones";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
+import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { z } from "zod";
 import { 
@@ -478,6 +479,9 @@ const Profile = () => {
 
           {/* Weekly Activity Tracker */}
           <WeeklyActivityTracker />
+          
+          {/* Continue Learning */}
+          <ContinueLearningCard />
         </div>
 
         {/* Career Readiness - Right */}
