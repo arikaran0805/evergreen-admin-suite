@@ -146,6 +146,64 @@ const OngoingCourseCard = ({
   );
 };
 
+// FeaturedCourseCard component for the learnings section
+const FeaturedCourseCard = ({ 
+  course, 
+  gradient,
+  onClick 
+}: { 
+  course: any;
+  gradient: string;
+  onClick: () => void;
+}) => {
+  const [lessonCount, setLessonCount] = useState(0);
+
+  useEffect(() => {
+    const fetchLessonCount = async () => {
+      if (!course?.id) return;
+
+      const { count } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('category_id', course.id)
+        .eq('status', 'published');
+
+      setLessonCount(count || 0);
+    };
+
+    fetchLessonCount();
+  }, [course?.id]);
+
+  // Estimate hours (avg 15 min per lesson)
+  const estimatedHours = Math.max(1, Math.round((lessonCount * 15) / 60));
+
+  return (
+    <Card 
+      className={`bg-gradient-to-br ${gradient} border-0 text-white cursor-pointer hover:scale-[1.02] transition-transform`}
+      onClick={onClick}
+    >
+      <CardContent className="p-5 h-44 flex flex-col justify-between">
+        <div>
+          <h4 className="font-bold text-lg">{course.name}</h4>
+          <div className="flex items-center gap-4 mt-2 text-sm text-white/80">
+            <span className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              {lessonCount} Lessons
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              {estimatedHours}h
+            </span>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <BookOpen className="h-12 w-12 text-white/30" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -817,23 +875,12 @@ const Profile = () => {
             <h3 className="text-lg font-semibold">Featured</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {featuredCourses.map((course, index) => (
-                <Card 
+                <FeaturedCourseCard 
                   key={course.id}
-                  className={`bg-gradient-to-br ${gradients[index % gradients.length]} border-0 text-white cursor-pointer hover:scale-[1.02] transition-transform`}
+                  course={course}
+                  gradient={gradients[index % gradients.length]}
                   onClick={() => navigate(`/course/${course.slug}`)}
-                >
-                  <CardContent className="p-5 h-44 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-bold text-lg">{course.name}</h4>
-                      <p className="text-sm text-white/70 line-clamp-2 mt-1">
-                        {course.description || 'Explore this course'}
-                      </p>
-                    </div>
-                    <div className="flex justify-end">
-                      <BookOpen className="h-12 w-12 text-white/30" />
-                    </div>
-                  </CardContent>
-                </Card>
+                />
               ))}
             </div>
           </div>
