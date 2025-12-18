@@ -2,130 +2,140 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlayCircle, Clock, ChevronRight } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { BookOpen } from 'lucide-react';
 
-interface RecentLesson {
-  lessonId: string;
-  lessonTitle: string;
-  courseSlug: string;
-  lessonSlug: string;
+interface CourseProgress {
+  courseId: string;
   courseName: string;
-  lastViewed: string;
+  courseSlug: string;
+  featuredImage: string | null;
+  completedLessons: number;
+  totalLessons: number;
 }
 
 export const ContinueLearningCard = () => {
-  const [recentLesson, setRecentLesson] = useState<RecentLesson | null>(null);
+  const [courses, setCourses] = useState<CourseProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchRecentLesson = async () => {
+    const fetchCourseProgress = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Get most recent lesson progress
-        const { data: progress } = await supabase
-          .from('lesson_progress')
-          .select(`
-            lesson_id,
-            viewed_at,
-            courses:course_id (name, slug)
-          `)
+        // Get enrolled courses
+        const { data: enrollments } = await supabase
+          .from('course_enrollments')
+          .select('course_id, courses:course_id (id, name, slug, featured_image)')
           .eq('user_id', session.user.id)
-          .order('viewed_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(4);
 
-        if (progress) {
-          // Get lesson details
-          const { data: lesson } = await supabase
+        if (!enrollments) return;
+
+        const courseProgressData: CourseProgress[] = [];
+
+        for (const enrollment of enrollments) {
+          const course = enrollment.courses as any;
+          if (!course) continue;
+
+          // Get total lessons for this course
+          const { count: totalLessons } = await supabase
             .from('posts')
-            .select('id, title, slug')
-            .eq('id', progress.lesson_id)
-            .maybeSingle();
+            .select('*', { count: 'exact', head: true })
+            .eq('category_id', course.id)
+            .eq('status', 'published');
 
-          if (lesson && progress.courses) {
-            setRecentLesson({
-              lessonId: lesson.id,
-              lessonTitle: lesson.title,
-              courseSlug: (progress.courses as any).slug,
-              lessonSlug: lesson.slug,
-              courseName: (progress.courses as any).name,
-              lastViewed: progress.viewed_at,
-            });
-          }
+          // Get completed lessons for this course
+          const { count: completedLessons } = await supabase
+            .from('lesson_progress')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', session.user.id)
+            .eq('course_id', course.id)
+            .eq('completed', true);
+
+          courseProgressData.push({
+            courseId: course.id,
+            courseName: course.name,
+            courseSlug: course.slug,
+            featuredImage: course.featured_image,
+            completedLessons: completedLessons || 0,
+            totalLessons: totalLessons || 0,
+          });
         }
+
+        setCourses(courseProgressData);
       } catch (error) {
-        console.error('Error fetching recent lesson:', error);
+        console.error('Error fetching course progress:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRecentLesson();
+    fetchCourseProgress();
   }, []);
-
-  const handleContinue = () => {
-    if (recentLesson) {
-      navigate(`/course/${recentLesson.courseSlug}?lesson=${recentLesson.lessonSlug}`);
-    }
-  };
-
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
 
   if (loading) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-4">
-          <div className="h-10 animate-pulse bg-muted rounded" />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[1, 2].map((i) => (
+          <Card key={i} className="bg-muted/30">
+            <CardContent className="p-4">
+              <div className="h-16 animate-pulse bg-muted rounded" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     );
   }
 
-  if (!recentLesson) {
+  if (courses.length === 0) {
     return null;
   }
 
   return (
-    <Card className="border bg-gradient-to-r from-primary/5 to-transparent hover:border-primary/30 transition-colors">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <PlayCircle className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {getTimeAgo(recentLesson.lastViewed)} • {recentLesson.courseName}
-              </p>
-              <p className="font-medium text-sm truncate">{recentLesson.lessonTitle}</p>
-            </div>
-          </div>
-          <Button 
-            size="sm" 
-            onClick={handleContinue}
-            className="shrink-0"
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {courses.map((course) => {
+        const progressPercent = course.totalLessons > 0 
+          ? (course.completedLessons / course.totalLessons) * 100 
+          : 0;
+
+        return (
+          <Card 
+            key={course.courseId}
+            className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+            onClick={() => navigate(`/course/${course.courseSlug}`)}
           >
-            Continue
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0">
+                  {course.featuredImage ? (
+                    <img 
+                      src={course.featuredImage} 
+                      alt={course.courseName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <BookOpen className="h-8 w-8 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground truncate">{course.courseName}</h4>
+                  <Progress value={progressPercent} className="h-2 mt-2" />
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-muted-foreground">Total Progress</span>
+                    <span className="text-sm font-medium">
+                      <span className="text-foreground">{course.completedLessons}</span>
+                      <span className="text-muted-foreground"> / {course.totalLessons}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
   );
 };
