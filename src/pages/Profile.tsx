@@ -69,6 +69,83 @@ const sidebarItems = [
   { id: 'settings' as TabType, label: 'Settings', icon: Settings },
 ];
 
+// OngoingCourseCard component for the learnings section
+const OngoingCourseCard = ({ 
+  course, 
+  userId, 
+  onClick 
+}: { 
+  course: any; 
+  userId: string | null;
+  onClick: () => void;
+}) => {
+  const [progress, setProgress] = useState({ completed: 0, total: 0 });
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      if (!course?.id || !userId) return;
+
+      const { count: totalLessons } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('category_id', course.id)
+        .eq('status', 'published');
+
+      const { count: completedLessons } = await supabase
+        .from('lesson_progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('course_id', course.id)
+        .eq('completed', true);
+
+      setProgress({
+        completed: completedLessons || 0,
+        total: totalLessons || 0,
+      });
+    };
+
+    fetchProgress();
+  }, [course?.id, userId]);
+
+  const progressPercent = progress.total > 0 
+    ? (progress.completed / progress.total) * 100 
+    : 0;
+
+  return (
+    <Card 
+      className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0">
+            {course?.featured_image ? (
+              <img 
+                src={course.featured_image} 
+                alt={course?.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <BookOpen className="h-8 w-8 text-primary" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground truncate">{course?.name}</h4>
+            <Progress value={progressPercent} className="h-2 mt-2" />
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-muted-foreground">Total Progress</span>
+              <span className="text-sm font-medium">
+                <span className="text-foreground">{progress.completed}</span>
+                <span className="text-muted-foreground"> / {progress.total}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -684,71 +761,86 @@ const Profile = () => {
     </div>
   );
 
-  const renderLearnings = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">My Learnings</h2>
-        <Badge variant="secondary">{enrolledCourses.length} Courses</Badge>
-      </div>
-      
-      {enrolledCourses.length > 0 ? (
-        <div className="grid gap-4">
-          {enrolledCourses.map((enrollment) => (
-            <Card 
-              key={enrollment.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/course/${enrollment.courses?.slug}`)}
-            >
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                  {enrollment.courses?.featured_image ? (
-                    <img 
-                      src={enrollment.courses.featured_image} 
-                      alt={enrollment.courses.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg truncate">{enrollment.courses?.name}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                    {enrollment.courses?.description || 'No description available'}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Badge variant="outline">{enrollment.courses?.level || 'Beginner'}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {userId && enrollment.courses?.id && (
-                    <CourseProgressDisplay 
-                      courseId={enrollment.courses.id} 
-                      userId={userId} 
-                      className="mt-3"
-                    />
-                  )}
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+  const renderLearnings = () => {
+    // Get featured courses (not enrolled)
+    const enrolledCourseIds = enrolledCourses.map(e => e.courses?.id);
+    const featuredCourses = allCourses.filter(c => !enrolledCourseIds.includes(c.id)).slice(0, 4);
+
+    // Color gradients for featured cards
+    const gradients = [
+      'from-blue-600 to-blue-800',
+      'from-teal-600 to-teal-800', 
+      'from-purple-600 to-purple-800',
+      'from-cyan-600 to-cyan-800',
+    ];
+
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Study Plan</h2>
+          <Button variant="ghost" onClick={() => navigate('/courses')} className="gap-1">
+            My Study Plan <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Ongoing Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Ongoing</h3>
+          {enrolledCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {enrolledCourses.map((enrollment) => (
+                <OngoingCourseCard 
+                  key={enrollment.id}
+                  course={enrollment.courses}
+                  userId={userId}
+                  onClick={() => navigate(`/course/${enrollment.courses?.slug}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-muted/30">
+              <CardContent className="text-center py-8">
+                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">No ongoing courses. Start learning today!</p>
+                <Button className="mt-4" size="sm" onClick={() => navigate('/courses')}>
+                  Browse Courses
+                </Button>
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
-      ) : (
-        <Card>
-          <CardContent className="text-center py-12">
-            <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No courses yet</h3>
-            <p className="text-muted-foreground mb-4">Start your learning journey by enrolling in a course.</p>
-            <Button onClick={() => navigate('/courses')}>Explore Courses</Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+
+        {/* Featured Section */}
+        {featuredCourses.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Featured</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {featuredCourses.map((course, index) => (
+                <Card 
+                  key={course.id}
+                  className={`bg-gradient-to-br ${gradients[index % gradients.length]} border-0 text-white cursor-pointer hover:scale-[1.02] transition-transform`}
+                  onClick={() => navigate(`/course/${course.slug}`)}
+                >
+                  <CardContent className="p-5 h-44 flex flex-col justify-between">
+                    <div>
+                      <h4 className="font-bold text-lg">{course.name}</h4>
+                      <p className="text-sm text-white/70 line-clamp-2 mt-1">
+                        {course.description || 'Explore this course'}
+                      </p>
+                    </div>
+                    <div className="flex justify-end">
+                      <BookOpen className="h-12 w-12 text-white/30" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderBookmarks = () => {
     const courseBookmarks = bookmarks.filter(b => b.course_id);
