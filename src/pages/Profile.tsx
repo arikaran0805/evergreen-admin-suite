@@ -228,7 +228,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
-  const { getCareerBySlug, getCareerCourseSlugs } = useCareers();
+  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills } = useCareers();
 
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
@@ -593,7 +593,6 @@ const Profile = () => {
     : 0;
 
   // Get skills and readiness percentage for the career
-  const { getCareerSkills } = useCareers();
   const skills = career ? getCareerSkills(career.id) : [];
   const readinessPercentage = careerRelatedSlugs.length > 0 
     ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) 
