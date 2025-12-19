@@ -224,6 +224,7 @@ const Profile = () => {
   const [maxStreak, setMaxStreak] = useState(0);
   const [streakFreezesAvailable, setStreakFreezesAvailable] = useState(2);
   const [isFreezingStreak, setIsFreezingStreak] = useState(false);
+  const [weeklyActivityData, setWeeklyActivityData] = useState<{totalMinutes: number, activeDays: number}>({totalMinutes: 0, activeDays: 0});
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -240,6 +241,43 @@ const Profile = () => {
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Fetch weekly activity data
+  useEffect(() => {
+    const fetchWeeklyActivity = async () => {
+      if (!userId) return;
+      
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      
+      const { data: timeData } = await supabase
+        .from('lesson_time_tracking')
+        .select('tracked_date, duration_seconds')
+        .eq('user_id', userId)
+        .gte('tracked_date', weekStart.toISOString().split('T')[0]);
+        
+      if (timeData) {
+        const dailyTotals = new Map<string, number>();
+        timeData.forEach(record => {
+          const existing = dailyTotals.get(record.tracked_date) || 0;
+          dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
+        });
+        
+        let total = 0;
+        dailyTotals.forEach(seconds => {
+          total += Math.floor(seconds / 60);
+        });
+        
+        setWeeklyActivityData({
+          totalMinutes: total,
+          activeDays: dailyTotals.size
+        });
+      }
+    };
+    
+    fetchWeeklyActivity();
+  }, [userId]);
 
   const checkUser = async () => {
     try {
@@ -548,46 +586,6 @@ const Profile = () => {
     careerRelatedSlugs.includes(slug)
   );
   const completedInCareer = careerCompletedSlugs.length;
-
-  // Calculate average minutes per day from weekly activity
-  const [weeklyActivityData, setWeeklyActivityData] = useState<{totalMinutes: number, activeDays: number}>({totalMinutes: 0, activeDays: 0});
-  
-  useEffect(() => {
-    const fetchWeeklyActivity = async () => {
-      if (!userId) return;
-      
-      const today = new Date();
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - today.getDay());
-      
-      const { data: timeData } = await supabase
-        .from('lesson_time_tracking')
-        .select('tracked_date, duration_seconds')
-        .eq('user_id', userId)
-        .gte('tracked_date', weekStart.toISOString().split('T')[0]);
-        
-      if (timeData) {
-        const dailyTotals = new Map<string, number>();
-        timeData.forEach(record => {
-          const existing = dailyTotals.get(record.tracked_date) || 0;
-          dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
-        });
-        
-        let total = 0;
-        dailyTotals.forEach(seconds => {
-          total += Math.floor(seconds / 60);
-        });
-        
-        setWeeklyActivityData({
-          totalMinutes: total,
-          activeDays: dailyTotals.size
-        });
-      }
-    };
-    
-    fetchWeeklyActivity();
-  }, [userId]);
-
   const avgMinutesPerDay = weeklyActivityData.activeDays > 0 
     ? Math.round(weeklyActivityData.totalMinutes / weeklyActivityData.activeDays) 
     : 0;
