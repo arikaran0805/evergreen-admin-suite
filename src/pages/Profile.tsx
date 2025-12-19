@@ -41,7 +41,8 @@ import {
   Target,
   Flame,
   Trophy,
-  Snowflake
+  Snowflake,
+  Zap
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -548,276 +549,347 @@ const Profile = () => {
   );
   const completedInCareer = careerCompletedSlugs.length;
 
+  // Calculate average minutes per day from weekly activity
+  const [weeklyActivityData, setWeeklyActivityData] = useState<{totalMinutes: number, activeDays: number}>({totalMinutes: 0, activeDays: 0});
+  
+  useEffect(() => {
+    const fetchWeeklyActivity = async () => {
+      if (!userId) return;
+      
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      
+      const { data: timeData } = await supabase
+        .from('lesson_time_tracking')
+        .select('tracked_date, duration_seconds')
+        .eq('user_id', userId)
+        .gte('tracked_date', weekStart.toISOString().split('T')[0]);
+        
+      if (timeData) {
+        const dailyTotals = new Map<string, number>();
+        timeData.forEach(record => {
+          const existing = dailyTotals.get(record.tracked_date) || 0;
+          dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
+        });
+        
+        let total = 0;
+        dailyTotals.forEach(seconds => {
+          total += Math.floor(seconds / 60);
+        });
+        
+        setWeeklyActivityData({
+          totalMinutes: total,
+          activeDays: dailyTotals.size
+        });
+      }
+    };
+    
+    fetchWeeklyActivity();
+  }, [userId]);
+
+  const avgMinutesPerDay = weeklyActivityData.activeDays > 0 
+    ? Math.round(weeklyActivityData.totalMinutes / weeklyActivityData.activeDays) 
+    : 0;
+
+  // Get skills and readiness percentage for the career
+  const { getCareerSkills } = useCareers();
+  const skills = career ? getCareerSkills(career.id) : [];
+  const readinessPercentage = careerRelatedSlugs.length > 0 
+    ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) 
+    : 0;
+
   const renderDashboard = () => (
     <div className="space-y-6">
-      {/* Top Section: Welcome + Career Readiness */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Welcome Section - Left */}
-        <div className="lg:col-span-3 space-y-4">
-          <div className="p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <Avatar className="h-16 w-16 border-2 border-primary ring-4 ring-primary/10">
-                  <AvatarImage src={avatarUrl} alt={fullName} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                    {fullName?.charAt(0)?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium text-primary">Welcome back!</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
-                  <p className="text-muted-foreground mt-1">Continue your learning journey</p>
+      {/* Top Header Card - Welcome + Career + Streak + Stats */}
+      <Card className="bg-card border">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
+            {/* Welcome Section */}
+            <div className="flex items-center gap-4 flex-1">
+              <Avatar className="h-16 w-16 border-4 border-primary/20">
+                <AvatarImage src={avatarUrl} alt={fullName} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                  {fullName?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm text-muted-foreground">Welcome back!</p>
+                <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-sm text-muted-foreground">
+                    Aspiring {career?.name || 'Data Analyst'}
+                  </span>
                 </div>
               </div>
-              
-              {/* Streak Display */}
-              <div className="flex items-center gap-4 px-5 py-4 rounded-xl bg-background/50 border">
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
-                    <Flame className="h-8 w-8 text-white" />
-                  </div>
+            </div>
+
+            {/* Streak Badge */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/50 border">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <Flame className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Streak</p>
+                <p className="text-lg font-bold">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <Separator orientation="vertical" className="h-16 hidden lg:block" />
+
+            {/* Quick Stats */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+                  <Flame className="h-5 w-5 text-rose-500" />
                 </div>
-                <div className="flex flex-col flex-1">
-                  <span className="text-xs font-semibold tracking-widest text-rose-400 uppercase">Streak</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">{currentStreak}</span>
-                    <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Days</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-0.5">
-                    Max: {maxStreak} days
-                  </span>
+                <div>
+                  <p className="text-xs text-muted-foreground">Streak</p>
+                  <p className="text-lg font-bold">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
                 </div>
-                {/* Streak Freeze Button */}
-                <div className="flex flex-col items-center gap-1">
-                  <button
-                    onClick={useStreakFreeze}
-                    disabled={streakFreezesAvailable <= 0 || isFreezingStreak}
-                    className={`p-2.5 rounded-full transition-all ${
-                      streakFreezesAvailable > 0 
-                        ? 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 hover:text-sky-300 cursor-pointer' 
-                        : 'bg-muted text-muted-foreground cursor-not-allowed'
-                    }`}
-                    title={streakFreezesAvailable > 0 ? "Use streak freeze" : "No freezes available"}
-                  >
-                    <Snowflake className={`h-5 w-5 ${isFreezingStreak ? 'animate-spin' : ''}`} />
-                  </button>
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {streakFreezesAvailable} left
-                  </span>
-                </div>
+              </div>
+
+              <div className="text-center">
+                <p className="text-lg font-bold">{avgMinutesPerDay}</p>
+                <p className="text-xs text-muted-foreground">min/day</p>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+                <Target className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {readinessPercentage >= 80 ? 'Job Ready' : 'Learning'}
+                </span>
               </div>
             </div>
           </div>
-
-          {/* Weekly Activity Tracker */}
-          <WeeklyActivityTracker />
-          
-          {/* Continue Learning */}
-          <ContinueLearningCard />
-        </div>
-
-        {/* Career Readiness - Right */}
-        <div className="lg:col-span-2">
-          <CareerReadinessCard
-            selectedCareerSlug={selectedCareer}
-            completedCourses={completedInCareer}
-            totalRequiredCourses={careerRelatedSlugs.length || 5}
-            enrolledInCareer={enrolledInCareer}
-            completedCourseSlugs={careerCompletedSlugs}
-            onGetStarted={() => setCareerDialogOpen(true)}
-          />
-          <SkillMilestones 
-            completedCourses={completedInCareer}
-            readinessPercentage={careerRelatedSlugs.length > 0 ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) : 0}
-            compact={true}
-            onViewAll={() => handleTabChange('achievements')}
-          />
-          <CareerSelectionDialog
-            open={careerDialogOpen}
-            onOpenChange={setCareerDialogOpen}
-            selectedCareerSlug={selectedCareer}
-            onCareerSelect={handleCareerSelect}
-          />
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-card border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{enrolledCourses.length}</p>
-              <p className="text-sm text-muted-foreground">Total Enrolled</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-green-500/10">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{enrolledInCareer}</p>
-              <p className="text-sm text-muted-foreground">In Career Path</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-yellow-500/10">
-              <Clock className="h-5 w-5 text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">0h</p>
-              <p className="text-sm text-muted-foreground">Learning Time</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-purple-500/10">
-              <Award className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">0</p>
-              <p className="text-sm text-muted-foreground">Achievements</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recommended for Career Path */}
-      {recommendedCourses.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500" />
-              Recommended Courses
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {recommendedCourses.map((course) => (
-                <div 
-                  key={course.id}
-                  className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/course/${course.slug}`)}
-                >
-                  <div className="w-14 h-14 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                    {course.featured_image ? (
-                      <img 
-                        src={course.featured_image} 
-                        alt={course.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <BookOpen className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{course.name}</h4>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {course.level || 'Beginner'}
-                    </Badge>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Continue Learning - Career Specific */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Continue Learning
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {careerEnrolledCourses.length > 0 ? (
-            <div className="space-y-4">
-              {careerEnrolledCourses.slice(0, 3).map((enrollment) => (
-                <div 
-                  key={enrollment.id}
-                  className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/course/${enrollment.courses?.slug}`)}
-                >
-                  <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                    {enrollment.courses?.featured_image ? (
-                      <img 
-                        src={enrollment.courses.featured_image} 
-                        alt={enrollment.courses.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <BookOpen className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{enrollment.courses?.name}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {enrollment.courses?.level || 'Beginner'}
-                      </Badge>
-                    </div>
-                    {userId && enrollment.courses?.id && (
-                      <CourseProgressDisplay 
-                        courseId={enrollment.courses.id} 
-                        userId={userId} 
-                        className="mt-2"
-                      />
-                    )}
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              ))}
-            </div>
-          ) : enrolledCourses.length > 0 ? (
-            <div className="text-center py-8">
-              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No courses enrolled for your career path yet.</p>
-              <Button className="mt-4" onClick={() => setCareerDialogOpen(true)}>
-                Getting Started
-              </Button>
-              <CareerSelectionDialog
-                open={careerDialogOpen}
-                onOpenChange={setCareerDialogOpen}
-                selectedCareerSlug={selectedCareer}
-                onCareerSelect={handleCareerSelect}
-              />
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">You haven't enrolled in any courses yet.</p>
-              <Button className="mt-4" onClick={() => setCareerDialogOpen(true)}>
-                Getting Started
-              </Button>
-              <CareerSelectionDialog
-                open={careerDialogOpen}
-                onOpenChange={setCareerDialogOpen}
-                selectedCareerSlug={selectedCareer}
-                onCareerSelect={handleCareerSelect}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Career Readiness - Takes 2 columns */}
+        <Card className="lg:col-span-2 bg-card border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold">Career Readiness</h3>
+                <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1 text-primary"
+                onClick={() => setCareerDialogOpen(true)}
+              >
+                <Zap className="h-4 w-4" />
+                {readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Skill Progress Bars */}
+              <div className="space-y-5">
+                {skills.slice(0, 4).map((skill, index) => {
+                  // Calculate skill progress based on completed courses
+                  const skillProgress = Math.min(Math.round((completedInCareer / Math.max(careerRelatedSlugs.length, 1)) * 100 * (1 - index * 0.2)), 100);
+                  
+                  const skillIcons = [
+                    { icon: '🐍', color: 'bg-green-500' },
+                    { icon: '💾', color: 'bg-blue-500' },
+                    { icon: '📊', color: 'bg-yellow-500' },
+                    { icon: '📁', color: 'bg-purple-500' },
+                  ];
+                  
+                  return (
+                    <div key={skill.id} className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">{skillIcons[index]?.icon || '📚'}</span>
+                          <span className="font-medium">{skill.skill_name}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">{skillProgress}%</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                      <Progress 
+                        value={skillProgress} 
+                        className="h-2.5"
+                      />
+                    </div>
+                  );
+                })}
+                
+                {skills.length === 0 && (
+                  <>
+                    {['Python', 'SQL', 'Statistics', 'Projects'].map((name, index) => (
+                      <div key={name} className="group">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">{'🐍💾📊📁'.split('')[index] || '📚'}</span>
+                            <span className="font-medium">{name}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold">{(4 - index) * 20}%</span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                        <Progress value={(4 - index) * 20} className="h-2.5" />
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* Circular Progress Gauge */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="relative">
+                  <svg className="w-48 h-48 transform -rotate-90">
+                    {/* Background circle */}
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="16"
+                      fill="none"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="16"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(readinessPercentage / 100) * 502.65} 502.65`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    {/* Accent arc */}
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      stroke="hsl(45 93% 47%)"
+                      strokeWidth="16"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${Math.min(readinessPercentage * 0.3, 30) / 100 * 502.65} 502.65`}
+                      strokeDashoffset={`${-(readinessPercentage / 100) * 502.65}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-4xl font-bold">{readinessPercentage}%</span>
+                    <span className="text-sm text-muted-foreground">Career Ready</span>
+                  </div>
+                </div>
+
+                <Button 
+                  className="mt-6 gap-2"
+                  onClick={() => navigate('/courses')}
+                >
+                  Improve Career Readiness
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                <button 
+                  className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => handleTabChange('achievements')}
+                >
+                  View skill gaps
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Right Column - Weekly Activity + AI Mentor */}
+        <div className="space-y-6">
+          {/* Weekly Activity - Compact Version */}
+          <Card className="bg-card border">
+            <CardContent className="p-5">
+              <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
+              
+              {/* Mini Bar Chart */}
+              <div className="flex items-end justify-between gap-1.5 h-20 mb-4">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
+                  const heights = [30, 45, 60, 40, 70, 20, 50];
+                  const today = new Date().getDay();
+                  const adjustedIndex = index === 6 ? 0 : index + 1; // Adjust for Sunday = 0
+                  const isToday = today === adjustedIndex;
+                  
+                  return (
+                    <div key={day} className="flex-1 flex flex-col items-center gap-1">
+                      <div 
+                        className={`w-full rounded-t transition-all ${isToday ? 'bg-primary' : 'bg-primary/40'}`}
+                        style={{ height: `${heights[index]}%` }}
+                      />
+                      <span className={`text-[10px] ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                        {day}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Stats */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Time</span>
+                  <span className="font-bold">{weeklyActivityData.totalMinutes} min</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Active Days</span>
+                  <span className="font-bold">{weeklyActivityData.activeDays} / 7</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Mentor Card */}
+          <Card className="bg-card border">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold">AI Mentor</h3>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-4">
+                Your personal AI guide to becoming job-ready.
+              </p>
+              
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs text-muted-foreground mb-1">Recommended:</p>
+                <p className="text-sm font-medium">
+                  {completedInCareer < careerRelatedSlugs.length 
+                    ? `Complete your ${career?.name || 'career'} courses to improve readiness`
+                    : 'Great job! Explore advanced topics next'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Continue Learning Section */}
+      <ContinueLearningCard />
+
+      {/* Career Selection Dialog */}
+      <CareerSelectionDialog
+        open={careerDialogOpen}
+        onOpenChange={setCareerDialogOpen}
+        selectedCareerSlug={selectedCareer}
+        onCareerSelect={handleCareerSelect}
+      />
     </div>
   );
+
 
   const renderLearnings = () => {
     // Get featured courses (not enrolled)
