@@ -120,6 +120,25 @@ export const useCareers = () => {
     return careerCourses[careerId] || [];
   };
 
+  // Get the first course that contributes to a specific skill
+  const getCourseForSkill = (careerId: string, skillName: string): { courseSlug: string; courseId: string } | null => {
+    const courses = careerCourses[careerId] || [];
+    for (const cc of courses) {
+      const contributions = cc.skill_contributions || [];
+      const hasSkill = contributions.some(c => 
+        c.skill_name.toLowerCase() === skillName.toLowerCase()
+      );
+      if (hasSkill && cc.course?.slug) {
+        return { courseSlug: cc.course.slug, courseId: cc.course.id };
+      }
+    }
+    // If no specific contribution found, return the first course in the career path
+    if (courses.length > 0 && courses[0].course?.slug) {
+      return { courseSlug: courses[0].course.slug, courseId: courses[0].course.id };
+    }
+    return null;
+  };
+
   return {
     careers,
     careerSkills,
@@ -131,6 +150,7 @@ export const useCareers = () => {
     getCareerCourseSlugs,
     getSkillContributionsForCourse,
     getCareerCourses,
+    getCourseForSkill,
     refetch: fetchCareers,
   };
 };
