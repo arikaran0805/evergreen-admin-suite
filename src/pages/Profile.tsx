@@ -224,7 +224,7 @@ const Profile = () => {
   const [maxStreak, setMaxStreak] = useState(0);
   const [streakFreezesAvailable, setStreakFreezesAvailable] = useState(2);
   const [isFreezingStreak, setIsFreezingStreak] = useState(false);
-  const [weeklyActivityData, setWeeklyActivityData] = useState<{totalMinutes: number, activeDays: number}>({totalMinutes: 0, activeDays: 0});
+  const [weeklyActivityData, setWeeklyActivityData] = useState<{totalMinutes: number, activeDays: number, dailyData: Record<string, number>}>({totalMinutes: 0, activeDays: 0, dailyData: {}});
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -265,13 +265,17 @@ const Profile = () => {
         });
         
         let total = 0;
-        dailyTotals.forEach(seconds => {
-          total += Math.floor(seconds / 60);
+        const dailyData: Record<string, number> = {};
+        dailyTotals.forEach((seconds, date) => {
+          const minutes = Math.floor(seconds / 60);
+          total += minutes;
+          dailyData[date] = minutes;
         });
         
         setWeeklyActivityData({
           totalMinutes: total,
-          activeDays: dailyTotals.size
+          activeDays: dailyTotals.size,
+          dailyData
         });
       }
     };
@@ -813,20 +817,28 @@ const Profile = () => {
               
               {/* Mini Bar Chart */}
               <div className="flex items-end justify-between gap-1.5 h-20 mb-4">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                  const heights = [30, 45, 60, 40, 70, 20, 50];
-                  const today = new Date().getDay();
-                  const adjustedIndex = index === 6 ? 0 : index + 1; // Adjust for Sunday = 0
-                  const isToday = today === adjustedIndex;
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                  // Get the date for this day of the week
+                  const today = new Date();
+                  const currentDay = today.getDay(); // 0 = Sunday
+                  const dayDiff = index - currentDay;
+                  const targetDate = new Date(today);
+                  targetDate.setDate(today.getDate() + dayDiff);
+                  const dateStr = targetDate.toISOString().split('T')[0];
+                  
+                  const dayMinutes = weeklyActivityData.dailyData[dateStr] || 0;
+                  const maxMinutes = Math.max(...Object.values(weeklyActivityData.dailyData), 60);
+                  const heightPercent = maxMinutes > 0 ? (dayMinutes / maxMinutes) * 100 : 0;
+                  const isToday = index === currentDay;
                   
                   return (
                     <div key={day} className="flex-1 flex flex-col items-center gap-1">
                       <div 
-                        className={`w-full rounded-t transition-all ${isToday ? 'bg-primary' : 'bg-primary/40'}`}
-                        style={{ height: `${heights[index]}%` }}
+                        className={`w-full rounded-t transition-all ${isToday ? 'bg-primary' : dayMinutes > 0 ? 'bg-primary/60' : 'bg-muted'}`}
+                        style={{ height: `${Math.max(heightPercent, 5)}%` }}
                       />
                       <span className={`text-[10px] ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                        {day}
+                        {day.slice(0, 1)}
                       </span>
                     </div>
                   );
