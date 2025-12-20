@@ -229,7 +229,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
-  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills } = useCareers();
+  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse } = useCareers();
 
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
@@ -594,8 +594,37 @@ const Profile = () => {
     ? Math.round(weeklyActivityData.totalMinutes / weeklyActivityData.activeDays) 
     : 0;
 
-  // Get skills and readiness percentage for the career
+  // Get skills and calculate actual skill values from database
   const skills = career ? getCareerSkills(career.id) : [];
+  
+  // Calculate skill values based on completed courses and their skill contributions
+  const calculateSkillValues = () => {
+    if (!career || skills.length === 0) return {};
+    
+    const skillValues: Record<string, number> = {};
+    
+    skills.forEach(skill => {
+      let skillValue = 0;
+      
+      // For each completed course in this career, add its contribution to this skill
+      careerCompletedSlugs.forEach(courseSlug => {
+        if (careerRelatedSlugs.includes(courseSlug)) {
+          const contributions = getSkillContributionsForCourse(career.id, courseSlug);
+          const contribution = contributions.find(c => c.skill_name === skill.skill_name);
+          if (contribution) {
+            skillValue += contribution.contribution;
+          }
+        }
+      });
+      
+      // Cap at 100
+      skillValues[skill.skill_name] = Math.min(skillValue, 100);
+    });
+    
+    return skillValues;
+  };
+  
+  const skillValues = calculateSkillValues();
   const readinessPercentage = careerRelatedSlugs.length > 0 
     ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) 
     : 0;
@@ -693,21 +722,27 @@ const Profile = () => {
               {/* Skill Progress Bars */}
               <div className="space-y-5">
                 {skills.slice(0, 4).map((skill, index) => {
-                  // Calculate skill progress based on completed courses
-                  const skillProgress = Math.min(Math.round((completedInCareer / Math.max(careerRelatedSlugs.length, 1)) * 100 * (1 - index * 0.2)), 100);
+                  // Get actual skill value from our calculation
+                  const skillProgress = skillValues[skill.skill_name] || 0;
                   
-                  const skillIcons = [
-                    { icon: '🐍', color: 'bg-green-500' },
-                    { icon: '💾', color: 'bg-blue-500' },
-                    { icon: '📊', color: 'bg-yellow-500' },
-                    { icon: '📁', color: 'bg-purple-500' },
-                  ];
+                  // Emoji icons for common skills
+                  const skillEmojis: Record<string, string> = {
+                    'Python': '🐍',
+                    'SQL': '💾',
+                    'Statistics': '📊',
+                    'Machine Learning': '🤖',
+                    'Data Visualization': '📈',
+                    'Excel': '📁',
+                    'Tableau': '📉',
+                    'R': '📐',
+                    'Deep Learning': '🧠',
+                  };
                   
                   return (
                     <div key={skill.id} className="group">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <span className="text-lg">{skillIcons[index]?.icon || '📚'}</span>
+                          <span className="text-lg">{skillEmojis[skill.skill_name] || '📚'}</span>
                           <span className="font-medium">{skill.skill_name}</span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -724,23 +759,10 @@ const Profile = () => {
                 })}
                 
                 {skills.length === 0 && (
-                  <>
-                    {['Python', 'SQL', 'Statistics', 'Projects'].map((name, index) => (
-                      <div key={name} className="group">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">{'🐍💾📊📁'.split('')[index] || '📚'}</span>
-                            <span className="font-medium">{name}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-semibold">{(4 - index) * 20}%</span>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </div>
-                        <Progress value={(4 - index) * 20} className="h-2.5" />
-                      </div>
-                    ))}
-                  </>
+                  <div className="text-center text-muted-foreground py-4">
+                    <p>No skills defined for this career path.</p>
+                    <p className="text-sm">Select a career to see required skills.</p>
+                  </div>
                 )}
               </div>
 
