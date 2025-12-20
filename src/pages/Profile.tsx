@@ -229,7 +229,48 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
-  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse } = useCareers();
+  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
+
+  // Navigate to a course with the last viewed lesson
+  const navigateToCourseWithLastLesson = async (courseSlug: string, courseId: string) => {
+    if (!userId) {
+      navigate(`/course/${courseSlug}`);
+      return;
+    }
+
+    try {
+      // Fetch the last viewed lesson for this course
+      const { data: lastLesson } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, posts!lesson_progress_lesson_id_fkey(slug)")
+        .eq("user_id", userId)
+        .eq("course_id", courseId)
+        .order("viewed_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastLesson && (lastLesson as any).posts?.slug) {
+        // Navigate to course with last viewed lesson
+        navigate(`/course/${courseSlug}?lesson=${(lastLesson as any).posts.slug}`);
+      } else {
+        // No progress, go to course start
+        navigate(`/course/${courseSlug}`);
+      }
+    } catch {
+      // No progress found, just navigate to course
+      navigate(`/course/${courseSlug}`);
+    }
+  };
+
+  // Handle skill click - navigate to course that teaches this skill
+  const handleSkillClick = async (skillName: string) => {
+    if (!career) return;
+    
+    const courseInfo = getCourseForSkill(career.id, skillName);
+    if (courseInfo) {
+      await navigateToCourseWithLastLesson(courseInfo.courseSlug, courseInfo.courseId);
+    }
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
@@ -739,7 +780,11 @@ const Profile = () => {
                   };
                   
                   return (
-                    <div key={skill.id} className="group">
+                    <div 
+                      key={skill.id} 
+                      className="group cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                      onClick={() => handleSkillClick(skill.skill_name)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <span className="text-lg">{skillEmojis[skill.skill_name] || '📚'}</span>
