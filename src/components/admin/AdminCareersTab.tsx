@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Trash2, Plus, X, BookOpen } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Pencil, Trash2, Plus, X, BookOpen, Settings2 } from "lucide-react";
 import * as Icons from "lucide-react";
 
 interface Career {
@@ -428,17 +429,30 @@ const AdminCareersTab = () => {
               </div>
 
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Courses:</p>
-                <div className="flex flex-wrap gap-1">
-                  {careerCourses[career.id]?.slice(0, 3).map((cc) => (
-                    <Badge key={cc.id} variant="outline" className="text-xs">
-                      <BookOpen className="h-3 w-3 mr-1" />
-                      {cc.course?.name}
-                    </Badge>
-                  ))}
+                <p className="text-xs font-medium text-muted-foreground mb-1">Courses & Skill Contributions:</p>
+                <div className="space-y-2">
+                  {careerCourses[career.id]?.slice(0, 3).map((cc) => {
+                    const totalContribution = cc.skill_contributions?.reduce((sum, s) => sum + s.contribution, 0) || 0;
+                    const avgContribution = cc.skill_contributions?.length ? Math.round(totalContribution / cc.skill_contributions.length) : 0;
+                    return (
+                      <div key={cc.id} className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          <BookOpen className="h-3 w-3 mr-1" />
+                          {cc.course?.name}
+                        </Badge>
+                        {cc.skill_contributions?.length > 0 ? (
+                          <span className="text-xs text-muted-foreground">
+                            {cc.skill_contributions.length} skills · avg {avgContribution}%
+                          </span>
+                        ) : (
+                          <span className="text-xs text-amber-500">No skills mapped</span>
+                        )}
+                      </div>
+                    );
+                  })}
                   {(careerCourses[career.id]?.length || 0) > 3 && (
                     <Badge variant="outline" className="text-xs">
-                      +{(careerCourses[career.id]?.length || 0) - 3} more
+                      +{(careerCourses[career.id]?.length || 0) - 3} more courses
                     </Badge>
                   )}
                 </div>
@@ -561,37 +575,58 @@ const AdminCareersTab = () => {
 
             <div className="space-y-2">
               <Label>Associated Courses & Skill Mappings</Label>
-              <p className="text-xs text-muted-foreground">Select courses and map which skills each course contributes to</p>
-              <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
+              <p className="text-xs text-muted-foreground">Select courses and set how much each contributes to career skills (0-100%)</p>
+              <div className="space-y-2 max-h-80 overflow-y-auto border rounded-md p-2">
                 {courses.map((course) => {
                   const isSelected = formData.courseIds.includes(course.id);
                   const mappedCount = getCourseMappedSkillsCount(course.id);
+                  const mappings = formData.courseSkillMappings[course.id] || [];
+                  const totalContribution = mappings.reduce((sum, m) => sum + m.contribution, 0);
+                  const avgContribution = mappings.length ? Math.round(totalContribution / mappings.length) : 0;
+                  
                   return (
                     <div
                       key={course.id}
-                      className={`flex items-center justify-between p-2 rounded ${
-                        isSelected ? "bg-primary/10" : "hover:bg-muted"
+                      className={`p-3 rounded-lg border ${
+                        isSelected ? "bg-primary/5 border-primary/30" : "hover:bg-muted border-transparent"
                       }`}
                     >
-                      <label className="flex items-center gap-2 cursor-pointer flex-1">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleCourse(course.id)}
-                          className="rounded"
-                        />
-                        <span className="text-sm">{course.name}</span>
-                      </label>
-                      {isSelected && formData.skills.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openSkillMappingDialog(course.id)}
-                          className="ml-2"
-                        >
-                          {mappedCount > 0 ? `${mappedCount} skills mapped` : "Map Skills"}
-                        </Button>
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleCourse(course.id)}
+                            className="rounded"
+                          />
+                          <span className="text-sm font-medium">{course.name}</span>
+                        </label>
+                        {isSelected && formData.skills.length > 0 && (
+                          <Button
+                            type="button"
+                            variant={mappedCount > 0 ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => openSkillMappingDialog(course.id)}
+                            className="ml-2 gap-1"
+                          >
+                            <Settings2 className="h-3 w-3" />
+                            {mappedCount > 0 ? `${mappedCount} skills` : "Map Skills"}
+                          </Button>
+                        )}
+                      </div>
+                      {isSelected && mappedCount > 0 && (
+                        <div className="mt-2 pl-6 space-y-1">
+                          <div className="flex flex-wrap gap-1">
+                            {mappings.filter(m => m.contribution > 0).map((m) => (
+                              <Badge key={m.skill_name} variant="secondary" className="text-xs">
+                                {m.skill_name}: {m.contribution}%
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Total contribution: {totalContribution}% · Avg per skill: {avgContribution}%
+                          </p>
+                        </div>
                       )}
                     </div>
                   );
@@ -623,24 +658,43 @@ const AdminCareersTab = () => {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-5">
             <p className="text-sm text-muted-foreground">
               Set how much completing this course contributes to each skill (0-100%)
             </p>
-            {formData.skills.map((skill) => (
-              <div key={skill} className="flex items-center gap-3">
-                <Label className="w-32 text-sm">{skill}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={selectedCourseForMapping ? getSkillContributionValue(selectedCourseForMapping, skill) : 0}
-                  onChange={(e) => updateSkillContribution(skill, parseInt(e.target.value) || 0)}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
-            ))}
+            {formData.skills.map((skill) => {
+              const value = selectedCourseForMapping ? getSkillContributionValue(selectedCourseForMapping, skill) : 0;
+              return (
+                <div key={skill} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">{skill}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={value}
+                        onChange={(e) => updateSkillContribution(skill, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                        className="w-16 h-8 text-center"
+                      />
+                      <span className="text-sm text-muted-foreground w-4">%</span>
+                    </div>
+                  </div>
+                  <Slider
+                    value={[value]}
+                    onValueChange={([v]) => updateSkillContribution(skill, v)}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+              );
+            })}
+            {formData.skills.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No skills defined for this career path
+              </p>
+            )}
           </div>
 
           <DialogFooter>
