@@ -255,6 +255,7 @@ export type Database = {
           display_order: number
           id: string
           skill_name: string
+          weight: number
         }
         Insert: {
           career_id: string
@@ -262,6 +263,7 @@ export type Database = {
           display_order?: number
           id?: string
           skill_name: string
+          weight?: number
         }
         Update: {
           career_id?: string
@@ -269,6 +271,7 @@ export type Database = {
           display_order?: number
           id?: string
           skill_name?: string
+          weight?: number
         }
         Relationships: [
           {

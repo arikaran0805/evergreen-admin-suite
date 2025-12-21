@@ -16,6 +16,7 @@ export interface CareerSkill {
   career_id: string;
   skill_name: string;
   display_order: number;
+  weight: number;
 }
 
 export interface SkillContribution {
@@ -63,7 +64,10 @@ export const useCareers = () => {
           if (!skillsByCareer[skill.career_id]) {
             skillsByCareer[skill.career_id] = [];
           }
-          skillsByCareer[skill.career_id].push(skill);
+          skillsByCareer[skill.career_id].push({
+            ...skill,
+            weight: skill.weight || 25,
+          });
         });
         setCareerSkills(skillsByCareer);
       }

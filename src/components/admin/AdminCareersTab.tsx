@@ -29,6 +29,12 @@ interface CareerSkill {
   career_id: string;
   skill_name: string;
   display_order: number;
+  weight: number;
+}
+
+interface SkillFormData {
+  name: string;
+  weight: number;
 }
 
 interface SkillContribution {
@@ -86,7 +92,7 @@ const AdminCareersTab = () => {
     icon: "Briefcase",
     color: colorOptions[0].value,
     display_order: 0,
-    skills: [] as string[],
+    skills: [] as SkillFormData[],
     courseIds: [] as string[],
     courseSkillMappings: {} as Record<string, SkillContribution[]>, // courseId -> skill contributions
   });
@@ -177,8 +183,9 @@ const AdminCareersTab = () => {
         if (formData.skills.length > 0) {
           const skillsToInsert = formData.skills.map((skill, idx) => ({
             career_id: editingCareer.id,
-            skill_name: skill,
+            skill_name: skill.name,
             display_order: idx + 1,
+            weight: skill.weight,
           }));
           await supabase.from("career_skills").insert(skillsToInsert);
         }
@@ -216,8 +223,9 @@ const AdminCareersTab = () => {
         if (formData.skills.length > 0) {
           const skillsToInsert = formData.skills.map((skill, idx) => ({
             career_id: newCareer.id,
-            skill_name: skill,
+            skill_name: skill.name,
             display_order: idx + 1,
+            weight: skill.weight,
           }));
           await supabase.from("career_skills").insert(skillsToInsert);
         }
@@ -258,7 +266,10 @@ const AdminCareersTab = () => {
 
   const openEditDialog = (career: Career) => {
     setEditingCareer(career);
-    const skills = careerSkills[career.id]?.map(s => s.skill_name) || [];
+    const skills = careerSkills[career.id]?.map(s => ({ 
+      name: s.skill_name, 
+      weight: s.weight || 25 
+    })) || [];
     const courseIds = careerCourses[career.id]?.map(cc => cc.course_id) || [];
     
     // Build skill mappings from existing data
@@ -304,14 +315,26 @@ const AdminCareersTab = () => {
   };
 
   const addSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
-      setFormData({ ...formData, skills: [...formData.skills, newSkill.trim()] });
+    if (newSkill.trim() && !formData.skills.some(s => s.name === newSkill.trim())) {
+      const defaultWeight = formData.skills.length === 0 ? 100 : Math.floor(100 / (formData.skills.length + 1));
+      setFormData({ ...formData, skills: [...formData.skills, { name: newSkill.trim(), weight: defaultWeight }] });
       setNewSkill("");
     }
   };
 
-  const removeSkill = (skill: string) => {
-    setFormData({ ...formData, skills: formData.skills.filter(s => s !== skill) });
+  const removeSkill = (skillName: string) => {
+    setFormData({ ...formData, skills: formData.skills.filter(s => s.name !== skillName) });
+  };
+
+  const updateSkillWeight = (skillName: string, weight: number) => {
+    setFormData({
+      ...formData,
+      skills: formData.skills.map(s => s.name === skillName ? { ...s, weight } : s),
+    });
+  };
+
+  const getTotalWeight = () => {
+    return formData.skills.reduce((sum, s) => sum + s.weight, 0);
   };
 
   const toggleCourse = (courseId: string) => {
@@ -548,8 +571,16 @@ const AdminCareersTab = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Skills (for radar chart)</Label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Skills & Weights (for career readiness calculation)</Label>
+                <Badge variant={getTotalWeight() === 100 ? "default" : "destructive"} className="text-xs">
+                  Total: {getTotalWeight()}%
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set the weight for each skill (should total 100%). This determines how much each skill contributes to overall career readiness.
+              </p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Add a skill (e.g., Python, SQL)"
@@ -561,16 +592,47 @@ const AdminCareersTab = () => {
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.skills.map((skill, idx) => (
-                  <Badge key={idx} variant="secondary" className="gap-1">
-                    {skill}
-                    <button onClick={() => removeSkill(skill)}>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
+              
+              {formData.skills.length > 0 && (
+                <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+                  {formData.skills.map((skill) => (
+                    <div key={skill.name} className="flex items-center gap-3">
+                      <span className="text-sm font-medium w-28 truncate">{skill.name}</span>
+                      <Slider
+                        value={[skill.weight]}
+                        onValueChange={([v]) => updateSkillWeight(skill.name, v)}
+                        max={100}
+                        step={5}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={skill.weight}
+                        onChange={(e) => updateSkillWeight(skill.name, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                        className="w-16 h-8 text-center"
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => removeSkill(skill.name)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {getTotalWeight() !== 100 && formData.skills.length > 0 && (
+                <p className="text-xs text-amber-500">
+                  ⚠️ Weights should total 100% for accurate career readiness calculation (currently {getTotalWeight()}%)
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -663,18 +725,18 @@ const AdminCareersTab = () => {
               Set how much completing this course contributes to each skill (0-100%)
             </p>
             {formData.skills.map((skill) => {
-              const value = selectedCourseForMapping ? getSkillContributionValue(selectedCourseForMapping, skill) : 0;
+              const value = selectedCourseForMapping ? getSkillContributionValue(selectedCourseForMapping, skill.name) : 0;
               return (
-                <div key={skill} className="space-y-2">
+                <div key={skill.name} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">{skill}</Label>
+                    <Label className="text-sm font-medium">{skill.name} <span className="text-muted-foreground font-normal">({skill.weight}% weight)</span></Label>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
                         min="0"
                         max="100"
                         value={value}
-                        onChange={(e) => updateSkillContribution(skill, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                        onChange={(e) => updateSkillContribution(skill.name, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
                         className="w-16 h-8 text-center"
                       />
                       <span className="text-sm text-muted-foreground w-4">%</span>
@@ -682,7 +744,7 @@ const AdminCareersTab = () => {
                   </div>
                   <Slider
                     value={[value]}
-                    onValueChange={([v]) => updateSkillContribution(skill, v)}
+                    onValueChange={([v]) => updateSkillContribution(skill.name, v)}
                     max={100}
                     step={5}
                     className="w-full"

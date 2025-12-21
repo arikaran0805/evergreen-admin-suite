@@ -666,9 +666,25 @@ const Profile = () => {
   };
   
   const skillValues = calculateSkillValues();
-  const readinessPercentage = careerRelatedSlugs.length > 0 
-    ? Math.round((completedInCareer / careerRelatedSlugs.length) * 100) 
-    : 0;
+  
+  // Calculate weighted career readiness percentage
+  const calculateWeightedReadiness = () => {
+    if (!skills.length) return 0;
+    
+    let weightedSum = 0;
+    let totalWeight = 0;
+    
+    skills.forEach(skill => {
+      const value = skillValues[skill.skill_name] || 0;
+      const weight = skill.weight || 25; // Default to 25 if no weight set
+      weightedSum += value * weight;
+      totalWeight += weight;
+    });
+    
+    return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+  };
+  
+  const readinessPercentage = calculateWeightedReadiness();
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -788,7 +804,12 @@ const Profile = () => {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <span className="text-lg">{skillEmojis[skill.skill_name] || '📚'}</span>
-                          <span className="font-medium">{skill.skill_name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{skill.skill_name}</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              {skill.weight}% weight
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="font-semibold">{skillProgress}%</span>
