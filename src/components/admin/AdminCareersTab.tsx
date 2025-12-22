@@ -337,6 +337,17 @@ const AdminCareersTab = () => {
     return formData.skills.reduce((sum, s) => sum + s.weight, 0);
   };
 
+  const autoBalanceWeights = () => {
+    if (formData.skills.length === 0) return;
+    const equalWeight = Math.floor(100 / formData.skills.length);
+    const remainder = 100 - (equalWeight * formData.skills.length);
+    const balancedSkills = formData.skills.map((skill, index) => ({
+      ...skill,
+      weight: equalWeight + (index < remainder ? 1 : 0),
+    }));
+    setFormData({ ...formData, skills: balancedSkills });
+  };
+
   const toggleCourse = (courseId: string) => {
     if (formData.courseIds.includes(courseId)) {
       const newMappings = { ...formData.courseSkillMappings };
@@ -574,9 +585,22 @@ const AdminCareersTab = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Skills & Weights (for career readiness calculation)</Label>
-                <Badge variant={getTotalWeight() === 100 ? "default" : "destructive"} className="text-xs">
-                  Total: {getTotalWeight()}%
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {formData.skills.length > 0 && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={autoBalanceWeights}
+                      className="text-xs h-6"
+                    >
+                      Auto-balance
+                    </Button>
+                  )}
+                  <Badge variant={getTotalWeight() === 100 ? "default" : "destructive"} className="text-xs">
+                    Total: {getTotalWeight()}%
+                  </Badge>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 Set the weight for each skill (should total 100%). This determines how much each skill contributes to overall career readiness.
