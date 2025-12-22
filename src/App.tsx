@@ -20,6 +20,7 @@ import AdminPostEditor from "./pages/AdminPostEditor";
 import AdminPages from "./pages/AdminPages";
 import AdminCoursesPanel from "./pages/AdminCoursesPanel";
 import AdminCourseEditor from "./pages/AdminCourseEditor";
+import AdminCareerEditor from "./pages/AdminCareerEditor";
 import AdminComments from "./pages/AdminComments";
 import AdminUsers from "./pages/AdminUsers";
 import AdminPlaceholder from "./pages/AdminPlaceholder";
@@ -85,6 +86,8 @@ const AppContent = () => {
         <Route path="/admin/courses" element={<AdminCoursesPanel />} />
         <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
         <Route path="/admin/courses/:id" element={<AdminCourseEditor />} />
+        <Route path="/admin/careers/new" element={<AdminCareerEditor />} />
+        <Route path="/admin/careers/:id" element={<AdminCareerEditor />} />
         <Route path="/admin/difficulty-levels" element={<Navigate to="/admin/courses?tab=difficulty" replace />} />
         <Route path="/admin/comments" element={<AdminComments />} />
         <Route path="/admin/users" element={<AdminUsers />} />
