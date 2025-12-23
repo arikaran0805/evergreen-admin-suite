@@ -900,195 +900,262 @@ const Profile = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Career Readiness - Takes 2 columns */}
-        <Card className="lg:col-span-2 bg-card border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-xl font-bold">Career Readiness</h3>
-                <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
+        {/* Left Column - Career Readiness + Recommended Labs */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Career Readiness */}
+          <Card className="bg-card border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold">Career Readiness</h3>
+                  <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1 text-primary"
+                  onClick={() => setCareerDialogOpen(true)}
+                >
+                  <Zap className="h-4 w-4" />
+                  {readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}
+                </Button>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-1 text-primary"
-                onClick={() => setCareerDialogOpen(true)}
-              >
-                <Zap className="h-4 w-4" />
-                {readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}
-              </Button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              {/* Skill Progress Bars */}
-              <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
-                {skills.map((skill, index) => {
-                  // Get actual skill value from our calculation
-                  const skillProgress = skillValues[skill.skill_name] || 0;
-                  
-                  // Get icon from database
-                  const getSkillIcon = (iconName: string) => {
-                    const IconComponent = (Icons as any)[iconName];
-                    return IconComponent ? <IconComponent className="h-5 w-5" /> : <Icons.Code2 className="h-5 w-5" />;
-                  };
-                  
-                  return (
-                    <div 
-                      key={skill.id} 
-                      className="group cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
-                      onClick={() => handleSkillClick(skill.skill_name)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="text-primary">
-                            {getSkillIcon(skill.icon)}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                {/* Skill Progress Bars */}
+                <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
+                  {skills.map((skill, index) => {
+                    // Get actual skill value from our calculation
+                    const skillProgress = skillValues[skill.skill_name] || 0;
+                    
+                    // Get icon from database
+                    const getSkillIcon = (iconName: string) => {
+                      const IconComponent = (Icons as any)[iconName];
+                      return IconComponent ? <IconComponent className="h-5 w-5" /> : <Icons.Code2 className="h-5 w-5" />;
+                    };
+                    
+                    return (
+                      <div 
+                        key={skill.id} 
+                        className="group cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                        onClick={() => handleSkillClick(skill.skill_name)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="text-primary">
+                              {getSkillIcon(skill.icon)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{skill.skill_name}</span>
+                              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                {skill.weight}% weight
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{skill.skill_name}</span>
-                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                              {skill.weight}% weight
-                            </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold">{skillProgress}%</span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold">{skillProgress}%</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
+                        <Progress 
+                          value={skillProgress} 
+                          className="h-2.5"
+                        />
                       </div>
-                      <Progress 
-                        value={skillProgress} 
-                        className="h-2.5"
-                      />
-                    </div>
-                  );
-                })}
-                
-                {skills.length === 0 && (
-                  <div className="text-center text-muted-foreground py-4">
-                    <p>No skills defined for this career path.</p>
-                    <p className="text-sm">Select a career to see required skills.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Circular Progress Gauge - Modern Design */}
-              <div className="flex flex-col items-center justify-start pt-2">
-                <div className="relative w-44 h-44">
-                  {/* Outer glow ring */}
-                  <div 
-                    className="absolute inset-0 rounded-full opacity-20 blur-xl"
-                    style={{
-                      background: `conic-gradient(from 0deg, hsl(var(--primary)) ${readinessPercentage}%, transparent ${readinessPercentage}%)`
-                    }}
-                  />
+                    );
+                  })}
                   
-                  <svg className="w-44 h-44 transform -rotate-90" viewBox="0 0 208 208">
-                    {/* Background track with segments */}
-                    <circle
-                      cx="104"
-                      cy="104"
-                      r="88"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="12"
-                      fill="none"
-                      opacity="0.3"
-                    />
-                    
-                    {/* Inner background circle */}
-                    <circle
-                      cx="104"
-                      cy="104"
-                      r="76"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="4"
-                      fill="none"
-                      opacity="0.2"
-                    />
-                    
-                    {/* Progress gradient arc */}
-                    <defs>
-                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" />
-                        <stop offset="50%" stopColor="hsl(280 80% 60%)" />
-                        <stop offset="100%" stopColor="hsl(45 93% 47%)" />
-                      </linearGradient>
-                    </defs>
-                    
-                    {/* Main progress arc */}
-                    <circle
-                      cx="104"
-                      cy="104"
-                      r="88"
-                      stroke="url(#progressGradient)"
-                      strokeWidth="12"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(readinessPercentage / 100) * 553.07} 553.07`}
-                      className="transition-all duration-1000 ease-out drop-shadow-lg"
+                  {skills.length === 0 && (
+                    <div className="text-center text-muted-foreground py-4">
+                      <p>No skills defined for this career path.</p>
+                      <p className="text-sm">Select a career to see required skills.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Circular Progress Gauge - Modern Design */}
+                <div className="flex flex-col items-center justify-start pt-2">
+                  <div className="relative w-44 h-44">
+                    {/* Outer glow ring */}
+                    <div 
+                      className="absolute inset-0 rounded-full opacity-20 blur-xl"
                       style={{
-                        filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))'
+                        background: `conic-gradient(from 0deg, hsl(var(--primary)) ${readinessPercentage}%, transparent ${readinessPercentage}%)`
                       }}
                     />
                     
-                    {/* Decorative dots on the track */}
-                    {[0, 25, 50, 75, 100].map((percent, i) => {
-                      const angle = (percent / 100) * 360 - 90;
-                      const rad = (angle * Math.PI) / 180;
-                      const x = 104 + 88 * Math.cos(rad);
-                      const y = 104 + 88 * Math.sin(rad);
-                      const isAchieved = readinessPercentage >= percent;
-                      return (
-                        <circle
-                          key={i}
-                          cx={x}
-                          cy={y}
-                          r="4"
-                          fill={isAchieved ? "hsl(var(--primary))" : "hsl(var(--muted))"}
-                          className="transition-all duration-500"
-                        />
-                      );
-                    })}
-                  </svg>
-                  
-                  {/* Center content */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="relative">
-                      <span className="text-5xl font-bold bg-gradient-to-br from-primary via-purple-500 to-amber-500 bg-clip-text text-transparent">
-                        {readinessPercentage}
-                      </span>
-                      <span className="text-2xl font-bold text-muted-foreground">%</span>
+                    <svg className="w-44 h-44 transform -rotate-90" viewBox="0 0 208 208">
+                      {/* Background track with segments */}
+                      <circle
+                        cx="104"
+                        cy="104"
+                        r="88"
+                        stroke="hsl(var(--muted))"
+                        strokeWidth="12"
+                        fill="none"
+                        opacity="0.3"
+                      />
+                      
+                      {/* Inner background circle */}
+                      <circle
+                        cx="104"
+                        cy="104"
+                        r="76"
+                        stroke="hsl(var(--muted))"
+                        strokeWidth="4"
+                        fill="none"
+                        opacity="0.2"
+                      />
+                      
+                      {/* Progress gradient arc */}
+                      <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" />
+                          <stop offset="50%" stopColor="hsl(280 80% 60%)" />
+                          <stop offset="100%" stopColor="hsl(45 93% 47%)" />
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Main progress arc */}
+                      <circle
+                        cx="104"
+                        cy="104"
+                        r="88"
+                        stroke="url(#progressGradient)"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(readinessPercentage / 100) * 553.07} 553.07`}
+                        className="transition-all duration-1000 ease-out drop-shadow-lg"
+                        style={{
+                          filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))'
+                        }}
+                      />
+                      
+                      {/* Decorative dots on the track */}
+                      {[0, 25, 50, 75, 100].map((percent, i) => {
+                        const angle = (percent / 100) * 360 - 90;
+                        const rad = (angle * Math.PI) / 180;
+                        const x = 104 + 88 * Math.cos(rad);
+                        const y = 104 + 88 * Math.sin(rad);
+                        const isAchieved = readinessPercentage >= percent;
+                        return (
+                          <circle
+                            key={i}
+                            cx={x}
+                            cy={y}
+                            r="4"
+                            fill={isAchieved ? "hsl(var(--primary))" : "hsl(var(--muted))"}
+                            className="transition-all duration-500"
+                          />
+                        );
+                      })}
+                    </svg>
+                    
+                    {/* Center content */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <div className="relative">
+                        <span className="text-5xl font-bold bg-gradient-to-br from-primary via-purple-500 to-amber-500 bg-clip-text text-transparent">
+                          {readinessPercentage}
+                        </span>
+                        <span className="text-2xl font-bold text-muted-foreground">%</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground mt-1">Career Ready</span>
+                      <Badge 
+                        variant="secondary" 
+                        className={`mt-2 text-xs ${
+                          readinessPercentage >= 80 ? 'bg-green-500/10 text-green-500' :
+                          readinessPercentage >= 50 ? 'bg-yellow-500/10 text-yellow-500' :
+                          readinessPercentage >= 20 ? 'bg-orange-500/10 text-orange-500' :
+                          'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {readinessPercentage >= 80 ? 'Job Ready' : 
+                         readinessPercentage >= 50 ? 'Intermediate' : 
+                         readinessPercentage >= 20 ? 'Beginner' : 'Getting Started'}
+                      </Badge>
                     </div>
-                    <span className="text-sm text-muted-foreground mt-1">Career Ready</span>
-                    <Badge 
-                      variant="secondary" 
-                      className={`mt-2 text-xs ${
-                        readinessPercentage >= 80 ? 'bg-green-500/10 text-green-500' :
-                        readinessPercentage >= 50 ? 'bg-yellow-500/10 text-yellow-500' :
-                        readinessPercentage >= 20 ? 'bg-orange-500/10 text-orange-500' :
-                        'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {readinessPercentage >= 80 ? 'Job Ready' : 
-                       readinessPercentage >= 50 ? 'Intermediate' : 
-                       readinessPercentage >= 20 ? 'Beginner' : 'Getting Started'}
-                    </Badge>
+                  </div>
+
+                  <Button 
+                    className="mt-6 gap-2"
+                    onClick={() => navigate('/arcade')}
+                  >
+                    Improve Career Readiness
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recommended Labs Section - Directly below Career Readiness */}
+          <Card className="bg-card border">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <FlaskConical className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Recommended Labs</CardTitle>
+                    <CardDescription>Practice exercises based on your enrolled courses</CardDescription>
                   </div>
                 </div>
-
-                <Button 
-                  className="mt-6 gap-2"
-                  onClick={() => navigate('/arcade')}
-                >
-                  Improve Career Readiness
-                  <ChevronRight className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={() => navigate('/practice-lab')} className="gap-1">
+                  View All <ChevronRight className="h-4 w-4" />
                 </Button>
-                
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {enrolledCourses.slice(0, 3).map((enrollment, index) => {
+                  const course = enrollment.courses;
+                  if (!course) return null;
+                  
+                  const labTypes = ['Coding Challenge', 'Quiz', 'Project'];
+                  const labIcons = [<Zap className="h-4 w-4" />, <Target className="h-4 w-4" />, <Award className="h-4 w-4" />];
+                  const labColors = ['from-emerald-500 to-teal-600', 'from-blue-500 to-indigo-600', 'from-purple-500 to-pink-600'];
+                  
+                  return (
+                    <Card 
+                      key={enrollment.id} 
+                      className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border"
+                      onClick={() => navigate('/practice-lab')}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${labColors[index % 3]} flex items-center justify-center shrink-0`}>
+                            {labIcons[index % 3]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate">{course.name} {labTypes[index % 3]}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Practice your skills</p>
+                            <Badge variant="secondary" className="mt-2 text-xs">
+                              {labTypes[index % 3]}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {enrolledCourses.length === 0 && (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    <FlaskConical className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Enroll in courses to unlock practice labs</p>
+                    <Button variant="link" onClick={() => navigate('/courses')} className="mt-2">
+                      Browse Courses
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Right Column - Weekly Activity + AI Mentor */}
+        {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
         <div className="space-y-6">
           {/* Weekly Activity - Compact Version */}
           <Card className="bg-card border">
@@ -1282,70 +1349,6 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Recommended Labs Section - Moved below Career Readiness */}
-        <Card className="lg:col-span-2 bg-card border">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                  <FlaskConical className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">Recommended Labs</CardTitle>
-                  <CardDescription>Practice exercises based on your enrolled courses</CardDescription>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/practice-lab')} className="gap-1">
-                View All <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {enrolledCourses.slice(0, 3).map((enrollment, index) => {
-                const course = enrollment.courses;
-                if (!course) return null;
-                
-                const labTypes = ['Coding Challenge', 'Quiz', 'Project'];
-                const labIcons = [<Zap className="h-4 w-4" />, <Target className="h-4 w-4" />, <Award className="h-4 w-4" />];
-                const labColors = ['from-emerald-500 to-teal-600', 'from-blue-500 to-indigo-600', 'from-purple-500 to-pink-600'];
-                
-                return (
-                  <Card 
-                    key={enrollment.id} 
-                    className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border"
-                    onClick={() => navigate('/practice-lab')}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${labColors[index % 3]} flex items-center justify-center shrink-0`}>
-                          {labIcons[index % 3]}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate">{course.name} {labTypes[index % 3]}</p>
-                          <p className="text-xs text-muted-foreground mt-1">Practice your skills</p>
-                          <Badge variant="secondary" className="mt-2 text-xs">
-                            {labTypes[index % 3]}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              {enrolledCourses.length === 0 && (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  <FlaskConical className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Enroll in courses to unlock practice labs</p>
-                  <Button variant="link" onClick={() => navigate('/courses')} className="mt-2">
-                    Browse Courses
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Career Selection Dialog */}
