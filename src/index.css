@@ -337,4 +337,66 @@ All colors MUST be HSL.
     animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards;
     opacity: 0;
   }
+
+  /* Gray code theme - custom styling */
+  .code-theme-gray code[class*="language-"],
+  .code-theme-gray pre[class*="language-"] {
+    color: #e0e0e0;
+    background: #2d2d2d;
+  }
+
+  .code-theme-gray .token.comment,
+  .code-theme-gray .token.prolog,
+  .code-theme-gray .token.doctype,
+  .code-theme-gray .token.cdata {
+    color: #999;
+  }
+
+  .code-theme-gray .token.punctuation {
+    color: #ccc;
+  }
+
+  .code-theme-gray .token.property,
+  .code-theme-gray .token.tag,
+  .code-theme-gray .token.boolean,
+  .code-theme-gray .token.number,
+  .code-theme-gray .token.constant,
+  .code-theme-gray .token.symbol,
+  .code-theme-gray .token.deleted {
+    color: #f08d49;
+  }
+
+  .code-theme-gray .token.selector,
+  .code-theme-gray .token.attr-name,
+  .code-theme-gray .token.string,
+  .code-theme-gray .token.char,
+  .code-theme-gray .token.builtin,
+  .code-theme-gray .token.inserted {
+    color: #b9ca4a;
+  }
+
+  .code-theme-gray .token.operator,
+  .code-theme-gray .token.entity,
+  .code-theme-gray .token.url,
+  .code-theme-gray .language-css .token.string,
+  .code-theme-gray .style .token.string {
+    color: #ccc;
+  }
+
+  .code-theme-gray .token.atrule,
+  .code-theme-gray .token.attr-value,
+  .code-theme-gray .token.keyword {
+    color: #cc99cd;
+  }
+
+  .code-theme-gray .token.function,
+  .code-theme-gray .token.class-name {
+    color: #6699cc;
+  }
+
+  .code-theme-gray .token.regex,
+  .code-theme-gray .token.important,
+  .code-theme-gray .token.variable {
+    color: #e6c07b;
+  }
 }

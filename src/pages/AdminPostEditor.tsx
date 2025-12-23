@@ -11,7 +11,8 @@ import { ChatStyleEditor } from "@/components/chat-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { ArrowLeft, Save, X, FileText, MessageCircle } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette } from "lucide-react";
+import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,6 +68,7 @@ const AdminPostEditor = () => {
     status: "draft" as "draft" | "published",
     lesson_order: 0,
     parent_id: "none",
+    code_theme: "" as string,
   });
 
   useEffect(() => {
@@ -191,6 +193,7 @@ const AdminPostEditor = () => {
           status: (data.status as "draft" | "published") || "draft",
           lesson_order: data.lesson_order || 0,
           parent_id: data.parent_id || "none",
+          code_theme: data.code_theme || "",
         });
         
         // Auto-switch to chat editor if content is a chat transcript
@@ -230,6 +233,7 @@ const AdminPostEditor = () => {
         published_at: validated.status === "published" ? new Date().toISOString() : null,
         lesson_order: validated.lesson_order || 0,
         parent_id: validated.parent_id && validated.parent_id !== "" && validated.parent_id !== "none" ? validated.parent_id : null,
+        code_theme: formData.code_theme || null,
       };
 
       let postId = id;
@@ -584,6 +588,34 @@ const AdminPostEditor = () => {
                 placeholder="https://..."
               />
             </div>
+
+            {editorType === "chat" && (
+              <div>
+                <Label htmlFor="code_theme" className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Code Theme
+                </Label>
+                <Select 
+                  value={formData.code_theme || "default"} 
+                  onValueChange={(value) => setFormData({ ...formData, code_theme: value === "default" ? "" : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Use global theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Use Global Theme</SelectItem>
+                    {CODE_THEMES.map((theme) => (
+                      <SelectItem key={theme.value} value={theme.value}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Override code theme for this post
+                </p>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="tags">Tags</Label>
