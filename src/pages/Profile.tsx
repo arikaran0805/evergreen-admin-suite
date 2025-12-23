@@ -1794,7 +1794,7 @@ const Profile = () => {
         <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/30 -mx-4 px-4 py-6 rounded-2xl">
           {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Card className="sticky top-28 bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+            <Card className="sticky top-28 bg-background/60 backdrop-blur-xl border border-primary/10 shadow-xl shadow-primary/5">
               <CardContent className="p-2">
                 {/* Profile Summary */}
                 <div className="p-4 text-center border-b mb-2">
