@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useCareers } from "@/hooks/useCareers";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
+import { CareerRoadmapChart } from "@/components/CareerRoadmapChart";
 import * as Icons from "lucide-react";
 import { Target, Trophy, ChevronRight, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react";
 
@@ -224,116 +225,27 @@ const Arcade = () => {
           </CardContent>
         </Card>
 
-        {/* Journey Path */}
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Your Learning Path
-          </h3>
-
-          <div className="relative">
-            {/* Connection Line */}
-            <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-border hidden md:block" />
-
-            <div className="space-y-4">
-              {journeySteps.map((step, index) => {
-                if (!step) return null;
-
-                const getStepIcon = () => {
-                  if (step.isCompleted) return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-                  if (step.isStarted) return <Circle className="h-5 w-5 text-primary fill-primary/20" />;
-                  return <Lock className="h-5 w-5 text-muted-foreground" />;
-                };
-
-                return (
-                  <Card
-                    key={step.id}
-                    className={`relative transition-all hover:shadow-md cursor-pointer ${
-                      step.isCompleted ? 'border-green-500/30 bg-green-500/5' :
-                      step.isStarted ? 'border-primary/30' : ''
-                    }`}
-                    onClick={() => navigate(`/course/${step.slug}`)}
-                  >
-                    <CardContent className="p-4 md:p-6">
-                      <div className="flex items-start gap-4">
-                        {/* Step Indicator */}
-                        <div className="hidden md:flex w-12 h-12 rounded-full bg-background border-2 items-center justify-center shrink-0 z-10">
-                          {getStepIcon()}
-                        </div>
-
-                        {/* Course Image */}
-                        <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-muted">
-                          {step.image ? (
-                            <img src={step.image} alt={step.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Icons.BookOpen className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <Badge variant="outline" className="mb-2">
-                                Step {step.order}
-                              </Badge>
-                              <h4 className="font-semibold text-lg">{step.name}</h4>
-                              {step.description && (
-                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                  {step.description}
-                                </p>
-                              )}
-                            </div>
-                            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                          </div>
-
-                          {/* Progress */}
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-muted-foreground">
-                                {step.completedLessons} / {step.lessonCount} lessons
-                              </span>
-                              <span className="font-medium">{step.progress}%</span>
-                            </div>
-                            <Progress value={step.progress} className="h-2" />
-                          </div>
-
-                          {/* Skills */}
-                          {step.skills.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-3">
-                              {step.skills.map((skill) => (
-                                <Badge key={skill} variant="secondary" className="text-xs">
-                                  {skill}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-
-          {journeySteps.length === 0 && (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Target className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No courses in this career path</h3>
-                <p className="text-muted-foreground mb-4">
-                  Select a different career path or wait for courses to be added.
-                </p>
-                <Button onClick={() => setCareerDialogOpen(true)}>
-                  Choose Career Path
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Career Roadmap Chart - X/Y Axis visualization */}
+        {journeySteps.length > 0 ? (
+          <CareerRoadmapChart
+            journeySteps={journeySteps.filter(Boolean) as any}
+            readinessPercent={readinessPercent}
+            careerName={career?.name || "Career"}
+          />
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Target className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No courses in this career path</h3>
+              <p className="text-muted-foreground mb-4">
+                Select a different career path or wait for courses to be added.
+              </p>
+              <Button onClick={() => setCareerDialogOpen(true)}>
+                Choose Career Path
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Career Selection Dialog */}
         <CareerSelectionDialog
