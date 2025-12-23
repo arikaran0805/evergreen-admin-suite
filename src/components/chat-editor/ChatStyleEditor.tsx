@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -20,6 +20,23 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const CODE_LANGUAGES = [
   { value: "python", label: "Python" },
@@ -72,6 +89,85 @@ interface Course {
   slug: string;
   icon: string | null;
 }
+
+interface SortableMessageItemProps {
+  message: ChatMessage;
+  character: CourseCharacter;
+  isMentor: boolean;
+  isEditing: boolean;
+  onEdit: (id: string, content: string) => void;
+  onStartEdit: (id: string | null) => void;
+  onEndEdit: () => void;
+  onDelete: (id: string) => void;
+  isEditMode: boolean;
+}
+
+const SortableMessageItem = ({
+  message,
+  character,
+  isMentor,
+  isEditing,
+  onEdit,
+  onStartEdit,
+  onEndEdit,
+  onDelete,
+  isEditMode,
+}: SortableMessageItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: message.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group relative">
+      {isEditMode && (
+        <div
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10",
+            isMentor ? "left-2" : "right-2"
+          )}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 cursor-grab active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-3 h-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={() => onDelete(message.id)}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+      <ChatBubble
+        message={message}
+        character={character}
+        isMentor={isMentor}
+        isEditing={isEditing}
+        onEdit={onEdit}
+        onStartEdit={onStartEdit}
+        onEndEdit={onEndEdit}
+      />
+    </div>
+  );
+};
 
 const ChatStyleEditor = ({
   value,
@@ -245,16 +341,27 @@ const ChatStyleEditor = ({
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const handleMoveMessage = (id: string, direction: "up" | "down") => {
-    const index = messages.findIndex((m) => m.id === id);
-    if (index === -1) return;
-    if (direction === "up" && index === 0) return;
-    if (direction === "down" && index === messages.length - 1) return;
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-    const newMessages = [...messages];
-    const swapIndex = direction === "up" ? index - 1 : index + 1;
-    [newMessages[index], newMessages[swapIndex]] = [newMessages[swapIndex], newMessages[index]];
-    setMessages(newMessages);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setMessages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const getCharacterForSpeaker = useCallback((speaker: string): CourseCharacter => {
@@ -339,58 +446,33 @@ const ChatStyleEditor = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
-            {messages.map((message, index) => (
-              <div key={message.id} className="group relative">
-                <ChatBubble
-                  message={message}
-                  character={getCharacterForSpeaker(message.speaker)}
-                  isMentor={isMentor(message.speaker)}
-                  isEditing={editingId === message.id}
-                  onEdit={handleEditMessage}
-                  onStartEdit={setEditingId}
-                  onEndEdit={() => setEditingId(null)}
-                />
-                
-                {/* Edit controls (visible on hover in edit mode) */}
-                {mode === "edit" && (
-                  <div
-                    className={cn(
-                      "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                      isMentor(message.speaker) ? "left-2" : "right-2"
-                    )}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => handleMoveMessage(message.id, "up")}
-                      disabled={index === 0}
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => handleMoveMessage(message.id, "down")}
-                      disabled={index === messages.length - 1}
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteMessage(message.id)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={messages.map((m) => m.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-1">
+                {messages.map((message) => (
+                  <SortableMessageItem
+                    key={message.id}
+                    message={message}
+                    character={getCharacterForSpeaker(message.speaker)}
+                    isMentor={isMentor(message.speaker)}
+                    isEditing={editingId === message.id}
+                    onEdit={handleEditMessage}
+                    onStartEdit={setEditingId}
+                    onEndEdit={() => setEditingId(null)}
+                    onDelete={handleDeleteMessage}
+                    isEditMode={mode === "edit"}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
