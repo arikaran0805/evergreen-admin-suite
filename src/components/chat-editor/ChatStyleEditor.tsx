@@ -7,9 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ChatStyleEditorProps {
   value: string;
@@ -152,6 +158,21 @@ const ChatStyleEditor = ({
     setNewMessage("");
     setCurrentSpeaker((prev) => (prev === "mentor" ? "course" : "mentor"));
     inputRef.current?.focus();
+  };
+
+  const handleInsertCodeSnippet = () => {
+    const codeTemplate = "```python\n# Your code here\n\n```";
+    setNewMessage((prev) => prev + (prev ? "\n" : "") + codeTemplate);
+    inputRef.current?.focus();
+    // Position cursor inside the code block
+    setTimeout(() => {
+      if (inputRef.current) {
+        const cursorPos = inputRef.current.value.indexOf("# Your code here");
+        if (cursorPos !== -1) {
+          inputRef.current.setSelectionRange(cursorPos, cursorPos + "# Your code here".length);
+        }
+      }
+    }, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -375,6 +396,30 @@ const ChatStyleEditor = ({
                 Enter to send • Shift+Enter for new line
               </div>
             </div>
+            
+            {/* Code snippet dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-12 w-12 rounded-full p-0 shadow-md",
+                    "border-border hover:bg-muted",
+                    "transition-all duration-200 hover:scale-105"
+                  )}
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleInsertCodeSnippet} className="cursor-pointer">
+                  <Code className="w-4 h-4 mr-2" />
+                  Insert Code Snippet
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Send button */}
             <Button
               onClick={handleAddMessage}
               disabled={!newMessage.trim()}
@@ -384,7 +429,7 @@ const ChatStyleEditor = ({
                 "transition-all duration-200 hover:scale-105"
               )}
             >
-              <Plus className="w-5 h-5" />
+              <Send className="w-5 h-5" />
             </Button>
           </div>
         </div>
