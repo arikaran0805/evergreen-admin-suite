@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send, Image, Link, Type, Bold, Italic } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send, Image, Link, Bold, Italic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -184,9 +184,6 @@ const ChatStyleEditor = ({
     insertAtCursor(codeTemplate, "# Your code here");
   };
 
-  const handleInsertInlineCode = () => {
-    insertAtCursor("`code`", "code");
-  };
 
   const handleInsertImage = () => {
     insertAtCursor("![Image description](https://example.com/image.png)", "https://example.com/image.png");
@@ -205,19 +202,31 @@ const ChatStyleEditor = ({
   };
 
   const insertAtCursor = (text: string, selectText?: string) => {
-    setNewMessage((prev) => prev + (prev ? " " : "") + text);
+    setNewMessage((prev) => prev + (prev ? "\n" : "") + text);
     inputRef.current?.focus();
-    if (selectText) {
-      setTimeout(() => {
-        if (inputRef.current) {
+    // Auto-resize textarea
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+        inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 300)}px`;
+        
+        if (selectText) {
           const cursorPos = inputRef.current.value.lastIndexOf(selectText);
           if (cursorPos !== -1) {
             inputRef.current.setSelectionRange(cursorPos, cursorPos + selectText.length);
           }
         }
-      }, 0);
-    }
+      }
+    }, 0);
   };
+
+  // Auto-resize textarea on content change
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 300)}px`;
+    }
+  }, [newMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -430,11 +439,12 @@ const ChatStyleEditor = ({
                 }...`}
                 className={cn(
                   "w-full px-4 py-3 rounded-2xl border border-border bg-background",
-                  "resize-none min-h-[48px] max-h-[120px] text-sm",
+                  "resize-none min-h-[48px] max-h-[300px] text-sm overflow-y-auto",
                   "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
-                  "placeholder:text-muted-foreground/60"
+                  "placeholder:text-muted-foreground/60 transition-all duration-200"
                 )}
                 rows={1}
+                style={{ height: "auto" }}
               />
               <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground/50">
                 Enter to send • Shift+Enter for new line
@@ -475,10 +485,6 @@ const ChatStyleEditor = ({
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
-                <DropdownMenuItem onClick={handleInsertInlineCode} className="cursor-pointer">
-                  <Type className="w-4 h-4 mr-2" />
-                  Inline Code
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertImage} className="cursor-pointer">
                   <Image className="w-4 h-4 mr-2" />
                   Image
