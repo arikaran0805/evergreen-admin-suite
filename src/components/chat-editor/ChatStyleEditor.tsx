@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -82,7 +82,11 @@ interface MessageItemProps {
   onStartEdit: (id: string | null) => void;
   onEndEdit: () => void;
   onDelete: (id: string) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   isEditMode: boolean;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
 const MessageItem = ({
@@ -94,7 +98,11 @@ const MessageItem = ({
   onStartEdit,
   onEndEdit,
   onDelete,
+  onMoveUp,
+  onMoveDown,
   isEditMode,
+  isFirst,
+  isLast,
 }: MessageItemProps) => {
   return (
     <div className="group relative">
@@ -105,6 +113,24 @@ const MessageItem = ({
             isMentor ? "left-2" : "right-2"
           )}
         >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={onMoveUp}
+            disabled={isFirst}
+          >
+            <ArrowUp className="w-3 h-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={onMoveDown}
+            disabled={isLast}
+          >
+            <ArrowDown className="w-3 h-3" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -308,6 +334,20 @@ const ChatStyleEditor = ({
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
+  const handleMoveMessage = (id: string, direction: "up" | "down") => {
+    setMessages((prev) => {
+      const index = prev.findIndex((m) => m.id === id);
+      if (index === -1) return prev;
+      if (direction === "up" && index === 0) return prev;
+      if (direction === "down" && index === prev.length - 1) return prev;
+
+      const newMessages = [...prev];
+      const swapIndex = direction === "up" ? index - 1 : index + 1;
+      [newMessages[index], newMessages[swapIndex]] = [newMessages[swapIndex], newMessages[index]];
+      return newMessages;
+    });
+  };
+
 
   const getCharacterForSpeaker = useCallback((speaker: string): CourseCharacter => {
     if (speaker.toLowerCase() === mentorName.toLowerCase()) {
@@ -392,7 +432,7 @@ const ChatStyleEditor = ({
           </div>
         ) : (
           <div className="space-y-1">
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <MessageItem
                 key={message.id}
                 message={message}
@@ -403,7 +443,11 @@ const ChatStyleEditor = ({
                 onStartEdit={setEditingId}
                 onEndEdit={() => setEditingId(null)}
                 onDelete={handleDeleteMessage}
+                onMoveUp={() => handleMoveMessage(message.id, "up")}
+                onMoveDown={() => handleMoveMessage(message.id, "down")}
                 isEditMode={mode === "edit"}
+                isFirst={index === 0}
+                isLast={index === messages.length - 1}
               />
             ))}
           </div>
