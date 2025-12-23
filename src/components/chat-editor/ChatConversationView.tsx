@@ -3,6 +3,26 @@ import { cn } from "@/lib/utils";
 import { MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { supabase } from "@/integrations/supabase/client";
+import { icons } from "lucide-react";
+
+// Helper to render icon - handles both emoji and Lucide icon names
+const renderCourseIcon = (icon: string | null, size: number = 16) => {
+  if (!icon) return "📚";
+  
+  // Check if it's an emoji (starts with an emoji character)
+  const emojiRegex = /^[\p{Emoji}]/u;
+  if (emojiRegex.test(icon)) {
+    return icon;
+  }
+  
+  // Try to render as Lucide icon
+  const LucideIcon = icons[icon as keyof typeof icons];
+  if (LucideIcon) {
+    return <LucideIcon size={size} />;
+  }
+  
+  return "📚";
+};
 
 interface ChatConversationViewProps {
   content: string;
@@ -169,7 +189,7 @@ const ChatConversationView = ({
                 👨‍💻
               </div>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
-                {courseCharacter.emoji}
+                {renderCourseIcon(courseCharacter.emoji, 16)}
               </div>
             </div>
             <div>
@@ -212,7 +232,7 @@ const ChatConversationView = ({
                       : "bg-gradient-to-br from-muted to-muted/80"
                   )}
                 >
-                  {character.emoji}
+                  {renderCourseIcon(character.emoji, 18)}
                 </div>
 
                 {/* Bubble */}

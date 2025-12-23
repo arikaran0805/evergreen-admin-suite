@@ -1,7 +1,26 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { GripVertical } from "lucide-react";
+import { GripVertical, icons } from "lucide-react";
+
+// Helper to render icon - handles both emoji and Lucide icon names
+const renderCourseIcon = (icon: string | null, size: number = 16) => {
+  if (!icon) return "📚";
+  
+  // Check if it's an emoji (starts with an emoji character)
+  const emojiRegex = /^[\p{Emoji}]/u;
+  if (emojiRegex.test(icon)) {
+    return icon;
+  }
+  
+  // Try to render as Lucide icon
+  const LucideIcon = icons[icon as keyof typeof icons];
+  if (LucideIcon) {
+    return <LucideIcon size={size} />;
+  }
+  
+  return "📚";
+};
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -114,7 +133,7 @@ const ChatBubble = ({
           isMentor ? "bg-gradient-to-br from-blue-400 to-blue-600" : "bg-gradient-to-br from-muted to-muted/80"
         )}
       >
-        {character.emoji}
+        {renderCourseIcon(character.emoji, 18)}
       </div>
 
       {/* Bubble */}
@@ -144,11 +163,11 @@ const ChatBubble = ({
         {/* Speaker name (subtle) */}
         <div
           className={cn(
-            "text-[10px] font-medium mb-1 opacity-70",
+            "text-[10px] font-medium mb-1 opacity-70 flex items-center gap-1",
             isMentor ? "text-blue-100" : "text-muted-foreground"
           )}
         >
-          {character.name} {character.emoji}
+          {character.name} {renderCourseIcon(character.emoji, 12)}
         </div>
 
         {/* Content */}

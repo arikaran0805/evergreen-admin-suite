@@ -7,8 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, icons } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+// Helper to render icon - handles both emoji and Lucide icon names
+const renderCourseIcon = (icon: string | null, size: number = 16) => {
+  if (!icon) return "📚";
+  
+  // Check if it's an emoji (starts with an emoji character)
+  const emojiRegex = /^[\p{Emoji}]/u;
+  if (emojiRegex.test(icon)) {
+    return icon;
+  }
+  
+  // Try to render as Lucide icon
+  const LucideIcon = icons[icon as keyof typeof icons];
+  if (LucideIcon) {
+    return <LucideIcon size={size} />;
+  }
+  
+  return "📚";
+};
 
 interface ChatStyleEditorProps {
   value: string;
@@ -220,7 +239,10 @@ const ChatStyleEditor = ({
             <SelectContent>
               {courses.map((course) => (
                 <SelectItem key={course.slug} value={course.slug}>
-                  {course.icon || "📚"} {course.name}
+                  <span className="flex items-center gap-2">
+                    {renderCourseIcon(course.icon, 14)}
+                    <span>{course.name}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -326,13 +348,13 @@ const ChatStyleEditor = ({
               <button
                 onClick={() => setCurrentSpeaker("course")}
                 className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                  "px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
                   currentSpeaker === "course"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {courseCharacter.emoji} {courseCharacter.name}
+                {renderCourseIcon(courseCharacter.emoji, 14)} {courseCharacter.name}
               </button>
               <button
                 onClick={() => setCurrentSpeaker("mentor")}
