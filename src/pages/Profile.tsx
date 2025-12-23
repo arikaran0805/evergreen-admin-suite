@@ -43,7 +43,10 @@ import {
   Flame,
   Trophy,
   Snowflake,
-  Zap
+  Zap,
+  Library,
+  Gamepad2,
+  FlaskConical
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -75,13 +78,17 @@ const sidebarItems = [
 const OngoingCourseCard = ({ 
   course, 
   userId, 
-  onClick 
+  onClick,
+  onResetProgress
 }: { 
   course: any; 
   userId: string | null;
   onClick: () => void;
+  onResetProgress?: () => void;
 }) => {
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
+  const [isResetting, setIsResetting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProgress = async () => {
@@ -113,11 +120,53 @@ const OngoingCourseCard = ({
     ? (progress.completed / progress.total) * 100 
     : 0;
 
+  const handleResetProgress = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!course?.id || !userId || isResetting) return;
+    
+    setIsResetting(true);
+    try {
+      // Delete all lesson progress for this course
+      const { error } = await supabase
+        .from('lesson_progress')
+        .delete()
+        .eq('user_id', userId)
+        .eq('course_id', course.id);
+
+      if (error) throw error;
+
+      setProgress({ completed: 0, total: progress.total });
+      toast({
+        title: "Progress Reset",
+        description: `Your progress for ${course.name} has been reset.`,
+      });
+      onResetProgress?.();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to reset progress",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <Card 
-      className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+      className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer relative group"
       onClick={onClick}
     >
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        onClick={handleResetProgress}
+        disabled={isResetting}
+        title="Reset Progress"
+      >
+        <Icons.RotateCcw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
+      </Button>
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0">
@@ -1456,6 +1505,36 @@ const Profile = () => {
                     </button>
                   ))}
                 </nav>
+
+                {/* External Links */}
+                <div className="border-t mt-2 pt-2">
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Explore
+                  </p>
+                  <nav className="space-y-1">
+                    <button
+                      onClick={() => navigate('/library')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                    >
+                      <Library className="h-5 w-5" />
+                      <span className="font-medium">Library</span>
+                    </button>
+                    <button
+                      onClick={() => navigate('/arcade')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                    >
+                      <Gamepad2 className="h-5 w-5" />
+                      <span className="font-medium">Arcade</span>
+                    </button>
+                    <button
+                      onClick={() => navigate('/practice-lab')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                    >
+                      <FlaskConical className="h-5 w-5" />
+                      <span className="font-medium">Practice Lab</span>
+                    </button>
+                  </nav>
+                </div>
               </CardContent>
             </Card>
           </aside>
