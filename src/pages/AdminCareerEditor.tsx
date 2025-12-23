@@ -107,7 +107,7 @@ const AdminCareerEditor = () => {
   // Course drag state
   const [draggingCourse, setDraggingCourse] = useState<string | null>(null);
   const [dropTargetSkill, setDropTargetSkill] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(!id); // Auto-collapse when editing
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Course library sidebar
   
   // Dialogs
   const [skillEditorOpen, setSkillEditorOpen] = useState(false);
@@ -611,7 +611,7 @@ const AdminCareerEditor = () => {
 
   if (loading && id) {
     return (
-      <AdminLayout>
+      <AdminLayout defaultSidebarCollapsed>
         <div className="flex items-center justify-center h-96">
           <div className="animate-pulse text-muted-foreground">Loading career...</div>
         </div>
@@ -620,7 +620,7 @@ const AdminCareerEditor = () => {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout defaultSidebarCollapsed>
       <div className="flex flex-col h-[calc(100vh-6rem)]">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
