@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import InContentAdMiddle from "./InContentAdMiddle";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
+import { normalizeChatInput } from "@/lib/chatContent";
 
 interface ContentWithAdsProps {
   htmlContent: string;
@@ -13,36 +14,14 @@ interface ContentWithAdsProps {
 // Check if content is in chat format (Speaker: message pattern)
 const isChatContent = (content: string): boolean => {
   if (!content?.trim()) return false;
-  
-  // Remove HTML tags for detection
-  const textContent = content.replace(/<[^>]*>/g, '').trim();
-  
-  // Check for chat pattern: multiple lines with "Speaker: message" format
-  const lines = textContent.split('\n').filter(line => line.trim());
-  if (lines.length < 2) return false;
-  
-  // Check if most lines match the chat pattern
-  const chatPattern = /^[A-Za-z]+:\s*.+/;
-  const matchingLines = lines.filter(line => chatPattern.test(line.trim()));
-  
-  return matchingLines.length >= lines.length * 0.5; // At least 50% of lines match
-};
 
-// Extract plain text from HTML for chat parsing, preserving line breaks
-const extractTextFromHtml = (html: string): string => {
-  // Replace block elements with newlines before extracting text
-  let processed = html
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n');
-  
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = processed;
-  const text = tempDiv.textContent || tempDiv.innerText || "";
-  
-  // Clean up multiple newlines and trim
-  return text.replace(/\n{3,}/g, '\n\n').trim();
+  const textContent = normalizeChatInput(content);
+
+  // Count speaker markers even if the content was pasted as a single paragraph.
+  const markerRe = /(^|[\n\r\t ]+)([^:\n]{1,60}):\s*(?=\S)/g;
+  const markers = Array.from(textContent.matchAll(markerRe)).filter((m) => /[A-Za-z]/.test(m[2] || ""));
+
+  return markers.length >= 2;
 };
 
 const ContentWithAds = ({ 
@@ -95,13 +74,10 @@ const ContentWithAds = ({
 
   // Render chat conversation view for chat-style content
   if (isChat) {
-    const plainText = extractTextFromHtml(htmlContent);
+    const plainText = normalizeChatInput(htmlContent);
     return (
       <div className="my-6">
-        <ChatConversationView 
-          content={plainText} 
-          courseType={courseType}
-        />
+        <ChatConversationView content={plainText} courseType={courseType} />
       </div>
     );
   }
