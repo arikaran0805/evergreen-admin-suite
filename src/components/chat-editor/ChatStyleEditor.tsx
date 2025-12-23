@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessage, CourseCharacter, COURSE_CHARACTERS, MENTOR_CHARACTER } from "./types";
 import ChatBubble from "./ChatBubble";
 import { cn } from "@/lib/utils";
-import { normalizeChatInput } from "@/lib/chatContent";
+import { extractChatSegments } from "@/lib/chatContent";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,52 +18,16 @@ interface ChatStyleEditorProps {
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const parseContent = (content: string): ChatMessage[] => {
-  const normalized = normalizeChatInput(content);
-  if (!normalized.trim()) return [];
+  const segments = extractChatSegments(content, { allowSingle: true });
+  if (segments.length === 0) return [];
 
-  const lines = normalized.split("\n");
-  const messages: ChatMessage[] = [];
-  let currentMessage: ChatMessage | null = null;
-
-  const speakerTokenRe = /([^:\r\n]{1,60}):\s*/g;
-
-  for (const rawLine of lines) {
-    const line = rawLine;
-    const matches = Array.from(line.matchAll(speakerTokenRe)).filter((m) => /[A-Za-z]/.test(m[1] || ""));
-
-    if (matches.length === 0) {
-      if (currentMessage && line.trim()) {
-        currentMessage.content += (currentMessage.content ? "\n" : "") + line;
-      }
-      continue;
-    }
-
-    // If there's text before the first "Speaker:", treat it as continuation.
-    const firstIndex = matches[0].index ?? 0;
-    if (firstIndex > 0 && currentMessage) {
-      const prefix = line.slice(0, firstIndex).trim();
-      if (prefix) currentMessage.content += "\n" + prefix;
-    }
-
-    for (let i = 0; i < matches.length; i++) {
-      const m = matches[i];
-      const speaker = (m[1] || "").trim();
-      const start = (m.index ?? 0) + m[0].length;
-      const end = i + 1 < matches.length ? (matches[i + 1].index ?? line.length) : line.length;
-      const chunk = line.slice(start, end).trim();
-
-      if (currentMessage) messages.push(currentMessage);
-      currentMessage = {
-        id: generateId(),
-        speaker,
-        content: chunk,
-      };
-    }
-  }
-
-  if (currentMessage) messages.push(currentMessage);
-
-  return messages.filter((m) => m.speaker.trim() && m.content.trim());
+  return segments
+    .map((s) => ({
+      id: generateId(),
+      speaker: s.speaker,
+      content: s.content,
+    }))
+    .filter((m) => m.speaker.trim() && m.content.trim());
 };
 
 const serializeMessages = (messages: ChatMessage[]): string => {

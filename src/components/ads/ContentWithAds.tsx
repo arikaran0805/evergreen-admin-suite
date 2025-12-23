@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import InContentAdMiddle from "./InContentAdMiddle";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
-import { normalizeChatInput } from "@/lib/chatContent";
+import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
 
 interface ContentWithAdsProps {
   htmlContent: string;
@@ -13,15 +13,7 @@ interface ContentWithAdsProps {
 
 // Check if content is in chat format (Speaker: message pattern)
 const isChatContent = (content: string): boolean => {
-  if (!content?.trim()) return false;
-
-  const textContent = normalizeChatInput(content);
-
-  // Count speaker markers even if the content was pasted as a single paragraph.
-  const markerRe = /(^|[\n\r\t ]+)([^:\n]{1,60}):\s*(?=\S)/g;
-  const markers = Array.from(textContent.matchAll(markerRe)).filter((m) => /[A-Za-z]/.test(m[2] || ""));
-
-  return markers.length >= 2;
+  return isChatTranscript(content);
 };
 
 const ContentWithAds = ({ 
