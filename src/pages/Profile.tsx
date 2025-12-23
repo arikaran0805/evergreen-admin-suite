@@ -974,11 +974,19 @@ const Profile = () => {
                 </div>
 
                 {/* Circular Progress Gauge - Modern Design */}
+                {/* Check if close to next level threshold (within 5%) */}
+                {(() => {
+                  const isCloseToNextLevel = 
+                    (readinessPercentage >= 15 && readinessPercentage < 20) ||
+                    (readinessPercentage >= 45 && readinessPercentage < 50) ||
+                    (readinessPercentage >= 75 && readinessPercentage < 80);
+                  
+                  return (
                 <div className="flex flex-col items-center justify-start pt-2">
-                  <div className="relative w-44 h-44">
+                  <div className={`relative w-44 h-44 ${isCloseToNextLevel ? 'animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : ''}`}>
                     {/* Outer glow ring */}
                     <div 
-                      className="absolute inset-0 rounded-full opacity-20 blur-xl"
+                      className={`absolute inset-0 rounded-full opacity-20 blur-xl ${isCloseToNextLevel ? 'opacity-40' : ''}`}
                       style={{
                         background: `conic-gradient(from 0deg, hsl(var(--primary)) ${readinessPercentage}%, transparent ${readinessPercentage}%)`
                       }}
@@ -1073,6 +1081,8 @@ const Profile = () => {
                   </Button>
                   
                 </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
