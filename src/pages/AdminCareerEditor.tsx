@@ -160,14 +160,14 @@ const skillIconOptions = [
 ];
 
 const skillColorOptions = [
-  { name: "Emerald", bg: "bg-emerald-500/20", border: "border-emerald-500/50", text: "text-emerald-600 dark:text-emerald-400", ring: "ring-emerald-500/30" },
-  { name: "Blue", bg: "bg-blue-500/20", border: "border-blue-500/50", text: "text-blue-600 dark:text-blue-400", ring: "ring-blue-500/30" },
-  { name: "Purple", bg: "bg-purple-500/20", border: "border-purple-500/50", text: "text-purple-600 dark:text-purple-400", ring: "ring-purple-500/30" },
-  { name: "Orange", bg: "bg-orange-500/20", border: "border-orange-500/50", text: "text-orange-600 dark:text-orange-400", ring: "ring-orange-500/30" },
-  { name: "Pink", bg: "bg-pink-500/20", border: "border-pink-500/50", text: "text-pink-600 dark:text-pink-400", ring: "ring-pink-500/30" },
-  { name: "Teal", bg: "bg-teal-500/20", border: "border-teal-500/50", text: "text-teal-600 dark:text-teal-400", ring: "ring-teal-500/30" },
-  { name: "Rose", bg: "bg-rose-500/20", border: "border-rose-500/50", text: "text-rose-600 dark:text-rose-400", ring: "ring-rose-500/30" },
-  { name: "Sky", bg: "bg-sky-500/20", border: "border-sky-500/50", text: "text-sky-600 dark:text-sky-400", ring: "ring-sky-500/30" },
+  { name: "Emerald", bg: "bg-emerald-500/20", solid: "bg-emerald-500", border: "border-emerald-500/50", text: "text-emerald-600 dark:text-emerald-400", ring: "ring-emerald-500/30" },
+  { name: "Blue", bg: "bg-blue-500/20", solid: "bg-blue-500", border: "border-blue-500/50", text: "text-blue-600 dark:text-blue-400", ring: "ring-blue-500/30" },
+  { name: "Purple", bg: "bg-purple-500/20", solid: "bg-purple-500", border: "border-purple-500/50", text: "text-purple-600 dark:text-purple-400", ring: "ring-purple-500/30" },
+  { name: "Orange", bg: "bg-orange-500/20", solid: "bg-orange-500", border: "border-orange-500/50", text: "text-orange-600 dark:text-orange-400", ring: "ring-orange-500/30" },
+  { name: "Pink", bg: "bg-pink-500/20", solid: "bg-pink-500", border: "border-pink-500/50", text: "text-pink-600 dark:text-pink-400", ring: "ring-pink-500/30" },
+  { name: "Teal", bg: "bg-teal-500/20", solid: "bg-teal-500", border: "border-teal-500/50", text: "text-teal-600 dark:text-teal-400", ring: "ring-teal-500/30" },
+  { name: "Rose", bg: "bg-rose-500/20", solid: "bg-rose-500", border: "border-rose-500/50", text: "text-rose-600 dark:text-rose-400", ring: "ring-rose-500/30" },
+  { name: "Sky", bg: "bg-sky-500/20", solid: "bg-sky-500", border: "border-sky-500/50", text: "text-sky-600 dark:text-sky-400", ring: "ring-sky-500/30" },
 ];
 
 const careerColorOptions = [
@@ -960,7 +960,7 @@ const AdminCareerEditor = () => {
 
               <TabsContent value="preview" className="flex-1 overflow-auto">
                 <div className="grid gap-4 lg:grid-cols-2">
-                  {/* Live Radar Chart Preview */}
+                  {/* Career Summary Card */}
                   <Card className="p-5 bg-gradient-to-br from-card to-muted/30 border-2">
                     <div className="flex items-center gap-3 mb-4">
                       <div className={`p-2.5 rounded-xl ${careerColor}`}>
@@ -968,47 +968,40 @@ const AdminCareerEditor = () => {
                       </div>
                       <div>
                         <h3 className="font-bold text-lg">{careerName || "Career Name"}</h3>
-                        <p className="text-sm text-muted-foreground">Career Readiness Preview</p>
+                        <p className="text-sm text-muted-foreground">{careerDescription || "No description yet"}</p>
                       </div>
                     </div>
                     
-                    {skillNodes.length === 0 ? (
-                      <div className="h-[220px] flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                          <TrendingUp className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                          <p className="text-sm">Add skills to see radar chart</p>
+                    {/* Configuration Checklist */}
+                    <div className="space-y-3 mb-4">
+                      <div className={`flex items-center gap-2 p-2 rounded-lg ${careerName ? 'bg-green-500/10' : 'bg-muted'}`}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${careerName ? 'bg-green-500 text-white' : 'bg-muted-foreground/30'}`}>
+                          {careerName ? <Icons.Check className="h-3 w-3" /> : <span className="text-xs">1</span>}
                         </div>
+                        <span className="text-sm">Career name & slug set</span>
                       </div>
-                    ) : (
-                      <div className="h-[220px] w-full">
-                        <ChartContainer config={chartConfig} className="h-full w-full">
-                          <RadarChart data={getSkillRadarData()} cx="50%" cy="50%" outerRadius="70%">
-                            <PolarGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                            <PolarAngleAxis 
-                              dataKey="skill" 
-                              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 500 }}
-                              tickLine={false}
-                            />
-                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                            <Radar
-                              name="Skills"
-                              dataKey="value"
-                              stroke="hsl(var(--primary))"
-                              fill="hsl(var(--primary))"
-                              fillOpacity={0.3}
-                              strokeWidth={2}
-                            />
-                            <ChartTooltip 
-                              content={<ChartTooltipContent />}
-                              formatter={(value) => [`${value}%`, 'Proficiency']}
-                            />
-                          </RadarChart>
-                        </ChartContainer>
+                      <div className={`flex items-center gap-2 p-2 rounded-lg ${skillNodes.length > 0 ? 'bg-green-500/10' : 'bg-muted'}`}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${skillNodes.length > 0 ? 'bg-green-500 text-white' : 'bg-muted-foreground/30'}`}>
+                          {skillNodes.length > 0 ? <Icons.Check className="h-3 w-3" /> : <span className="text-xs">2</span>}
+                        </div>
+                        <span className="text-sm">Skills defined ({skillNodes.length})</span>
                       </div>
-                    )}
+                      <div className={`flex items-center gap-2 p-2 rounded-lg ${getTotalWeight() === 100 ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${getTotalWeight() === 100 ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
+                          {getTotalWeight() === 100 ? <Icons.Check className="h-3 w-3" /> : <Icons.AlertTriangle className="h-3 w-3" />}
+                        </div>
+                        <span className="text-sm">Weights total 100% ({getTotalWeight()}%)</span>
+                      </div>
+                      <div className={`flex items-center gap-2 p-2 rounded-lg ${getMappedCourseIds().size > 0 ? 'bg-green-500/10' : 'bg-muted'}`}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${getMappedCourseIds().size > 0 ? 'bg-green-500 text-white' : 'bg-muted-foreground/30'}`}>
+                          {getMappedCourseIds().size > 0 ? <Icons.Check className="h-3 w-3" /> : <span className="text-xs">4</span>}
+                        </div>
+                        <span className="text-sm">Courses mapped ({getMappedCourseIds().size})</span>
+                      </div>
+                    </div>
                     
                     {/* Stats Row */}
-                    <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border mt-4">
+                    <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border">
                       <div className="text-center">
                         <p className="text-xl font-bold text-primary">{skillNodes.length}</p>
                         <p className="text-xs text-muted-foreground">Skills</p>
@@ -1088,11 +1081,10 @@ const AdminCareerEditor = () => {
                         <div className="h-6 rounded-full overflow-hidden flex bg-muted">
                           {skillNodes.map((skill) => {
                             const colorStyle = getSkillColor(skill.color);
-                            const solidBg = colorStyle.bg.replace('/20', '/80');
                             return (
                               <div
                                 key={skill.id}
-                                className={`h-full ${solidBg} transition-all duration-300`}
+                                className={`h-full ${colorStyle.solid} transition-all duration-300`}
                                 style={{ width: `${skill.weight}%` }}
                                 title={`${skill.name}: ${skill.weight}%`}
                               />
@@ -1102,10 +1094,9 @@ const AdminCareerEditor = () => {
                         <div className="flex flex-wrap gap-3 mt-3">
                           {skillNodes.map(skill => {
                             const colorStyle = getSkillColor(skill.color);
-                            const solidBg = colorStyle.bg.replace('/20', '/80');
                             return (
                               <div key={skill.id} className="flex items-center gap-1.5 text-xs">
-                                <div className={`w-3 h-3 rounded-full ${solidBg}`} />
+                                <div className={`w-3 h-3 rounded-full ${colorStyle.solid}`} />
                                 <span className="font-medium">{skill.name}</span>
                                 <span className="text-muted-foreground">({skill.weight}%)</span>
                               </div>
