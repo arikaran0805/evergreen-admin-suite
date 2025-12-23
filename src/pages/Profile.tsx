@@ -838,22 +838,24 @@ const Profile = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Top Header Card - Welcome + Career + Streak + Stats */}
-      <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+      <Card className="card-premium card-shine rounded-xl">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
             {/* Welcome Section */}
             <div className="flex items-center gap-4 flex-1">
-              <Avatar className="h-16 w-16 border-4 border-primary/20">
-                <AvatarImage src={avatarUrl} alt={fullName} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
-                  {fullName?.charAt(0)?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <div className="avatar-premium">
+                <Avatar className="h-16 w-16 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                  <AvatarImage src={avatarUrl} alt={fullName} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xl font-bold">
+                    {fullName?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               <div>
-                <p className="text-sm text-muted-foreground">Welcome back!</p>
-                <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
+                <p className="text-sm text-muted-foreground font-medium">Welcome back!</p>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">{fullName || 'Learner'}</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Aspiring {career?.name || 'Data Analyst'}
+                  Aspiring <span className="text-primary font-medium">{career?.name || 'Data Analyst'}</span>
                 </p>
               </div>
             </div>
@@ -863,33 +865,33 @@ const Profile = () => {
 
             {/* Streak Badge with Animation */}
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-sm shadow-amber-500/10">
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center animate-pulse">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <Flame className="h-6 w-6 text-white drop-shadow-lg" />
                   </div>
                   {currentStreak > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-lg">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-lg">
                       🔥
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Streak</p>
+                  <p className="text-xs text-muted-foreground font-medium">Streak</p>
                   <p className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                     {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
 
-              <div className="text-center px-3 py-2 rounded-lg bg-muted/50">
+              <div className="text-center px-3 py-2 rounded-lg bg-gradient-to-br from-muted/60 to-muted/40 border border-border/50">
                 <p className="text-lg font-bold text-amber-500">{maxStreak}</p>
-                <p className="text-xs text-muted-foreground">max streak</p>
+                <p className="text-xs text-muted-foreground font-medium">max streak</p>
               </div>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/15 to-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/10">
                 <Target className="h-4 w-4" />
-                <span className="text-sm font-medium">
+                <span className="text-sm font-semibold">
                   {readinessPercentage >= 80 ? 'Job Ready' : 'Learning'}
                 </span>
               </div>
@@ -903,21 +905,21 @@ const Profile = () => {
         {/* Left Column - Career Readiness + Recommended Labs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Career Readiness */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="card-premium card-shine rounded-xl">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-xl font-bold">Career Readiness</h3>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">Career Readiness</h3>
                   <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="gap-1 text-primary"
+                  className="gap-1.5 text-primary hover:bg-primary/10 border border-primary/20"
                   onClick={() => setCareerDialogOpen(true)}
                 >
                   <Zap className="h-4 w-4" />
-                  {readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}
+                  <span className="font-semibold">{readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}</span>
                 </Button>
               </div>
 
@@ -1088,7 +1090,7 @@ const Profile = () => {
           </Card>
 
           {/* Recommended Labs Section - Directly below Career Readiness */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="card-premium rounded-xl">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1155,7 +1157,7 @@ const Profile = () => {
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
         <div className="space-y-6">
           {/* Weekly Activity - Compact Version */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="card-premium rounded-xl">
             <CardContent className="p-5">
               <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
               
@@ -1236,7 +1238,7 @@ const Profile = () => {
           </Card>
 
           {/* AI Mentor Card */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="card-premium rounded-xl">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -1261,7 +1263,7 @@ const Profile = () => {
           </Card>
 
           {/* Recent Achievements */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="card-premium rounded-xl">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -1788,20 +1790,22 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/30 -mx-4 px-4 py-6 rounded-2xl">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] dashboard-bg -mx-4 px-4 py-6 rounded-2xl">
           {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Card className="sticky top-28 bg-background/60 backdrop-blur-xl border border-primary/10 shadow-xl shadow-primary/5">
+            <Card className="sticky top-28 sidebar-premium rounded-xl">
               <CardContent className="p-2">
                 {/* Profile Summary */}
-                <div className="p-4 text-center border-b mb-2">
-                  <Avatar className="h-16 w-16 mx-auto mb-3">
-                    <AvatarImage src={avatarUrl} alt={fullName} />
-                    <AvatarFallback className="text-xl">
-                      {fullName?.charAt(0)?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="font-semibold truncate">{fullName || 'User'}</h3>
+                <div className="p-4 text-center border-b border-border/50 mb-2">
+                  <div className="avatar-premium mx-auto w-fit">
+                    <Avatar className="h-16 w-16 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                      <AvatarImage src={avatarUrl} alt={fullName} />
+                      <AvatarFallback className="text-xl bg-gradient-to-br from-primary to-accent text-primary-foreground font-semibold">
+                        {fullName?.charAt(0)?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <h3 className="font-semibold truncate mt-3 text-foreground">{fullName || 'User'}</h3>
                   <p className="text-sm text-muted-foreground truncate">{email}</p>
                 </div>
                 
@@ -1811,13 +1815,13 @@ const Profile = () => {
                     <button
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
+                      className={`nav-item-premium w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left ${
                         activeTab === item.id 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'hover:bg-muted text-foreground'
+                          ? 'active text-primary-foreground font-medium' 
+                          : 'hover:bg-muted/50 text-foreground'
                       }`}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <item.icon className={`h-5 w-5 ${activeTab === item.id ? 'drop-shadow-sm' : ''}`} />
                       <span className="font-medium">{item.label}</span>
                     </button>
                   ))}

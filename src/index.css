@@ -47,8 +47,11 @@ All colors MUST be HSL.
     --shadow-elegant: 0 10px 30px -10px hsl(142 70% 45% / 0.15);
     --shadow-glow: 0 0 40px hsl(142 70% 65% / 0.2);
     --shadow-card: 0 2px 8px hsl(142 30% 20% / 0.08);
+    --shadow-premium: 0 4px 20px -4px hsl(142 40% 30% / 0.12), 0 0 0 1px hsl(142 30% 90% / 0.5);
+    --shadow-premium-hover: 0 8px 30px -6px hsl(142 50% 35% / 0.18), 0 0 0 1px hsl(142 40% 85% / 0.6);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-premium: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
     --sidebar-background: 142 45% 98%;
     --sidebar-foreground: 142 25% 25%;
@@ -98,6 +101,8 @@ All colors MUST be HSL.
     --shadow-elegant: 0 10px 30px -10px hsl(142 70% 55% / 0.3);
     --shadow-glow: 0 0 40px hsl(142 70% 75% / 0.4);
     --shadow-card: 0 2px 8px hsl(142 70% 10% / 0.3);
+    --shadow-premium: 0 4px 20px -4px hsl(142 70% 20% / 0.4), 0 0 0 1px hsl(142 30% 25% / 0.5);
+    --shadow-premium-hover: 0 8px 30px -6px hsl(142 70% 30% / 0.5), 0 0 0 1px hsl(142 40% 30% / 0.6);
 
     --sidebar-background: 142 25% 10%;
     --sidebar-foreground: 142 20% 90%;
@@ -172,5 +177,103 @@ All colors MUST be HSL.
   
   .dark .prose pre code {
     color: hsl(0 0% 90%);
+  }
+}
+
+@layer components {
+  /* Premium card styling */
+  .card-premium {
+    @apply relative overflow-hidden;
+    background: linear-gradient(135deg, hsl(var(--card) / 0.8) 0%, hsl(var(--card) / 0.6) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-premium);
+    border: 1px solid hsl(var(--border) / 0.5);
+    transition: var(--transition-premium);
+  }
+
+  .card-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.03) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .card-premium:hover {
+    box-shadow: var(--shadow-premium-hover);
+    border-color: hsl(var(--primary) / 0.2);
+  }
+
+  /* Premium sidebar styling */
+  .sidebar-premium {
+    @apply relative overflow-hidden;
+    background: linear-gradient(180deg, hsl(var(--card) / 0.9) 0%, hsl(var(--card) / 0.7) 100%);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    box-shadow: var(--shadow-premium);
+    border: 1px solid hsl(var(--primary) / 0.1);
+  }
+
+  .sidebar-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.05) 0%, transparent 30%);
+    pointer-events: none;
+  }
+
+  /* Premium nav item */
+  .nav-item-premium {
+    @apply relative transition-all duration-300;
+  }
+
+  .nav-item-premium:hover {
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--primary) / 0.03) 100%);
+  }
+
+  .nav-item-premium.active {
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%);
+    box-shadow: 0 2px 12px -2px hsl(var(--primary) / 0.4);
+  }
+
+  /* Premium avatar ring */
+  .avatar-premium {
+    @apply relative;
+  }
+
+  .avatar-premium::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    opacity: 0.3;
+    z-index: -1;
+  }
+
+  /* Premium badge glow */
+  .badge-premium {
+    @apply relative;
+    box-shadow: 0 0 12px -2px hsl(var(--primary) / 0.3);
+  }
+
+  /* Subtle shine animation */
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(15deg); }
+    100% { transform: translateX(100%) rotate(15deg); }
+  }
+
+  .card-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.05), transparent);
+    transform: translateX(-100%) rotate(15deg);
+    animation: shine 8s ease-in-out infinite;
+    pointer-events: none;
   }
 }
