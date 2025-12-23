@@ -22,6 +22,19 @@ import {
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+} from "recharts";
 
 // Types
 interface SkillNode {
@@ -123,6 +136,8 @@ const AdminCareerEditor = () => {
   const [addCoursesSkillId, setAddCoursesSkillId] = useState<string | null>(null);
   const [selectedCoursesToAdd, setSelectedCoursesToAdd] = useState<{courseId: string; contribution: number}[]>([]);
   const [contributionValue, setContributionValue] = useState(50);
+  const [sharedContribution, setSharedContribution] = useState(50);
+  const [useSharedContribution, setUseSharedContribution] = useState(true);
 
   // Initialize
   useEffect(() => {
@@ -363,10 +378,10 @@ const AdminCareerEditor = () => {
 
   // Multi-course add functions
   const openAddCoursesDialog = (skillId: string) => {
-    const skill = skillNodes.find(s => s.id === skillId);
-    const existingCourseIds = skill?.courses.map(c => c.courseId) || [];
     setAddCoursesSkillId(skillId);
     setSelectedCoursesToAdd([]);
+    setSharedContribution(50);
+    setUseSharedContribution(true);
     setAddCoursesDialogOpen(true);
   };
 
@@ -376,8 +391,12 @@ const AdminCareerEditor = () => {
       if (exists) {
         return prev.filter(c => c.courseId !== courseId);
       }
-      return [...prev, { courseId, contribution: 50 }];
+      return [...prev, { courseId, contribution: useSharedContribution ? sharedContribution : 50 }];
     });
+  };
+
+  const applySharedContributionToAll = () => {
+    setSelectedCoursesToAdd(prev => prev.map(c => ({ ...c, contribution: sharedContribution })));
   };
 
   const updateSelectedCourseContribution = (courseId: string, contribution: number) => {
@@ -480,6 +499,24 @@ const AdminCareerEditor = () => {
   const getIcon = (iconName: string) => {
     const IconComponent = (Icons as any)[iconName];
     return IconComponent ? <IconComponent className="h-5 w-5" /> : <Icons.Code2 className="h-5 w-5" />;
+  };
+
+  // Chart configuration for radar
+  const chartConfig: ChartConfig = {
+    value: {
+      label: "Weight",
+      color: "hsl(var(--primary))",
+    },
+  };
+
+  // Generate radar chart data from skill nodes
+  const getSkillRadarData = () => {
+    if (skillNodes.length === 0) return [];
+    return skillNodes.map(skill => ({
+      skill: skill.name,
+      value: skill.weight,
+      fullMark: 100,
+    }));
   };
 
   const filteredCourses = courses.filter(c => 
@@ -622,10 +659,10 @@ const AdminCareerEditor = () => {
   return (
     <AdminLayout defaultSidebarCollapsed>
       <div className="flex flex-col h-[calc(100vh-6rem)]">
-        {/* Header */}
+        {/* Header with Tabs inline */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/admin/courses?tab=careers")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/courses?tab=careers")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -634,11 +671,31 @@ const AdminCareerEditor = () => {
                 {getIcon(careerIcon)}
               </div>
               <div>
-                <h1 className="text-xl font-bold">{careerName || "New Career"}</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-lg font-bold">{careerName || "New Career"}</h1>
+                <p className="text-xs text-muted-foreground">
                   {skillNodes.length} skills · {getMappedCourseIds().size} courses
                 </p>
               </div>
+            </div>
+            
+            {/* Tabs inline with career name */}
+            <div className="ml-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="h-9">
+                  <TabsTrigger value="settings" className="text-xs px-3">
+                    <Settings className="h-3.5 w-3.5 mr-1.5" />
+                    Settings
+                  </TabsTrigger>
+                  <TabsTrigger value="canvas" className="text-xs px-3">
+                    <Target className="h-3.5 w-3.5 mr-1.5" />
+                    Skill Canvas
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="text-xs px-3">
+                    <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
           
@@ -655,28 +712,13 @@ const AdminCareerEditor = () => {
 
         {/* Main Content with Right Sidebar */}
         <div className="flex gap-4 flex-1 min-h-0">
-          {/* Left - Tabs Content */}
+          {/* Left - Content Area */}
           <div className="flex-1 flex flex-col min-w-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <TabsList className="w-fit">
-                <TabsTrigger value="settings">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Career Settings
-                </TabsTrigger>
-                <TabsTrigger value="canvas">
-                  <Target className="h-4 w-4 mr-2" />
-                  Skill Canvas
-                </TabsTrigger>
-                <TabsTrigger value="preview">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Career Readiness Preview
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="canvas" className="flex-1 mt-4">
+              <TabsContent value="canvas" className="flex-1 data-[state=active]:flex data-[state=active]:flex-col">
                 <div 
                   ref={canvasRef}
-                  className="relative w-full h-full bg-muted/30 rounded-xl border-2 border-dashed border-border overflow-hidden cursor-crosshair"
+                  className="relative w-full flex-1 min-h-[400px] bg-muted/30 rounded-xl border-2 border-dashed border-border overflow-hidden cursor-crosshair"
                   onDoubleClick={handleCanvasDoubleClick}
                   onMouseMove={handleCanvasMouseMove}
                   onMouseUp={handleCanvasMouseUp}
@@ -799,266 +841,263 @@ const AdminCareerEditor = () => {
                 </div>
               </TabsContent>
 
-            <TabsContent value="preview" className="flex-1 mt-4 overflow-auto">
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-xl ${careerColor}`}>
-                      {getIcon(careerIcon)}
+              <TabsContent value="preview" className="flex-1 overflow-auto">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {/* Live Radar Chart Preview */}
+                  <Card className="p-5 bg-gradient-to-br from-card to-muted/30 border-2">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`p-2.5 rounded-xl ${careerColor}`}>
+                        {getIcon(careerIcon)}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">{careerName || "Career Name"}</h3>
+                        <p className="text-sm text-muted-foreground">Career Readiness Preview</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold">{careerName || "Career Name"}</h2>
-                      <p className="text-sm text-muted-foreground">
-                        {skillNodes.length} skills · {getMappedCourseIds().size} courses mapped
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={autoBalanceWeights} disabled={skillNodes.length === 0}>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Auto-balance Weights
-                  </Button>
-                </div>
-
-                {skillNodes.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-lg font-medium">No skills added yet</p>
-                    <p className="text-sm">Add skills in the Skill Canvas tab to see readiness breakdown</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {/* Overall Readiness */}
-                    <Card className="p-4 border-primary/20 bg-primary/5">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <Target className="h-4 w-4 text-primary" />
-                        Overall Career Readiness
-                      </h3>
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-24 h-24">
-                          <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                            <circle
-                              className="text-muted stroke-current"
-                              strokeWidth="10"
-                              fill="transparent"
-                              r="40"
-                              cx="50"
-                              cy="50"
-                            />
-                            <circle
-                              className="text-primary stroke-current"
-                              strokeWidth="10"
-                              strokeLinecap="round"
-                              fill="transparent"
-                              r="40"
-                              cx="50"
-                              cy="50"
-                              strokeDasharray={`${2 * Math.PI * 40}`}
-                              strokeDashoffset={`${2 * Math.PI * 40 * (1 - (skillNodes.filter(s => s.courses.length > 0).length / skillNodes.length))}`}
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-2xl font-bold">
-                              {Math.round((skillNodes.filter(s => s.courses.length > 0).length / skillNodes.length) * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm text-muted-foreground">
-                            {skillNodes.filter(s => s.courses.length > 0).length} of {skillNodes.length} skills have courses
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Total weight: {getTotalWeight()}%
-                          </p>
+                    
+                    {skillNodes.length === 0 ? (
+                      <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+                        <div className="text-center">
+                          <TrendingUp className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">Add skills to see radar chart</p>
                         </div>
                       </div>
-                    </Card>
-
-                    {/* Weight Distribution */}
-                    <Card className="p-4">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <Palette className="h-4 w-4" />
-                        Weight Distribution
-                      </h3>
-                      <div className="h-4 rounded-full overflow-hidden flex bg-muted">
-                        {skillNodes.map((skill) => {
-                          const colorStyle = getSkillColor(skill.color);
-                          // Extract color name and create solid background
-                          const solidBg = colorStyle.bg.replace('/20', '/80');
-                          return (
-                            <div
-                              key={skill.id}
-                              className={`h-full ${solidBg}`}
-                              style={{ width: `${skill.weight}%` }}
-                              title={`${skill.name}: ${skill.weight}%`}
+                    ) : (
+                      <div className="h-[220px] w-full">
+                        <ChartContainer config={chartConfig} className="h-full w-full">
+                          <RadarChart data={getSkillRadarData()} cx="50%" cy="50%" outerRadius="70%">
+                            <PolarGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                            <PolarAngleAxis 
+                              dataKey="skill" 
+                              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 500 }}
+                              tickLine={false}
                             />
-                          );
-                        })}
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                            <Radar
+                              name="Skills"
+                              dataKey="value"
+                              stroke="hsl(var(--primary))"
+                              fill="hsl(var(--primary))"
+                              fillOpacity={0.3}
+                              strokeWidth={2}
+                            />
+                            <ChartTooltip 
+                              content={<ChartTooltipContent />}
+                              formatter={(value) => [`${value}%`, 'Proficiency']}
+                            />
+                          </RadarChart>
+                        </ChartContainer>
                       </div>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {skillNodes.map(skill => {
-                          const colorStyle = getSkillColor(skill.color);
-                          const solidBg = colorStyle.bg.replace('/20', '/80');
-                          return (
-                            <div key={skill.id} className="flex items-center gap-1.5 text-xs">
-                              <div className={`w-2.5 h-2.5 rounded-full ${solidBg}`} />
-                              <span>{skill.name}</span>
-                              <span className="text-muted-foreground">({skill.weight}%)</span>
-                            </div>
-                          );
-                        })}
+                    )}
+                    
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border mt-4">
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-primary">{skillNodes.length}</p>
+                        <p className="text-xs text-muted-foreground">Skills</p>
                       </div>
-                    </Card>
-
-                    {/* Skill Details */}
-                    <div className="md:col-span-2 space-y-4">
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-green-500">{getMappedCourseIds().size}</p>
+                        <p className="text-xs text-muted-foreground">Courses</p>
+                      </div>
+                      <div className="text-center">
+                        <p className={`text-xl font-bold ${getTotalWeight() === 100 ? 'text-primary' : 'text-destructive'}`}>
+                          {getTotalWeight()}%
+                        </p>
+                        <p className="text-xs text-muted-foreground">Total Weight</p>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  {/* Skill Breakdown with Progress */}
+                  <Card className="p-5">
+                    <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
+                        <Zap className="h-4 w-4 text-primary" />
                         Skill Breakdown
                       </h3>
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {skillNodes.map(skill => {
-                          const colorStyle = getSkillColor(skill.color);
-                          const hasCourses = skill.courses.length > 0;
-                          const avgContribution = skill.courses.length > 0 
-                            ? Math.round(skill.courses.reduce((sum, c) => sum + c.contribution, 0) / skill.courses.length)
-                            : 0;
-                          
-                          return (
-                            <Card key={skill.id} className={`p-4 ${colorStyle.bg} ${colorStyle.border} border`}>
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className={`p-1.5 rounded-lg ${colorStyle.text}`}>
-                                  {getIcon(skill.icon)}
-                                </div>
-                                <div className="flex-1">
-                                  <p className={`font-semibold ${colorStyle.text}`}>{skill.name}</p>
-                                  <p className="text-xs text-muted-foreground">Weight: {skill.weight}%</p>
-                                </div>
-                              </div>
-                              
-                              <Progress 
-                                value={hasCourses ? avgContribution : 0} 
-                                className="h-2 mb-2" 
-                              />
-                              
-                              <div className="text-xs text-muted-foreground space-y-0.5">
-                                <p>{skill.courses.length} course(s) mapped</p>
-                                {hasCourses && <p>Avg. contribution: {avgContribution}%</p>}
-                              </div>
-                              
-                              {skill.courses.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-inherit/50 space-y-1">
-                                  {skill.courses.slice(0, 3).map(({ courseId, contribution }) => {
-                                    const course = courses.find(c => c.id === courseId);
-                                    return (
-                                      <div key={courseId} className="flex items-center justify-between text-xs">
-                                        <span className="truncate flex-1">{course?.name}</span>
-                                        <Badge variant="secondary" className="text-[10px] ml-2">
-                                          {contribution}%
-                                        </Badge>
-                                      </div>
-                                    );
-                                  })}
-                                  {skill.courses.length > 3 && (
-                                    <p className="text-xs text-muted-foreground">
-                                      +{skill.courses.length - 3} more
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </Card>
-                          );
-                        })}
+                      <Button variant="outline" size="sm" onClick={autoBalanceWeights} disabled={skillNodes.length === 0}>
+                        <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                        Auto-balance
+                      </Button>
+                    </div>
+                    
+                    {skillNodes.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Target className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">No skills added yet</p>
                       </div>
+                    ) : (
+                      <ScrollArea className="h-[280px] pr-4">
+                        <div className="space-y-3">
+                          {skillNodes.map(skill => {
+                            const colorStyle = getSkillColor(skill.color);
+                            const hasCourses = skill.courses.length > 0;
+                            const avgContribution = skill.courses.length > 0 
+                              ? Math.round(skill.courses.reduce((sum, c) => sum + c.contribution, 0) / skill.courses.length)
+                              : 0;
+                            
+                            return (
+                              <div 
+                                key={skill.id} 
+                                className={`p-3 rounded-lg border ${colorStyle.bg} ${colorStyle.border}`}
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className={`p-1 rounded ${colorStyle.text}`}>
+                                    {getIcon(skill.icon)}
+                                  </div>
+                                  <span className={`font-medium text-sm ${colorStyle.text}`}>{skill.name}</span>
+                                  <Badge variant="secondary" className="ml-auto text-[10px]">
+                                    {skill.weight}%
+                                  </Badge>
+                                </div>
+                                
+                                <Progress 
+                                  value={hasCourses ? avgContribution : 0} 
+                                  className="h-1.5 mb-2" 
+                                />
+                                
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                  <span>{skill.courses.length} course(s)</span>
+                                  {hasCourses && <span>Avg: {avgContribution}%</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </Card>
+                  
+                  {/* Weight Distribution Bar */}
+                  <Card className="p-5 lg:col-span-2">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Weight Distribution
+                    </h3>
+                    {skillNodes.length > 0 ? (
+                      <>
+                        <div className="h-6 rounded-full overflow-hidden flex bg-muted">
+                          {skillNodes.map((skill) => {
+                            const colorStyle = getSkillColor(skill.color);
+                            const solidBg = colorStyle.bg.replace('/20', '/80');
+                            return (
+                              <div
+                                key={skill.id}
+                                className={`h-full ${solidBg} transition-all duration-300`}
+                                style={{ width: `${skill.weight}%` }}
+                                title={`${skill.name}: ${skill.weight}%`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex flex-wrap gap-3 mt-3">
+                          {skillNodes.map(skill => {
+                            const colorStyle = getSkillColor(skill.color);
+                            const solidBg = colorStyle.bg.replace('/20', '/80');
+                            return (
+                              <div key={skill.id} className="flex items-center gap-1.5 text-xs">
+                                <div className={`w-3 h-3 rounded-full ${solidBg}`} />
+                                <span className="font-medium">{skill.name}</span>
+                                <span className="text-muted-foreground">({skill.weight}%)</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="py-6 text-center text-muted-foreground text-sm">
+                        Add skills to see weight distribution
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="settings" className="flex-1 overflow-auto">
+                <Card className="p-6 space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Career Name *</Label>
+                      <Input
+                        placeholder="e.g., Data Scientist"
+                        value={careerName}
+                        onChange={(e) => {
+                          setCareerName(e.target.value);
+                          if (!id) setCareerSlug(generateSlug(e.target.value));
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Slug *</Label>
+                      <Input
+                        placeholder="e.g., data-scientist"
+                        value={careerSlug}
+                        onChange={(e) => setCareerSlug(generateSlug(e.target.value))}
+                      />
                     </div>
                   </div>
-                )}
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="settings" className="flex-1 mt-4 overflow-auto">
-              <Card className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Career Name *</Label>
-                    <Input
-                      placeholder="e.g., Data Scientist"
-                      value={careerName}
-                      onChange={(e) => {
-                        setCareerName(e.target.value);
-                        if (!id) setCareerSlug(generateSlug(e.target.value));
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Slug *</Label>
-                    <Input
-                      placeholder="e.g., data-scientist"
-                      value={careerSlug}
-                      onChange={(e) => setCareerSlug(generateSlug(e.target.value))}
-                    />
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    placeholder="Brief description of this career path..."
-                    value={careerDescription}
-                    onChange={(e) => setCareerDescription(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>Icon</Label>
-                    <Select value={careerIcon} onValueChange={setCareerIcon}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {careerIconOptions.map(icon => (
-                          <SelectItem key={icon} value={icon}>
-                            <div className="flex items-center gap-2">
-                              {getIcon(icon)}
-                              {icon}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Color Theme</Label>
-                    <Select value={careerColor} onValueChange={setCareerColor}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {careerColorOptions.map(color => (
-                          <SelectItem key={color.value} value={color.value}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-4 h-4 rounded ${color.value}`} />
-                              {color.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Display Order</Label>
-                    <Input
-                      type="number"
-                      value={displayOrder}
-                      onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
+                    <Label>Description</Label>
+                    <Textarea
+                      placeholder="Brief description of this career path..."
+                      value={careerDescription}
+                      onChange={(e) => setCareerDescription(e.target.value)}
+                      rows={3}
                     />
                   </div>
-                </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Icon</Label>
+                      <Select value={careerIcon} onValueChange={setCareerIcon}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {careerIconOptions.map(icon => (
+                            <SelectItem key={icon} value={icon}>
+                              <div className="flex items-center gap-2">
+                                {getIcon(icon)}
+                                {icon}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Color Theme</Label>
+                      <Select value={careerColor} onValueChange={setCareerColor}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {careerColorOptions.map(color => (
+                            <SelectItem key={color.value} value={color.value}>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-4 h-4 rounded ${color.value}`} />
+                                {color.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Display Order</Label>
+                      <Input
+                        type="number"
+                        value={displayOrder}
+                        onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
 
           {/* Right Sidebar - Course Library with Vertical Tab Toggle */}
           <div className="flex-shrink-0 flex">
@@ -1345,6 +1384,39 @@ const AdminCareerEditor = () => {
           </DialogHeader>
           
           <div className="flex-1 min-h-0 space-y-4">
+            {/* Shared Contribution Control */}
+            <Card className="p-3 bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-xs font-medium">Shared Contribution Level</Label>
+                  <p className="text-[10px] text-muted-foreground">Apply same % to all selected courses</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[sharedContribution]}
+                    onValueChange={([v]) => {
+                      setSharedContribution(v);
+                      if (useSharedContribution) {
+                        applySharedContributionToAll();
+                      }
+                    }}
+                    max={100}
+                    step={5}
+                    className="w-24"
+                  />
+                  <span className="text-sm font-medium w-12 text-right">{sharedContribution}%</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={applySharedContributionToAll}
+                  disabled={selectedCoursesToAdd.length === 0}
+                >
+                  Apply All
+                </Button>
+              </div>
+            </Card>
+            
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -1355,7 +1427,7 @@ const AdminCareerEditor = () => {
               />
             </div>
             
-            <ScrollArea className="h-[300px] border rounded-lg">
+            <ScrollArea className="h-[260px] border rounded-lg">
               <div className="p-2 space-y-1">
                 {filteredCourses.map(course => {
                   const skill = skillNodes.find(s => s.id === addCoursesSkillId);
@@ -1368,18 +1440,19 @@ const AdminCareerEditor = () => {
                   return (
                     <div
                       key={course.id}
-                      className={`p-3 rounded-lg border transition-colors ${
+                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
                         isSelected 
                           ? 'bg-primary/10 border-primary/30' 
                           : 'bg-card hover:bg-muted/50 border-border'
                       }`}
+                      onClick={() => toggleCourseSelection(course.id)}
                     >
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleCourseSelection(course.id)}
-                          className="h-4 w-4 rounded border-muted-foreground"
+                          onChange={() => {}}
+                          className="h-4 w-4 rounded border-muted-foreground pointer-events-none"
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{course.name}</p>
@@ -1388,12 +1461,12 @@ const AdminCareerEditor = () => {
                           )}
                         </div>
                         {isSelected && (
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                             <Input
                               type="number"
                               min={0}
                               max={100}
-                              value={selectedCourse?.contribution || 50}
+                              value={selectedCourse?.contribution || sharedContribution}
                               onChange={(e) => updateSelectedCourseContribution(
                                 course.id, 
                                 Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
@@ -1411,8 +1484,13 @@ const AdminCareerEditor = () => {
             </ScrollArea>
             
             {selectedCoursesToAdd.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                {selectedCoursesToAdd.length} course(s) selected
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {selectedCoursesToAdd.length} course(s) selected
+                </span>
+                <span className="text-muted-foreground">
+                  Avg: {Math.round(selectedCoursesToAdd.reduce((sum, c) => sum + c.contribution, 0) / selectedCoursesToAdd.length)}%
+                </span>
               </div>
             )}
           </div>
