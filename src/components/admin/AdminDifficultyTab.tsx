@@ -8,6 +8,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface DifficultyLevel {
   id: string;
@@ -16,13 +33,83 @@ interface DifficultyLevel {
   created_at: string;
 }
 
+interface SortableRowProps {
+  level: DifficultyLevel;
+  onEdit: (level: DifficultyLevel) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortableRow = ({ level, onEdit, onDelete }: SortableRowProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: level.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <TableRow 
+      ref={setNodeRef} 
+      style={style} 
+      className={isDragging ? "opacity-50 bg-muted" : ""}
+    >
+      <TableCell>
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded transition-colors"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </TableCell>
+      <TableCell className="font-medium">{level.name}</TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onEdit(level)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(level.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 const AdminDifficultyTab = () => {
   const { toast } = useToast();
   const [levels, setLevels] = useState<DifficultyLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<DifficultyLevel | null>(null);
-  const [formData, setFormData] = useState({ name: "", display_order: 0 });
+  const [formData, setFormData] = useState({ name: "" });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchLevels();
@@ -45,12 +132,45 @@ const AdminDifficultyTab = () => {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = levels.findIndex((item) => item.id === active.id);
+      const newIndex = levels.findIndex((item) => item.id === over.id);
+      const newLevels = arrayMove(levels, oldIndex, newIndex);
+      
+      setLevels(newLevels);
+
+      // Update display_order in database
+      try {
+        const updates = newLevels.map((level, index) => ({
+          id: level.id,
+          name: level.name,
+          display_order: index + 1,
+        }));
+
+        for (const update of updates) {
+          await supabase
+            .from("difficulty_levels")
+            .update({ display_order: update.display_order })
+            .eq("id", update.id);
+        }
+
+        toast({ title: "Order updated successfully" });
+      } catch (error: any) {
+        toast({ title: "Error updating order", description: error.message, variant: "destructive" });
+        fetchLevels(); // Revert on error
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       if (editingLevel) {
         const { error } = await supabase
           .from("difficulty_levels")
-          .update(formData)
+          .update({ name: formData.name })
           .eq("id", editingLevel.id);
 
         if (error) throw error;
@@ -58,7 +178,7 @@ const AdminDifficultyTab = () => {
       } else {
         const { error } = await supabase
           .from("difficulty_levels")
-          .insert([formData]);
+          .insert([{ name: formData.name, display_order: levels.length + 1 }]);
 
         if (error) throw error;
         toast({ title: "Difficulty level created successfully" });
@@ -66,7 +186,7 @@ const AdminDifficultyTab = () => {
 
       setDialogOpen(false);
       setEditingLevel(null);
-      setFormData({ name: "", display_order: 0 });
+      setFormData({ name: "" });
       fetchLevels();
     } catch (error: any) {
       toast({ title: "Error saving difficulty level", description: error.message, variant: "destructive" });
@@ -92,13 +212,13 @@ const AdminDifficultyTab = () => {
 
   const openEditDialog = (level: DifficultyLevel) => {
     setEditingLevel(level);
-    setFormData({ name: level.name, display_order: level.display_order });
+    setFormData({ name: level.name });
     setDialogOpen(true);
   };
 
   const openCreateDialog = () => {
     setEditingLevel(null);
-    setFormData({ name: "", display_order: levels.length + 1 });
+    setFormData({ name: "" });
     setDialogOpen(true);
   };
 
@@ -130,16 +250,6 @@ const AdminDifficultyTab = () => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="order">Display Order *</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  placeholder="Order for sorting"
-                  value={formData.display_order}
-                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -163,45 +273,36 @@ const AdminDifficultyTab = () => {
               <TableRow>
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead className="w-32">Display Order</TableHead>
                 <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {levels.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground">
                     No difficulty levels found. Create one to get started.
                   </TableCell>
                 </TableRow>
               ) : (
-                levels.map((level) => (
-                  <TableRow key={level.id}>
-                    <TableCell>
-                      <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    </TableCell>
-                    <TableCell className="font-medium">{level.name}</TableCell>
-                    <TableCell>{level.display_order}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(level)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(level.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={levels.map(l => l.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {levels.map((level) => (
+                      <SortableRow
+                        key={level.id}
+                        level={level}
+                        onEdit={openEditDialog}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
               )}
             </TableBody>
           </Table>
