@@ -1061,19 +1061,6 @@ const Profile = () => {
                         <span className="text-2xl font-bold text-muted-foreground">%</span>
                       </div>
                       <span className="text-sm text-muted-foreground mt-1">Career Ready</span>
-                      <Badge 
-                        variant="secondary" 
-                        className={`mt-2 text-xs ${
-                          readinessPercentage >= 80 ? 'bg-green-500/10 text-green-500' :
-                          readinessPercentage >= 50 ? 'bg-yellow-500/10 text-yellow-500' :
-                          readinessPercentage >= 20 ? 'bg-orange-500/10 text-orange-500' :
-                          'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {readinessPercentage >= 80 ? 'Job Ready' : 
-                         readinessPercentage >= 50 ? 'Intermediate' : 
-                         readinessPercentage >= 20 ? 'Beginner' : 'Getting Started'}
-                      </Badge>
                     </div>
                   </div>
 
