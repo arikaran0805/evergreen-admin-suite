@@ -8,6 +8,7 @@ export const CODE_THEMES = [
   { value: "coy", label: "Coy", description: "Light minimal theme" },
   { value: "twilight", label: "Twilight", description: "Dark purple-ish theme" },
   { value: "funky", label: "Funky", description: "Colorful gradient theme" },
+  { value: "gray", label: "Gray", description: "Neutral gray dark theme" },
 ] as const;
 
 export type CodeTheme = typeof CODE_THEMES[number]["value"];

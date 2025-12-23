@@ -37,6 +37,10 @@ const loadTheme = async (theme: string) => {
     case "funky":
       await import("prismjs/themes/prism-funky.css");
       break;
+    case "gray":
+      // Gray theme uses custom inline styles applied via className
+      await import("prismjs/themes/prism.css");
+      break;
     case "tomorrow":
     default:
       await import("prismjs/themes/prism-tomorrow.css");
@@ -90,14 +94,19 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false }: CodeBlockPro
   };
 
   return (
-    <div className="relative group mt-3 w-full min-w-[300px] max-w-[600px]">
+    <div className={cn(
+      "relative group mt-3 w-full min-w-[300px] max-w-[600px]",
+      theme === "gray" && "code-theme-gray"
+    )}>
       <pre
         className={cn(
           "p-4 rounded-xl text-xs font-mono overflow-x-auto w-full",
           "border shadow-inner",
           isMentorBubble
             ? "bg-blue-600/20 border-blue-400/30"
-            : "bg-[#1d1f21] border-border/50"
+            : theme === "gray"
+              ? "bg-[#2d2d2d] border-gray-600/50"
+              : "bg-[#1d1f21] border-border/50"
         )}
       >
         {/* Header with language and copy button */}
