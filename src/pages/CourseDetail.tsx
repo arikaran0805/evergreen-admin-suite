@@ -988,12 +988,13 @@ const CourseDetail = () => {
                       />
                     )}
 
-                    {/* Lesson Content with In-Content Middle Ad (after 3rd paragraph) */}
+{/* Lesson Content with In-Content Middle Ad (after 3rd paragraph) */}
                     <ContentWithAds 
                       htmlContent={selectedPost.content || ''}
                       insertAfterParagraph={3}
                       googleAdClient={adSettings.googleAdClient}
                       googleAdSlot={adSettings.inContentMiddleSlot}
+                      courseType={course?.slug?.toLowerCase()}
                     />
 
                     {/* In-Content Ad - Bottom (Before tags/navigation) */}

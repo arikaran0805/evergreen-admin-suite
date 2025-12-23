@@ -1,20 +1,55 @@
 import { useMemo } from "react";
 import InContentAdMiddle from "./InContentAdMiddle";
+import ChatConversationView from "@/components/chat-editor/ChatConversationView";
 
 interface ContentWithAdsProps {
   htmlContent: string;
   googleAdSlot?: string;
   googleAdClient?: string;
   insertAfterParagraph?: number;
+  courseType?: string;
 }
+
+// Check if content is in chat format (Speaker: message pattern)
+const isChatContent = (content: string): boolean => {
+  if (!content?.trim()) return false;
+  
+  // Remove HTML tags for detection
+  const textContent = content.replace(/<[^>]*>/g, '').trim();
+  
+  // Check for chat pattern: multiple lines with "Speaker: message" format
+  const lines = textContent.split('\n').filter(line => line.trim());
+  if (lines.length < 2) return false;
+  
+  // Check if most lines match the chat pattern
+  const chatPattern = /^[A-Za-z]+:\s*.+/;
+  const matchingLines = lines.filter(line => chatPattern.test(line.trim()));
+  
+  return matchingLines.length >= lines.length * 0.5; // At least 50% of lines match
+};
+
+// Extract plain text from HTML for chat parsing
+const extractTextFromHtml = (html: string): string => {
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = html;
+  return tempDiv.textContent || tempDiv.innerText || "";
+};
 
 const ContentWithAds = ({ 
   htmlContent, 
   googleAdSlot,
   googleAdClient,
-  insertAfterParagraph = 3 
+  insertAfterParagraph = 3,
+  courseType = "python"
 }: ContentWithAdsProps) => {
+  const isChat = useMemo(() => isChatContent(htmlContent), [htmlContent]);
+  
   const contentParts = useMemo(() => {
+    // If chat content, don't split for ads
+    if (isChat) {
+      return { beforeAd: htmlContent, afterAd: "", shouldSplit: false };
+    }
+    
     // Create a temporary DOM element to parse the HTML
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = htmlContent;
@@ -46,7 +81,20 @@ const ContentWithAds = ({
     
     // If not enough paragraphs, don't split
     return { beforeAd: htmlContent, afterAd: "", shouldSplit: false };
-  }, [htmlContent, insertAfterParagraph]);
+  }, [htmlContent, insertAfterParagraph, isChat]);
+
+  // Render chat conversation view for chat-style content
+  if (isChat) {
+    const plainText = extractTextFromHtml(htmlContent);
+    return (
+      <div className="my-6">
+        <ChatConversationView 
+          content={plainText} 
+          courseType={courseType}
+        />
+      </div>
+    );
+  }
 
   if (!contentParts.shouldSplit) {
     return (
