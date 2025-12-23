@@ -520,7 +520,9 @@ const Profile = () => {
             slug,
             description,
             featured_image,
-            level
+            level,
+            icon,
+            learning_hours
           )
         `)
         .eq("user_id", session.user.id);
@@ -532,7 +534,7 @@ const Profile = () => {
       // Fetch all courses for recommendations
       const { data: courses } = await supabase
         .from("courses")
-        .select("id, name, slug, description, featured_image, level");
+        .select("id, name, slug, description, featured_image, level, icon, learning_hours");
 
       if (courses) {
         setAllCourses(courses);
@@ -1560,7 +1562,9 @@ const Profile = () => {
                         >
                           <h4 className="font-semibold truncate">{bookmark.posts?.title}</h4>
                           <p className="text-sm text-muted-foreground line-clamp-1">
-                            {bookmark.posts?.excerpt || 'No description'}
+                            {bookmark.posts?.excerpt 
+                              ? bookmark.posts.excerpt.replace(/<[^>]*>/g, '').slice(0, 100) 
+                              : 'No description'}
                           </p>
                         </div>
                         <Button 
