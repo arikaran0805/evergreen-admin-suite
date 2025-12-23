@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Save, X, BookOpen, Sparkles, MousePointerClick,
   GripVertical, Trash2, Settings, Palette, ChevronRight, ChevronLeft, Search,
-  Target, TrendingUp, Zap
+  Target, TrendingUp, Zap, Move
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
@@ -35,6 +35,23 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Types
 interface SkillNode {
@@ -60,7 +77,83 @@ interface Course {
   description?: string | null;
 }
 
-// Constants
+// Sortable Skill Item Component
+interface SortableSkillItemProps {
+  skill: SkillNode;
+  colorStyle: {
+    name: string;
+    bg: string;
+    border: string;
+    text: string;
+    ring: string;
+  };
+  getIcon: (iconName: string) => React.ReactNode;
+}
+
+const SortableSkillItem = ({ skill, colorStyle, getIcon }: SortableSkillItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: skill.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const hasCourses = skill.courses.length > 0;
+  const avgContribution = skill.courses.length > 0 
+    ? Math.round(skill.courses.reduce((sum, c) => sum + c.contribution, 0) / skill.courses.length)
+    : 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`p-3 rounded-lg border ${colorStyle.bg} ${colorStyle.border} ${
+        isDragging ? 'opacity-50 shadow-lg z-50' : ''
+      } transition-all`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-background/50 rounded transition-colors"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <div className={`p-1 rounded ${colorStyle.text}`}>
+          {getIcon(skill.icon)}
+        </div>
+        <span className={`font-medium text-sm ${colorStyle.text}`}>{skill.name}</span>
+        <Badge variant="secondary" className="ml-auto text-[10px]">
+          {skill.weight}%
+        </Badge>
+      </div>
+      
+      <Progress 
+        value={hasCourses ? avgContribution : 0} 
+        className="h-1.5 mb-2" 
+      />
+      
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{skill.courses.length} course(s)</span>
+        {hasCourses && <span>Avg: {avgContribution}%</span>}
+      </div>
+    </div>
+  );
+};
+
+interface Course {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+}
 const skillIconOptions = [
   "Code2", "Database", "BarChart3", "Brain", "Cpu", "Terminal",
   "Server", "Cloud", "Layers", "Zap", "Target", "Rocket"
@@ -138,6 +231,30 @@ const AdminCareerEditor = () => {
   const [contributionValue, setContributionValue] = useState(50);
   const [sharedContribution, setSharedContribution] = useState(50);
   const [useSharedContribution, setUseSharedContribution] = useState(true);
+
+  // DnD sensors for skill reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleSkillDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setSkillNodes((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   // Initialize
   useEffect(() => {
@@ -909,12 +1026,18 @@ const AdminCareerEditor = () => {
                     </div>
                   </Card>
                   
-                  {/* Skill Breakdown with Progress */}
+                  {/* Skill Breakdown with Drag Reorder */}
                   <Card className="p-5">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        Skill Breakdown
+                        Skill Order
+                        {skillNodes.length > 0 && (
+                          <Badge variant="outline" className="text-[10px] ml-2">
+                            <Move className="h-3 w-3 mr-1" />
+                            Drag to reorder
+                          </Badge>
+                        )}
                       </h3>
                       <Button variant="outline" size="sm" onClick={autoBalanceWeights} disabled={skillNodes.length === 0}>
                         <Sparkles className="h-3.5 w-3.5 mr-1.5" />
@@ -929,42 +1052,27 @@ const AdminCareerEditor = () => {
                       </div>
                     ) : (
                       <ScrollArea className="h-[280px] pr-4">
-                        <div className="space-y-3">
-                          {skillNodes.map(skill => {
-                            const colorStyle = getSkillColor(skill.color);
-                            const hasCourses = skill.courses.length > 0;
-                            const avgContribution = skill.courses.length > 0 
-                              ? Math.round(skill.courses.reduce((sum, c) => sum + c.contribution, 0) / skill.courses.length)
-                              : 0;
-                            
-                            return (
-                              <div 
-                                key={skill.id} 
-                                className={`p-3 rounded-lg border ${colorStyle.bg} ${colorStyle.border}`}
-                              >
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className={`p-1 rounded ${colorStyle.text}`}>
-                                    {getIcon(skill.icon)}
-                                  </div>
-                                  <span className={`font-medium text-sm ${colorStyle.text}`}>{skill.name}</span>
-                                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                                    {skill.weight}%
-                                  </Badge>
-                                </div>
-                                
-                                <Progress 
-                                  value={hasCourses ? avgContribution : 0} 
-                                  className="h-1.5 mb-2" 
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleSkillDragEnd}
+                        >
+                          <SortableContext
+                            items={skillNodes.map(s => s.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-2">
+                              {skillNodes.map((skill, index) => (
+                                <SortableSkillItem
+                                  key={skill.id}
+                                  skill={skill}
+                                  colorStyle={getSkillColor(skill.color)}
+                                  getIcon={getIcon}
                                 />
-                                
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                  <span>{skill.courses.length} course(s)</span>
-                                  {hasCourses && <span>Avg: {avgContribution}%</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       </ScrollArea>
                     )}
                   </Card>
