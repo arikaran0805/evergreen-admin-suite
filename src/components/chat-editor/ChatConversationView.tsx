@@ -4,6 +4,7 @@ import { MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
+import CodeBlock from "./CodeBlock";
 
 interface ChatConversationViewProps {
   content: string;
@@ -121,23 +122,12 @@ const ChatConversationView = ({
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
-          <pre
+          <CodeBlock
             key={idx}
-            className={cn(
-              "mt-3 p-4 rounded-xl text-xs font-mono overflow-x-auto",
-              "border shadow-inner",
-              isMentorBubble
-                ? "bg-blue-600/20 border-blue-400/30"
-                : "bg-background/80 border-border/50"
-            )}
-          >
-            {part.language && (
-              <div className="text-[10px] uppercase tracking-wider opacity-50 mb-2">
-                {part.language}
-              </div>
-            )}
-            <code className="leading-relaxed">{part.content}</code>
-          </pre>
+            code={part.content}
+            language={part.language}
+            isMentorBubble={isMentorBubble}
+          />
         );
       }
       return (
