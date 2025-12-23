@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send, Image, Link, Bold, Italic } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -438,16 +438,19 @@ const ChatStyleEditor = ({
                   currentSpeaker === "mentor" ? mentorName : courseCharacter.name
                 }...`}
                 className={cn(
-                  "w-full px-4 py-3 rounded-2xl border border-border bg-background",
-                  "resize-none min-h-[48px] max-h-[300px] text-sm overflow-y-auto",
+                  "w-full px-4 py-3 pr-8 rounded-2xl border border-border bg-background",
+                  "resize-y min-h-[48px] max-h-[400px] text-sm overflow-y-auto",
                   "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
-                  "placeholder:text-muted-foreground/60 transition-all duration-200"
+                  "placeholder:text-muted-foreground/60 transition-colors duration-200"
                 )}
-                rows={1}
-                style={{ height: "auto" }}
+                rows={2}
               />
-              <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground/50">
+              <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
                 Enter to send • Shift+Enter for new line
+              </div>
+              {/* Resize indicator */}
+              <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground/30">
+                <GripVertical className="w-4 h-4 rotate-45" />
               </div>
             </div>
             
