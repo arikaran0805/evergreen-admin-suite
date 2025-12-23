@@ -8,6 +8,12 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBookmarks } from "@/hooks/useBookmarks";
@@ -893,7 +899,7 @@ const Profile = () => {
       </Card>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Career Readiness - Takes 2 columns */}
         <Card className="lg:col-span-2 bg-card border">
           <CardContent className="p-6">
@@ -913,7 +919,7 @@ const Profile = () => {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               {/* Skill Progress Bars */}
               <div className="space-y-5">
                 {skills.slice(0, 4).map((skill, index) => {
@@ -966,8 +972,8 @@ const Profile = () => {
               </div>
 
               {/* Circular Progress Gauge - Modern Design */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="relative w-52 h-52">
+              <div className="flex flex-col items-center justify-start pt-2">
+                <div className="relative w-44 h-44">
                   {/* Outer glow ring */}
                   <div 
                     className="absolute inset-0 rounded-full opacity-20 blur-xl"
@@ -976,7 +982,7 @@ const Profile = () => {
                     }}
                   />
                   
-                  <svg className="w-52 h-52 transform -rotate-90" viewBox="0 0 208 208">
+                  <svg className="w-44 h-44 transform -rotate-90" viewBox="0 0 208 208">
                     {/* Background track with segments */}
                     <circle
                       cx="104"
@@ -1089,55 +1095,67 @@ const Profile = () => {
             <CardContent className="p-5">
               <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
               
-              <div className="flex items-end justify-between gap-1.5 h-24 mb-4">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => {
-                  const today = new Date();
-                  const weekStart = new Date(today);
-                  weekStart.setDate(today.getDate() - today.getDay());
+              <TooltipProvider>
+                <div className="flex items-end justify-between gap-1.5 h-24 mb-4">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => {
+                    const today = new Date();
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay());
 
-                  const targetDate = new Date(weekStart);
-                  targetDate.setDate(weekStart.getDate() + index);
+                    const targetDate = new Date(weekStart);
+                    targetDate.setDate(weekStart.getDate() + index);
 
-                  const dateStr = toDayKey(targetDate);
-                  const daySeconds = weeklyActivityData.dailySeconds[dateStr] || 0;
-                  const isToday = index === today.getDay();
-                  const hasActivity = daySeconds > 0;
+                    const dateStr = toDayKey(targetDate);
+                    const daySeconds = weeklyActivityData.dailySeconds[dateStr] || 0;
+                    const isToday = index === today.getDay();
+                    const hasActivity = daySeconds > 0;
 
-                  // Safely calculate max with fallback
-                  const allValues = Object.values(weeklyActivityData.dailySeconds);
-                  const maxSeconds = allValues.length > 0 
-                    ? Math.max(...allValues, 60 * 5)
-                    : 60 * 5;
+                    // Safely calculate max with fallback
+                    const allValues = Object.values(weeklyActivityData.dailySeconds);
+                    const maxSeconds = allValues.length > 0 
+                      ? Math.max(...allValues, 60 * 5)
+                      : 60 * 5;
 
-                  const heightPercent = maxSeconds > 0 ? (daySeconds / maxSeconds) * 100 : 0;
+                    const heightPercent = maxSeconds > 0 ? (daySeconds / maxSeconds) * 100 : 0;
 
-                  return (
-                    <div key={dayLabel + index} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div 
-                        className="w-full flex items-end justify-center"
-                        style={{ height: '60px' }}
-                      >
-                        <div
-                          className={`w-full max-w-6 rounded-lg transition-all duration-300 ${
-                            isToday
-                              ? 'bg-primary shadow-lg shadow-primary/30'
-                              : hasActivity
-                                ? 'bg-primary/60'
-                                : 'bg-muted/50'
-                          }`}
-                          style={{ 
-                            height: hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
-                            minHeight: hasActivity ? '8px' : '6px'
-                          }}
-                        />
-                      </div>
-                      <span className={`text-[10px] font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {dayLabel}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                    return (
+                      <Tooltip key={dayLabel + index}>
+                        <TooltipTrigger asChild>
+                          <div className="flex-1 flex flex-col items-center gap-1.5 cursor-pointer">
+                            <div 
+                              className="w-full flex items-end justify-center"
+                              style={{ height: '60px' }}
+                            >
+                              <div
+                                className={`w-full max-w-6 rounded-lg transition-all duration-300 hover:opacity-80 ${
+                                  isToday
+                                    ? 'bg-primary shadow-lg shadow-primary/30'
+                                    : hasActivity
+                                      ? 'bg-primary/60'
+                                      : 'bg-muted/50'
+                                }`}
+                                style={{ 
+                                  height: hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
+                                  minHeight: hasActivity ? '8px' : '6px'
+                                }}
+                              />
+                            </div>
+                            <span className={`text-[10px] font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+                              {dayLabel}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-center">
+                          <p className="font-semibold">{targetDate.toLocaleDateString(undefined, { weekday: 'long' })}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {hasActivity ? formatDurationFromSeconds(daySeconds) : 'No activity'}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </TooltipProvider>
 
               {/* Stats */}
               <div className="space-y-3 pt-4 border-t">
