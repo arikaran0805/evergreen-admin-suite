@@ -4,6 +4,12 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfWeek, endOfWeek, eachDayOfInterval, subDays } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const toDayKey = (d: Date) => {
   const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
@@ -188,45 +194,54 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Bar Chart */}
-        <div className="flex items-end justify-between gap-3 h-36 px-2">
-          {weekDays.map((day, index) => {
-            const isToday = index === currentDayIndex;
-            const heightPercent = maxMinutes > 0 ? (day.totalMinutes / maxMinutes) * 100 : 0;
-            
-            return (
-              <div
-                key={day.day + index}
-                className="flex-1 flex flex-col items-center gap-2"
-              >
-                <div 
-                  className="w-full relative flex items-end justify-center"
-                  style={{ height: '90px' }}
-                >
-                  <div
-                    className={cn(
-                      "w-full max-w-8 rounded-lg transition-all duration-500",
-                      isToday 
-                        ? "bg-primary shadow-lg shadow-primary/30" 
-                        : day.hasActivity 
-                          ? "bg-primary/70" 
-                          : "bg-muted/50"
-                    )}
-                    style={{ 
-                      height: day.hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
-                      minHeight: day.hasActivity ? '12px' : '6px'
-                    }}
-                  />
-                </div>
-                <span className={cn(
-                  "text-xs font-semibold",
-                  isToday ? "text-primary" : "text-muted-foreground"
-                )}>
-                  {day.shortDay}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        <TooltipProvider>
+          <div className="flex items-end justify-between gap-3 h-36 px-2">
+            {weekDays.map((day, index) => {
+              const isToday = index === currentDayIndex;
+              const heightPercent = maxMinutes > 0 ? (day.totalMinutes / maxMinutes) * 100 : 0;
+              
+              return (
+                <Tooltip key={day.day + index}>
+                  <TooltipTrigger asChild>
+                    <div className="flex-1 flex flex-col items-center gap-2 cursor-pointer">
+                      <div 
+                        className="w-full relative flex items-end justify-center"
+                        style={{ height: '90px' }}
+                      >
+                        <div
+                          className={cn(
+                            "w-full max-w-8 rounded-lg transition-all duration-500 hover:opacity-80",
+                            isToday 
+                              ? "bg-primary shadow-lg shadow-primary/30" 
+                              : day.hasActivity 
+                                ? "bg-primary/70" 
+                                : "bg-muted/50"
+                          )}
+                          style={{ 
+                            height: day.hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
+                            minHeight: day.hasActivity ? '12px' : '6px'
+                          }}
+                        />
+                      </div>
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        isToday ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {day.shortDay}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-center">
+                    <p className="font-semibold">{day.day}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {day.hasActivity ? formatDuration(day.totalMinutes) : 'No activity'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </TooltipProvider>
 
         {/* Stats Row */}
         <div className="flex justify-between items-center pt-4 border-t">
