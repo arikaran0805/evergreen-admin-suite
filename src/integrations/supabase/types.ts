@@ -541,7 +541,9 @@ export type Database = {
           description: string | null
           featured: boolean | null
           featured_image: string | null
+          icon: string | null
           id: string
+          learning_hours: number | null
           level: string | null
           name: string
           slug: string
@@ -551,7 +553,9 @@ export type Database = {
           description?: string | null
           featured?: boolean | null
           featured_image?: string | null
+          icon?: string | null
           id?: string
+          learning_hours?: number | null
           level?: string | null
           name: string
           slug: string
@@ -561,7 +565,9 @@ export type Database = {
           description?: string | null
           featured?: boolean | null
           featured_image?: string | null
+          icon?: string | null
           id?: string
+          learning_hours?: number | null
           level?: string | null
           name?: string
           slug?: string

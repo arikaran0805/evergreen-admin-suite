@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, X, Image } from "lucide-react";
+import { ArrowLeft, Upload, X, Image, icons } from "lucide-react";
 
 const AdminCourseEditor = () => {
   const { id } = useParams();
@@ -27,7 +27,16 @@ const AdminCourseEditor = () => {
     featured: false,
     level: "Beginner",
     featured_image: "",
+    icon: "BookOpen",
+    learning_hours: 0,
   });
+
+  // Get a list of popular icons for courses
+  const courseIcons = [
+    "BookOpen", "Code", "Database", "Brain", "Cpu", "Globe", "Layers",
+    "LineChart", "Palette", "Rocket", "Server", "Terminal", "Wrench", 
+    "Zap", "BarChart", "Cloud", "FileCode", "GitBranch", "Lock", "Monitor"
+  ];
 
   useEffect(() => {
     checkAdminAccess();
@@ -94,6 +103,8 @@ const AdminCourseEditor = () => {
           featured: data.featured || false,
           level: data.level || "Beginner",
           featured_image: data.featured_image || "",
+          icon: (data as any).icon || "BookOpen",
+          learning_hours: (data as any).learning_hours || 0,
         });
       }
     } catch (error: any) {
@@ -320,6 +331,41 @@ const AdminCourseEditor = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="learning_hours">Learning Hours</Label>
+                  <Input
+                    id="learning_hours"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="e.g. 10"
+                    value={formData.learning_hours}
+                    onChange={(e) => setFormData({ ...formData, learning_hours: parseFloat(e.target.value) || 0 })}
+                  />
+                  <p className="text-xs text-muted-foreground">Estimated hours to complete</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Course Icon</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {courseIcons.map((iconName) => {
+                      const IconComponent = icons[iconName as keyof typeof icons];
+                      return (
+                        <Button
+                          key={iconName}
+                          type="button"
+                          variant={formData.icon === iconName ? "default" : "outline"}
+                          size="icon"
+                          className="h-10 w-10"
+                          onClick={() => setFormData({ ...formData, icon: iconName })}
+                        >
+                          {IconComponent && <IconComponent className="h-5 w-5" />}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between space-x-2">
