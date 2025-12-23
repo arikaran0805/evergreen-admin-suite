@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, Code, Send, Image, Link, Type, Bold, Italic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -162,17 +162,42 @@ const ChatStyleEditor = ({
 
   const handleInsertCodeSnippet = () => {
     const codeTemplate = "```python\n# Your code here\n\n```";
-    setNewMessage((prev) => prev + (prev ? "\n" : "") + codeTemplate);
+    insertAtCursor(codeTemplate, "# Your code here");
+  };
+
+  const handleInsertInlineCode = () => {
+    insertAtCursor("`code`", "code");
+  };
+
+  const handleInsertImage = () => {
+    insertAtCursor("![Image description](https://example.com/image.png)", "https://example.com/image.png");
+  };
+
+  const handleInsertLink = () => {
+    insertAtCursor("[Link text](https://example.com)", "https://example.com");
+  };
+
+  const handleInsertBold = () => {
+    insertAtCursor("**bold text**", "bold text");
+  };
+
+  const handleInsertItalic = () => {
+    insertAtCursor("*italic text*", "italic text");
+  };
+
+  const insertAtCursor = (text: string, selectText?: string) => {
+    setNewMessage((prev) => prev + (prev ? " " : "") + text);
     inputRef.current?.focus();
-    // Position cursor inside the code block
-    setTimeout(() => {
-      if (inputRef.current) {
-        const cursorPos = inputRef.current.value.indexOf("# Your code here");
-        if (cursorPos !== -1) {
-          inputRef.current.setSelectionRange(cursorPos, cursorPos + "# Your code here".length);
+    if (selectText) {
+      setTimeout(() => {
+        if (inputRef.current) {
+          const cursorPos = inputRef.current.value.lastIndexOf(selectText);
+          if (cursorPos !== -1) {
+            inputRef.current.setSelectionRange(cursorPos, cursorPos + selectText.length);
+          }
         }
-      }
-    }, 0);
+      }, 0);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -397,7 +422,7 @@ const ChatStyleEditor = ({
               </div>
             </div>
             
-            {/* Code snippet dropdown */}
+            {/* Insert options dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -411,10 +436,30 @@ const ChatStyleEditor = ({
                   <Plus className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={handleInsertCodeSnippet} className="cursor-pointer">
                   <Code className="w-4 h-4 mr-2" />
-                  Insert Code Snippet
+                  Code Block
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertInlineCode} className="cursor-pointer">
+                  <Type className="w-4 h-4 mr-2" />
+                  Inline Code
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertImage} className="cursor-pointer">
+                  <Image className="w-4 h-4 mr-2" />
+                  Image
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertLink} className="cursor-pointer">
+                  <Link className="w-4 h-4 mr-2" />
+                  Link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertBold} className="cursor-pointer">
+                  <Bold className="w-4 h-4 mr-2" />
+                  Bold Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertItalic} className="cursor-pointer">
+                  <Italic className="w-4 h-4 mr-2" />
+                  Italic Text
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
