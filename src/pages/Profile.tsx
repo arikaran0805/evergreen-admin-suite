@@ -838,7 +838,7 @@ const Profile = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Top Header Card - Welcome + Career + Streak + Stats */}
-      <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+      <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-white/60 dark:border-border/40 shadow-xl shadow-primary/5">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
             {/* Welcome Section */}
@@ -903,7 +903,7 @@ const Profile = () => {
         {/* Left Column - Career Readiness + Recommended Labs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Career Readiness */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-white/60 dark:border-border/40 shadow-xl shadow-primary/5">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -1091,7 +1091,7 @@ const Profile = () => {
           </Card>
 
           {/* Recommended Labs Section - Directly below Career Readiness */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-white/60 dark:border-border/40 shadow-xl shadow-primary/5">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1158,7 +1158,7 @@ const Profile = () => {
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
         <div className="space-y-6">
           {/* Weekly Activity - Compact Version */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-white/60 dark:border-border/40 shadow-xl shadow-primary/5">
             <CardContent className="p-5">
               <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
               
@@ -1239,7 +1239,7 @@ const Profile = () => {
           </Card>
 
           {/* AI Mentor Card */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-white/60 dark:border-border/40 shadow-xl shadow-primary/5">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -1264,7 +1264,7 @@ const Profile = () => {
           </Card>
 
           {/* Recent Achievements */}
-          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
+          <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-white/60 dark:border-border/40 shadow-xl shadow-primary/5">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -1791,10 +1791,19 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/30 -mx-4 px-4 py-6 rounded-2xl">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] relative -mx-4 px-4 py-6 rounded-2xl overflow-hidden">
+          {/* Premium Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-cyan-50/60 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/10 via-transparent to-transparent" />
+          {/* Decorative circles */}
+          <div className="absolute top-20 right-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-primary/3 to-accent/3 rounded-full blur-3xl" />
+          
           {/* Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <Card className="sticky top-28 bg-background/60 backdrop-blur-xl border border-primary/10 shadow-xl shadow-primary/5">
+          <aside className="lg:w-64 flex-shrink-0 relative z-10">
+            <Card className="sticky top-28 bg-white/70 dark:bg-background/70 backdrop-blur-xl border border-white/50 dark:border-border/30 shadow-xl shadow-primary/5">
               <CardContent className="p-2">
                 {/* Profile Summary */}
                 <div className="p-4 text-center border-b mb-2">
@@ -1860,7 +1869,7 @@ const Profile = () => {
           </aside>
 
           {/* Main Content */}
-          <main className="flex-1 min-w-0">
+          <main className="flex-1 min-w-0 relative z-10">
             {renderContent()}
           </main>
         </div>
