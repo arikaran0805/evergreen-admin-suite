@@ -41,6 +41,8 @@ All colors MUST be HSL.
     
     --gradient-primary: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 70% 65%));
     --gradient-subtle: linear-gradient(180deg, hsl(142 45% 98%), hsl(142 30% 95%));
+    --gradient-dashboard: linear-gradient(135deg, hsl(142 40% 97%) 0%, hsl(160 30% 95%) 50%, hsl(200 25% 96%) 100%);
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(142 60% 95%) 0px, transparent 50%), radial-gradient(at 80% 0%, hsl(160 50% 94%) 0px, transparent 50%), radial-gradient(at 0% 50%, hsl(200 40% 96%) 0px, transparent 50%), radial-gradient(at 80% 50%, hsl(142 45% 96%) 0px, transparent 50%), radial-gradient(at 0% 100%, hsl(180 35% 95%) 0px, transparent 50%);
     
     --shadow-elegant: 0 10px 30px -10px hsl(142 70% 45% / 0.15);
     --shadow-glow: 0 0 40px hsl(142 70% 65% / 0.2);
@@ -90,6 +92,8 @@ All colors MUST be HSL.
     
     --gradient-primary: linear-gradient(135deg, hsl(142 70% 55%), hsl(142 70% 75%));
     --gradient-subtle: linear-gradient(180deg, hsl(142 25% 10%), hsl(142 20% 15%));
+    --gradient-dashboard: linear-gradient(135deg, hsl(142 25% 10%) 0%, hsl(160 20% 12%) 50%, hsl(200 15% 11%) 100%);
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(142 40% 15%) 0px, transparent 50%), radial-gradient(at 80% 0%, hsl(160 35% 14%) 0px, transparent 50%), radial-gradient(at 0% 50%, hsl(200 25% 13%) 0px, transparent 50%), radial-gradient(at 80% 50%, hsl(142 30% 14%) 0px, transparent 50%), radial-gradient(at 0% 100%, hsl(180 25% 12%) 0px, transparent 50%);
     
     --shadow-elegant: 0 10px 30px -10px hsl(142 70% 55% / 0.3);
     --shadow-glow: 0 0 40px hsl(142 70% 75% / 0.4);
@@ -113,6 +117,29 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Premium dashboard background */
+  .dashboard-bg {
+    background: var(--gradient-dashboard);
+    position: relative;
+  }
+
+  .dashboard-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-mesh);
+    pointer-events: none;
+  }
+
+  .dashboard-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
   }
   
   /* Code block styling in prose content */
