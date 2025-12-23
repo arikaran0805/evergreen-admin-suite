@@ -56,6 +56,9 @@ type ChatSegment = { speaker: string; content: string };
 
 type Marker = { speaker: string; start: number; end: number };
 
+// Separator for mixed content (chat + explanation)
+const MIXED_CONTENT_SEPARATOR = /\n---\n/;
+
 const SPEAKER_TOKEN_RE = /([^:\r\n]{1,60}):\s*/g;
 
 const findChatMarkers = (text: string): Marker[] => {
@@ -81,15 +84,18 @@ export const extractChatSegments = (
   const text = normalizeChatInput(input);
   if (!text.trim()) return [];
 
-  const markers = findChatMarkers(text);
+  // If mixed content, only parse the chat portion (before ---)
+  const chatPortion = text.split(MIXED_CONTENT_SEPARATOR)[0];
+
+  const markers = findChatMarkers(chatPortion);
   if (markers.length === 0) return [];
   if (!options?.allowSingle && markers.length < 2) return [];
 
   const segments: ChatSegment[] = [];
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
-    const nextStart = i + 1 < markers.length ? markers[i + 1].start : text.length;
-    const content = text.slice(cur.end, nextStart).trim();
+    const nextStart = i + 1 < markers.length ? markers[i + 1].start : chatPortion.length;
+    const content = chatPortion.slice(cur.end, nextStart).trim();
     if (content) segments.push({ speaker: cur.speaker, content });
   }
 
@@ -99,5 +105,15 @@ export const extractChatSegments = (
 export const isChatTranscript = (input: string): boolean => {
   const text = normalizeChatInput(input);
   if (!text.trim()) return false;
-  return findChatMarkers(text).length >= 2;
+  const chatPortion = text.split(MIXED_CONTENT_SEPARATOR)[0];
+  return findChatMarkers(chatPortion).length >= 2;
+};
+
+// Extract the explanation portion after the --- separator
+export const extractExplanation = (input: string): string | null => {
+  const text = normalizeChatInput(input);
+  const parts = text.split(MIXED_CONTENT_SEPARATOR);
+  if (parts.length < 2) return null;
+  const explanation = parts.slice(1).join("\n---\n").trim();
+  return explanation || null;
 };
