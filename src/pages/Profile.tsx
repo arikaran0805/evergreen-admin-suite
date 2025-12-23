@@ -20,6 +20,7 @@ import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { z } from "zod";
+import * as Icons from "lucide-react";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -218,6 +219,7 @@ const Profile = () => {
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>([]);
   const [completedCourseSlugs, setCompletedCourseSlugs] = useState<string[]>([]);
+  const [courseProgressMap, setCourseProgressMap] = useState<Record<string, { completed: number; total: number }>>({});
   const [selectedCareer, setSelectedCareer] = useState<string>('data-science');
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -413,6 +415,15 @@ const Profile = () => {
         lessonProgress.forEach(progress => {
           completedByCourse[progress.course_id] = (completedByCourse[progress.course_id] || 0) + 1;
         });
+
+        // Build course progress map (by slug for easy lookup)
+        const progressMap: Record<string, { completed: number; total: number }> = {};
+        courses.forEach(course => {
+          const total = lessonCountByCourse[course.id] || 0;
+          const done = completedByCourse[course.id] || 0;
+          progressMap[course.slug] = { completed: done, total };
+        });
+        setCourseProgressMap(progressMap);
 
         // Determine which courses are completed (all lessons done)
         const completed = courses
@@ -638,7 +649,7 @@ const Profile = () => {
   // Get skills and calculate actual skill values from database
   const skills = career ? getCareerSkills(career.id) : [];
   
-  // Calculate skill values based on completed courses and their skill contributions
+  // Calculate skill values based on lesson completion within courses
   const calculateSkillValues = () => {
     if (!career || skills.length === 0) return {};
     
@@ -647,19 +658,24 @@ const Profile = () => {
     skills.forEach(skill => {
       let skillValue = 0;
       
-      // For each completed course in this career, add its contribution to this skill
-      careerCompletedSlugs.forEach(courseSlug => {
-        if (careerRelatedSlugs.includes(courseSlug)) {
-          const contributions = getSkillContributionsForCourse(career.id, courseSlug);
-          const contribution = contributions.find(c => c.skill_name === skill.skill_name);
-          if (contribution) {
-            skillValue += contribution.contribution;
+      // For each course in this career path, calculate partial contribution based on lesson progress
+      careerRelatedSlugs.forEach(courseSlug => {
+        const contributions = getSkillContributionsForCourse(career.id, courseSlug);
+        const contribution = contributions.find(c => c.skill_name === skill.skill_name);
+        
+        if (contribution) {
+          // Get the course's lesson progress
+          const progress = courseProgressMap[courseSlug];
+          if (progress && progress.total > 0) {
+            // Calculate partial contribution based on % of lessons completed
+            const completionRatio = progress.completed / progress.total;
+            skillValue += contribution.contribution * completionRatio;
           }
         }
       });
       
       // Cap at 100
-      skillValues[skill.skill_name] = Math.min(skillValue, 100);
+      skillValues[skill.skill_name] = Math.min(Math.round(skillValue), 100);
     });
     
     return skillValues;
@@ -782,17 +798,10 @@ const Profile = () => {
                   // Get actual skill value from our calculation
                   const skillProgress = skillValues[skill.skill_name] || 0;
                   
-                  // Emoji icons for common skills
-                  const skillEmojis: Record<string, string> = {
-                    'Python': '🐍',
-                    'SQL': '💾',
-                    'Statistics': '📊',
-                    'Machine Learning': '🤖',
-                    'Data Visualization': '📈',
-                    'Excel': '📁',
-                    'Tableau': '📉',
-                    'R': '📐',
-                    'Deep Learning': '🧠',
+                  // Get icon from database
+                  const getSkillIcon = (iconName: string) => {
+                    const IconComponent = (Icons as any)[iconName];
+                    return IconComponent ? <IconComponent className="h-5 w-5" /> : <Icons.Code2 className="h-5 w-5" />;
                   };
                   
                   return (
@@ -803,7 +812,9 @@ const Profile = () => {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <span className="text-lg">{skillEmojis[skill.skill_name] || '📚'}</span>
+                          <div className="text-primary">
+                            {getSkillIcon(skill.icon)}
+                          </div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{skill.skill_name}</span>
                             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -885,12 +896,6 @@ const Profile = () => {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 
-                <button 
-                  className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => handleTabChange('achievements')}
-                >
-                  View skill gaps
-                </button>
               </div>
             </div>
           </CardContent>
