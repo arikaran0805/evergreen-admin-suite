@@ -899,7 +899,7 @@ const Profile = () => {
       </Card>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Career Readiness - Takes 2 columns */}
         <Card className="lg:col-span-2 bg-card border">
           <CardContent className="p-6">
@@ -919,9 +919,9 @@ const Profile = () => {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Skill Progress Bars */}
-              <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
+              <div className="space-y-4 pr-2">
                 {skills.map((skill, index) => {
                   // Get actual skill value from our calculation
                   const skillProgress = skillValues[skill.skill_name] || 0;
