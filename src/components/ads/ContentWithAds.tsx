@@ -28,11 +28,21 @@ const isChatContent = (content: string): boolean => {
   return matchingLines.length >= lines.length * 0.5; // At least 50% of lines match
 };
 
-// Extract plain text from HTML for chat parsing
+// Extract plain text from HTML for chat parsing, preserving line breaks
 const extractTextFromHtml = (html: string): string => {
+  // Replace block elements with newlines before extracting text
+  let processed = html
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n');
+  
   const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = html;
-  return tempDiv.textContent || tempDiv.innerText || "";
+  tempDiv.innerHTML = processed;
+  const text = tempDiv.textContent || tempDiv.innerText || "";
+  
+  // Clean up multiple newlines and trim
+  return text.replace(/\n{3,}/g, '\n\n').trim();
 };
 
 const ContentWithAds = ({ 
