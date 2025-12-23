@@ -10,38 +10,54 @@ interface ChatConversationViewProps {
 
 const parseConversation = (content: string): ChatMessage[] => {
   if (!content.trim()) return [];
-  
+
   // Check if content looks like chat format (has "Speaker: message" pattern)
-  const chatPattern = /^[^:\n]+:\s*.+$/m;
-  if (!chatPattern.test(content)) {
-    return [];
-  }
+  const markerRe = /(^|[\n\r\t ]+)([^:\n]{1,60}):\s*(?=\S)/g;
+  const markers = Array.from(content.matchAll(markerRe)).filter((m) => /[A-Za-z]/.test(m[2] || ""));
+  if (markers.length < 2) return [];
 
   const lines = content.split("\n");
   const messages: ChatMessage[] = [];
   let currentMessage: ChatMessage | null = null;
 
-  for (const line of lines) {
-    const match = line.match(/^([^:]+):\s*(.*)$/);
-    if (match) {
-      if (currentMessage) {
-        messages.push(currentMessage);
+  const speakerTokenRe = /([^:\n]{1,60}):\s*/g;
+
+  for (const rawLine of lines) {
+    const line = rawLine;
+    const matches = Array.from(line.matchAll(speakerTokenRe)).filter((m) => /[A-Za-z]/.test(m[1] || ""));
+
+    if (matches.length === 0) {
+      if (currentMessage && line.trim()) {
+        currentMessage.content += (currentMessage.content ? "\n" : "") + line;
       }
+      continue;
+    }
+
+    const firstIndex = matches[0].index ?? 0;
+    if (firstIndex > 0 && currentMessage) {
+      const prefix = line.slice(0, firstIndex).trim();
+      if (prefix) currentMessage.content += "\n" + prefix;
+    }
+
+    for (let i = 0; i < matches.length; i++) {
+      const m = matches[i];
+      const speaker = (m[1] || "").trim();
+      const start = (m.index ?? 0) + m[0].length;
+      const end = i + 1 < matches.length ? (matches[i + 1].index ?? line.length) : line.length;
+      const chunk = line.slice(start, end).trim();
+
+      if (currentMessage) messages.push(currentMessage);
       currentMessage = {
         id: Math.random().toString(36).substr(2, 9),
-        speaker: match[1].trim(),
-        content: match[2].trim(),
+        speaker,
+        content: chunk,
       };
-    } else if (currentMessage && line.trim()) {
-      currentMessage.content += "\n" + line;
     }
   }
 
-  if (currentMessage) {
-    messages.push(currentMessage);
-  }
+  if (currentMessage) messages.push(currentMessage);
 
-  return messages;
+  return messages.filter((m) => m.speaker.trim() && m.content.trim());
 };
 
 const ChatConversationView = ({
