@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Webhook, 
-  Settings, BarChart3, Share2, Menu, X, LogOut, Home, Layers, GraduationCap
+  Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +21,6 @@ const adminMenuItems = [
   { icon: BookOpen, label: "Posts", path: "/admin/posts" },
   { icon: Files, label: "Pages", path: "/admin/pages" },
   { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
-  { icon: Layers, label: "Difficulty Levels", path: "/admin/difficulty-levels" },
   { icon: Tags, label: "Tags", path: "/admin/tags" },
   { icon: Users, label: "Users", path: "/admin/users" },
   { icon: UserCog, label: "Authors/Admins", path: "/admin/authors" },
