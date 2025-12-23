@@ -2,11 +2,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessage, CourseCharacter, COURSE_CHARACTERS, MENTOR_CHARACTER } from "./types";
 import ChatBubble from "./ChatBubble";
 import { cn } from "@/lib/utils";
-import { extractChatSegments } from "@/lib/chatContent";
+import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
 
 interface ChatStyleEditorProps {
   value: string;
@@ -30,8 +31,12 @@ const parseContent = (content: string): ChatMessage[] => {
     .filter((m) => m.speaker.trim() && m.content.trim());
 };
 
-const serializeMessages = (messages: ChatMessage[]): string => {
-  return messages.map((m) => `${m.speaker}: ${m.content}`).join("\n\n");
+const serializeMessages = (messages: ChatMessage[], explanation: string): string => {
+  const chatPart = messages.map((m) => `${m.speaker}: ${m.content}`).join("\n\n");
+  if (explanation.trim()) {
+    return `${chatPart}\n---\n${explanation.trim()}`;
+  }
+  return chatPart;
 };
 
 const ChatStyleEditor = ({
@@ -41,6 +46,7 @@ const ChatStyleEditor = ({
   placeholder,
 }: ChatStyleEditorProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => parseContent(value));
+  const [explanation, setExplanation] = useState<string>(() => extractExplanation(value) || "");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [currentSpeaker, setCurrentSpeaker] = useState<"mentor" | "course">("course");
@@ -53,20 +59,24 @@ const ChatStyleEditor = ({
   const mentorName = "Karan";
 
   useEffect(() => {
-    const serialized = serializeMessages(messages);
+    const serialized = serializeMessages(messages, explanation);
     if (serialized !== value) {
       onChange(serialized);
     }
-  }, [messages]);
+  }, [messages, explanation]);
 
   useEffect(() => {
     const parsed = parseContent(value);
+    const parsedExplanation = extractExplanation(value) || "";
 
     const stripIds = (arr: ChatMessage[]) =>
       arr.map((m) => ({ speaker: m.speaker, content: m.content }));
 
     if (JSON.stringify(stripIds(parsed)) !== JSON.stringify(stripIds(messages))) {
       setMessages(parsed);
+    }
+    if (parsedExplanation !== explanation) {
+      setExplanation(parsedExplanation);
     }
   }, [value]);
 
@@ -181,7 +191,7 @@ const ChatStyleEditor = ({
         ref={chatContainerRef}
         className={cn(
           "p-6 overflow-y-auto bg-gradient-to-b from-background to-muted/20",
-          "min-h-[400px] max-h-[500px]"
+          "min-h-[300px] max-h-[400px]"
         )}
         style={{
           backgroundImage: `radial-gradient(circle at 50% 50%, hsl(var(--muted) / 0.3) 0%, transparent 70%)`,
@@ -320,6 +330,24 @@ const ChatStyleEditor = ({
           </div>
         </div>
       )}
+
+      {/* Explanation section */}
+      <div className="border-t border-border bg-muted/20 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FileText className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Explanation (appears after chat)</span>
+        </div>
+        <Textarea
+          value={explanation}
+          onChange={(e) => setExplanation(e.target.value)}
+          placeholder="Add an explanation or summary of the conversation... (optional)"
+          className="min-h-[100px] resize-y"
+          disabled={mode === "preview"}
+        />
+        <p className="text-xs text-muted-foreground mt-2">
+          This text will appear below the chat conversation as an explanation section.
+        </p>
+      </div>
 
       <style>{`
         .chat-style-editor {

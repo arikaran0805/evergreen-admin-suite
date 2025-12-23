@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { COURSE_CHARACTERS, MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
-import { extractChatSegments } from "@/lib/chatContent";
+import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 
 interface ChatConversationViewProps {
   content: string;
@@ -26,6 +26,7 @@ const ChatConversationView = ({
   className,
 }: ChatConversationViewProps) => {
   const messages = useMemo(() => parseConversation(content), [content]);
+  const explanation = useMemo(() => extractExplanation(content), [content]);
   const courseCharacter = COURSE_CHARACTERS[courseType] || COURSE_CHARACTERS.python;
 
   const getCharacterForSpeaker = (speaker: string): CourseCharacter => {
@@ -99,121 +100,135 @@ const ChatConversationView = ({
   }
 
   return (
-    <div
-      className={cn(
-        "chat-conversation-view rounded-2xl overflow-hidden",
-        "bg-gradient-to-b from-background via-background to-muted/30",
-        "border border-border/50 shadow-xl",
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
-              👨‍💻
-            </div>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
-              {courseCharacter.emoji}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm font-semibold">
-              Karan & {courseCharacter.name}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Interactive Lesson
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-muted-foreground">Live</span>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="p-6 space-y-4">
-        {messages.map((message, index) => {
-          const character = getCharacterForSpeaker(message.speaker);
-          const isMentorBubble = isMentor(message.speaker);
-
-          return (
-            <div
-              key={message.id}
-              className={cn(
-                "flex items-end gap-2.5 animate-in fade-in-0 slide-in-from-bottom-2",
-                isMentorBubble ? "flex-row-reverse" : "flex-row"
-              )}
-              style={{ animationDelay: `${index * 100}ms`, animationFillMode: "backwards" }}
-            >
-              {/* Avatar */}
-              <div
-                className={cn(
-                  "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg",
-                  "shadow-lg transition-transform duration-300 hover:scale-110",
-                  isMentorBubble
-                    ? "bg-gradient-to-br from-blue-400 to-blue-600"
-                    : "bg-gradient-to-br from-muted to-muted/80"
-                )}
-              >
-                {character.emoji}
+    <div className={cn("space-y-6", className)}>
+      {/* Chat conversation */}
+      <div
+        className={cn(
+          "chat-conversation-view rounded-2xl overflow-hidden",
+          "bg-gradient-to-b from-background via-background to-muted/30",
+          "border border-border/50 shadow-xl"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
+                👨‍💻
               </div>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
+                {courseCharacter.emoji}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm font-semibold">
+                Karan & {courseCharacter.name}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Interactive Lesson
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs text-muted-foreground">Live</span>
+          </div>
+        </div>
 
-              {/* Bubble */}
+        {/* Messages */}
+        <div className="p-6 space-y-4">
+          {messages.map((message, index) => {
+            const character = getCharacterForSpeaker(message.speaker);
+            const isMentorBubble = isMentor(message.speaker);
+
+            return (
               <div
+                key={message.id}
                 className={cn(
-                  "relative max-w-[75%] px-5 py-3 rounded-2xl",
-                  "shadow-md transition-all duration-200 hover:shadow-lg",
-                  isMentorBubble
-                    ? "bg-gradient-to-br from-[hsl(210,100%,52%)] to-[hsl(210,100%,45%)] text-white rounded-br-md"
-                    : "bg-muted/80 text-foreground rounded-bl-md border border-border/30"
+                  "flex items-end gap-2.5 animate-in fade-in-0 slide-in-from-bottom-2",
+                  isMentorBubble ? "flex-row-reverse" : "flex-row"
                 )}
+                style={{ animationDelay: `${index * 100}ms`, animationFillMode: "backwards" }}
               >
-                {/* Subtle speaker indicator */}
+                {/* Avatar */}
                 <div
                   className={cn(
-                    "text-[10px] font-semibold mb-1.5 tracking-wide uppercase",
-                    isMentorBubble ? "text-blue-100/80" : "text-muted-foreground/70"
+                    "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg",
+                    "shadow-lg transition-transform duration-300 hover:scale-110",
+                    isMentorBubble
+                      ? "bg-gradient-to-br from-blue-400 to-blue-600"
+                      : "bg-gradient-to-br from-muted to-muted/80"
                   )}
                 >
-                  {character.name}
+                  {character.emoji}
                 </div>
 
-                {/* Content */}
-                <div className="text-[15px] leading-relaxed">
-                  {renderContent(message.content, isMentorBubble)}
+                {/* Bubble */}
+                <div
+                  className={cn(
+                    "relative max-w-[75%] px-5 py-3 rounded-2xl",
+                    "shadow-md transition-all duration-200 hover:shadow-lg",
+                    isMentorBubble
+                      ? "bg-gradient-to-br from-[hsl(210,100%,52%)] to-[hsl(210,100%,45%)] text-white rounded-br-md"
+                      : "bg-muted/80 text-foreground rounded-bl-md border border-border/30"
+                  )}
+                >
+                  {/* Subtle speaker indicator */}
+                  <div
+                    className={cn(
+                      "text-[10px] font-semibold mb-1.5 tracking-wide uppercase",
+                      isMentorBubble ? "text-blue-100/80" : "text-muted-foreground/70"
+                    )}
+                  >
+                    {character.name}
+                  </div>
+
+                  {/* Content */}
+                  <div className="text-[15px] leading-relaxed">
+                    {renderContent(message.content, isMentorBubble)}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-border/50 bg-muted/20 flex items-center justify-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            💡 Learning through conversation
+          </span>
+        </div>
+
+        <style>{`
+          .chat-conversation-view {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+          }
+          
+          @keyframes messageAppear {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-border/50 bg-muted/20 flex items-center justify-center gap-2">
-        <span className="text-xs text-muted-foreground">
-          💡 Learning through conversation
-        </span>
-      </div>
-
-      <style>{`
-        .chat-conversation-view {
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        @keyframes messageAppear {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+      {/* Explanation section (if present) */}
+      {explanation && (
+        <div className="prose prose-sm dark:prose-invert max-w-none p-6 rounded-xl bg-muted/30 border border-border/50">
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-xl">📝</span> Explanation
+          </h3>
+          <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+            {explanation}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
