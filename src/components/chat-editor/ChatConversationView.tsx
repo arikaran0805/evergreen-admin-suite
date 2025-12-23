@@ -224,9 +224,10 @@ const ChatConversationView = ({
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <span className="text-xl">📝</span> Explanation
           </h3>
-          <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
-            {explanation}
-          </div>
+          <div 
+            className="leading-relaxed text-foreground/90"
+            dangerouslySetInnerHTML={{ __html: explanation }}
+          />
         </div>
       )}
     </div>
