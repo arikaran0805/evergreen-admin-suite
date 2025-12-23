@@ -110,9 +110,10 @@ export const CareerRoadmapChart = ({
             </div>
           ))}
           
-          {/* Y-axis title */}
+          {/* Y-axis title - positioned further left */}
           <div 
-            className="absolute -left-2 top-1/2 transform -translate-y-1/2 -rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap"
+            className="absolute top-1/2 transform -translate-y-1/2 -rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap"
+            style={{ left: '-20px' }}
           >
             Career Readiness
           </div>
