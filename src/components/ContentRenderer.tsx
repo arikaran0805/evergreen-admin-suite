@@ -2,18 +2,15 @@ import { useMemo } from "react";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
 import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
 
-interface ContentWithAdsProps {
+interface ContentRendererProps {
   htmlContent: string;
-  googleAdSlot?: string;
-  googleAdClient?: string;
-  insertAfterParagraph?: number;
   courseType?: string;
 }
 
-const ContentWithAds = ({ 
+const ContentRenderer = ({ 
   htmlContent, 
   courseType = "python"
-}: ContentWithAdsProps) => {
+}: ContentRendererProps) => {
   const isChat = useMemo(() => isChatTranscript(htmlContent), [htmlContent]);
 
   // Render chat conversation view for chat-style content
@@ -34,4 +31,4 @@ const ContentWithAds = ({
   );
 };
 
-export default ContentWithAds;
+export default ContentRenderer;
