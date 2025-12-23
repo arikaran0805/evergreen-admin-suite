@@ -7,12 +7,10 @@ import { BookOpen, Clock, icons } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // Helper to get a dynamic icon
-const getIcon = (iconName: string, fallback: LucideIcon): LucideIcon => {
-  const icon = icons[iconName as keyof typeof icons];
-  if (icon && typeof icon !== 'function' && 'displayName' in icon) {
-    return icon as LucideIcon;
-  }
-  return fallback;
+const ICONS = icons as unknown as Record<string, LucideIcon>;
+const getIcon = (iconName: string | null | undefined, fallback: LucideIcon): LucideIcon => {
+  if (!iconName) return fallback;
+  return ICONS[iconName] ?? fallback;
 };
 
 interface CourseProgress {
