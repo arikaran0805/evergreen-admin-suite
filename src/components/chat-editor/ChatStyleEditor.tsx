@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChatMessage, CourseCharacter, COURSE_CHARACTERS, MENTOR_CHARACTER } from "./types";
+import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import ChatBubble from "./ChatBubble";
 import { cn } from "@/lib/utils";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
 import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatStyleEditorProps {
   value: string;
@@ -39,6 +40,13 @@ const serializeMessages = (messages: ChatMessage[], explanation: string): string
   return chatPart;
 };
 
+interface Course {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+}
+
 const ChatStyleEditor = ({
   value,
   onChange,
@@ -52,11 +60,50 @@ const ChatStyleEditor = ({
   const [currentSpeaker, setCurrentSpeaker] = useState<"mentor" | "course">("course");
   const [selectedCourse, setSelectedCourse] = useState(courseType);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [courses, setCourses] = useState<Course[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const courseCharacter = COURSE_CHARACTERS[selectedCourse] || COURSE_CHARACTERS.python;
   const mentorName = "Karan";
+
+  // Fetch courses from database
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id, name, slug, icon")
+        .order("name");
+      
+      if (!error && data) {
+        setCourses(data);
+        // Set first course as default if current selection is not in the list
+        if (data.length > 0 && !data.find(c => c.slug === selectedCourse)) {
+          setSelectedCourse(data[0].slug);
+        }
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Get course character from fetched courses
+  const getCourseCharacter = useCallback((courseSlug: string): CourseCharacter => {
+    const course = courses.find(c => c.slug === courseSlug);
+    if (course) {
+      return {
+        name: course.name,
+        emoji: course.icon || "📚",
+        color: "hsl(var(--foreground))",
+        bgColor: "hsl(var(--muted))",
+      };
+    }
+    return {
+      name: "Course",
+      emoji: "📚",
+      color: "hsl(var(--foreground))",
+      bgColor: "hsl(var(--muted))",
+    };
+  }, [courses]);
+
+  const courseCharacter = getCourseCharacter(selectedCourse);
 
   useEffect(() => {
     const serialized = serializeMessages(messages, explanation);
@@ -135,16 +182,24 @@ const ChatStyleEditor = ({
     setMessages(newMessages);
   };
 
-  const getCharacterForSpeaker = (speaker: string): CourseCharacter => {
+  const getCharacterForSpeaker = useCallback((speaker: string): CourseCharacter => {
     if (speaker.toLowerCase() === mentorName.toLowerCase()) {
       return MENTOR_CHARACTER;
     }
-    return (
-      Object.values(COURSE_CHARACTERS).find(
-        (c) => c.name.toLowerCase() === speaker.toLowerCase()
-      ) || courseCharacter
+    // Find matching course by name
+    const matchingCourse = courses.find(
+      (c) => c.name.toLowerCase() === speaker.toLowerCase()
     );
-  };
+    if (matchingCourse) {
+      return {
+        name: matchingCourse.name,
+        emoji: matchingCourse.icon || "📚",
+        color: "hsl(var(--foreground))",
+        bgColor: "hsl(var(--muted))",
+      };
+    }
+    return courseCharacter;
+  }, [courses, courseCharacter]);
 
   const isMentor = (speaker: string) =>
     speaker.toLowerCase() === mentorName.toLowerCase();
@@ -163,9 +218,9 @@ const ChatStyleEditor = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(COURSE_CHARACTERS).map(([key, char]) => (
-                <SelectItem key={key} value={key}>
-                  {char.emoji} {char.name}
+              {courses.map((course) => (
+                <SelectItem key={course.slug} value={course.slug}>
+                  {course.icon || "📚"} {course.name}
                 </SelectItem>
               ))}
             </SelectContent>
