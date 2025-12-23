@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Clock, TrendingUp } from "lucide-react";
+import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,13 +55,13 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       // Create week days with activity data
       const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const shortDayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
       let weekTotal = 0;
-      let maxDayMinutes = 60; // Minimum scale
+      let maxDayMinutes = 30; // Lower minimum scale for better visibility
 
       const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = format(date, 'yyyy-MM-dd');
         const dayTimeRecords = timeData?.filter(t => t.tracked_date === dateStr) || [];
         const totalSeconds = dayTimeRecords.reduce((sum, t) => sum + t.duration_seconds, 0);
         const totalMinutes = Math.floor(totalSeconds / 60);
@@ -72,7 +72,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
           day: dayNames[index],
           shortDay: shortDayNames[index],
           date,
-          hasActivity: totalMinutes > 0,
+          hasActivity: totalSeconds > 0, // Show activity even for < 1 minute
           totalMinutes,
         };
       });
@@ -95,8 +95,9 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
       });
 
-      const todayStr = today.toISOString().split('T')[0];
-      const todayMinutes = Math.floor((dailyTotals.get(todayStr) || 0) / 60);
+      const todayStr = format(today, 'yyyy-MM-dd');
+      const todaySeconds = dailyTotals.get(todayStr) || 0;
+      const hasActivityToday = todaySeconds > 0;
 
       // Get and update max streak from profile (including freeze info)
       const { data: profile } = await supabase
@@ -106,27 +107,27 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         .single();
 
       const storedMaxStreak = (profile as any)?.max_streak || 0;
-      const lastActivityDate = (profile as any)?.last_activity_date;
       const lastFreezeDate = (profile as any)?.last_freeze_date;
 
-      // Recalculate streak accounting for freeze dates
+      // Recalculate streak - count consecutive days with activity (including today)
       let recalculatedStreak = 0;
-      let streakCheckDate = today;
+      let checkDate = today;
       
+      // If no activity today and not frozen, start checking from yesterday
       const todayFrozen = lastFreezeDate === todayStr;
-      
-      if (todayMinutes === 0 && !todayFrozen) {
-        streakCheckDate = subDays(today, 1);
+      if (!hasActivityToday && !todayFrozen) {
+        checkDate = subDays(today, 1);
       }
 
+      // Count consecutive days with activity going backwards
       for (let i = 0; i < 365; i++) {
-        const dateStr = streakCheckDate.toISOString().split('T')[0];
-        const dayMinutes = Math.floor((dailyTotals.get(dateStr) || 0) / 60);
+        const dateStr = format(checkDate, 'yyyy-MM-dd');
+        const daySeconds = dailyTotals.get(dateStr) || 0;
         const wasFrozen = lastFreezeDate === dateStr;
 
-        if (dayMinutes > 0 || wasFrozen) {
+        if (daySeconds > 0 || wasFrozen) {
           recalculatedStreak++;
-          streakCheckDate = subDays(streakCheckDate, 1);
+          checkDate = subDays(checkDate, 1);
         } else {
           break;
         }
@@ -134,25 +135,15 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
       const newMaxStreak = Math.max(recalculatedStreak, storedMaxStreak);
 
-      // Update profile with current streak and max streak if needed
-      if (recalculatedStreak > storedMaxStreak) {
-        await supabase
-          .from('profiles')
-          .update({ 
-            max_streak: recalculatedStreak,
-            current_streak: recalculatedStreak,
-            last_activity_date: todayStr
-          } as any)
-          .eq('id', user.id);
-      } else {
-        await supabase
-          .from('profiles')
-          .update({ 
-            current_streak: recalculatedStreak,
-            last_activity_date: todayMinutes > 0 ? todayStr : lastActivityDate
-          } as any)
-          .eq('id', user.id);
-      }
+      // Always update profile with current streak
+      await supabase
+        .from('profiles')
+        .update({ 
+          max_streak: newMaxStreak,
+          current_streak: recalculatedStreak,
+          last_activity_date: hasActivityToday ? todayStr : (profile as any)?.last_activity_date
+        } as any)
+        .eq('id', user.id);
 
       setLoading(false);
     };
@@ -185,51 +176,44 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
   return (
     <Card className={cn("", className)}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Weekly Activity</CardTitle>
-          </div>
-          <span className="text-2xl font-bold text-primary">{formatDuration(totalWeekMinutes)}</span>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-bold">Weekly Activity</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Bar Chart */}
-        <div className="flex items-end justify-between gap-2 h-32">
+        <div className="flex items-end justify-between gap-3 h-36 px-2">
           {weekDays.map((day, index) => {
             const isToday = index === currentDayIndex;
             const heightPercent = maxMinutes > 0 ? (day.totalMinutes / maxMinutes) * 100 : 0;
             
             return (
               <div
-                key={day.day}
-                className="flex-1 flex flex-col items-center gap-1"
+                key={day.day + index}
+                className="flex-1 flex flex-col items-center gap-2"
               >
-                <span className="text-xs text-muted-foreground mb-1">
-                  {day.totalMinutes > 0 ? formatDuration(day.totalMinutes) : ''}
-                </span>
                 <div 
                   className="w-full relative flex items-end justify-center"
-                  style={{ height: '80px' }}
+                  style={{ height: '90px' }}
                 >
                   <div
                     className={cn(
-                      "w-full rounded-t-md transition-all duration-500",
+                      "w-full max-w-8 rounded-lg transition-all duration-500",
                       isToday 
-                        ? "bg-primary" 
+                        ? "bg-primary shadow-lg shadow-primary/30" 
                         : day.hasActivity 
-                          ? "bg-primary/60" 
-                          : "bg-muted"
+                          ? "bg-primary/70" 
+                          : "bg-muted/50"
                     )}
                     style={{ 
-                      height: day.hasActivity ? `${Math.max(heightPercent, 8)}%` : '4px',
-                      minHeight: day.hasActivity ? '8px' : '4px'
+                      height: day.hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
+                      minHeight: day.hasActivity ? '12px' : '6px'
                     }}
                   />
                 </div>
                 <span className={cn(
-                  "text-xs font-medium",
+                  "text-xs font-semibold",
                   isToday ? "text-primary" : "text-muted-foreground"
                 )}>
                   {day.shortDay}
@@ -240,27 +224,14 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t">
-          <div className="flex flex-col items-center text-center">
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <Clock className="h-3.5 w-3.5" />
-              <span className="text-xs">Total</span>
-            </div>
-            <span className="font-semibold text-sm">{formatDuration(totalWeekMinutes)}</span>
+        <div className="flex justify-between items-center pt-4 border-t">
+          <div className="flex flex-col">
+            <span className="text-muted-foreground text-xs">Total Time</span>
+            <span className="font-bold text-lg">{totalWeekMinutes > 0 ? formatDuration(totalWeekMinutes) : '0 min'}</span>
           </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-xs">Avg/Day</span>
-            </div>
-            <span className="font-semibold text-sm">{formatDuration(avgMinutes)}</span>
-          </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <Activity className="h-3.5 w-3.5" />
-              <span className="text-xs">Active</span>
-            </div>
-            <span className="font-semibold text-sm">{activeDays}/7 days</span>
+          <div className="flex flex-col text-right">
+            <span className="text-muted-foreground text-xs">Active Days</span>
+            <span className="font-bold text-lg">{activeDays} / 7</span>
           </div>
         </div>
       </CardContent>
