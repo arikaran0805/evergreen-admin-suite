@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Save, X, BookOpen, Sparkles, MousePointerClick,
   GripVertical, Trash2, Settings, Palette, ChevronRight, ChevronLeft, Search,
-  Target, TrendingUp, Zap, PanelRightClose, PanelRightOpen
+  Target, TrendingUp, Zap
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
@@ -812,12 +812,14 @@ const AdminCareerEditor = () => {
                         Weight Distribution
                       </h3>
                       <div className="h-4 rounded-full overflow-hidden flex bg-muted">
-                        {skillNodes.map((skill, idx) => {
+                        {skillNodes.map((skill) => {
                           const colorStyle = getSkillColor(skill.color);
+                          // Extract color name and create solid background
+                          const solidBg = colorStyle.bg.replace('/20', '/80');
                           return (
                             <div
                               key={skill.id}
-                              className={`h-full ${colorStyle.bg.replace('/20', '')}`}
+                              className={`h-full ${solidBg}`}
                               style={{ width: `${skill.weight}%` }}
                               title={`${skill.name}: ${skill.weight}%`}
                             />
@@ -827,9 +829,10 @@ const AdminCareerEditor = () => {
                       <div className="flex flex-wrap gap-2 mt-3">
                         {skillNodes.map(skill => {
                           const colorStyle = getSkillColor(skill.color);
+                          const solidBg = colorStyle.bg.replace('/20', '/80');
                           return (
                             <div key={skill.id} className="flex items-center gap-1.5 text-xs">
-                              <div className={`w-2.5 h-2.5 rounded-full ${colorStyle.bg.replace('/20', '')}`} />
+                              <div className={`w-2.5 h-2.5 rounded-full ${solidBg}`} />
                               <span>{skill.name}</span>
                               <span className="text-muted-foreground">({skill.weight}%)</span>
                             </div>
@@ -989,19 +992,18 @@ const AdminCareerEditor = () => {
           </Tabs>
         </div>
 
-          {/* Sidebar Toggle Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-l-lg rounded-r-none border border-r-0 bg-background shadow-sm"
-            style={{ right: sidebarOpen ? '288px' : '0' }}
-          >
-            {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-          </Button>
-
           {/* Right Sidebar - Course Library */}
-          <Card className={`flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0'}`}>
+          <Card className={`flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 relative ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0'}`}>
+            {/* Sidebar Toggle Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`absolute z-10 h-7 w-7 rounded-md border bg-background shadow-sm hover:bg-muted ${sidebarOpen ? 'top-2 right-2' : '-left-9 top-2'}`}
+            >
+              {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+
             <div className="p-4 border-b flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="h-4 w-4 text-primary" />
