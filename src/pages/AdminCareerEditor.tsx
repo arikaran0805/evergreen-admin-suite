@@ -88,7 +88,7 @@ const AdminCareerEditor = () => {
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseSearch, setCourseSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("canvas");
+  const [activeTab, setActiveTab] = useState("settings");
   
   // Career form state
   const [careerName, setCareerName] = useState("");
@@ -107,7 +107,7 @@ const AdminCareerEditor = () => {
   // Course drag state
   const [draggingCourse, setDraggingCourse] = useState<string | null>(null);
   const [dropTargetSkill, setDropTargetSkill] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(!id); // Auto-collapse when editing
   
   // Dialogs
   const [skillEditorOpen, setSkillEditorOpen] = useState(false);
@@ -117,6 +117,11 @@ const AdminCareerEditor = () => {
     skillId: string;
     courseId: string;
   } | null>(null);
+  
+  // Multi-course add state
+  const [addCoursesDialogOpen, setAddCoursesDialogOpen] = useState(false);
+  const [addCoursesSkillId, setAddCoursesSkillId] = useState<string | null>(null);
+  const [selectedCoursesToAdd, setSelectedCoursesToAdd] = useState<{courseId: string; contribution: number}[]>([]);
   const [contributionValue, setContributionValue] = useState(50);
 
   // Initialize
@@ -356,6 +361,65 @@ const AdminCareerEditor = () => {
     toast({ title: "Course mapped successfully!" });
   };
 
+  // Multi-course add functions
+  const openAddCoursesDialog = (skillId: string) => {
+    const skill = skillNodes.find(s => s.id === skillId);
+    const existingCourseIds = skill?.courses.map(c => c.courseId) || [];
+    setAddCoursesSkillId(skillId);
+    setSelectedCoursesToAdd([]);
+    setAddCoursesDialogOpen(true);
+  };
+
+  const toggleCourseSelection = (courseId: string) => {
+    setSelectedCoursesToAdd(prev => {
+      const exists = prev.find(c => c.courseId === courseId);
+      if (exists) {
+        return prev.filter(c => c.courseId !== courseId);
+      }
+      return [...prev, { courseId, contribution: 50 }];
+    });
+  };
+
+  const updateSelectedCourseContribution = (courseId: string, contribution: number) => {
+    setSelectedCoursesToAdd(prev => prev.map(c => 
+      c.courseId === courseId ? { ...c, contribution } : c
+    ));
+  };
+
+  const confirmAddMultipleCourses = () => {
+    if (!addCoursesSkillId || selectedCoursesToAdd.length === 0) return;
+
+    setSkillNodes(prev => prev.map(skill => {
+      if (skill.id === addCoursesSkillId) {
+        const existingCourseIds = skill.courses.map(c => c.courseId);
+        const newCourses = selectedCoursesToAdd.filter(c => !existingCourseIds.includes(c.courseId));
+        return {
+          ...skill,
+          courses: [...skill.courses, ...newCourses],
+        };
+      }
+      return skill;
+    }));
+
+    // Update editingSkill if it's the same
+    if (editingSkill?.id === addCoursesSkillId) {
+      const skill = skillNodes.find(s => s.id === addCoursesSkillId);
+      if (skill) {
+        const existingCourseIds = skill.courses.map(c => c.courseId);
+        const newCourses = selectedCoursesToAdd.filter(c => !existingCourseIds.includes(c.courseId));
+        setEditingSkill({
+          ...skill,
+          courses: [...skill.courses, ...newCourses],
+        });
+      }
+    }
+
+    setAddCoursesDialogOpen(false);
+    setAddCoursesSkillId(null);
+    setSelectedCoursesToAdd([]);
+    toast({ title: `${selectedCoursesToAdd.length} course(s) added successfully!` });
+  };
+
   const removeCourseFromSkill = (skillId: string, courseId: string) => {
     setSkillNodes(prev => prev.map(skill => {
       if (skill.id === skillId) {
@@ -579,15 +643,10 @@ const AdminCareerEditor = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            {skillNodes.length > 0 && (
-              <Badge variant={getTotalWeight() === 100 ? "default" : "destructive"}>
-                Weights: {getTotalWeight()}%
-              </Badge>
-            )}
-            <Button variant="outline" onClick={() => navigate("/admin/courses?tab=careers")}>
+            <Button variant="outline" className="w-[136px]" onClick={() => navigate("/admin/courses?tab=careers")}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={loading}>
+            <Button className="w-[136px]" onClick={handleSubmit} disabled={loading}>
               <Save className="h-4 w-4 mr-2" />
               {id ? "Update" : "Create"}
             </Button>
@@ -600,6 +659,10 @@ const AdminCareerEditor = () => {
           <div className="flex-1 flex flex-col min-w-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
               <TabsList className="w-fit">
+                <TabsTrigger value="settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Career Settings
+                </TabsTrigger>
                 <TabsTrigger value="canvas">
                   <Target className="h-4 w-4 mr-2" />
                   Skill Canvas
@@ -607,10 +670,6 @@ const AdminCareerEditor = () => {
                 <TabsTrigger value="preview">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Career Readiness Preview
-                </TabsTrigger>
-                <TabsTrigger value="settings">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Career Settings
                 </TabsTrigger>
               </TabsList>
               
@@ -623,6 +682,15 @@ const AdminCareerEditor = () => {
                   onMouseUp={handleCanvasMouseUp}
                   onMouseLeave={handleCanvasMouseUp}
                 >
+                  {/* Weights badge - top right of canvas */}
+                  {skillNodes.length > 0 && (
+                    <div className="absolute top-3 right-3 z-20">
+                      <Badge variant={getTotalWeight() === 100 ? "default" : "destructive"} className="text-sm px-3 py-1">
+                        Weights: {getTotalWeight()}%
+                      </Badge>
+                    </div>
+                  )}
+
                   {/* Canvas hint */}
                   {skillNodes.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1137,9 +1205,19 @@ const AdminCareerEditor = () => {
               </div>
 
               {/* Mapped courses in skill */}
-              {editingSkill.courses.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Mapped Courses</Label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Mapped Courses ({editingSkill.courses.length})</Label>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => openAddCoursesDialog(editingSkill.id)}
+                  >
+                    <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+                    Add Courses
+                  </Button>
+                </div>
+                {editingSkill.courses.length > 0 ? (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {editingSkill.courses.map(({ courseId, contribution }) => {
                       const course = courses.find(c => c.id === courseId);
@@ -1152,11 +1230,17 @@ const AdminCareerEditor = () => {
                             min={0}
                             max={100}
                             value={contribution}
-                            onChange={(e) => updateCourseContribution(
-                              editingSkill.id, 
-                              courseId, 
-                              Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                            )}
+                            onChange={(e) => {
+                              const newContribution = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              updateCourseContribution(editingSkill.id, courseId, newContribution);
+                              // Also update editingSkill state
+                              setEditingSkill(prev => prev ? {
+                                ...prev,
+                                courses: prev.courses.map(c => 
+                                  c.courseId === courseId ? { ...c, contribution: newContribution } : c
+                                )
+                              } : null);
+                            }}
                             className="w-16 h-7 text-xs text-center"
                           />
                           <span className="text-xs text-muted-foreground">%</span>
@@ -1164,7 +1248,14 @@ const AdminCareerEditor = () => {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => removeCourseFromSkill(editingSkill.id, courseId)}
+                            onClick={() => {
+                              removeCourseFromSkill(editingSkill.id, courseId);
+                              // Also update editingSkill state
+                              setEditingSkill(prev => prev ? {
+                                ...prev,
+                                courses: prev.courses.filter(c => c.courseId !== courseId)
+                              } : null);
+                            }}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
@@ -1172,8 +1263,12 @@ const AdminCareerEditor = () => {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-sm text-muted-foreground text-center py-4 bg-muted/50 rounded-lg">
+                    No courses mapped. Click "Add Courses" to add.
+                  </div>
+                )}
+              </div>
             </div>
           )}
           
@@ -1234,6 +1329,104 @@ const AdminCareerEditor = () => {
             <Button onClick={confirmCourseMapping}>
               <Zap className="h-4 w-4 mr-2" />
               Add Mapping
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Multiple Courses Dialog */}
+      <Dialog open={addCoursesDialogOpen} onOpenChange={setAddCoursesDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add Courses to Skill</DialogTitle>
+            <DialogDescription>
+              Select multiple courses and set their contribution levels
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 min-h-0 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search courses..."
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            
+            <ScrollArea className="h-[300px] border rounded-lg">
+              <div className="p-2 space-y-1">
+                {filteredCourses.map(course => {
+                  const skill = skillNodes.find(s => s.id === addCoursesSkillId);
+                  const isAlreadyMapped = skill?.courses.some(c => c.courseId === course.id);
+                  const isSelected = selectedCoursesToAdd.some(c => c.courseId === course.id);
+                  const selectedCourse = selectedCoursesToAdd.find(c => c.courseId === course.id);
+                  
+                  if (isAlreadyMapped) return null;
+                  
+                  return (
+                    <div
+                      key={course.id}
+                      className={`p-3 rounded-lg border transition-colors ${
+                        isSelected 
+                          ? 'bg-primary/10 border-primary/30' 
+                          : 'bg-card hover:bg-muted/50 border-border'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleCourseSelection(course.id)}
+                          className="h-4 w-4 rounded border-muted-foreground"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{course.name}</p>
+                          {course.description && (
+                            <p className="text-xs text-muted-foreground truncate">{course.description}</p>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={selectedCourse?.contribution || 50}
+                              onChange={(e) => updateSelectedCourseContribution(
+                                course.id, 
+                                Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
+                              )}
+                              className="w-16 h-7 text-xs text-center"
+                            />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+            
+            {selectedCoursesToAdd.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                {selectedCoursesToAdd.length} course(s) selected
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddCoursesDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmAddMultipleCourses}
+              disabled={selectedCoursesToAdd.length === 0}
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Add {selectedCoursesToAdd.length} Course(s)
             </Button>
           </DialogFooter>
         </DialogContent>
