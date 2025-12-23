@@ -25,15 +25,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
-import AdDisplay from "@/components/AdDisplay";
 import {
   SidebarAdTop,
   SidebarAdMiddle,
-  SidebarAdBottom,
-  InContentAdTop,
-  InContentAdBottom,
-  ContentWithAds
+  SidebarAdBottom
 } from "@/components/ads";
+import ContentRenderer from "@/components/ContentRenderer";
 
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
 import { z } from "zod";
@@ -973,12 +970,6 @@ const CourseDetail = () => {
                       </div>
                     </div>
 
-                    {/* In-Content Ad - Top (Below title and header) */}
-                    <InContentAdTop 
-                      googleAdClient={adSettings.googleAdClient}
-                      googleAdSlot={adSettings.inContentTopSlot}
-                    />
-
                     {/* Featured Image */}
                     {selectedPost.featured_image && (
                       <img 
@@ -988,19 +979,10 @@ const CourseDetail = () => {
                       />
                     )}
 
-{/* Lesson Content with In-Content Middle Ad (after 3rd paragraph) */}
-                    <ContentWithAds 
+                    {/* Lesson Content */}
+                    <ContentRenderer 
                       htmlContent={selectedPost.content || ''}
-                      insertAfterParagraph={3}
-                      googleAdClient={adSettings.googleAdClient}
-                      googleAdSlot={adSettings.inContentMiddleSlot}
                       courseType={course?.slug?.toLowerCase()}
-                    />
-
-                    {/* In-Content Ad - Bottom (Before tags/navigation) */}
-                    <InContentAdBottom 
-                      googleAdClient={adSettings.googleAdClient}
-                      googleAdSlot={adSettings.inContentBottomSlot}
                     />
 
                     {/* Mark as Complete Button */}
