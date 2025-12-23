@@ -3,6 +3,7 @@ import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
 import { GripVertical } from "lucide-react";
 import { renderCourseIcon } from "./utils";
+import CodeBlock from "./CodeBlock";
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -80,15 +81,12 @@ const ChatBubble = ({
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
-          <pre
+          <CodeBlock
             key={idx}
-            className={cn(
-              "mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto",
-              isMentor ? "bg-blue-600/30" : "bg-background/50"
-            )}
-          >
-            <code>{part.content}</code>
-          </pre>
+            code={part.content}
+            language={part.language}
+            isMentorBubble={isMentor}
+          />
         );
       }
       return (
