@@ -1088,66 +1088,6 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Recommended Labs Section - Compact */}
-        <Card className="bg-card border">
-          <CardHeader className="pb-3 pt-4 px-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                  <FlaskConical className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Recommended Labs</CardTitle>
-                  <CardDescription className="text-xs">Practice exercises based on your enrolled courses</CardDescription>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/practice-lab')} className="gap-1 h-8 text-xs">
-                View All <ChevronRight className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="px-5 pb-4">
-            <div className="grid grid-cols-1 gap-3">
-              {enrolledCourses.slice(0, 2).map((enrollment, index) => {
-                const course = enrollment.courses;
-                if (!course) return null;
-                
-                const labTypes = ['Coding Challenge', 'Quiz'];
-                const labIcons = [<Zap className="h-4 w-4" />, <Target className="h-4 w-4" />];
-                const labColors = ['from-emerald-500 to-teal-600', 'from-blue-500 to-indigo-600'];
-                
-                return (
-                  <div 
-                    key={enrollment.id} 
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border"
-                    onClick={() => navigate('/practice-lab')}
-                  >
-                    <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${labColors[index % 2]} flex items-center justify-center shrink-0`}>
-                      {labIcons[index % 2]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{course.name} {labTypes[index % 2]}</p>
-                      <p className="text-xs text-muted-foreground">Practice your skills</p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      {labTypes[index % 2]}
-                    </Badge>
-                  </div>
-                );
-              })}
-              {enrolledCourses.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  <FlaskConical className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Enroll in courses to unlock practice labs</p>
-                  <Button variant="link" onClick={() => navigate('/courses')} className="mt-1 h-auto p-0 text-xs">
-                    Browse Courses
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Right Column - Weekly Activity + AI Mentor */}
         <div className="space-y-6">
           {/* Weekly Activity - Compact Version */}
@@ -1343,6 +1283,70 @@ const Profile = () => {
           </Card>
         </div>
       </div>
+
+      {/* Recommended Labs Section */}
+      <Card className="bg-card border mt-6">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <FlaskConical className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Recommended Labs</CardTitle>
+                <CardDescription>Practice exercises based on your enrolled courses</CardDescription>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/practice-lab')} className="gap-1">
+              View All <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {enrolledCourses.slice(0, 3).map((enrollment, index) => {
+              const course = enrollment.courses;
+              if (!course) return null;
+              
+              const labTypes = ['Coding Challenge', 'Quiz', 'Project'];
+              const labIcons = [<Zap className="h-4 w-4" />, <Target className="h-4 w-4" />, <Award className="h-4 w-4" />];
+              const labColors = ['from-emerald-500 to-teal-600', 'from-blue-500 to-indigo-600', 'from-purple-500 to-pink-600'];
+              
+              return (
+                <Card 
+                  key={enrollment.id} 
+                  className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border"
+                  onClick={() => navigate('/practice-lab')}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${labColors[index % 3]} flex items-center justify-center shrink-0`}>
+                        {labIcons[index % 3]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{course.name} {labTypes[index % 3]}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Practice your skills</p>
+                        <Badge variant="secondary" className="mt-2 text-xs">
+                          {labTypes[index % 3]}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {enrolledCourses.length === 0 && (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                <FlaskConical className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Enroll in courses to unlock practice labs</p>
+                <Button variant="link" onClick={() => navigate('/courses')} className="mt-2">
+                  Browse Courses
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Career Selection Dialog */}
       <CareerSelectionDialog
