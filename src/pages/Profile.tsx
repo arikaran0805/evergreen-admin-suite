@@ -757,7 +757,7 @@ const Profile = () => {
   );
   const completedInCareer = careerCompletedSlugs.length;
   const avgMinutesPerDay = weeklyActivityData.activeDays > 0 
-    ? Math.round(weeklyActivityData.totalMinutes / weeklyActivityData.activeDays) 
+    ? Math.round((weeklyActivityData.totalSeconds / 60) / weeklyActivityData.activeDays) 
     : 0;
 
   // Get skills and calculate actual skill values from database

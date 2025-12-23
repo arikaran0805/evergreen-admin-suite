@@ -126,7 +126,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
       // Count consecutive days with activity going backwards
       for (let i = 0; i < 365; i++) {
-        const dateStr = format(checkDate, 'yyyy-MM-dd');
+        const dateStr = toDayKey(checkDate);
         const daySeconds = dailyTotals.get(dateStr) || 0;
         const wasFrozen = lastFreezeDate === dateStr;
 
