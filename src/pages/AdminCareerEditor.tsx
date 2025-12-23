@@ -794,7 +794,7 @@ const AdminCareerEditor = () => {
         toast({ title: "Career created successfully" });
       }
 
-      navigate("/admin/courses?tab=careers");
+      navigate("/admin/careers");
     } catch (error: any) {
       toast({ title: "Error saving career", description: error.message, variant: "destructive" });
     } finally {
@@ -818,7 +818,7 @@ const AdminCareerEditor = () => {
         {/* Header with Tabs inline */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/courses?tab=careers")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/careers")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -862,7 +862,7 @@ const AdminCareerEditor = () => {
                 {getValidationErrors().length} issue(s)
               </Badge>
             )}
-            <Button variant="outline" className="w-[136px]" onClick={() => navigate("/admin/courses?tab=careers")}>
+            <Button variant="outline" className="w-[136px]" onClick={() => navigate("/admin/careers")}>
               Cancel
             </Button>
             <Button 
