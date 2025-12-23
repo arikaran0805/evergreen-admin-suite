@@ -804,8 +804,8 @@ const Profile = () => {
               </div>
 
               <div className="text-center">
-                <p className="text-lg font-bold">{avgMinutesPerDay}</p>
-                <p className="text-xs text-muted-foreground">min/day</p>
+                <p className="text-lg font-bold text-amber-500">{maxStreak}</p>
+                <p className="text-xs text-muted-foreground">max streak</p>
               </div>
 
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
@@ -892,54 +892,113 @@ const Profile = () => {
                 )}
               </div>
 
-              {/* Circular Progress Gauge */}
+              {/* Circular Progress Gauge - Modern Design */}
               <div className="flex flex-col items-center justify-center">
-                <div className="relative">
-                  <svg className="w-48 h-48 transform -rotate-90">
-                    {/* Background circle */}
+                <div className="relative w-52 h-52">
+                  {/* Outer glow ring */}
+                  <div 
+                    className="absolute inset-0 rounded-full opacity-20 blur-xl"
+                    style={{
+                      background: `conic-gradient(from 0deg, hsl(var(--primary)) ${readinessPercentage}%, transparent ${readinessPercentage}%)`
+                    }}
+                  />
+                  
+                  <svg className="w-52 h-52 transform -rotate-90" viewBox="0 0 208 208">
+                    {/* Background track with segments */}
                     <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
+                      cx="104"
+                      cy="104"
+                      r="88"
                       stroke="hsl(var(--muted))"
-                      strokeWidth="16"
+                      strokeWidth="12"
                       fill="none"
+                      opacity="0.3"
                     />
-                    {/* Progress circle */}
+                    
+                    {/* Inner background circle */}
                     <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="16"
+                      cx="104"
+                      cy="104"
+                      r="76"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="4"
+                      fill="none"
+                      opacity="0.2"
+                    />
+                    
+                    {/* Progress gradient arc */}
+                    <defs>
+                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" />
+                        <stop offset="50%" stopColor="hsl(280 80% 60%)" />
+                        <stop offset="100%" stopColor="hsl(45 93% 47%)" />
+                      </linearGradient>
+                    </defs>
+                    
+                    {/* Main progress arc */}
+                    <circle
+                      cx="104"
+                      cy="104"
+                      r="88"
+                      stroke="url(#progressGradient)"
+                      strokeWidth="12"
                       fill="none"
                       strokeLinecap="round"
-                      strokeDasharray={`${(readinessPercentage / 100) * 502.65} 502.65`}
-                      className="transition-all duration-1000 ease-out"
+                      strokeDasharray={`${(readinessPercentage / 100) * 553.07} 553.07`}
+                      className="transition-all duration-1000 ease-out drop-shadow-lg"
+                      style={{
+                        filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))'
+                      }}
                     />
-                    {/* Accent arc */}
-                    <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
-                      stroke="hsl(45 93% 47%)"
-                      strokeWidth="16"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeDasharray={`${Math.min(readinessPercentage * 0.3, 30) / 100 * 502.65} 502.65`}
-                      strokeDashoffset={`${-(readinessPercentage / 100) * 502.65}`}
-                      className="transition-all duration-1000 ease-out"
-                    />
+                    
+                    {/* Decorative dots on the track */}
+                    {[0, 25, 50, 75, 100].map((percent, i) => {
+                      const angle = (percent / 100) * 360 - 90;
+                      const rad = (angle * Math.PI) / 180;
+                      const x = 104 + 88 * Math.cos(rad);
+                      const y = 104 + 88 * Math.sin(rad);
+                      const isAchieved = readinessPercentage >= percent;
+                      return (
+                        <circle
+                          key={i}
+                          cx={x}
+                          cy={y}
+                          r="4"
+                          fill={isAchieved ? "hsl(var(--primary))" : "hsl(var(--muted))"}
+                          className="transition-all duration-500"
+                        />
+                      );
+                    })}
                   </svg>
+                  
+                  {/* Center content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold">{readinessPercentage}%</span>
-                    <span className="text-sm text-muted-foreground">Career Ready</span>
+                    <div className="relative">
+                      <span className="text-5xl font-bold bg-gradient-to-br from-primary via-purple-500 to-amber-500 bg-clip-text text-transparent">
+                        {readinessPercentage}
+                      </span>
+                      <span className="text-2xl font-bold text-muted-foreground">%</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground mt-1">Career Ready</span>
+                    <Badge 
+                      variant="secondary" 
+                      className={`mt-2 text-xs ${
+                        readinessPercentage >= 80 ? 'bg-green-500/10 text-green-500' :
+                        readinessPercentage >= 50 ? 'bg-yellow-500/10 text-yellow-500' :
+                        readinessPercentage >= 20 ? 'bg-orange-500/10 text-orange-500' :
+                        'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {readinessPercentage >= 80 ? 'Job Ready' : 
+                       readinessPercentage >= 50 ? 'Intermediate' : 
+                       readinessPercentage >= 20 ? 'Beginner' : 'Getting Started'}
+                    </Badge>
                   </div>
                 </div>
 
                 <Button 
                   className="mt-6 gap-2"
-                  onClick={() => navigate('/courses')}
+                  onClick={() => navigate('/arcade')}
                 >
                   Improve Career Readiness
                   <ChevronRight className="h-4 w-4" />
