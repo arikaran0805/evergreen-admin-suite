@@ -56,13 +56,16 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-// Helper to get a dynamic icon from the icons object
-const getIcon = (iconName: string, fallback: LucideIcon): LucideIcon => {
-  const icon = icons[iconName as keyof typeof icons];
-  if (icon && typeof icon !== 'function' && 'displayName' in icon) {
-    return icon as LucideIcon;
-  }
-  return fallback;
+// Helper to get a dynamic icon from lucide-react's icons map
+const ICONS = icons as unknown as Record<string, LucideIcon>;
+const getIcon = (iconName: string | null | undefined, fallback: LucideIcon): LucideIcon => {
+  if (!iconName) return fallback;
+  return ICONS[iconName] ?? fallback;
+};
+
+const stripHtml = (value: string | null | undefined) => {
+  if (!value) return "";
+  return value.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 };
 
 const profileSchema = z.object({
@@ -185,7 +188,7 @@ const OngoingCourseCard = ({
       </Button>
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0">
+          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0 relative">
             {course?.featured_image ? (
               <img 
                 src={course.featured_image} 
@@ -194,9 +197,20 @@ const OngoingCourseCard = ({
               />
             ) : (
               (() => {
-                const iconName = course?.icon || 'BookOpen';
-                const IconComponent = getIcon(iconName, BookOpen);
+                const IconComponent = getIcon(course?.icon, BookOpen);
                 return <IconComponent className="h-8 w-8 text-primary" />;
+              })()
+            )}
+
+            {/* Always show selected icon badge (if set) */}
+            {course?.icon && (
+              (() => {
+                const BadgeIcon = getIcon(course.icon, BookOpen);
+                return (
+                  <div className="absolute bottom-1 right-1 h-7 w-7 rounded-md bg-background/80 border border-border flex items-center justify-center">
+                    <BadgeIcon className="h-4 w-4 text-foreground" />
+                  </div>
+                );
               })()
             )}
           </div>
@@ -1445,7 +1459,12 @@ const Profile = () => {
         {/* Featured Section */}
         {featuredCourses.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Featured</h3>
+            <Card className="bg-muted/20">
+              <CardContent className="px-4 py-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">Featured Courses</span>
+              </CardContent>
+            </Card>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {featuredCourses.map((course, index) => (
                 <FeaturedCourseCard 
@@ -1515,7 +1534,7 @@ const Profile = () => {
                         >
                           <h4 className="font-semibold truncate">{bookmark.courses?.name}</h4>
                           <p className="text-sm text-muted-foreground line-clamp-1">
-                            {bookmark.courses?.description || 'No description'}
+                            {stripHtml(bookmark.courses?.description) || "No description"}
                           </p>
                           <Badge variant="outline" className="mt-1">
                             {bookmark.courses?.level || 'Beginner'}
