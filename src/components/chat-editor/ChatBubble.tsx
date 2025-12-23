@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Pencil, Check, X } from "lucide-react";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
+import { Button } from "@/components/ui/button";
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -50,8 +51,13 @@ const ChatBubble = ({
     }
   };
 
-  const handleBlur = () => {
+  const handleSave = () => {
     onEdit(message.id, editContent);
+    onEndEdit();
+  };
+
+  const handleCancel = () => {
+    setEditContent(message.content);
     onEndEdit();
   };
 
@@ -152,20 +158,61 @@ const ChatBubble = ({
 
         {/* Content */}
         {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
-            className={cn(
-              "w-full min-h-[60px] bg-transparent resize-none outline-none text-sm leading-relaxed",
-              isMentor ? "text-white placeholder:text-blue-200" : "text-foreground"
-            )}
-            placeholder="Type your message..."
-          />
+          <div className="space-y-2">
+            <textarea
+              ref={textareaRef}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={cn(
+                "w-full min-h-[80px] bg-transparent resize-y outline-none text-sm leading-relaxed border rounded-lg p-2",
+                isMentor ? "text-white placeholder:text-blue-200 border-blue-300/30" : "text-foreground border-border"
+              )}
+              placeholder="Type your message..."
+            />
+            <div className="flex items-center gap-1 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancel}
+                className={cn(
+                  "h-7 px-2 text-xs",
+                  isMentor ? "text-blue-100 hover:bg-blue-500/30" : ""
+                )}
+              >
+                <X className="w-3 h-3 mr-1" />
+                Cancel
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className={cn(
+                  "h-7 px-2 text-xs",
+                  isMentor ? "text-blue-100 hover:bg-blue-500/30 bg-blue-500/20" : "bg-primary/10"
+                )}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Save
+              </Button>
+            </div>
+          </div>
         ) : (
-          <div className="text-sm leading-relaxed">{renderContent(message.content)}</div>
+          <div className="relative">
+            <div className="text-sm leading-relaxed">{renderContent(message.content)}</div>
+            {/* Edit button on hover */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onStartEdit(message.id)}
+              className={cn(
+                "absolute -top-1 -right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
+                isMentor ? "text-blue-100 hover:bg-blue-500/30" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <Pencil className="w-3 h-3" />
+            </Button>
+          </div>
         )}
 
         {/* Timestamp (optional) */}

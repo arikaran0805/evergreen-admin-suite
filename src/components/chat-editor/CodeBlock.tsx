@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import Prism from "prismjs";
-import "prismjs/themes/prism-tomorrow.css";
 // Import common languages
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-javascript";
@@ -18,6 +17,32 @@ import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import useCodeTheme from "@/hooks/useCodeTheme";
+
+// Dynamic theme imports
+const loadTheme = async (theme: string) => {
+  switch (theme) {
+    case "okaidia":
+      await import("prismjs/themes/prism-okaidia.css");
+      break;
+    case "solarizedlight":
+      await import("prismjs/themes/prism-solarizedlight.css");
+      break;
+    case "coy":
+      await import("prismjs/themes/prism-coy.css");
+      break;
+    case "twilight":
+      await import("prismjs/themes/prism-twilight.css");
+      break;
+    case "funky":
+      await import("prismjs/themes/prism-funky.css");
+      break;
+    case "tomorrow":
+    default:
+      await import("prismjs/themes/prism-tomorrow.css");
+      break;
+  }
+};
 
 interface CodeBlockProps {
   code: string;
@@ -39,14 +64,20 @@ const LANGUAGE_MAP: Record<string, string> = {
 const CodeBlock = ({ code, language = "", isMentorBubble = false }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
+  const { theme } = useCodeTheme();
   
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
+
+  // Load theme dynamically
+  useEffect(() => {
+    loadTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (codeRef.current) {
       Prism.highlightElement(codeRef.current);
     }
-  }, [code, normalizedLang]);
+  }, [code, normalizedLang, theme]);
 
   const handleCopy = async () => {
     try {
