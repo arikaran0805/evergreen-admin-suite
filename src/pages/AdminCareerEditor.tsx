@@ -648,15 +648,44 @@ const AdminCareerEditor = () => {
     return ids;
   };
 
+  // Validation
+  const getValidationErrors = () => {
+    const errors: string[] = [];
+    
+    if (!careerName.trim()) {
+      errors.push("Career name is required");
+    }
+    if (!careerSlug.trim()) {
+      errors.push("Career slug is required");
+    }
+    if (skillNodes.length > 0 && getTotalWeight() !== 100) {
+      errors.push(`Skill weights must total 100% (currently ${getTotalWeight()}%)`);
+    }
+    const skillsWithoutCourses = skillNodes.filter(s => s.courses.length === 0);
+    if (skillsWithoutCourses.length > 0) {
+      errors.push(`${skillsWithoutCourses.length} skill(s) have no courses mapped: ${skillsWithoutCourses.map(s => s.name).join(", ")}`);
+    }
+    
+    return errors;
+  };
+
+  const isValid = () => getValidationErrors().length === 0;
+
   // Save
   const handleSubmit = async () => {
     try {
-      setLoading(true);
+      const errors = getValidationErrors();
       
-      if (!careerName || !careerSlug) {
-        toast({ title: "Name and slug are required", variant: "destructive" });
+      if (errors.length > 0) {
+        toast({ 
+          title: "Cannot save career", 
+          description: errors[0],
+          variant: "destructive" 
+        });
         return;
       }
+      
+      setLoading(true);
 
       // Build course skill mappings
       const courseSkillMappings: Record<string, SkillContribution[]> = {};
@@ -817,10 +846,21 @@ const AdminCareerEditor = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            {!isValid() && (
+              <Badge variant="destructive" className="text-xs">
+                <Icons.AlertTriangle className="h-3 w-3 mr-1" />
+                {getValidationErrors().length} issue(s)
+              </Badge>
+            )}
             <Button variant="outline" className="w-[136px]" onClick={() => navigate("/admin/courses?tab=careers")}>
               Cancel
             </Button>
-            <Button className="w-[136px]" onClick={handleSubmit} disabled={loading}>
+            <Button 
+              className="w-[136px]" 
+              onClick={handleSubmit} 
+              disabled={loading}
+              variant={isValid() ? "default" : "outline"}
+            >
               <Save className="h-4 w-4 mr-2" />
               {id ? "Update" : "Create"}
             </Button>
