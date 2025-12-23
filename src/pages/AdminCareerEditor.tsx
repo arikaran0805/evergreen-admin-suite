@@ -594,315 +594,442 @@ const AdminCareerEditor = () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex gap-4 flex-1 min-h-0">
-          {/* Left Panel - Canvas or Settings */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <TabsList className="w-fit">
-                <TabsTrigger value="canvas">
-                  <Target className="h-4 w-4 mr-2" />
-                  Skill Canvas
-                </TabsTrigger>
-                <TabsTrigger value="settings">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Career Settings
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="canvas" className="flex-1 mt-4">
-                <div 
-                  ref={canvasRef}
-                  className="relative w-full h-full bg-muted/30 rounded-xl border-2 border-dashed border-border overflow-hidden cursor-crosshair"
-                  onDoubleClick={handleCanvasDoubleClick}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  onMouseLeave={handleCanvasMouseUp}
-                >
-                  {/* Canvas hint */}
-                  {skillNodes.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="text-center text-muted-foreground">
-                        <MousePointerClick className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p className="text-lg font-medium">Double-click to create a skill</p>
-                        <p className="text-sm">Drag courses from the right panel onto skills</p>
+        {/* Course Library - Top Panel */}
+        <Card className="flex-shrink-0 p-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Course Library</h3>
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search courses..."
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex gap-2 pb-1">
+                {filteredCourses.map(course => {
+                  const isMapped = getMappedCourseIds().has(course.id);
+                  return (
+                    <div
+                      key={course.id}
+                      draggable
+                      onDragStart={(e) => handleCourseDragStart(e, course.id)}
+                      onDragEnd={handleCourseDragEnd}
+                      className={`
+                        flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-grab active:cursor-grabbing
+                        transition-all duration-150 whitespace-nowrap flex-shrink-0
+                        ${isMapped 
+                          ? 'bg-primary/5 border-primary/30' 
+                          : 'bg-card hover:bg-muted/50 border-border'
+                        }
+                        ${draggingCourse === course.id ? 'opacity-50 scale-95' : ''}
+                      `}
+                    >
+                      <GripVertical className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-sm font-medium">{course.name}</span>
+                      {isMapped && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Mapped
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Main Content - Tabs */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="w-fit">
+              <TabsTrigger value="canvas">
+                <Target className="h-4 w-4 mr-2" />
+                Skill Canvas
+              </TabsTrigger>
+              <TabsTrigger value="preview">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Career Readiness Preview
+              </TabsTrigger>
+              <TabsTrigger value="settings">
+                <Settings className="h-4 w-4 mr-2" />
+                Career Settings
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="canvas" className="flex-1 mt-4">
+              <div 
+                ref={canvasRef}
+                className="relative w-full h-full bg-muted/30 rounded-xl border-2 border-dashed border-border overflow-hidden cursor-crosshair"
+                onDoubleClick={handleCanvasDoubleClick}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                onMouseLeave={handleCanvasMouseUp}
+              >
+                {/* Canvas hint */}
+                {skillNodes.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center text-muted-foreground">
+                      <MousePointerClick className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p className="text-lg font-medium">Double-click to create a skill</p>
+                      <p className="text-sm">Drag courses from the top panel onto skills</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Skill Nodes */}
+                {skillNodes.map(skill => {
+                  const colorStyle = getSkillColor(skill.color);
+                  const isSelected = selectedSkill === skill.id;
+                  const isDropTarget = dropTargetSkill === skill.id;
+                  
+                  return (
+                    <div
+                      key={skill.id}
+                      className={`skill-node absolute select-none transition-shadow ${
+                        isDropTarget ? 'ring-4 ' + colorStyle.ring : ''
+                      } ${isSelected ? 'z-10' : 'z-0'}`}
+                      style={{ left: skill.x, top: skill.y }}
+                      onMouseDown={(e) => handleSkillMouseDown(e, skill.id)}
+                      onDragOver={(e) => handleSkillDragOver(e, skill.id)}
+                      onDragLeave={handleSkillDragLeave}
+                      onDrop={(e) => handleSkillDrop(e, skill.id)}
+                    >
+                      <div className={`
+                        w-52 rounded-xl border-2 backdrop-blur-sm cursor-move
+                        ${colorStyle.bg} ${colorStyle.border}
+                        ${isSelected ? 'shadow-lg' : 'shadow-md hover:shadow-lg'}
+                        transition-all duration-200
+                      `}>
+                        {/* Skill Header */}
+                        <div className="p-3 border-b border-inherit/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-lg ${colorStyle.bg} ${colorStyle.text}`}>
+                                {getIcon(skill.icon)}
+                              </div>
+                              <div>
+                                <p className={`font-semibold text-sm ${colorStyle.text}`}>
+                                  {skill.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Weight: {skill.weight}%
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSkill(skill);
+                                setSkillEditorOpen(true);
+                              }}
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Mapped Courses */}
+                        <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
+                          {skill.courses.length === 0 ? (
+                            <div className={`text-xs text-center py-3 ${colorStyle.text} opacity-60`}>
+                              Drop courses here
+                            </div>
+                          ) : (
+                            skill.courses.map(({ courseId, contribution }) => {
+                              const course = courses.find(c => c.id === courseId);
+                              return (
+                                <div 
+                                  key={courseId}
+                                  className="flex items-center gap-1.5 p-1.5 rounded-lg bg-background/60 group"
+                                >
+                                  <BookOpen className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                  <span className="text-xs truncate flex-1">
+                                    {course?.name || "Unknown"}
+                                  </span>
+                                  <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                                    {contribution}%
+                                  </Badge>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCourseFromSkill(skill.id, courseId);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+            </TabsContent>
 
-                  {/* Skill Nodes */}
-                  {skillNodes.map(skill => {
-                    const colorStyle = getSkillColor(skill.color);
-                    const isSelected = selectedSkill === skill.id;
-                    const isDropTarget = dropTargetSkill === skill.id;
-                    
-                    return (
-                      <div
-                        key={skill.id}
-                        className={`skill-node absolute select-none transition-shadow ${
-                          isDropTarget ? 'ring-4 ' + colorStyle.ring : ''
-                        } ${isSelected ? 'z-10' : 'z-0'}`}
-                        style={{ left: skill.x, top: skill.y }}
-                        onMouseDown={(e) => handleSkillMouseDown(e, skill.id)}
-                        onDragOver={(e) => handleSkillDragOver(e, skill.id)}
-                        onDragLeave={handleSkillDragLeave}
-                        onDrop={(e) => handleSkillDrop(e, skill.id)}
-                      >
-                        <div className={`
-                          w-52 rounded-xl border-2 backdrop-blur-sm cursor-move
-                          ${colorStyle.bg} ${colorStyle.border}
-                          ${isSelected ? 'shadow-lg' : 'shadow-md hover:shadow-lg'}
-                          transition-all duration-200
-                        `}>
-                          {/* Skill Header */}
-                          <div className="p-3 border-b border-inherit/50">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className={`p-1.5 rounded-lg ${colorStyle.bg} ${colorStyle.text}`}>
+            <TabsContent value="preview" className="flex-1 mt-4 overflow-auto">
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className={`p-3 rounded-xl ${careerColor}`}>
+                    {getIcon(careerIcon)}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">{careerName || "Career Name"}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {skillNodes.length} skills · {getMappedCourseIds().size} courses mapped
+                    </p>
+                  </div>
+                </div>
+
+                {skillNodes.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-lg font-medium">No skills added yet</p>
+                    <p className="text-sm">Add skills in the Skill Canvas tab to see readiness breakdown</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Overall Readiness */}
+                    <Card className="p-4 border-primary/20 bg-primary/5">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        Overall Career Readiness
+                      </h3>
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-24 h-24">
+                          <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                            <circle
+                              className="text-muted stroke-current"
+                              strokeWidth="10"
+                              fill="transparent"
+                              r="40"
+                              cx="50"
+                              cy="50"
+                            />
+                            <circle
+                              className="text-primary stroke-current"
+                              strokeWidth="10"
+                              strokeLinecap="round"
+                              fill="transparent"
+                              r="40"
+                              cx="50"
+                              cy="50"
+                              strokeDasharray={`${2 * Math.PI * 40}`}
+                              strokeDashoffset={`${2 * Math.PI * 40 * (1 - (skillNodes.filter(s => s.courses.length > 0).length / skillNodes.length))}`}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-2xl font-bold">
+                              {Math.round((skillNodes.filter(s => s.courses.length > 0).length / skillNodes.length) * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            {skillNodes.filter(s => s.courses.length > 0).length} of {skillNodes.length} skills have courses
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Total weight: {getTotalWeight()}%
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Weight Distribution */}
+                    <Card className="p-4">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2">
+                        <Palette className="h-4 w-4" />
+                        Weight Distribution
+                      </h3>
+                      <div className="h-4 rounded-full overflow-hidden flex bg-muted">
+                        {skillNodes.map((skill, idx) => {
+                          const colorStyle = getSkillColor(skill.color);
+                          return (
+                            <div
+                              key={skill.id}
+                              className={`h-full ${colorStyle.bg.replace('/20', '')}`}
+                              style={{ width: `${skill.weight}%` }}
+                              title={`${skill.name}: ${skill.weight}%`}
+                            />
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {skillNodes.map(skill => {
+                          const colorStyle = getSkillColor(skill.color);
+                          return (
+                            <div key={skill.id} className="flex items-center gap-1.5 text-xs">
+                              <div className={`w-2.5 h-2.5 rounded-full ${colorStyle.bg.replace('/20', '')}`} />
+                              <span>{skill.name}</span>
+                              <span className="text-muted-foreground">({skill.weight}%)</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+
+                    {/* Skill Details */}
+                    <div className="md:col-span-2 space-y-4">
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Skill Breakdown
+                      </h3>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {skillNodes.map(skill => {
+                          const colorStyle = getSkillColor(skill.color);
+                          const hasCourses = skill.courses.length > 0;
+                          const avgContribution = skill.courses.length > 0 
+                            ? Math.round(skill.courses.reduce((sum, c) => sum + c.contribution, 0) / skill.courses.length)
+                            : 0;
+                          
+                          return (
+                            <Card key={skill.id} className={`p-4 ${colorStyle.bg} ${colorStyle.border} border`}>
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className={`p-1.5 rounded-lg ${colorStyle.text}`}>
                                   {getIcon(skill.icon)}
                                 </div>
-                                <div>
-                                  <p className={`font-semibold text-sm ${colorStyle.text}`}>
-                                    {skill.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Weight: {skill.weight}%
-                                  </p>
+                                <div className="flex-1">
+                                  <p className={`font-semibold ${colorStyle.text}`}>{skill.name}</p>
+                                  <p className="text-xs text-muted-foreground">Weight: {skill.weight}%</p>
                                 </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingSkill(skill);
-                                  setSkillEditorOpen(true);
-                                }}
-                              >
-                                <Settings className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          {/* Mapped Courses */}
-                          <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
-                            {skill.courses.length === 0 ? (
-                              <div className={`text-xs text-center py-3 ${colorStyle.text} opacity-60`}>
-                                Drop courses here
+                              
+                              <Progress 
+                                value={hasCourses ? avgContribution : 0} 
+                                className="h-2 mb-2" 
+                              />
+                              
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                <p>{skill.courses.length} course(s) mapped</p>
+                                {hasCourses && <p>Avg. contribution: {avgContribution}%</p>}
                               </div>
-                            ) : (
-                              skill.courses.map(({ courseId, contribution }) => {
-                                const course = courses.find(c => c.id === courseId);
-                                return (
-                                  <div 
-                                    key={courseId}
-                                    className="flex items-center gap-1.5 p-1.5 rounded-lg bg-background/60 group"
-                                  >
-                                    <BookOpen className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="text-xs truncate flex-1">
-                                      {course?.name || "Unknown"}
-                                    </span>
-                                    <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                                      {contribution}%
-                                    </Badge>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeCourseFromSkill(skill.id, courseId);
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                                    </button>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
+                              
+                              {skill.courses.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-inherit/50 space-y-1">
+                                  {skill.courses.slice(0, 3).map(({ courseId, contribution }) => {
+                                    const course = courses.find(c => c.id === courseId);
+                                    return (
+                                      <div key={courseId} className="flex items-center justify-between text-xs">
+                                        <span className="truncate flex-1">{course?.name}</span>
+                                        <Badge variant="secondary" className="text-[10px] ml-2">
+                                          {contribution}%
+                                        </Badge>
+                                      </div>
+                                    );
+                                  })}
+                                  {skill.courses.length > 3 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      +{skill.courses.length - 3} more
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </Card>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="settings" className="flex-1 mt-4 overflow-auto">
-                <Card className="p-6 space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Career Name *</Label>
-                      <Input
-                        placeholder="e.g., Data Scientist"
-                        value={careerName}
-                        onChange={(e) => {
-                          setCareerName(e.target.value);
-                          if (!id) setCareerSlug(generateSlug(e.target.value));
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Slug *</Label>
-                      <Input
-                        placeholder="e.g., data-scientist"
-                        value={careerSlug}
-                        onChange={(e) => setCareerSlug(generateSlug(e.target.value))}
-                      />
                     </div>
                   </div>
-
+                )}
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="settings" className="flex-1 mt-4 overflow-auto">
+              <Card className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      placeholder="Brief description of this career path..."
-                      value={careerDescription}
-                      onChange={(e) => setCareerDescription(e.target.value)}
-                      rows={3}
+                    <Label>Career Name *</Label>
+                    <Input
+                      placeholder="e.g., Data Scientist"
+                      value={careerName}
+                      onChange={(e) => {
+                        setCareerName(e.target.value);
+                        if (!id) setCareerSlug(generateSlug(e.target.value));
+                      }}
                     />
                   </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Icon</Label>
-                      <Select value={careerIcon} onValueChange={setCareerIcon}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {careerIconOptions.map(icon => (
-                            <SelectItem key={icon} value={icon}>
-                              <div className="flex items-center gap-2">
-                                {getIcon(icon)}
-                                {icon}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Color Theme</Label>
-                      <Select value={careerColor} onValueChange={setCareerColor}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {careerColorOptions.map(color => (
-                            <SelectItem key={color.value} value={color.value}>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-4 h-4 rounded ${color.value}`} />
-                                {color.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Display Order</Label>
-                      <Input
-                        type="number"
-                        value={displayOrder}
-                        onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Slug *</Label>
+                    <Input
+                      placeholder="e.g., data-scientist"
+                      value={careerSlug}
+                      onChange={(e) => setCareerSlug(generateSlug(e.target.value))}
+                    />
                   </div>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Right Panel - Courses & Overview */}
-          <div className="w-80 flex-shrink-0 flex flex-col gap-4">
-            {/* Career Readiness Preview */}
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Career Readiness Preview</h3>
-              </div>
-              
-              {skillNodes.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Add skills to see readiness breakdown</p>
-              ) : (
-                <div className="space-y-3">
-                  {skillNodes.map(skill => {
-                    const colorStyle = getSkillColor(skill.color);
-                    const hasCourses = skill.courses.length > 0;
-                    return (
-                      <div key={skill.id} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className={`font-medium ${colorStyle.text}`}>{skill.name}</span>
-                          <span className="text-muted-foreground">{skill.weight}%</span>
-                        </div>
-                        <Progress 
-                          value={hasCourses ? 100 : 0} 
-                          className="h-1.5" 
-                        />
-                        <p className="text-[10px] text-muted-foreground">
-                          {skill.courses.length} course(s) mapped
-                        </p>
-                      </div>
-                    );
-                  })}
                 </div>
-              )}
-            </Card>
 
-            {/* Course Library */}
-            <Card className="flex-1 flex flex-col min-h-0">
-              <div className="p-4 border-b flex-shrink-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm">Course Library</h3>
-                </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search courses..."
-                    value={courseSearch}
-                    onChange={(e) => setCourseSearch(e.target.value)}
-                    className="pl-8 h-8 text-sm"
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    placeholder="Brief description of this career path..."
+                    value={careerDescription}
+                    onChange={(e) => setCareerDescription(e.target.value)}
+                    rows={3}
                   />
                 </div>
-              </div>
-              
-              <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
-                  {filteredCourses.map(course => {
-                    const isMapped = getMappedCourseIds().has(course.id);
-                    return (
-                      <div
-                        key={course.id}
-                        draggable
-                        onDragStart={(e) => handleCourseDragStart(e, course.id)}
-                        onDragEnd={handleCourseDragEnd}
-                        className={`
-                          flex items-center gap-2 p-2.5 rounded-lg border cursor-grab active:cursor-grabbing
-                          transition-all duration-150
-                          ${isMapped 
-                            ? 'bg-primary/5 border-primary/30' 
-                            : 'bg-card hover:bg-muted/50 border-border'
-                          }
-                          ${draggingCourse === course.id ? 'opacity-50 scale-95' : ''}
-                        `}
-                      >
-                        <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{course.name}</p>
-                        </div>
-                        {isMapped && (
-                          <Badge variant="secondary" className="text-[10px] flex-shrink-0">
-                            Mapped
-                          </Badge>
-                        )}
-                        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      </div>
-                    );
-                  })}
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Icon</Label>
+                    <Select value={careerIcon} onValueChange={setCareerIcon}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {careerIconOptions.map(icon => (
+                          <SelectItem key={icon} value={icon}>
+                            <div className="flex items-center gap-2">
+                              {getIcon(icon)}
+                              {icon}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Color Theme</Label>
+                    <Select value={careerColor} onValueChange={setCareerColor}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {careerColorOptions.map(color => (
+                          <SelectItem key={color.value} value={color.value}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-4 h-4 rounded ${color.value}`} />
+                              {color.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Display Order</Label>
+                    <Input
+                      type="number"
+                      value={displayOrder}
+                      onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
+                    />
+                  </div>
                 </div>
-              </ScrollArea>
-            </Card>
-          </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
