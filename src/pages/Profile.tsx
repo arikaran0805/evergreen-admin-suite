@@ -173,7 +173,7 @@ const OngoingCourseCard = ({
 
   return (
     <Card 
-      className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer relative group"
+      className="card-premium hover:scale-[1.02] cursor-pointer relative group"
       onClick={onClick}
     >
       <Button
@@ -1509,11 +1509,11 @@ const Profile = () => {
                   {courseBookmarks.map((bookmark) => (
                     <Card 
                       key={bookmark.id}
-                      className="hover:shadow-md transition-shadow"
+                      className="card-premium hover:scale-[1.01] transition-transform"
                     >
                       <CardContent className="p-4 flex items-center gap-4">
                         <div 
-                          className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0 cursor-pointer"
+                          className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden flex-shrink-0 cursor-pointer"
                           onClick={() => navigate(`/course/${bookmark.courses?.slug}`)}
                         >
                           {bookmark.courses?.featured_image ? (
@@ -1524,7 +1524,7 @@ const Profile = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <BookOpen className="h-6 w-6 text-muted-foreground" />
+                              <BookOpen className="h-6 w-6 text-primary" />
                             </div>
                           )}
                         </div>
@@ -1533,9 +1533,6 @@ const Profile = () => {
                           onClick={() => navigate(`/course/${bookmark.courses?.slug}`)}
                         >
                           <h4 className="font-semibold truncate">{bookmark.courses?.name}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {stripHtml(bookmark.courses?.description) || "No description"}
-                          </p>
                           <Badge variant="outline" className="mt-1">
                             {bookmark.courses?.level || 'Beginner'}
                           </Badge>
@@ -1559,18 +1556,18 @@ const Profile = () => {
             {lessonBookmarks.length > 0 && (
               <div>
                 <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                  <FileText className="h-5 w-5 text-primary" />
                   Lessons ({lessonBookmarks.length})
                 </h3>
                 <div className="grid gap-4">
                   {lessonBookmarks.map((bookmark) => (
                     <Card 
                       key={bookmark.id}
-                      className="hover:shadow-md transition-shadow"
+                      className="card-premium hover:scale-[1.01] transition-transform"
                     >
                       <CardContent className="p-4 flex items-center gap-4">
                         <div 
-                          className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                          className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0 cursor-pointer"
                           onClick={() => navigate(`/course/${bookmark.posts?.courses?.slug}?lesson=${bookmark.posts?.slug}`)}
                         >
                           <FileText className="h-6 w-6 text-primary" />
