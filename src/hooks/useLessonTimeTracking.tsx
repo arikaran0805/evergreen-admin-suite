@@ -6,6 +6,12 @@ interface UseLessonTimeTrackingProps {
   courseId: string | undefined;
 }
 
+const toDayKey = (d: Date) => {
+  // Use a noon "anchor" to avoid timezone edge cases around midnight.
+  const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+  return safe.toISOString().slice(0, 10);
+};
+
 export const useLessonTimeTracking = ({ lessonId, courseId }: UseLessonTimeTrackingProps) => {
   const startTimeRef = useRef<number>(Date.now());
   const lastSaveRef = useRef<number>(Date.now());
@@ -19,13 +25,13 @@ export const useLessonTimeTracking = ({ lessonId, courseId }: UseLessonTimeTrack
 
     const now = Date.now();
     const elapsedSeconds = Math.floor((now - lastSaveRef.current) / 1000);
-    
+
     if (elapsedSeconds < 5) return; // Don't save if less than 5 seconds
 
     accumulatedTimeRef.current += elapsedSeconds;
     lastSaveRef.current = now;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = toDayKey(new Date());
 
     // Upsert the time tracking record
     const { error } = await supabase
@@ -42,7 +48,37 @@ export const useLessonTimeTracking = ({ lessonId, courseId }: UseLessonTimeTrack
 
     if (error) {
       console.error('Error saving time tracking:', error);
+      return;
     }
+
+    // Update streak on the profile (simple, fast logic)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('current_streak, max_streak, last_activity_date')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const lastActivityDate = (profile as any)?.last_activity_date as string | null | undefined;
+    const currentStreak = ((profile as any)?.current_streak as number | null | undefined) ?? 0;
+    const maxStreak = ((profile as any)?.max_streak as number | null | undefined) ?? 0;
+
+    if (lastActivityDate === today) return;
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = toDayKey(yesterday);
+
+    const nextStreak = lastActivityDate === yesterdayKey ? currentStreak + 1 : 1;
+    const nextMax = Math.max(maxStreak, nextStreak);
+
+    await supabase
+      .from('profiles')
+      .update({
+        current_streak: nextStreak,
+        max_streak: nextMax,
+        last_activity_date: today,
+      } as any)
+      .eq('id', user.id);
   }, [lessonId, courseId]);
 
   useEffect(() => {
@@ -58,8 +94,8 @@ export const useLessonTimeTracking = ({ lessonId, courseId }: UseLessonTimeTrack
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const today = new Date().toISOString().split('T')[0];
-      
+      const today = toDayKey(new Date());
+
       const { data } = await supabase
         .from('lesson_time_tracking')
         .select('duration_seconds')
