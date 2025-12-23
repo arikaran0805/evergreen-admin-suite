@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RichTextEditor from "@/components/RichTextEditor";
 import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
 
 interface ChatStyleEditorProps {
@@ -337,13 +337,18 @@ const ChatStyleEditor = ({
           <FileText className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">Explanation (appears after chat)</span>
         </div>
-        <Textarea
-          value={explanation}
-          onChange={(e) => setExplanation(e.target.value)}
-          placeholder="Add an explanation or summary of the conversation... (optional)"
-          className="min-h-[100px] resize-y"
-          disabled={mode === "preview"}
-        />
+        {mode === "edit" ? (
+          <RichTextEditor
+            value={explanation}
+            onChange={setExplanation}
+            placeholder="Add an explanation or summary of the conversation... (optional)"
+          />
+        ) : (
+          <div 
+            className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-lg border border-border bg-background min-h-[100px]"
+            dangerouslySetInnerHTML={{ __html: explanation || "<p class='text-muted-foreground'>No explanation added</p>" }}
+          />
+        )}
         <p className="text-xs text-muted-foreground mt-2">
           This text will appear below the chat conversation as an explanation section.
         </p>
