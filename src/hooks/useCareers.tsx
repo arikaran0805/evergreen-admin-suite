@@ -17,6 +17,8 @@ export interface CareerSkill {
   skill_name: string;
   display_order: number;
   weight: number;
+  icon: string;
+  color: string;
 }
 
 export interface SkillContribution {
@@ -67,6 +69,8 @@ export const useCareers = () => {
           skillsByCareer[skill.career_id].push({
             ...skill,
             weight: skill.weight || 25,
+            icon: skill.icon || 'Code2',
+            color: skill.color || 'Emerald',
           });
         });
         setCareerSkills(skillsByCareer);
