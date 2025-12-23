@@ -9,18 +9,19 @@ interface ChatConversationViewProps {
 }
 
 const parseConversation = (content: string): ChatMessage[] => {
-  if (!content.trim()) return [];
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (!normalized.trim()) return [];
 
   // Check if content looks like chat format (has "Speaker: message" pattern)
-  const markerRe = /(^|[\n\r\t ]+)([^:\n]{1,60}):\s*(?=\S)/g;
-  const markers = Array.from(content.matchAll(markerRe)).filter((m) => /[A-Za-z]/.test(m[2] || ""));
+  const markerRe = /(^|[\n\r\t ]+)([^:\r\n]{1,60}):\s*(?=\S)/g;
+  const markers = Array.from(normalized.matchAll(markerRe)).filter((m) => /[A-Za-z]/.test(m[2] || ""));
   if (markers.length < 2) return [];
 
-  const lines = content.split("\n");
+  const lines = normalized.split("\n");
   const messages: ChatMessage[] = [];
   let currentMessage: ChatMessage | null = null;
 
-  const speakerTokenRe = /([^:\n]{1,60}):\s*/g;
+  const speakerTokenRe = /([^:\r\n]{1,60}):\s*/g;
 
   for (const rawLine of lines) {
     const line = rawLine;

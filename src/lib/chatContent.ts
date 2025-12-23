@@ -40,12 +40,14 @@ export const htmlToPlainTextPreserveNewlines = (html: string): string => {
 
   return text
     .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 };
 
 export const normalizeChatInput = (value: string): string => {
   if (!value) return "";
-  if (!looksLikeRichHtml(value)) return value;
-  return htmlToPlainTextPreserveNewlines(value);
+  const normalized = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (!looksLikeRichHtml(normalized)) return normalized;
+  return htmlToPlainTextPreserveNewlines(normalized);
 };
