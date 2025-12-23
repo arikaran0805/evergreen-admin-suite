@@ -202,30 +202,11 @@ const OngoingCourseCard = ({
       
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0 relative">
-            {course?.featured_image ? (
-              <img 
-                src={course.featured_image} 
-                alt={course?.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              (() => {
-                const IconComponent = getIcon(course?.icon, BookOpen);
-                return <IconComponent className="h-8 w-8 text-primary" />;
-              })()
-            )}
-            {/* Icon badge overlay */}
-            {course?.icon && course?.featured_image && (
-              (() => {
-                const BadgeIcon = getIcon(course.icon, BookOpen);
-                return (
-                  <div className="absolute bottom-1 right-1 h-6 w-6 rounded bg-background/90 flex items-center justify-center shadow-sm">
-                    <BadgeIcon className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                );
-              })()
-            )}
+          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+            {(() => {
+              const IconComponent = getIcon(course?.icon, BookOpen);
+              return <IconComponent className="h-8 w-8 text-primary" />;
+            })()}
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-foreground truncate">{course?.name}</h4>
