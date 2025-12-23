@@ -65,7 +65,7 @@ export const CareerRoadmapChart = ({
     return { courses, totalLessons, completedLessons };
   }, [journeySteps]);
 
-  const chartHeight = 320;
+  const chartHeight = 450;
   const chartPadding = { top: 28, right: 20, bottom: 56, left: 64 };
 
   return (
