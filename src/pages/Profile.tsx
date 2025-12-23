@@ -838,7 +838,7 @@ const Profile = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Top Header Card - Welcome + Career + Streak + Stats */}
-      <Card className="card-premium card-shine rounded-xl">
+      <Card className="card-premium card-shine rounded-xl animate-stagger-1">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
             {/* Welcome Section */}
@@ -905,7 +905,7 @@ const Profile = () => {
         {/* Left Column - Career Readiness + Recommended Labs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Career Readiness */}
-          <Card className="card-premium card-shine rounded-xl">
+          <Card className="card-premium card-shine rounded-xl animate-stagger-2">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -1090,7 +1090,7 @@ const Profile = () => {
           </Card>
 
           {/* Recommended Labs Section - Directly below Career Readiness */}
-          <Card className="card-premium rounded-xl">
+          <Card className="card-premium rounded-xl animate-stagger-3">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1157,7 +1157,7 @@ const Profile = () => {
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
         <div className="space-y-6">
           {/* Weekly Activity - Compact Version */}
-          <Card className="card-premium rounded-xl">
+          <Card className="card-premium rounded-xl animate-stagger-2">
             <CardContent className="p-5">
               <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
               
@@ -1238,7 +1238,7 @@ const Profile = () => {
           </Card>
 
           {/* AI Mentor Card */}
-          <Card className="card-premium rounded-xl">
+          <Card className="card-premium rounded-xl animate-stagger-3">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -1263,7 +1263,7 @@ const Profile = () => {
           </Card>
 
           {/* Recent Achievements */}
-          <Card className="card-premium rounded-xl">
+          <Card className="card-premium rounded-xl animate-stagger-4">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -1793,7 +1793,7 @@ const Profile = () => {
         <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] dashboard-bg -mx-4 px-4 py-6 rounded-2xl">
           {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Card className="sticky top-28 sidebar-premium rounded-xl">
+            <Card className="sticky top-28 sidebar-premium rounded-xl animate-sidebar">
               <CardContent className="p-2">
                 {/* Profile Summary */}
                 <div className="p-4 text-center border-b border-border/50 mb-2">
