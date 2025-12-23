@@ -51,3 +51,53 @@ export const normalizeChatInput = (value: string): string => {
   if (!looksLikeRichHtml(normalized)) return normalized;
   return htmlToPlainTextPreserveNewlines(normalized);
 };
+
+type ChatSegment = { speaker: string; content: string };
+
+type Marker = { speaker: string; start: number; end: number };
+
+const SPEAKER_TOKEN_RE = /([^:\r\n]{1,60}):\s*/g;
+
+const findChatMarkers = (text: string): Marker[] => {
+  const markers: Marker[] = [];
+  for (const m of text.matchAll(SPEAKER_TOKEN_RE)) {
+    const idx = m.index ?? 0;
+    const prev = idx > 0 ? text[idx - 1] : "";
+    // Only treat as a marker at the start or after whitespace/newline.
+    if (idx !== 0 && prev && !/\s/.test(prev)) continue;
+
+    const speaker = (m[1] || "").trim();
+    if (!speaker || !/[A-Za-z]/.test(speaker)) continue;
+
+    markers.push({ speaker, start: idx, end: idx + m[0].length });
+  }
+  return markers;
+};
+
+export const extractChatSegments = (
+  input: string,
+  options?: { allowSingle?: boolean }
+): ChatSegment[] => {
+  const text = normalizeChatInput(input);
+  if (!text.trim()) return [];
+
+  const markers = findChatMarkers(text);
+  if (markers.length === 0) return [];
+  if (!options?.allowSingle && markers.length < 2) return [];
+
+  const segments: ChatSegment[] = [];
+  for (let i = 0; i < markers.length; i++) {
+    const cur = markers[i];
+    const nextStart = i + 1 < markers.length ? markers[i + 1].start : text.length;
+    const content = text.slice(cur.end, nextStart).trim();
+    if (content) segments.push({ speaker: cur.speaker, content });
+  }
+
+  return segments;
+};
+
+export const isChatTranscript = (input: string): boolean => {
+  const text = normalizeChatInput(input);
+  if (!text.trim()) return false;
+  return findChatMarkers(text).length >= 2;
+};
