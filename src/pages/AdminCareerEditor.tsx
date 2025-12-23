@@ -583,9 +583,8 @@ const AdminCareerEditor = () => {
                 Weights: {getTotalWeight()}%
               </Badge>
             )}
-            <Button variant="outline" onClick={autoBalanceWeights} disabled={skillNodes.length === 0}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Auto-balance
+            <Button variant="outline" onClick={() => navigate("/admin/courses?tab=careers")}>
+              Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
               <Save className="h-4 w-4 mr-2" />
@@ -594,204 +593,161 @@ const AdminCareerEditor = () => {
           </div>
         </div>
 
-        {/* Course Library - Top Panel */}
-        <Card className="flex-shrink-0 p-3">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-sm">Course Library</h3>
-            </div>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search courses..."
-                value={courseSearch}
-                onChange={(e) => setCourseSearch(e.target.value)}
-                className="pl-8 h-8 text-sm"
-              />
-            </div>
-            <div className="flex-1 overflow-x-auto">
-              <div className="flex gap-2 pb-1">
-                {filteredCourses.map(course => {
-                  const isMapped = getMappedCourseIds().has(course.id);
-                  return (
-                    <div
-                      key={course.id}
-                      draggable
-                      onDragStart={(e) => handleCourseDragStart(e, course.id)}
-                      onDragEnd={handleCourseDragEnd}
-                      className={`
-                        flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-grab active:cursor-grabbing
-                        transition-all duration-150 whitespace-nowrap flex-shrink-0
-                        ${isMapped 
-                          ? 'bg-primary/5 border-primary/30' 
-                          : 'bg-card hover:bg-muted/50 border-border'
-                        }
-                        ${draggingCourse === course.id ? 'opacity-50 scale-95' : ''}
-                      `}
-                    >
-                      <GripVertical className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm font-medium">{course.name}</span>
-                      {isMapped && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          Mapped
-                        </Badge>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Main Content - Tabs */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="w-fit">
-              <TabsTrigger value="canvas">
-                <Target className="h-4 w-4 mr-2" />
-                Skill Canvas
-              </TabsTrigger>
-              <TabsTrigger value="preview">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Career Readiness Preview
-              </TabsTrigger>
-              <TabsTrigger value="settings">
-                <Settings className="h-4 w-4 mr-2" />
-                Career Settings
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="canvas" className="flex-1 mt-4">
-              <div 
-                ref={canvasRef}
-                className="relative w-full h-full bg-muted/30 rounded-xl border-2 border-dashed border-border overflow-hidden cursor-crosshair"
-                onDoubleClick={handleCanvasDoubleClick}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
-              >
-                {/* Canvas hint */}
-                {skillNodes.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center text-muted-foreground">
-                      <MousePointerClick className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-lg font-medium">Double-click to create a skill</p>
-                      <p className="text-sm">Drag courses from the top panel onto skills</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Skill Nodes */}
-                {skillNodes.map(skill => {
-                  const colorStyle = getSkillColor(skill.color);
-                  const isSelected = selectedSkill === skill.id;
-                  const isDropTarget = dropTargetSkill === skill.id;
-                  
-                  return (
-                    <div
-                      key={skill.id}
-                      className={`skill-node absolute select-none transition-shadow ${
-                        isDropTarget ? 'ring-4 ' + colorStyle.ring : ''
-                      } ${isSelected ? 'z-10' : 'z-0'}`}
-                      style={{ left: skill.x, top: skill.y }}
-                      onMouseDown={(e) => handleSkillMouseDown(e, skill.id)}
-                      onDragOver={(e) => handleSkillDragOver(e, skill.id)}
-                      onDragLeave={handleSkillDragLeave}
-                      onDrop={(e) => handleSkillDrop(e, skill.id)}
-                    >
-                      <div className={`
-                        w-52 rounded-xl border-2 backdrop-blur-sm cursor-move
-                        ${colorStyle.bg} ${colorStyle.border}
-                        ${isSelected ? 'shadow-lg' : 'shadow-md hover:shadow-lg'}
-                        transition-all duration-200
-                      `}>
-                        {/* Skill Header */}
-                        <div className="p-3 border-b border-inherit/50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className={`p-1.5 rounded-lg ${colorStyle.bg} ${colorStyle.text}`}>
-                                {getIcon(skill.icon)}
-                              </div>
-                              <div>
-                                <p className={`font-semibold text-sm ${colorStyle.text}`}>
-                                  {skill.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Weight: {skill.weight}%
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingSkill(skill);
-                                setSkillEditorOpen(true);
-                              }}
-                            >
-                              <Settings className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {/* Mapped Courses */}
-                        <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
-                          {skill.courses.length === 0 ? (
-                            <div className={`text-xs text-center py-3 ${colorStyle.text} opacity-60`}>
-                              Drop courses here
-                            </div>
-                          ) : (
-                            skill.courses.map(({ courseId, contribution }) => {
-                              const course = courses.find(c => c.id === courseId);
-                              return (
-                                <div 
-                                  key={courseId}
-                                  className="flex items-center gap-1.5 p-1.5 rounded-lg bg-background/60 group"
-                                >
-                                  <BookOpen className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                  <span className="text-xs truncate flex-1">
-                                    {course?.name || "Unknown"}
-                                  </span>
-                                  <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                                    {contribution}%
-                                  </Badge>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeCourseFromSkill(skill.id, courseId);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                                  </button>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
+        {/* Main Content with Right Sidebar */}
+        <div className="flex gap-4 flex-1 min-h-0">
+          {/* Left - Tabs Content */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="w-fit">
+                <TabsTrigger value="canvas">
+                  <Target className="h-4 w-4 mr-2" />
+                  Skill Canvas
+                </TabsTrigger>
+                <TabsTrigger value="preview">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Career Readiness Preview
+                </TabsTrigger>
+                <TabsTrigger value="settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Career Settings
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="canvas" className="flex-1 mt-4">
+                <div 
+                  ref={canvasRef}
+                  className="relative w-full h-full bg-muted/30 rounded-xl border-2 border-dashed border-border overflow-hidden cursor-crosshair"
+                  onDoubleClick={handleCanvasDoubleClick}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  onMouseLeave={handleCanvasMouseUp}
+                >
+                  {/* Canvas hint */}
+                  {skillNodes.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="text-center text-muted-foreground">
+                        <MousePointerClick className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-lg font-medium">Double-click to create a skill</p>
+                        <p className="text-sm">Drag courses from the right panel onto skills</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </TabsContent>
+                  )}
+
+                  {/* Skill Nodes */}
+                  {skillNodes.map(skill => {
+                    const colorStyle = getSkillColor(skill.color);
+                    const isSelected = selectedSkill === skill.id;
+                    const isDropTarget = dropTargetSkill === skill.id;
+                    
+                    return (
+                      <div
+                        key={skill.id}
+                        className={`skill-node absolute select-none transition-shadow ${
+                          isDropTarget ? 'ring-4 ' + colorStyle.ring : ''
+                        } ${isSelected ? 'z-10' : 'z-0'}`}
+                        style={{ left: skill.x, top: skill.y }}
+                        onMouseDown={(e) => handleSkillMouseDown(e, skill.id)}
+                        onDragOver={(e) => handleSkillDragOver(e, skill.id)}
+                        onDragLeave={handleSkillDragLeave}
+                        onDrop={(e) => handleSkillDrop(e, skill.id)}
+                      >
+                        <div className={`
+                          w-52 rounded-xl border-2 backdrop-blur-sm cursor-move
+                          ${colorStyle.bg} ${colorStyle.border}
+                          ${isSelected ? 'shadow-lg' : 'shadow-md hover:shadow-lg'}
+                          transition-all duration-200
+                        `}>
+                          {/* Skill Header */}
+                          <div className="p-3 border-b border-inherit/50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className={`p-1.5 rounded-lg ${colorStyle.bg} ${colorStyle.text}`}>
+                                  {getIcon(skill.icon)}
+                                </div>
+                                <div>
+                                  <p className={`font-semibold text-sm ${colorStyle.text}`}>
+                                    {skill.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Weight: {skill.weight}%
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingSkill(skill);
+                                  setSkillEditorOpen(true);
+                                }}
+                              >
+                                <Settings className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Mapped Courses */}
+                          <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
+                            {skill.courses.length === 0 ? (
+                              <div className={`text-xs text-center py-3 ${colorStyle.text} opacity-60`}>
+                                Drop courses here
+                              </div>
+                            ) : (
+                              skill.courses.map(({ courseId, contribution }) => {
+                                const course = courses.find(c => c.id === courseId);
+                                return (
+                                  <div 
+                                    key={courseId}
+                                    className="flex items-center gap-1.5 p-1.5 rounded-lg bg-background/60 group"
+                                  >
+                                    <BookOpen className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="text-xs truncate flex-1">
+                                      {course?.name || "Unknown"}
+                                    </span>
+                                    <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                                      {contribution}%
+                                    </Badge>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeCourseFromSkill(skill.id, courseId);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                                    </button>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </TabsContent>
 
             <TabsContent value="preview" className="flex-1 mt-4 overflow-auto">
               <Card className="p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className={`p-3 rounded-xl ${careerColor}`}>
-                    {getIcon(careerIcon)}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-xl ${careerColor}`}>
+                      {getIcon(careerIcon)}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">{careerName || "Career Name"}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {skillNodes.length} skills · {getMappedCourseIds().size} courses mapped
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold">{careerName || "Career Name"}</h2>
-                    <p className="text-sm text-muted-foreground">
-                      {skillNodes.length} skills · {getMappedCourseIds().size} courses mapped
-                    </p>
-                  </div>
+                  <Button variant="outline" onClick={autoBalanceWeights} disabled={skillNodes.length === 0}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Auto-balance Weights
+                  </Button>
                 </div>
 
                 {skillNodes.length === 0 ? (
@@ -1030,6 +986,61 @@ const AdminCareerEditor = () => {
               </Card>
             </TabsContent>
           </Tabs>
+        </div>
+
+          {/* Right Sidebar - Course Library */}
+          <Card className="w-72 flex-shrink-0 flex flex-col min-h-0">
+            <div className="p-4 border-b flex-shrink-0">
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm">Course Library</h3>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search courses..."
+                  value={courseSearch}
+                  onChange={(e) => setCourseSearch(e.target.value)}
+                  className="pl-8 h-8 text-sm"
+                />
+              </div>
+            </div>
+            
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-1">
+                {filteredCourses.map(course => {
+                  const isMapped = getMappedCourseIds().has(course.id);
+                  return (
+                    <div
+                      key={course.id}
+                      draggable
+                      onDragStart={(e) => handleCourseDragStart(e, course.id)}
+                      onDragEnd={handleCourseDragEnd}
+                      className={`
+                        flex items-center gap-2 p-2.5 rounded-lg border cursor-grab active:cursor-grabbing
+                        transition-all duration-150
+                        ${isMapped 
+                          ? 'bg-primary/5 border-primary/30' 
+                          : 'bg-card hover:bg-muted/50 border-border'
+                        }
+                        ${draggingCourse === course.id ? 'opacity-50 scale-95' : ''}
+                      `}
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{course.name}</p>
+                      </div>
+                      {isMapped && (
+                        <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                          Mapped
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </Card>
         </div>
       </div>
 
