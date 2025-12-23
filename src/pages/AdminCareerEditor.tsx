@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Save, X, BookOpen, Sparkles, MousePointerClick,
-  GripVertical, Trash2, Settings, Palette, ChevronRight, ChevronLeft, Search,
+  GripVertical, Trash2, Settings, Palette, ChevronsRight, ChevronLeft, Search,
   Target, TrendingUp, Zap
 } from "lucide-react";
 import * as Icons from "lucide-react";
@@ -992,73 +992,72 @@ const AdminCareerEditor = () => {
           </Tabs>
         </div>
 
-          {/* Right Sidebar - Course Library with Vertical Tab Toggle */}
-          <div className="flex-shrink-0 flex">
-            {/* Vertical Tab Toggle - Always visible */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
-            >
-              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
-              <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
-                Courses
-              </span>
-            </button>
+          {/* Right Sidebar - Course Library */}
+          <Card className={`flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-auto'}`}>
+            {/* Header with collapse toggle */}
+            <div className="p-3 border-b flex-shrink-0 flex items-center justify-between gap-2">
+              <span className="font-semibold text-sm whitespace-nowrap">Courses</span>
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                title={sidebarOpen ? 'Collapse' : 'Expand'}
+              >
+                <ChevronsRight className={`h-4 w-4 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
 
-            {/* Sidebar Content */}
-            <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
-              <div className={`p-4 border-b flex-shrink-0 ${!sidebarOpen ? 'hidden' : ''}`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm whitespace-nowrap">Course Library</h3>
+            {/* Sidebar Content - only visible when open */}
+            {sidebarOpen && (
+              <>
+                <div className="p-3 border-b flex-shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search courses..."
+                      value={courseSearch}
+                      onChange={(e) => setCourseSearch(e.target.value)}
+                      className="pl-8 h-8 text-sm"
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search courses..."
-                    value={courseSearch}
-                    onChange={(e) => setCourseSearch(e.target.value)}
-                    className="pl-8 h-8 text-sm"
-                  />
-                </div>
-              </div>
-              
-              <ScrollArea className={`flex-1 ${!sidebarOpen ? 'hidden' : ''}`}>
-                <div className="p-2 space-y-1">
-                  {filteredCourses.map(course => {
-                    const isMapped = getMappedCourseIds().has(course.id);
-                    return (
-                      <div
-                        key={course.id}
-                        draggable
-                        onDragStart={(e) => handleCourseDragStart(e, course.id)}
-                        onDragEnd={handleCourseDragEnd}
-                        className={`
-                          flex items-center gap-2 p-2.5 rounded-lg border cursor-grab active:cursor-grabbing
-                          transition-all duration-150
-                          ${isMapped 
-                            ? 'bg-primary/5 border-primary/30' 
-                            : 'bg-card hover:bg-muted/50 border-border'
-                          }
-                          ${draggingCourse === course.id ? 'opacity-50 scale-95' : ''}
-                        `}
-                      >
-                        <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{course.name}</p>
+                
+                <ScrollArea className="flex-1">
+                  <div className="p-2 space-y-1">
+                    {filteredCourses.map(course => {
+                      const isMapped = getMappedCourseIds().has(course.id);
+                      return (
+                        <div
+                          key={course.id}
+                          draggable
+                          onDragStart={(e) => handleCourseDragStart(e, course.id)}
+                          onDragEnd={handleCourseDragEnd}
+                          className={`
+                            flex items-center gap-2 p-2.5 rounded-lg border cursor-grab active:cursor-grabbing
+                            transition-all duration-150
+                            ${isMapped 
+                              ? 'bg-primary/5 border-primary/30' 
+                              : 'bg-card hover:bg-muted/50 border-border'
+                            }
+                            ${draggingCourse === course.id ? 'opacity-50 scale-95' : ''}
+                          `}
+                        >
+                          <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{course.name}</p>
+                          </div>
+                          {isMapped && (
+                            <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                              Mapped
+                            </Badge>
+                          )}
                         </div>
-                        {isMapped && (
-                          <Badge variant="secondary" className="text-[10px] flex-shrink-0">
-                            Mapped
-                          </Badge>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </Card>
-          </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </>
+            )}
+          </Card>
         </div>
       </div>
 
