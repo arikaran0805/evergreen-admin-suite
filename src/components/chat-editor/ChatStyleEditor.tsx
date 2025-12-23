@@ -240,6 +240,20 @@ const ChatStyleEditor = ({
     fetchCourses();
   }, []);
 
+  // Sync selectedCourse with courseType prop when it changes
+  useEffect(() => {
+    if (courseType && courses.length > 0) {
+      // Find matching course by slug or name
+      const matchingCourse = courses.find(
+        c => c.slug === courseType || 
+             c.name.toLowerCase().replace(/\s+/g, '') === courseType.toLowerCase()
+      );
+      if (matchingCourse) {
+        setSelectedCourse(matchingCourse.slug);
+      }
+    }
+  }, [courseType, courses]);
+
   // Get course character from fetched courses
   const getCourseCharacter = useCallback((courseSlug: string): CourseCharacter => {
     const course = courses.find(c => c.slug === courseSlug);
