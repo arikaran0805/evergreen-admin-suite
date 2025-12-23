@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CheckCircle2, Circle, FlaskConical, ArrowRight, Play } from "lucide-react";
+import { CheckCircle2, Circle, FlaskConical, ArrowRight, ArrowUp, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
@@ -31,256 +31,347 @@ export const CareerRoadmapChart = ({
 }: CareerRoadmapChartProps) => {
   const navigate = useNavigate();
 
-  // Calculate positions for each course on the chart
+  // Calculate total lessons and positions
   const chartData = useMemo(() => {
-    if (journeySteps.length === 0) return [];
+    if (journeySteps.length === 0) return { courses: [], totalLessons: 0, completedLessons: 0 };
 
-    // Each course takes equal vertical space
-    // X position is based on cumulative progress
-    let cumulativeProgress = 0;
+    const totalLessons = journeySteps.reduce((acc, step) => acc + step.lessonCount, 0);
+    const completedLessons = journeySteps.reduce((acc, step) => acc + step.completedLessons, 0);
+    
+    let cumulativeLessons = 0;
     const totalCourses = journeySteps.length;
     const readinessPerCourse = 100 / totalCourses;
 
-    return journeySteps.map((step, index) => {
-      const startX = cumulativeProgress;
-      const courseContribution = readinessPerCourse * (step.progress / 100);
-      cumulativeProgress += courseContribution;
+    const courses = journeySteps.map((step, index) => {
+      const xStart = totalLessons > 0 ? (cumulativeLessons / totalLessons) * 100 : 0;
+      cumulativeLessons += step.lessonCount;
+      const xEnd = totalLessons > 0 ? (cumulativeLessons / totalLessons) * 100 : 0;
+      
+      // Y position based on career readiness contribution
+      const yBase = index * readinessPerCourse;
+      const yProgress = yBase + (readinessPerCourse * (step.progress / 100));
       
       return {
         ...step,
-        yPosition: index,
-        xStart: startX,
-        xEnd: cumulativeProgress,
-        xCompleted: step.isCompleted ? startX + readinessPerCourse : startX + courseContribution,
+        xStart,
+        xEnd,
+        xMid: (xStart + xEnd) / 2,
+        yBase,
+        yProgress: step.isCompleted ? yBase + readinessPerCourse : yProgress,
+        yMax: yBase + readinessPerCourse,
       };
     });
+
+    return { courses, totalLessons, completedLessons };
   }, [journeySteps]);
 
-  const chartHeight = Math.max(400, journeySteps.length * 100 + 100);
-  const chartWidth = 100; // percentage based
+  const chartHeight = 400;
+  const chartPadding = { top: 40, right: 20, bottom: 60, left: 80 };
 
   return (
     <div className="relative bg-card rounded-xl border border-border p-4 md:p-6 overflow-hidden">
       {/* Chart Title */}
       <div className="mb-6">
         <h3 className="text-lg font-bold">{careerName} Roadmap</h3>
-        <p className="text-sm text-muted-foreground">X-axis: Career Readiness • Y-axis: Learning Path</p>
+        <p className="text-sm text-muted-foreground">X-axis: Lessons & Hours • Y-axis: Career Readiness</p>
       </div>
 
       {/* Chart Container */}
-      <div className="relative" style={{ minHeight: `${chartHeight}px` }}>
-        {/* Y-Axis */}
-        <div className="absolute left-0 top-0 bottom-16 w-12 flex flex-col items-center">
-          <div className="absolute top-0 bottom-0 left-6 w-0.5 bg-border" />
-          <div className="absolute top-0 left-3 w-6 h-0.5 bg-border" />
-          <div className="absolute bottom-0 left-3 w-6 h-0.5 bg-border" />
+      <div 
+        className="relative"
+        style={{ height: `${chartHeight}px` }}
+      >
+        {/* Y-Axis (Career Readiness) */}
+        <div 
+          className="absolute flex flex-col items-center"
+          style={{ 
+            left: 0, 
+            top: chartPadding.top, 
+            bottom: chartPadding.bottom,
+            width: chartPadding.left 
+          }}
+        >
+          {/* Y-axis line */}
+          <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-border" />
+          
           {/* Y-axis arrow */}
-          <div className="absolute bottom-0 left-4 transform translate-y-2">
-            <div className="w-0 h-0 border-l-4 border-r-4 border-t-6 border-l-transparent border-r-transparent border-t-foreground/50" />
+          <div className="absolute right-3 -top-2">
+            <ArrowUp className="h-4 w-4 text-muted-foreground" />
           </div>
-          {/* Y-axis label */}
+          
+          {/* Y-axis labels */}
+          {[0, 25, 50, 75, 100].map((percent) => (
+            <div
+              key={percent}
+              className="absolute right-6 text-xs text-muted-foreground transform -translate-y-1/2"
+              style={{ bottom: `${percent}%` }}
+            >
+              {percent}%
+            </div>
+          ))}
+          
+          {/* Y-axis title */}
           <div 
             className="absolute -left-2 top-1/2 transform -translate-y-1/2 -rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap"
           >
-            Courses & Lessons
-          </div>
-        </div>
-
-        {/* X-Axis */}
-        <div className="absolute bottom-4 left-12 right-4 h-8 flex items-center">
-          <div className="absolute left-0 right-0 top-0 h-0.5 bg-border" />
-          {/* X-axis arrow */}
-          <div className="absolute right-0 top-0 transform -translate-y-1">
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </div>
-          {/* X-axis labels */}
-          <div className="absolute left-0 top-3 text-xs text-muted-foreground">0%</div>
-          <div className="absolute left-1/4 top-3 text-xs text-muted-foreground">25%</div>
-          <div className="absolute left-1/2 top-3 text-xs text-muted-foreground transform -translate-x-1/2">50%</div>
-          <div className="absolute left-3/4 top-3 text-xs text-muted-foreground">75%</div>
-          <div className="absolute right-0 top-3 text-xs text-muted-foreground">100%</div>
-          {/* X-axis title */}
-          <div className="absolute left-1/2 top-7 transform -translate-x-1/2 text-xs font-medium text-muted-foreground">
             Career Readiness
           </div>
         </div>
 
-        {/* Current progress line */}
+        {/* X-Axis (Lessons & Hours) */}
         <div 
-          className="absolute top-0 bottom-16 w-0.5 bg-primary/50 z-10"
-          style={{ left: `calc(48px + ${(readinessPercent / 100) * (100 - 48)}%)` }}
+          className="absolute flex items-center"
+          style={{ 
+            left: chartPadding.left, 
+            right: chartPadding.right, 
+            bottom: 0,
+            height: chartPadding.bottom 
+          }}
         >
-          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full bg-primary animate-pulse" />
+          {/* X-axis line */}
+          <div className="absolute left-0 right-0 top-4 h-0.5 bg-border" />
+          
+          {/* X-axis arrow */}
+          <div className="absolute right-0 top-2">
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          
+          {/* X-axis labels - show lesson milestones */}
+          <div className="absolute left-0 top-6 text-xs text-muted-foreground">0</div>
+          <div className="absolute left-1/4 top-6 text-xs text-muted-foreground transform -translate-x-1/2">
+            {Math.round(chartData.totalLessons * 0.25)}
+          </div>
+          <div className="absolute left-1/2 top-6 text-xs text-muted-foreground transform -translate-x-1/2">
+            {Math.round(chartData.totalLessons * 0.5)}
+          </div>
+          <div className="absolute left-3/4 top-6 text-xs text-muted-foreground transform -translate-x-1/2">
+            {Math.round(chartData.totalLessons * 0.75)}
+          </div>
+          <div className="absolute right-0 top-6 text-xs text-muted-foreground">
+            {chartData.totalLessons}
+          </div>
+          
+          {/* X-axis title */}
+          <div className="absolute left-1/2 top-10 transform -translate-x-1/2 text-xs font-medium text-muted-foreground">
+            Lessons & Hours
+          </div>
+        </div>
+
+        {/* Current readiness line (horizontal) */}
+        <div 
+          className="absolute left-0 right-0 h-0.5 bg-primary/50 z-10"
+          style={{ 
+            left: chartPadding.left,
+            right: chartPadding.right,
+            bottom: `${chartPadding.bottom + ((chartHeight - chartPadding.top - chartPadding.bottom) * readinessPercent / 100)}px`
+          }}
+        >
           <Badge 
-            className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-primary text-primary-foreground text-xs"
+            className="absolute -right-2 top-1/2 transform -translate-y-1/2 translate-x-full whitespace-nowrap bg-primary text-primary-foreground text-xs"
           >
-            {readinessPercent}% Ready
+            {readinessPercent}%
           </Badge>
         </div>
 
         {/* Chart Area */}
-        <div className="ml-14 mr-4 pb-16 relative" style={{ minHeight: `${chartHeight - 80}px` }}>
+        <div 
+          className="absolute"
+          style={{ 
+            left: chartPadding.left, 
+            right: chartPadding.right, 
+            top: chartPadding.top, 
+            bottom: chartPadding.bottom 
+          }}
+        >
           {/* Grid lines */}
           <div className="absolute inset-0 pointer-events-none">
-            {[0, 25, 50, 75, 100].map((percent) => (
+            {/* Horizontal grid lines */}
+            {[25, 50, 75].map((percent) => (
               <div
-                key={percent}
+                key={`h-${percent}`}
+                className="absolute left-0 right-0 h-px bg-border/30"
+                style={{ bottom: `${percent}%` }}
+              />
+            ))}
+            {/* Vertical grid lines */}
+            {[25, 50, 75].map((percent) => (
+              <div
+                key={`v-${percent}`}
                 className="absolute top-0 bottom-0 w-px bg-border/30"
                 style={{ left: `${percent}%` }}
               />
             ))}
           </div>
 
-          {/* SVG for connection lines */}
+          {/* SVG for the path and nodes */}
           <svg 
-            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
-            style={{ minHeight: `${chartHeight - 80}px` }}
+            className="absolute inset-0 w-full h-full overflow-visible"
+            preserveAspectRatio="none"
           >
-            {chartData.map((step, index) => {
-              if (index === 0) return null;
-              const prevStep = chartData[index - 1];
-              const ySpacing = 90;
-              const prevY = prevStep.yPosition * ySpacing + 40;
-              const currY = step.yPosition * ySpacing + 40;
-              const prevX = `${prevStep.xCompleted}%`;
-              const currX = `${step.xStart}%`;
-              
-              return (
-                <g key={step.id}>
-                  {/* Diagonal connection line */}
-                  <line
-                    x1={prevX}
-                    y1={prevY}
-                    x2={currX}
-                    y2={currY}
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeDasharray={step.isStarted || prevStep.isCompleted ? "0" : "4"}
-                    className={prevStep.isCompleted ? "text-green-500" : "text-border"}
-                  />
-                </g>
-              );
-            })}
+            {/* Connection path */}
+            {chartData.courses.length > 0 && (
+              <path
+                d={chartData.courses.map((course, index) => {
+                  const x = course.xMid;
+                  const y = 100 - course.yProgress;
+                  if (index === 0) {
+                    return `M 0,100 L ${x}%,${y}%`;
+                  }
+                  return `L ${x}%,${y}%`;
+                }).join(' ')}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-primary/50"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+
+            {/* Completed path overlay */}
+            {chartData.courses.length > 0 && (
+              <path
+                d={chartData.courses
+                  .filter(c => c.isCompleted || c.isStarted)
+                  .map((course, index) => {
+                    const x = course.xMid;
+                    const y = 100 - course.yProgress;
+                    if (index === 0) {
+                      return `M 0,100 L ${x}%,${y}%`;
+                    }
+                    return `L ${x}%,${y}%`;
+                  }).join(' ')}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                className="text-green-500"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
           </svg>
 
           {/* Course nodes */}
-          {chartData.map((step, index) => {
-            const ySpacing = 90;
-            const yPos = step.yPosition * ySpacing + 20;
+          {chartData.courses.map((course) => {
+            const xPercent = course.xMid;
+            const yPercent = 100 - course.yProgress;
             
             return (
               <div
-                key={step.id}
-                className="absolute flex items-center gap-3"
+                key={course.id}
+                className="absolute transform -translate-x-1/2 translate-y-1/2 z-20"
                 style={{
-                  top: `${yPos}px`,
-                  left: `${step.xStart}%`,
-                  width: `${Math.max(30, 100 / journeySteps.length)}%`,
+                  left: `${xPercent}%`,
+                  bottom: `${100 - yPercent}%`,
                 }}
               >
-                {/* Course Node */}
+                {/* Node */}
                 <div
-                  onClick={() => navigate(`/course/${step.slug}`)}
+                  onClick={() => navigate(`/course/${course.slug}`)}
                   className={`
-                    relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all
-                    border shadow-sm hover:shadow-md hover:scale-105
-                    ${step.isCompleted 
-                      ? 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400' 
-                      : step.isStarted 
-                        ? 'bg-primary/10 border-primary/30' 
-                        : 'bg-muted/50 border-border'
-                    }
+                    relative flex flex-col items-center cursor-pointer transition-all hover:scale-110
                   `}
                 >
-                  {/* Status Icon */}
-                  <div className="shrink-0">
-                    {step.isCompleted ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    ) : step.isStarted ? (
-                      <Play className="h-4 w-4 text-primary fill-primary" />
+                  {/* Circle indicator */}
+                  <div 
+                    className={`
+                      w-8 h-8 rounded-full flex items-center justify-center border-2 shadow-md
+                      ${course.isCompleted 
+                        ? 'bg-green-500 border-green-400 text-white' 
+                        : course.isStarted 
+                          ? 'bg-primary border-primary text-primary-foreground' 
+                          : 'bg-muted border-border text-muted-foreground'
+                      }
+                    `}
+                  >
+                    {course.isCompleted ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : course.isStarted ? (
+                      <Play className="h-3 w-3 fill-current" />
                     ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground" />
+                      <Circle className="h-4 w-4" />
                     )}
                   </div>
 
-                  {/* Course Info */}
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{step.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {step.completedLessons}/{step.lessonCount} lessons • {step.progress}%
-                    </p>
+                  {/* Course label */}
+                  <div 
+                    className={`
+                      absolute top-full mt-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap
+                      bg-background/90 border border-border shadow-sm
+                      ${course.isCompleted ? 'text-green-600 dark:text-green-400' : 
+                        course.isStarted ? 'text-primary' : 'text-muted-foreground'}
+                    `}
+                  >
+                    {course.name}
+                    <span className="block text-[10px] text-muted-foreground font-normal">
+                      {course.completedLessons}/{course.lessonCount} lessons
+                    </span>
                   </div>
 
-                  {/* Progress bar within node */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-lg overflow-hidden bg-border/30">
+                  {/* Practice Lab branch for completed courses */}
+                  {course.isCompleted && (
                     <div 
-                      className={`h-full transition-all ${step.isCompleted ? 'bg-green-500' : 'bg-primary'}`}
-                      style={{ width: `${step.progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Practice Lab branch (shown for completed courses) */}
-                {step.isCompleted && (
-                  <div className="relative">
-                    <div className="absolute -left-2 top-1/2 w-2 h-0.5 bg-amber-500/50" />
-                    <div
-                      onClick={() => navigate('/practice-lab')}
-                      className="flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 cursor-pointer hover:bg-amber-500/20 transition-all"
+                      className="absolute -right-12 top-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/practice-lab');
+                      }}
                     >
-                      <FlaskConical className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                      <span className="text-xs text-amber-700 dark:text-amber-400 whitespace-nowrap">Practice</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all">
+                        <FlaskConical className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        <span className="text-[10px] text-amber-700 dark:text-amber-400">Lab</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Live Progress indicator for in-progress courses */}
-                {step.isStarted && !step.isCompleted && (
-                  <Badge variant="outline" className="text-xs animate-pulse border-primary/50 text-primary">
-                    In Progress
-                  </Badge>
-                )}
+                  {/* In Progress indicator */}
+                  {course.isStarted && !course.isCompleted && (
+                    <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                      <Badge variant="outline" className="text-[10px] animate-pulse border-primary/50 text-primary px-1 py-0">
+                        {course.progress}%
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
 
-          {/* Origin point */}
-          <div className="absolute top-4 -left-2 flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-foreground/20 border-2 border-foreground/50 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-foreground/70" />
+          {/* Start point */}
+          <div className="absolute bottom-0 left-0 transform translate-y-1/2 -translate-x-1/2">
+            <div className="w-6 h-6 rounded-full bg-foreground/20 border-2 border-foreground/50 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-foreground/70" />
             </div>
-            <span className="text-xs text-muted-foreground font-medium">Start</span>
+            <span className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap">
+              Start
+            </span>
           </div>
 
-          {/* End goal */}
-          {journeySteps.length > 0 && (
-            <div 
-              className="absolute flex items-center gap-2"
-              style={{ 
-                top: `${(journeySteps.length - 1) * 90 + 20}px`,
-                right: '0'
-              }}
-            >
-              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-                🎯 Job Ready
-              </Badge>
-            </div>
-          )}
+          {/* Goal indicator */}
+          <div className="absolute top-0 right-0 transform -translate-y-1/2 translate-x-1/2">
+            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+              🎯 Job Ready
+            </Badge>
+          </div>
         </div>
       </div>
 
       {/* Legend */}
       <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+            <CheckCircle2 className="h-2.5 w-2.5 text-white" />
+          </div>
           <span className="text-muted-foreground">Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Play className="h-3 w-3 text-primary fill-primary" />
+          <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+            <Play className="h-2 w-2 text-primary-foreground fill-current" />
+          </div>
           <span className="text-muted-foreground">In Progress</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Circle className="h-4 w-4 text-muted-foreground" />
+          <div className="w-4 h-4 rounded-full bg-muted border border-border flex items-center justify-center">
+            <Circle className="h-2.5 w-2.5 text-muted-foreground" />
+          </div>
           <span className="text-muted-foreground">Not Started</span>
         </div>
         <div className="flex items-center gap-1.5">
