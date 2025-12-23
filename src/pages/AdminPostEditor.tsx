@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import RichTextEditor from "@/components/RichTextEditor";
+import { ChatStyleEditor } from "@/components/chat-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { ArrowLeft, Save, X } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -53,6 +55,7 @@ const AdminPostEditor = () => {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [editorType, setEditorType] = useState<"rich" | "chat">("rich");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -416,12 +419,38 @@ const AdminPostEditor = () => {
             </div>
 
             <div>
-              <Label htmlFor="content" className="text-base">Content</Label>
-              <RichTextEditor
-                value={formData.content}
-                onChange={(value) => setFormData({ ...formData, content: value })}
-                placeholder="Write your post content here..."
-              />
+              <div className="flex items-center justify-between mb-3">
+                <Label htmlFor="content" className="text-base">Content</Label>
+                <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
+                      <FileText className="w-3.5 h-3.5" />
+                      Rich Editor
+                    </TabsTrigger>
+                    <TabsTrigger value="chat" className="text-xs px-3 gap-1.5">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Chat Style
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              
+              {editorType === "rich" ? (
+                <RichTextEditor
+                  value={formData.content}
+                  onChange={(value) => setFormData({ ...formData, content: value })}
+                  placeholder="Write your post content here..."
+                />
+              ) : (
+                <ChatStyleEditor
+                  value={formData.content}
+                  onChange={(value) => setFormData({ ...formData, content: value })}
+                  courseType={
+                    categories.find(c => c.id === formData.category_id)?.name?.toLowerCase().replace(/\s+/g, '') || "python"
+                  }
+                  placeholder="Start a conversation..."
+                />
+              )}
             </div>
           </div>
         </div>
