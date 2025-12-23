@@ -15,9 +15,10 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp, Palette } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
+import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 
 const urlSchema = z.string().url().optional().or(z.literal(""));
 
@@ -88,6 +89,9 @@ const AdminSettings = () => {
   const [schemaContactEmail, setSchemaContactEmail] = useState("");
   const [schemaPhone, setSchemaPhone] = useState("");
   const [schemaAddress, setSchemaAddress] = useState("");
+  
+  // Editor Settings
+  const [codeTheme, setCodeTheme] = useState<CodeTheme>("tomorrow");
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -176,6 +180,8 @@ const AdminSettings = () => {
       setSchemaContactEmail((data as any).schema_contact_email || "");
       setSchemaPhone((data as any).schema_phone || "");
       setSchemaAddress((data as any).schema_address || "");
+      // Editor Settings
+      setCodeTheme((data as any).code_theme || "tomorrow");
     }
   };
 
@@ -1155,6 +1161,57 @@ const AdminSettings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Code Theme Selection */}
+                <div className="rounded-lg bg-muted p-4">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    Code Snippet Theme
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Choose the syntax highlighting theme for code blocks in chat lessons
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <Select value={codeTheme} onValueChange={(v) => setCodeTheme(v as CodeTheme)}>
+                      <SelectTrigger className="w-[250px]">
+                        <SelectValue placeholder="Select theme" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border border-border">
+                        {CODE_THEMES.map((theme) => (
+                          <SelectItem key={theme.value} value={theme.value}>
+                            <div className="flex flex-col">
+                              <span>{theme.label}</span>
+                              <span className="text-xs text-muted-foreground">{theme.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={async () => {
+                        setSaving(true);
+                        try {
+                          if (settingsId) {
+                            await supabase
+                              .from("site_settings")
+                              .update({ code_theme: codeTheme })
+                              .eq("id", settingsId);
+                          }
+                          toast({ title: "Code theme saved successfully" });
+                        } catch (error: any) {
+                          toast({ title: "Error saving theme", variant: "destructive" });
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "Save Theme"}
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
                 <div className="rounded-lg bg-muted p-4">
                   <h3 className="font-semibold mb-2">Database Connection</h3>
                   <p className="text-sm text-muted-foreground mb-4">
