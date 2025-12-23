@@ -201,14 +201,13 @@ const OngoingCourseCard = ({
                 return <IconComponent className="h-8 w-8 text-primary" />;
               })()
             )}
-
-            {/* Always show selected icon badge (if set) */}
-            {course?.icon && (
+            {/* Icon badge overlay */}
+            {course?.icon && course?.featured_image && (
               (() => {
                 const BadgeIcon = getIcon(course.icon, BookOpen);
                 return (
-                  <div className="absolute bottom-1 right-1 h-7 w-7 rounded-md bg-background/80 border border-border flex items-center justify-center">
-                    <BadgeIcon className="h-4 w-4 text-foreground" />
+                  <div className="absolute bottom-1 right-1 h-6 w-6 rounded bg-background/90 flex items-center justify-center shadow-sm">
+                    <BadgeIcon className="h-3.5 w-3.5 text-primary" />
                   </div>
                 );
               })()
@@ -1420,9 +1419,9 @@ const Profile = () => {
     ];
 
     return (
-      <div className="space-y-8">
+      <div className={`space-y-8 ${activeTab === 'learnings' ? 'dashboard-bg -mx-4 px-4 py-6 rounded-2xl' : ''}`}>
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between animate-fade-in">
           <h2 className="text-2xl font-bold">Study Plan</h2>
           <Button variant="ghost" onClick={() => navigate('/courses')} className="gap-1">
             My Study Plan <ChevronRight className="h-4 w-4" />
@@ -1430,8 +1429,11 @@ const Profile = () => {
         </div>
 
         {/* Ongoing Section */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Ongoing</h3>
+        <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Flame className="h-5 w-5 text-orange-500" />
+            Ongoing
+          </h3>
           {enrolledCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {enrolledCourses.map((enrollment) => (
@@ -1458,14 +1460,12 @@ const Profile = () => {
 
         {/* Featured Section */}
         {featuredCourses.length > 0 && (
-          <div className="space-y-4">
-            <Card className="bg-muted/20">
-              <CardContent className="px-4 py-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold">Featured Courses</span>
-              </CardContent>
-            </Card>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Featured Courses
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {featuredCourses.map((course, index) => (
                 <FeaturedCourseCard 
                   key={course.id}
