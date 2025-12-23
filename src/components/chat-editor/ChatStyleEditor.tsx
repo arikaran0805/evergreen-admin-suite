@@ -15,7 +15,26 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+
+const CODE_LANGUAGES = [
+  { value: "python", label: "Python" },
+  { value: "sql", label: "SQL" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
+  { value: "html", label: "HTML" },
+  { value: "css", label: "CSS" },
+  { value: "json", label: "JSON" },
+  { value: "bash", label: "Bash/Shell" },
+  { value: "r", label: "R" },
+  { value: "java", label: "Java" },
+  { value: "csharp", label: "C#" },
+  { value: "cpp", label: "C++" },
+];
 
 interface ChatStyleEditorProps {
   value: string;
@@ -160,8 +179,8 @@ const ChatStyleEditor = ({
     inputRef.current?.focus();
   };
 
-  const handleInsertCodeSnippet = () => {
-    const codeTemplate = "```python\n# Your code here\n\n```";
+  const handleInsertCodeSnippet = (language: string = "python") => {
+    const codeTemplate = `\`\`\`${language}\n# Your code here\n\n\`\`\``;
     insertAtCursor(codeTemplate, "# Your code here");
   };
 
@@ -436,11 +455,26 @@ const ChatStyleEditor = ({
                   <Plus className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={handleInsertCodeSnippet} className="cursor-pointer">
-                  <Code className="w-4 h-4 mr-2" />
-                  Code Block
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-52 bg-popover border border-border shadow-lg z-50">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <Code className="w-4 h-4 mr-2" />
+                    Code Block
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="bg-popover border border-border shadow-lg z-50">
+                      {CODE_LANGUAGES.map((lang) => (
+                        <DropdownMenuItem
+                          key={lang.value}
+                          onClick={() => handleInsertCodeSnippet(lang.value)}
+                          className="cursor-pointer"
+                        >
+                          {lang.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
                 <DropdownMenuItem onClick={handleInsertInlineCode} className="cursor-pointer">
                   <Type className="w-4 h-4 mr-2" />
                   Inline Code
