@@ -191,7 +191,7 @@ export const CareerRoadmapChart = ({
               </linearGradient>
             </defs>
 
-            {/* Full path (background/remaining) */}
+            {/* Full path (background/remaining) - animated draw */}
             {chartData.courses.length > 0 && (
               <polyline
                 points={[
@@ -204,13 +204,18 @@ export const CareerRoadmapChart = ({
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeDasharray="6,4"
-                className="text-border"
+                className="text-border animate-[drawPath_1.5s_ease-out_forwards]"
+                style={{
+                  strokeDasharray: '1000',
+                  strokeDashoffset: '1000',
+                  animation: 'drawPath 1.5s ease-out forwards',
+                }}
                 vectorEffect="non-scaling-stroke"
               />
             )}
 
-            {/* Progress path (completed portion) */}
-            {chartData.courses.length > 0 && (
+            {/* Progress path (completed portion) - animated draw */}
+            {chartData.courses.length > 0 && chartData.courses.some(c => c.isCompleted || c.isStarted) && (
               <polyline
                 points={[
                   "0,0",
@@ -225,12 +230,52 @@ export const CareerRoadmapChart = ({
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                style={{
+                  strokeDasharray: '1000',
+                  strokeDashoffset: '1000',
+                  animation: 'drawProgressPath 2s ease-out 0.5s forwards',
+                }}
                 vectorEffect="non-scaling-stroke"
               />
             )}
 
-            {/* Branch lines to practice labs */}
-            {chartData.courses.map((course) => {
+            <style>
+              {`
+                @keyframes drawPath {
+                  to {
+                    stroke-dashoffset: 0;
+                  }
+                }
+                @keyframes drawProgressPath {
+                  to {
+                    stroke-dashoffset: 0;
+                  }
+                }
+                @keyframes fadeIn {
+                  from {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0.5);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                  }
+                }
+                @keyframes fadeInBranch {
+                  from {
+                    opacity: 0;
+                    stroke-dashoffset: 50;
+                  }
+                  to {
+                    opacity: 1;
+                    stroke-dashoffset: 0;
+                  }
+                }
+              `}
+            </style>
+
+            {/* Branch lines to practice labs - animated */}
+            {chartData.courses.map((course, index) => {
               if (!course.isCompleted) return null;
               return (
                 <line
@@ -242,13 +287,18 @@ export const CareerRoadmapChart = ({
                   stroke="currentColor"
                   strokeWidth="1.5"
                   className="text-amber-500"
+                  style={{
+                    strokeDasharray: '50',
+                    strokeDashoffset: '50',
+                    animation: `fadeInBranch 0.5s ease-out ${1.5 + index * 0.2}s forwards`,
+                  }}
                   vectorEffect="non-scaling-stroke"
                 />
               );
             })}
 
-            {/* "Live progress" branch for in-progress courses */}
-            {chartData.courses.map((course) => {
+            {/* "Live progress" branch for in-progress courses - animated */}
+            {chartData.courses.map((course, index) => {
               if (!course.isStarted || course.isCompleted) return null;
               return (
                 <line
@@ -261,20 +311,26 @@ export const CareerRoadmapChart = ({
                   strokeWidth="1.5"
                   strokeDasharray="3,2"
                   className="text-primary"
+                  style={{
+                    opacity: 0,
+                    animation: `fadeInBranch 0.5s ease-out ${1.5 + index * 0.2}s forwards`,
+                  }}
                   vectorEffect="non-scaling-stroke"
                 />
               );
             })}
           </svg>
 
-          {/* Course nodes */}
-          {chartData.courses.map((course) => (
+          {/* Course nodes - animated */}
+          {chartData.courses.map((course, index) => (
             <div
               key={course.id}
               className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20"
               style={{
                 left: `${course.xPosition}%`,
                 top: `${course.yPosition}%`,
+                opacity: 0,
+                animation: `fadeIn 0.4s ease-out ${0.8 + index * 0.15}s forwards`,
               }}
             >
               {/* Node */}
