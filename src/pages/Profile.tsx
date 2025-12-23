@@ -838,7 +838,7 @@ const Profile = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Top Header Card - Welcome + Career + Streak + Stats */}
-      <Card className="card-premium card-shine rounded-xl animate-stagger-1">
+      <Card className="card-premium rounded-xl animate-stagger-1">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
             {/* Welcome Section */}
@@ -905,7 +905,7 @@ const Profile = () => {
         {/* Left Column - Career Readiness + Recommended Labs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Career Readiness */}
-          <Card className="card-premium card-shine rounded-xl animate-stagger-2">
+          <Card className="card-premium rounded-xl animate-stagger-2">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
