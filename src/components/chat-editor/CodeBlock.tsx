@@ -74,12 +74,17 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
   // Use override theme if provided, otherwise fall back to global theme
   const theme = overrideTheme || globalTheme;
   
+  // Check if using gray theme
+  const isGrayTheme = theme === "gray";
+  
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
 
-  // Load theme dynamically
+  // Load theme dynamically (skip for gray theme as it uses custom styling)
   useEffect(() => {
-    loadTheme(theme);
-  }, [theme]);
+    if (!isGrayTheme) {
+      loadTheme(theme);
+    }
+  }, [theme, isGrayTheme]);
 
   useEffect(() => {
     if (codeRef.current) {
@@ -97,19 +102,34 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
     }
   };
 
+  // Gray theme token colors - applied via style to override Prism defaults
+  const grayThemeStyles = isGrayTheme ? {
+    '--comment-color': '#999',
+    '--punctuation-color': '#ccc',
+    '--property-color': '#f08d49',
+    '--string-color': '#b9ca4a',
+    '--operator-color': '#ccc',
+    '--keyword-color': '#cc99cd',
+    '--function-color': '#6699cc',
+    '--variable-color': '#e6c07b',
+  } as React.CSSProperties : {};
+
   return (
-    <div className={cn(
-      "relative group mt-3 w-full min-w-[300px] max-w-[600px]",
-      theme === "gray" && "code-theme-gray"
-    )}>
+    <div 
+      className={cn(
+        "relative group mt-3 w-full min-w-[300px] max-w-[600px]",
+        isGrayTheme && "code-theme-gray"
+      )}
+      style={grayThemeStyles}
+    >
       <pre
         className={cn(
           "p-4 rounded-xl text-xs font-mono overflow-x-auto w-full",
           "border shadow-inner",
           isMentorBubble
             ? "bg-blue-600/20 border-blue-400/30"
-            : theme === "gray"
-              ? "bg-[#2d2d2d] border-gray-600/50"
+            : isGrayTheme
+              ? "bg-[#3a3a3a] border-[#555]"
               : "bg-[#1d1f21] border-border/50"
         )}
       >

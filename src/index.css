@@ -338,22 +338,22 @@ All colors MUST be HSL.
     opacity: 0;
   }
 
-  /* Gray code theme - custom styling */
+  /* Gray code theme - custom styling with !important to override Prism defaults */
   .code-theme-gray code[class*="language-"],
   .code-theme-gray pre[class*="language-"] {
-    color: #e0e0e0;
-    background: #2d2d2d;
+    color: #e0e0e0 !important;
+    background: #3a3a3a !important;
   }
 
   .code-theme-gray .token.comment,
   .code-theme-gray .token.prolog,
   .code-theme-gray .token.doctype,
   .code-theme-gray .token.cdata {
-    color: #999;
+    color: #999 !important;
   }
 
   .code-theme-gray .token.punctuation {
-    color: #ccc;
+    color: #ccc !important;
   }
 
   .code-theme-gray .token.property,
@@ -363,7 +363,7 @@ All colors MUST be HSL.
   .code-theme-gray .token.constant,
   .code-theme-gray .token.symbol,
   .code-theme-gray .token.deleted {
-    color: #f08d49;
+    color: #f08d49 !important;
   }
 
   .code-theme-gray .token.selector,
@@ -372,7 +372,7 @@ All colors MUST be HSL.
   .code-theme-gray .token.char,
   .code-theme-gray .token.builtin,
   .code-theme-gray .token.inserted {
-    color: #b9ca4a;
+    color: #b9ca4a !important;
   }
 
   .code-theme-gray .token.operator,
@@ -380,23 +380,23 @@ All colors MUST be HSL.
   .code-theme-gray .token.url,
   .code-theme-gray .language-css .token.string,
   .code-theme-gray .style .token.string {
-    color: #ccc;
+    color: #ccc !important;
   }
 
   .code-theme-gray .token.atrule,
   .code-theme-gray .token.attr-value,
   .code-theme-gray .token.keyword {
-    color: #cc99cd;
+    color: #cc99cd !important;
   }
 
   .code-theme-gray .token.function,
   .code-theme-gray .token.class-name {
-    color: #6699cc;
+    color: #6699cc !important;
   }
 
   .code-theme-gray .token.regex,
   .code-theme-gray .token.important,
   .code-theme-gray .token.variable {
-    color: #e6c07b;
+    color: #e6c07b !important;
   }
 }
