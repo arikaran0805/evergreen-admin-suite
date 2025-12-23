@@ -65,15 +65,15 @@ export const CareerRoadmapChart = ({
     return { courses, totalLessons, completedLessons };
   }, [journeySteps]);
 
-  const chartHeight = 400;
-  const chartPadding = { top: 40, right: 20, bottom: 60, left: 80 };
+  const chartHeight = 320;
+  const chartPadding = { top: 28, right: 20, bottom: 56, left: 64 };
 
   return (
     <div className="relative bg-card rounded-xl border border-border p-4 md:p-6 overflow-hidden">
       {/* Chart Title */}
       <div className="mb-6">
         <h3 className="text-lg font-bold">{careerName} Roadmap</h3>
-        <p className="text-sm text-muted-foreground">X-axis: Lessons & Hours • Y-axis: Career Readiness</p>
+        <p className="text-sm text-muted-foreground">X-axis: Lessons &amp; Hours • Y-axis: Career Readiness</p>
       </div>
 
       {/* Chart Container */}
@@ -103,20 +103,12 @@ export const CareerRoadmapChart = ({
           {[0, 25, 50, 75, 100].map((percent) => (
             <div
               key={percent}
-              className="absolute right-6 text-xs text-muted-foreground transform -translate-y-1/2"
+              className="absolute right-6 text-[10px] leading-none text-muted-foreground transform -translate-y-1/2"
               style={{ bottom: `${percent}%` }}
             >
               {percent}%
             </div>
           ))}
-          
-          {/* Y-axis title - positioned further left */}
-          <div 
-            className="absolute top-1/2 transform -translate-y-1/2 -rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap"
-            style={{ left: '-20px' }}
-          >
-            Career Readiness
-          </div>
         </div>
 
         {/* X-Axis (Lessons & Hours) */}
