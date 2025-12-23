@@ -17,8 +17,8 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Save, X, BookOpen, Sparkles, MousePointerClick,
-  GripVertical, Trash2, Settings, Palette, ChevronRight, Search,
-  Target, TrendingUp, Zap
+  GripVertical, Trash2, Settings, Palette, ChevronRight, ChevronLeft, Search,
+  Target, TrendingUp, Zap, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
@@ -107,6 +107,7 @@ const AdminCareerEditor = () => {
   // Course drag state
   const [draggingCourse, setDraggingCourse] = useState<string | null>(null);
   const [dropTargetSkill, setDropTargetSkill] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // Dialogs
   const [skillEditorOpen, setSkillEditorOpen] = useState(false);
@@ -988,12 +989,23 @@ const AdminCareerEditor = () => {
           </Tabs>
         </div>
 
+          {/* Sidebar Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-l-lg rounded-r-none border border-r-0 bg-background shadow-sm"
+            style={{ right: sidebarOpen ? '288px' : '0' }}
+          >
+            {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </Button>
+
           {/* Right Sidebar - Course Library */}
-          <Card className="w-72 flex-shrink-0 flex flex-col min-h-0">
+          <Card className={`flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0'}`}>
             <div className="p-4 border-b flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Course Library</h3>
+                <h3 className="font-semibold text-sm whitespace-nowrap">Course Library</h3>
               </div>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
