@@ -144,9 +144,9 @@ export const CareerReadinessCard = ({
         </div>
 
         {/* Radar Chart */}
-        <div className="h-[220px] w-full">
+        <div className="h-[180px] w-full -my-2">
           <ChartContainer config={chartConfig} className="h-full w-full">
-            <RadarChart data={skillData} cx="50%" cy="50%" outerRadius="70%">
+            <RadarChart data={skillData} cx="50%" cy="50%" outerRadius="65%">
               <PolarGrid 
                 stroke="hsl(var(--border))" 
                 strokeDasharray="3 3"
@@ -155,7 +155,7 @@ export const CareerReadinessCard = ({
                 dataKey="skill" 
                 tick={{ 
                   fill: 'hsl(var(--muted-foreground))', 
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 500
                 }}
                 tickLine={false}
@@ -183,7 +183,7 @@ export const CareerReadinessCard = ({
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border mt-4">
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border mt-2">
           <div className="text-center">
             <p className="text-2xl font-bold text-primary">{enrolledInCareer}</p>
             <p className="text-xs text-muted-foreground">Enrolled</p>
