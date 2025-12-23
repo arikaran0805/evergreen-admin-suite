@@ -16,6 +16,7 @@ interface ChatBubbleProps {
   onEndEdit: () => void;
   isDragging?: boolean;
   dragHandleProps?: any;
+  codeTheme?: string;
 }
 
 const ChatBubble = ({
@@ -28,6 +29,7 @@ const ChatBubble = ({
   onEndEdit,
   isDragging,
   dragHandleProps,
+  codeTheme,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -92,6 +94,7 @@ const ChatBubble = ({
             code={part.content}
             language={part.language}
             isMentorBubble={isMentor}
+            overrideTheme={codeTheme}
           />
         );
       }

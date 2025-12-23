@@ -459,6 +459,7 @@ const AdminPostEditor = () => {
                     categories.find(c => c.id === formData.category_id)?.name?.toLowerCase().replace(/\s+/g, '') || "python"
                   }
                   placeholder="Start a conversation..."
+                  codeTheme={formData.code_theme}
                 />
               )}
             </div>

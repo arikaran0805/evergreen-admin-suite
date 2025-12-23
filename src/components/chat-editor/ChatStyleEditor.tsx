@@ -58,6 +58,7 @@ interface ChatStyleEditorProps {
   onChange: (value: string) => void;
   courseType?: string;
   placeholder?: string;
+  codeTheme?: string;
 }
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -104,6 +105,7 @@ interface MessageItemProps {
   isEditMode: boolean;
   isFirst: boolean;
   isLast: boolean;
+  codeTheme?: string;
 }
 
 const SortableMessageItem = ({
@@ -120,6 +122,7 @@ const SortableMessageItem = ({
   isEditMode,
   isFirst,
   isLast,
+  codeTheme,
 }: MessageItemProps) => {
   const {
     attributes,
@@ -198,6 +201,7 @@ const SortableMessageItem = ({
         onEdit={onEdit}
         onStartEdit={onStartEdit}
         onEndEdit={onEndEdit}
+        codeTheme={codeTheme}
       />
     </div>
   );
@@ -208,6 +212,7 @@ const ChatStyleEditor = ({
   onChange,
   courseType = "python",
   placeholder,
+  codeTheme,
 }: ChatStyleEditorProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => parseContent(value));
   const [explanation, setExplanation] = useState<string>(() => extractExplanation(value) || "");
@@ -534,6 +539,7 @@ const ChatStyleEditor = ({
                     isEditMode={mode === "edit"}
                     isFirst={index === 0}
                     isLast={index === messages.length - 1}
+                    codeTheme={codeTheme}
                   />
                 ))}
               </div>

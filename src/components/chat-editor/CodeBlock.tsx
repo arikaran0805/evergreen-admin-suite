@@ -52,6 +52,7 @@ interface CodeBlockProps {
   code: string;
   language?: string;
   isMentorBubble?: boolean;
+  overrideTheme?: string;
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -65,10 +66,13 @@ const LANGUAGE_MAP: Record<string, string> = {
   cs: "csharp",
 };
 
-const CodeBlock = ({ code, language = "", isMentorBubble = false }: CodeBlockProps) => {
+const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
-  const { theme } = useCodeTheme();
+  const { theme: globalTheme } = useCodeTheme();
+  
+  // Use override theme if provided, otherwise fall back to global theme
+  const theme = overrideTheme || globalTheme;
   
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
 
