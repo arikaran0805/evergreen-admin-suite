@@ -275,7 +275,7 @@ const Profile = () => {
   const [maxStreak, setMaxStreak] = useState(0);
   const [streakFreezesAvailable, setStreakFreezesAvailable] = useState(2);
   const [isFreezingStreak, setIsFreezingStreak] = useState(false);
-  const [weeklyActivityData, setWeeklyActivityData] = useState<{totalMinutes: number, activeDays: number, dailyData: Record<string, number>}>({totalMinutes: 0, activeDays: 0, dailyData: {}});
+  const [weeklyActivityData, setWeeklyActivityData] = useState<{ totalSeconds: number; activeDays: number; dailySeconds: Record<string, number> }>({ totalSeconds: 0, activeDays: 0, dailySeconds: {} });
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -334,44 +334,109 @@ const Profile = () => {
     checkUser();
   }, []);
 
-  // Fetch weekly activity data
+  const toDayKey = (d: Date) => {
+    const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    return safe.toISOString().slice(0, 10);
+  };
+
+  const formatDurationFromSeconds = (seconds: number) => {
+    if (!seconds) return "0 min";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes === 0) return "<1 min";
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  // Fetch weekly activity data (seconds-based so short sessions still show)
   useEffect(() => {
     const fetchWeeklyActivity = async () => {
       if (!userId) return;
-      
+
       const today = new Date();
       const weekStart = new Date(today);
       weekStart.setDate(today.getDate() - today.getDay());
-      
-      const { data: timeData } = await supabase
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+
+      const { data: timeData, error } = await supabase
         .from('lesson_time_tracking')
         .select('tracked_date, duration_seconds')
         .eq('user_id', userId)
-        .gte('tracked_date', weekStart.toISOString().split('T')[0]);
-        
-      if (timeData) {
-        const dailyTotals = new Map<string, number>();
-        timeData.forEach(record => {
-          const existing = dailyTotals.get(record.tracked_date) || 0;
-          dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
-        });
-        
-        let total = 0;
-        const dailyData: Record<string, number> = {};
-        dailyTotals.forEach((seconds, date) => {
-          const minutes = Math.floor(seconds / 60);
-          total += minutes;
-          dailyData[date] = minutes;
-        });
-        
-        setWeeklyActivityData({
-          totalMinutes: total,
-          activeDays: dailyTotals.size,
-          dailyData
-        });
+        .gte('tracked_date', toDayKey(weekStart))
+        .lte('tracked_date', toDayKey(weekEnd));
+
+      if (error) return;
+
+      const dailySeconds: Record<string, number> = {};
+      (timeData || []).forEach((record: any) => {
+        dailySeconds[record.tracked_date] = (dailySeconds[record.tracked_date] || 0) + (record.duration_seconds || 0);
+      });
+
+      const totalSeconds = Object.values(dailySeconds).reduce((sum, s) => sum + s, 0);
+      const activeDays = Object.values(dailySeconds).filter((s) => s > 0).length;
+
+      setWeeklyActivityData({ totalSeconds, activeDays, dailySeconds });
+
+      // Refresh streak from activity + stored max streak
+      const { data: allTimeData } = await supabase
+        .from('lesson_time_tracking')
+        .select('tracked_date, duration_seconds')
+        .eq('user_id', userId)
+        .order('tracked_date', { ascending: false })
+        .limit(500);
+
+      const dailyTotals = new Map<string, number>();
+      allTimeData?.forEach((record: any) => {
+        dailyTotals.set(record.tracked_date, (dailyTotals.get(record.tracked_date) || 0) + (record.duration_seconds || 0));
+      });
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('max_streak, last_freeze_date, last_activity_date')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const storedMaxStreak = (profile as any)?.max_streak || 0;
+      const lastFreezeDate = (profile as any)?.last_freeze_date;
+      const todayKey = toDayKey(today);
+      const todaySeconds = dailyTotals.get(todayKey) || 0;
+      const todayFrozen = lastFreezeDate === todayKey;
+
+      let recalculatedStreak = 0;
+      let checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+      if (todaySeconds === 0 && !todayFrozen) {
+        checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 12);
       }
+
+      for (let i = 0; i < 365; i++) {
+        const dateKey = toDayKey(checkDate);
+        const daySeconds = dailyTotals.get(dateKey) || 0;
+        const wasFrozen = lastFreezeDate === dateKey;
+
+        if (daySeconds > 0 || wasFrozen) {
+          recalculatedStreak++;
+          checkDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate() - 1, 12);
+        } else {
+          break;
+        }
+      }
+
+      const newMax = Math.max(recalculatedStreak, storedMaxStreak);
+      setCurrentStreak(recalculatedStreak);
+      setMaxStreak(newMax);
+
+      await supabase
+        .from('profiles')
+        .update({
+          current_streak: recalculatedStreak,
+          max_streak: newMax,
+          last_activity_date: todaySeconds > 0 ? todayKey : (profile as any)?.last_activity_date,
+        } as any)
+        .eq('id', userId);
     };
-    
+
     fetchWeeklyActivity();
   }, [userId]);
 
@@ -1018,28 +1083,40 @@ const Profile = () => {
               
               {/* Mini Bar Chart */}
               <div className="flex items-end justify-between gap-1.5 h-20 mb-4">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
-                  // Get the date for this day of the week
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => {
                   const today = new Date();
-                  const currentDay = today.getDay(); // 0 = Sunday
-                  const dayDiff = index - currentDay;
-                  const targetDate = new Date(today);
-                  targetDate.setDate(today.getDate() + dayDiff);
-                  const dateStr = targetDate.toISOString().split('T')[0];
-                  
-                  const dayMinutes = weeklyActivityData.dailyData[dateStr] || 0;
-                  const maxMinutes = Math.max(...Object.values(weeklyActivityData.dailyData), 60);
-                  const heightPercent = maxMinutes > 0 ? (dayMinutes / maxMinutes) * 100 : 0;
-                  const isToday = index === currentDay;
-                  
+                  const weekStart = new Date(today);
+                  weekStart.setDate(today.getDate() - today.getDay());
+
+                  const targetDate = new Date(weekStart);
+                  targetDate.setDate(weekStart.getDate() + index);
+
+                  const dateStr = toDayKey(targetDate);
+                  const daySeconds = weeklyActivityData.dailySeconds[dateStr] || 0;
+                  const isToday = index === today.getDay();
+                  const hasActivity = daySeconds > 0;
+
+                  const maxSeconds = Math.max(
+                    ...Object.values(weeklyActivityData.dailySeconds),
+                    60 * 5 // minimum scale: 5 minutes
+                  );
+
+                  const heightPercent = maxSeconds > 0 ? (daySeconds / maxSeconds) * 100 : 0;
+
                   return (
-                    <div key={day} className="flex-1 flex flex-col items-center gap-1">
-                      <div 
-                        className={`w-full rounded-t transition-all ${isToday ? 'bg-primary' : dayMinutes > 0 ? 'bg-primary/60' : 'bg-muted'}`}
-                        style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                    <div key={dayLabel + index} className="flex-1 flex flex-col items-center gap-1">
+                      <div
+                        className={`w-full rounded-t transition-all ${
+                          isToday
+                            ? 'bg-primary'
+                            : hasActivity
+                              ? 'bg-primary/60'
+                              : 'bg-muted'
+                        }`}
+                        style={{ height: hasActivity ? `${Math.max(heightPercent, 12)}%` : '10%' }}
                       />
                       <span className={`text-[10px] ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                        {day.slice(0, 1)}
+                        {dayLabel}
                       </span>
                     </div>
                   );
@@ -1050,7 +1127,7 @@ const Profile = () => {
               <div className="space-y-3 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total Time</span>
-                  <span className="font-bold">{weeklyActivityData.totalMinutes} min</span>
+                  <span className="font-bold">{formatDurationFromSeconds(weeklyActivityData.totalSeconds)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Active Days</span>

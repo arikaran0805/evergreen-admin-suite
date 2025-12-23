@@ -3,7 +3,12 @@ import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfWeek, endOfWeek, eachDayOfInterval, subDays, format } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, subDays } from "date-fns";
+
+const toDayKey = (d: Date) => {
+  const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+  return safe.toISOString().slice(0, 10);
+};
 
 interface DayActivity {
   day: string;
@@ -30,7 +35,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
   const [weekDays, setWeekDays] = useState<DayActivity[]>([]);
   const [totalWeekMinutes, setTotalWeekMinutes] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [maxMinutes, setMaxMinutes] = useState(60); // Default max for scaling
+  const [maxMinutes, setMaxMinutes] = useState(30); // Default max for scaling
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -49,8 +54,8 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         .from('lesson_time_tracking')
         .select('tracked_date, duration_seconds')
         .eq('user_id', user.id)
-        .gte('tracked_date', weekStart.toISOString().split('T')[0])
-        .lte('tracked_date', weekEnd.toISOString().split('T')[0]);
+        .gte('tracked_date', toDayKey(weekStart))
+        .lte('tracked_date', toDayKey(weekEnd));
 
       // Create week days with activity data
       const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -61,7 +66,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       let maxDayMinutes = 30; // Lower minimum scale for better visibility
 
       const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
-        const dateStr = format(date, 'yyyy-MM-dd');
+        const dateStr = toDayKey(date);
         const dayTimeRecords = timeData?.filter(t => t.tracked_date === dateStr) || [];
         const totalSeconds = dayTimeRecords.reduce((sum, t) => sum + t.duration_seconds, 0);
         const totalMinutes = Math.floor(totalSeconds / 60);
@@ -79,7 +84,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
       setWeekDays(activityDays);
       setTotalWeekMinutes(weekTotal);
-      setMaxMinutes(Math.max(maxDayMinutes, 60)); // At least 60 min scale
+      setMaxMinutes(Math.max(maxDayMinutes, 30)); // At least 30 min scale
 
       // Calculate streak for profile update
       const { data: allTimeData } = await supabase
@@ -95,7 +100,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
       });
 
-      const todayStr = format(today, 'yyyy-MM-dd');
+      const todayStr = toDayKey(today);
       const todaySeconds = dailyTotals.get(todayStr) || 0;
       const hasActivityToday = todaySeconds > 0;
 
