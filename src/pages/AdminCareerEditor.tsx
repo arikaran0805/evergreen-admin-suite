@@ -992,19 +992,19 @@ const AdminCareerEditor = () => {
           </Tabs>
         </div>
 
-          {/* Right Sidebar - Course Library */}
-          <Card className={`flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 relative ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0'}`}>
-            {/* Sidebar Toggle Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={`absolute z-10 h-7 w-7 rounded-md border bg-background shadow-sm hover:bg-muted ${sidebarOpen ? 'top-2 right-2' : '-left-9 top-2'}`}
-            >
-              {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
+          {/* Sidebar Toggle Button - Outside Card so it's always visible */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex-shrink-0 h-8 w-8 rounded-md border bg-background shadow-sm hover:bg-muted"
+          >
+            {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
 
-            <div className="p-4 border-b flex-shrink-0">
+          {/* Right Sidebar - Course Library */}
+          <Card className={`flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+            <div className={`p-4 border-b flex-shrink-0 ${!sidebarOpen ? 'hidden' : ''}`}>
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="h-4 w-4 text-primary" />
                 <h3 className="font-semibold text-sm whitespace-nowrap">Course Library</h3>
