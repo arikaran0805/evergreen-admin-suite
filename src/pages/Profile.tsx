@@ -1791,7 +1791,7 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] relative -mx-4 px-4 py-6 rounded-2xl overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] relative -mx-4 px-4 rounded-2xl overflow-hidden">
           {/* Premium Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-cyan-50/60 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
