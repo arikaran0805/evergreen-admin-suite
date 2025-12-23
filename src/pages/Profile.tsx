@@ -838,7 +838,7 @@ const Profile = () => {
   const renderDashboard = () => (
     <div className="space-y-6 -mx-6 -mt-6 px-6 pt-6 pb-6 min-h-full rounded-xl bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/30">
       {/* Top Header Card - Welcome + Career + Streak + Stats */}
-      <Card className="bg-card border">
+      <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
             {/* Welcome Section */}
@@ -903,7 +903,7 @@ const Profile = () => {
         {/* Left Column - Career Readiness + Recommended Labs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Career Readiness */}
-          <Card className="bg-card border">
+          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -1091,7 +1091,7 @@ const Profile = () => {
           </Card>
 
           {/* Recommended Labs Section - Directly below Career Readiness */}
-          <Card className="bg-card border">
+          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1158,7 +1158,7 @@ const Profile = () => {
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
         <div className="space-y-6">
           {/* Weekly Activity - Compact Version */}
-          <Card className="bg-card border">
+          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
             <CardContent className="p-5">
               <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
               
@@ -1239,7 +1239,7 @@ const Profile = () => {
           </Card>
 
           {/* AI Mentor Card */}
-          <Card className="bg-card border">
+          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -1264,7 +1264,7 @@ const Profile = () => {
           </Card>
 
           {/* Recent Achievements */}
-          <Card className="bg-card border">
+          <Card className="bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
