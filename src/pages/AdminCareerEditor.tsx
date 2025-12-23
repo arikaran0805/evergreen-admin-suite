@@ -350,8 +350,8 @@ const AdminCareerEditor = () => {
           id: skill.id,
           name: skill.skill_name,
           weight: skill.weight || 25,
-          icon: "Code2",
-          color: skillColorOptions[index % skillColorOptions.length].name,
+          icon: skill.icon || "Code2",
+          color: skill.color || skillColorOptions[index % skillColorOptions.length].name,
           x: 100 + (index % 3) * 280,
           y: 100 + Math.floor(index / 3) * 180,
           courses: mappedCourses,
@@ -727,6 +727,8 @@ const AdminCareerEditor = () => {
             skill_name: skill.name,
             display_order: idx + 1,
             weight: skill.weight,
+            icon: skill.icon,
+            color: skill.color,
           }));
           await supabase.from("career_skills").insert(skillsToInsert);
         }
@@ -767,6 +769,8 @@ const AdminCareerEditor = () => {
             skill_name: skill.name,
             display_order: idx + 1,
             weight: skill.weight,
+            icon: skill.icon,
+            color: skill.color,
           }));
           await supabase.from("career_skills").insert(skillsToInsert);
         }

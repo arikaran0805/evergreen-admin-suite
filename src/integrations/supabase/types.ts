@@ -251,24 +251,30 @@ export type Database = {
       career_skills: {
         Row: {
           career_id: string
+          color: string | null
           created_at: string
           display_order: number
+          icon: string | null
           id: string
           skill_name: string
           weight: number
         }
         Insert: {
           career_id: string
+          color?: string | null
           created_at?: string
           display_order?: number
+          icon?: string | null
           id?: string
           skill_name: string
           weight?: number
         }
         Update: {
           career_id?: string
+          color?: string | null
           created_at?: string
           display_order?: number
+          icon?: string | null
           id?: string
           skill_name?: string
           weight?: number
