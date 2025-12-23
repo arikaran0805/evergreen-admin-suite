@@ -836,9 +836,7 @@ const Profile = () => {
   const readinessPercentage = calculateWeightedReadiness();
 
   const renderDashboard = () => (
-    <div className="space-y-6 relative">
-      {/* Premium Background */}
-      <div className="dashboard-bg fixed inset-0 -z-10" />
+    <div className="space-y-6 -mx-6 -mt-6 px-6 pt-6 pb-6 min-h-full rounded-xl bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/30">
       {/* Top Header Card - Welcome + Career + Streak + Stats */}
       <Card className="bg-card border">
         <CardContent className="p-6">
