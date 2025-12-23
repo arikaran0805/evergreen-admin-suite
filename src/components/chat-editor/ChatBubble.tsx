@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { GripVertical, Pencil, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
@@ -132,19 +132,7 @@ const ChatBubble = ({
             : "bg-muted text-foreground rounded-bl-md",
           isDragging && "ring-2 ring-primary/50"
         )}
-        onDoubleClick={() => onStartEdit(message.id)}
       >
-        {/* Drag handle */}
-        <div
-          {...dragHandleProps}
-          className={cn(
-            "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 cursor-grab",
-            "transition-opacity duration-200",
-            isMentor && "-right-6 -left-auto"
-          )}
-        >
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
-        </div>
 
         {/* Speaker name (subtle) */}
         <div
@@ -198,21 +186,7 @@ const ChatBubble = ({
             </div>
           </div>
         ) : (
-          <div className="relative">
-            <div className="text-sm leading-relaxed">{renderContent(message.content)}</div>
-            {/* Edit button on hover */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onStartEdit(message.id)}
-              className={cn(
-                "absolute -top-1 -right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                isMentor ? "text-blue-100 hover:bg-blue-500/30" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Pencil className="w-3 h-3" />
-            </Button>
-          </div>
+          <div className="text-sm leading-relaxed">{renderContent(message.content)}</div>
         )}
 
         {/* Timestamp (optional) */}
