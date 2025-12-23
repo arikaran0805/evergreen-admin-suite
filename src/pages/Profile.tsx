@@ -1790,17 +1790,17 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] dashboard-bg -mx-4 px-4 py-6 rounded-2xl">
+        <div className={`flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] -mx-4 px-4 py-6 rounded-2xl ${activeTab === 'dashboard' ? 'dashboard-bg' : 'bg-background'}`}>
           {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Card className="sticky top-28 sidebar-premium rounded-xl animate-sidebar">
+            <Card className={`sticky top-28 rounded-xl ${activeTab === 'dashboard' ? 'sidebar-premium animate-sidebar' : 'bg-card border'}`}>
               <CardContent className="p-2">
                 {/* Profile Summary */}
                 <div className="p-4 text-center border-b border-border/50 mb-2">
-                  <div className="avatar-premium mx-auto w-fit">
-                    <Avatar className="h-16 w-16 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                  <div className={activeTab === 'dashboard' ? 'avatar-premium mx-auto w-fit' : 'mx-auto w-fit'}>
+                    <Avatar className={`h-16 w-16 ${activeTab === 'dashboard' ? 'ring-2 ring-primary/20 ring-offset-2 ring-offset-background' : ''}`}>
                       <AvatarImage src={avatarUrl} alt={fullName} />
-                      <AvatarFallback className="text-xl bg-gradient-to-br from-primary to-accent text-primary-foreground font-semibold">
+                      <AvatarFallback className={`text-xl font-semibold ${activeTab === 'dashboard' ? 'bg-gradient-to-br from-primary to-accent text-primary-foreground' : 'bg-primary text-primary-foreground'}`}>
                         {fullName?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
@@ -1815,10 +1815,10 @@ const Profile = () => {
                     <button
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className={`nav-item-premium w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left ${
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
                         activeTab === item.id 
-                          ? 'active text-primary-foreground font-medium' 
-                          : 'hover:bg-muted/50 text-foreground'
+                          ? 'bg-primary text-primary-foreground font-medium' 
+                          : 'hover:bg-muted text-foreground'
                       }`}
                     >
                       <item.icon className={`h-5 w-5 ${activeTab === item.id ? 'drop-shadow-sm' : ''}`} />
