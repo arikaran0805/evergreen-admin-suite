@@ -138,12 +138,14 @@ export const ContinueLearningCard = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-foreground truncate">{course.courseName}</h4>
-                  {course.learningHours > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{course.learningHours}h</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      {course.learningHours > 0 
+                        ? `${course.learningHours}h` 
+                        : `${Math.max(1, Math.round((course.totalLessons * 15) / 60))}h`}
+                    </span>
+                  </div>
                   <Progress value={progressPercent} className="h-2 mt-2" />
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-xs text-muted-foreground">Total Progress</span>
