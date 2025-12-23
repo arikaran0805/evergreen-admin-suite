@@ -128,6 +128,7 @@ All colors MUST be HSL.
   .dashboard-bg {
     background: var(--gradient-dashboard);
     position: relative;
+    isolation: isolate; /* keep decorative overlays behind content */
   }
 
   .dashboard-bg::before {
@@ -136,6 +137,7 @@ All colors MUST be HSL.
     inset: 0;
     background: var(--gradient-mesh);
     pointer-events: none;
+    z-index: 0;
   }
 
   .dashboard-bg::after {
@@ -145,6 +147,12 @@ All colors MUST be HSL.
     background-image: radial-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px);
     background-size: 24px 24px;
     pointer-events: none;
+    z-index: 0;
+  }
+
+  .dashboard-bg > * {
+    position: relative;
+    z-index: 1;
   }
   
   /* Code block styling in prose content */
