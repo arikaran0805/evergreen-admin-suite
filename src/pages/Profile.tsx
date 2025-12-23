@@ -26,7 +26,7 @@ import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { z } from "zod";
-import * as Icons from "lucide-react";
+import { icons, RotateCcw, Code2 } from "lucide-react";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -54,6 +54,16 @@ import {
   Gamepad2,
   FlaskConical
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// Helper to get a dynamic icon from the icons object
+const getIcon = (iconName: string, fallback: LucideIcon): LucideIcon => {
+  const icon = icons[iconName as keyof typeof icons];
+  if (icon && typeof icon !== 'function' && 'displayName' in icon) {
+    return icon as LucideIcon;
+  }
+  return fallback;
+};
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
@@ -171,7 +181,7 @@ const OngoingCourseCard = ({
         disabled={isResetting}
         title="Reset Progress"
       >
-        <Icons.RotateCcw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
+        <RotateCcw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
       </Button>
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
@@ -183,11 +193,21 @@ const OngoingCourseCard = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <BookOpen className="h-8 w-8 text-primary" />
+              (() => {
+                const iconName = course?.icon || 'BookOpen';
+                const IconComponent = getIcon(iconName, BookOpen);
+                return <IconComponent className="h-8 w-8 text-primary" />;
+              })()
             )}
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-foreground truncate">{course?.name}</h4>
+            {course?.learning_hours > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                <Clock className="h-3 w-3" />
+                <span>{course.learning_hours}h</span>
+              </div>
+            )}
             <Progress value={progressPercent} className="h-2 mt-2" />
             <div className="flex items-center justify-between mt-1">
               <span className="text-xs text-muted-foreground">Total Progress</span>
@@ -231,8 +251,14 @@ const FeaturedCourseCard = ({
     fetchLessonCount();
   }, [course?.id]);
 
-  // Estimate hours (avg 15 min per lesson)
-  const estimatedHours = Math.max(1, Math.round((lessonCount * 15) / 60));
+  // Use course learning_hours if available, otherwise estimate (avg 15 min per lesson)
+  const displayHours = course.learning_hours > 0 
+    ? course.learning_hours 
+    : Math.max(1, Math.round((lessonCount * 15) / 60));
+
+  // Get the icon component
+  const iconName = course?.icon || 'BookOpen';
+  const IconComponent = getIcon(iconName, BookOpen);
 
   return (
     <Card 
@@ -249,12 +275,12 @@ const FeaturedCourseCard = ({
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              {estimatedHours}h
+              {displayHours}h
             </span>
           </div>
         </div>
         <div className="flex justify-end">
-          <BookOpen className="h-12 w-12 text-white/30" />
+          <IconComponent className="h-12 w-12 text-white/30" />
         </div>
       </CardContent>
     </Card>
@@ -931,9 +957,9 @@ const Profile = () => {
                     const skillProgress = skillValues[skill.skill_name] || 0;
                     
                     // Get icon from database
-                    const getSkillIcon = (iconName: string) => {
-                      const IconComponent = (Icons as any)[iconName];
-                      return IconComponent ? <IconComponent className="h-5 w-5" /> : <Icons.Code2 className="h-5 w-5" />;
+                    const renderSkillIcon = (iconName: string) => {
+                      const IconComp = getIcon(iconName, Code2);
+                      return <IconComp className="h-5 w-5" />;
                     };
                     
                     return (
@@ -945,7 +971,7 @@ const Profile = () => {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">
                             <div className="text-primary">
-                              {getSkillIcon(skill.icon)}
+                              {renderSkillIcon(skill.icon)}
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{skill.skill_name}</span>
@@ -1275,7 +1301,7 @@ const Profile = () => {
               <div className="space-y-3">
                 {achievements.length > 0 ? (
                   achievements.slice(0, 3).map((achievement) => {
-                    const IconComponent = (Icons as any)[achievement.icon] || Award;
+                    const IconComponent = getIcon(achievement.icon || 'Award', Award);
                     const colorMap: Record<string, string> = {
                       amber: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
                       green: 'bg-green-500/10 border-green-500/20 text-green-500',
