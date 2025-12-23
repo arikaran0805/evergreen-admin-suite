@@ -276,6 +276,7 @@ const Profile = () => {
   const [streakFreezesAvailable, setStreakFreezesAvailable] = useState(2);
   const [isFreezingStreak, setIsFreezingStreak] = useState(false);
   const [weeklyActivityData, setWeeklyActivityData] = useState<{ totalSeconds: number; activeDays: number; dailySeconds: Record<string, number> }>({ totalSeconds: 0, activeDays: 0, dailySeconds: {} });
+  const [achievements, setAchievements] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -549,6 +550,18 @@ const Profile = () => {
           .map(course => course.slug);
 
         setCompletedCourseSlugs(completed);
+      }
+
+      // Fetch achievements from database
+      const { data: userAchievements } = await supabase
+        .from("achievements")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("earned_at", { ascending: false })
+        .limit(5);
+
+      if (userAchievements) {
+        setAchievements(userAchievements);
       }
     } catch (error: any) {
       toast({
@@ -833,42 +846,37 @@ const Profile = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Welcome back!</p>
                 <h2 className="text-2xl font-bold text-foreground">{fullName || 'Learner'}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-sm text-muted-foreground">
-                    Aspiring {career?.name || 'Data Analyst'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Streak Badge */}
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/50 border">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                <Flame className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Streak</p>
-                <p className="text-lg font-bold">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Aspiring {career?.name || 'Data Analyst'}
+                </p>
               </div>
             </div>
 
             {/* Divider */}
             <Separator orientation="vertical" className="h-16 hidden lg:block" />
 
-            {/* Quick Stats */}
+            {/* Streak Badge with Animation */}
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
-                  <Flame className="h-5 w-5 text-rose-500" />
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center animate-pulse">
+                    <Flame className="h-6 w-6 text-white drop-shadow-lg" />
+                  </div>
+                  {currentStreak > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-lg">
+                      🔥
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Streak</p>
-                  <p className="text-lg font-bold">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
+                  <p className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                    {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
+                  </p>
                 </div>
               </div>
 
-              <div className="text-center">
+              <div className="text-center px-3 py-2 rounded-lg bg-muted/50">
                 <p className="text-lg font-bold text-amber-500">{maxStreak}</p>
                 <p className="text-xs text-muted-foreground">max streak</p>
               </div>
@@ -1081,8 +1089,7 @@ const Profile = () => {
             <CardContent className="p-5">
               <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
               
-              {/* Mini Bar Chart */}
-              <div className="flex items-end justify-between gap-1.5 h-20 mb-4">
+              <div className="flex items-end justify-between gap-1.5 h-24 mb-4">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => {
                   const today = new Date();
                   const weekStart = new Date(today);
@@ -1096,26 +1103,35 @@ const Profile = () => {
                   const isToday = index === today.getDay();
                   const hasActivity = daySeconds > 0;
 
-                  const maxSeconds = Math.max(
-                    ...Object.values(weeklyActivityData.dailySeconds),
-                    60 * 5 // minimum scale: 5 minutes
-                  );
+                  // Safely calculate max with fallback
+                  const allValues = Object.values(weeklyActivityData.dailySeconds);
+                  const maxSeconds = allValues.length > 0 
+                    ? Math.max(...allValues, 60 * 5)
+                    : 60 * 5;
 
                   const heightPercent = maxSeconds > 0 ? (daySeconds / maxSeconds) * 100 : 0;
 
                   return (
-                    <div key={dayLabel + index} className="flex-1 flex flex-col items-center gap-1">
-                      <div
-                        className={`w-full rounded-t transition-all ${
-                          isToday
-                            ? 'bg-primary'
-                            : hasActivity
-                              ? 'bg-primary/60'
-                              : 'bg-muted'
-                        }`}
-                        style={{ height: hasActivity ? `${Math.max(heightPercent, 12)}%` : '10%' }}
-                      />
-                      <span className={`text-[10px] ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                    <div key={dayLabel + index} className="flex-1 flex flex-col items-center gap-1.5">
+                      <div 
+                        className="w-full flex items-end justify-center"
+                        style={{ height: '60px' }}
+                      >
+                        <div
+                          className={`w-full max-w-6 rounded-lg transition-all duration-300 ${
+                            isToday
+                              ? 'bg-primary shadow-lg shadow-primary/30'
+                              : hasActivity
+                                ? 'bg-primary/60'
+                                : 'bg-muted/50'
+                          }`}
+                          style={{ 
+                            height: hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
+                            minHeight: hasActivity ? '8px' : '6px'
+                          }}
+                        />
+                      </div>
+                      <span className={`text-[10px] font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
                         {dayLabel}
                       </span>
                     </div>
@@ -1173,44 +1189,76 @@ const Profile = () => {
               </div>
               
               <div className="space-y-3">
-                {currentStreak >= 7 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                      <Flame className="h-4 w-4 text-amber-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Week Warrior</p>
-                      <p className="text-xs text-muted-foreground">7-day learning streak</p>
-                    </div>
-                  </div>
-                )}
-                {completedInCareer > 0 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <BookOpen className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Course Completed</p>
-                      <p className="text-xs text-muted-foreground">{completedInCareer} course{completedInCareer !== 1 ? 's' : ''} finished</p>
-                    </div>
-                  </div>
-                )}
-                {readinessPercentage >= 25 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <Target className="h-4 w-4 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Making Progress</p>
-                      <p className="text-xs text-muted-foreground">{readinessPercentage}% career ready</p>
-                    </div>
-                  </div>
-                )}
-                {currentStreak === 0 && completedInCareer === 0 && readinessPercentage < 25 && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <Award className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Start learning to earn achievements!</p>
-                  </div>
+                {achievements.length > 0 ? (
+                  achievements.slice(0, 3).map((achievement) => {
+                    const IconComponent = (Icons as any)[achievement.icon] || Award;
+                    const colorMap: Record<string, string> = {
+                      amber: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
+                      green: 'bg-green-500/10 border-green-500/20 text-green-500',
+                      blue: 'bg-blue-500/10 border-blue-500/20 text-blue-500',
+                      purple: 'bg-purple-500/10 border-purple-500/20 text-purple-500',
+                      primary: 'bg-primary/10 border-primary/20 text-primary',
+                    };
+                    const colors = colorMap[achievement.color] || colorMap.amber;
+                    const [bgColor, borderColor, textColor] = colors.split(' ');
+                    
+                    return (
+                      <div 
+                        key={achievement.id} 
+                        className={`flex items-center gap-3 p-3 rounded-lg ${bgColor} border ${borderColor}`}
+                      >
+                        <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center`}>
+                          <IconComponent className={`h-4 w-4 ${textColor}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{achievement.achievement_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <>
+                    {currentStreak >= 7 && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <Flame className="h-4 w-4 text-amber-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Week Warrior</p>
+                          <p className="text-xs text-muted-foreground">7-day learning streak</p>
+                        </div>
+                      </div>
+                    )}
+                    {completedInCareer > 0 && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Course Completed</p>
+                          <p className="text-xs text-muted-foreground">{completedInCareer} course{completedInCareer !== 1 ? 's' : ''} finished</p>
+                        </div>
+                      </div>
+                    )}
+                    {readinessPercentage >= 25 && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Target className="h-4 w-4 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Making Progress</p>
+                          <p className="text-xs text-muted-foreground">{readinessPercentage}% career ready</p>
+                        </div>
+                      </div>
+                    )}
+                    {currentStreak < 7 && completedInCareer === 0 && readinessPercentage < 25 && (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <Award className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">Start learning to earn achievements!</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </CardContent>
@@ -1219,7 +1267,7 @@ const Profile = () => {
       </div>
 
       {/* Recommended Labs Section */}
-      <Card className="bg-card border">
+      <Card className="bg-card border mt-6">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
