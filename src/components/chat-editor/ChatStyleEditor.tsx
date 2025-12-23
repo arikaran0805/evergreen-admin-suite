@@ -25,7 +25,7 @@ const parseContent = (content: string): ChatMessage[] => {
   const messages: ChatMessage[] = [];
   let currentMessage: ChatMessage | null = null;
 
-  const speakerTokenRe = /([^:\n]{1,60}):\s*/g;
+  const speakerTokenRe = /([^:\r\n]{1,60}):\s*/g;
 
   for (const rawLine of lines) {
     const line = rawLine;
