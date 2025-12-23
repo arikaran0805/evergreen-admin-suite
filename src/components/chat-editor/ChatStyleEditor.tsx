@@ -20,23 +20,6 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 const CODE_LANGUAGES = [
   { value: "python", label: "Python" },
@@ -90,7 +73,7 @@ interface Course {
   icon: string | null;
 }
 
-interface SortableMessageItemProps {
+interface MessageItemProps {
   message: ChatMessage;
   character: CourseCharacter;
   isMentor: boolean;
@@ -102,7 +85,7 @@ interface SortableMessageItemProps {
   isEditMode: boolean;
 }
 
-const SortableMessageItem = ({
+const MessageItem = ({
   message,
   character,
   isMentor,
@@ -112,24 +95,9 @@ const SortableMessageItem = ({
   onEndEdit,
   onDelete,
   isEditMode,
-}: SortableMessageItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: message.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
+}: MessageItemProps) => {
   return (
-    <div ref={setNodeRef} style={style} className="group relative">
+    <div className="group relative">
       {isEditMode && (
         <div
           className={cn(
@@ -137,15 +105,6 @@ const SortableMessageItem = ({
             isMentor ? "left-2" : "right-2"
           )}
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 cursor-grab active:cursor-grabbing"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="w-3 h-3" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -349,28 +308,6 @@ const ChatStyleEditor = ({
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (over && active.id !== over.id) {
-      setMessages((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
 
   const getCharacterForSpeaker = useCallback((speaker: string): CourseCharacter => {
     if (speaker.toLowerCase() === mentorName.toLowerCase()) {
@@ -454,33 +391,22 @@ const ChatStyleEditor = ({
             </p>
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={messages.map((m) => m.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-1">
-                {messages.map((message) => (
-                  <SortableMessageItem
-                    key={message.id}
-                    message={message}
-                    character={getCharacterForSpeaker(message.speaker)}
-                    isMentor={isMentor(message.speaker)}
-                    isEditing={editingId === message.id}
-                    onEdit={handleEditMessage}
-                    onStartEdit={setEditingId}
-                    onEndEdit={() => setEditingId(null)}
-                    onDelete={handleDeleteMessage}
-                    isEditMode={mode === "edit"}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          <div className="space-y-1">
+            {messages.map((message) => (
+              <MessageItem
+                key={message.id}
+                message={message}
+                character={getCharacterForSpeaker(message.speaker)}
+                isMentor={isMentor(message.speaker)}
+                isEditing={editingId === message.id}
+                onEdit={handleEditMessage}
+                onStartEdit={setEditingId}
+                onEndEdit={() => setEditingId(null)}
+                onDelete={handleDeleteMessage}
+                isEditMode={mode === "edit"}
+              />
+            ))}
+          </div>
         )}
       </div>
 
