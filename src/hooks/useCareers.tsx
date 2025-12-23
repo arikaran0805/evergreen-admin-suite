@@ -38,10 +38,19 @@ export interface CareerCourse {
   };
 }
 
+interface Course {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  featured_image?: string | null;
+}
+
 export const useCareers = () => {
   const [careers, setCareers] = useState<Career[]>([]);
   const [careerSkills, setCareerSkills] = useState<Record<string, CareerSkill[]>>({});
   const [careerCourses, setCareerCourses] = useState<Record<string, CareerCourse[]>>({});
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,14 +59,19 @@ export const useCareers = () => {
 
   const fetchCareers = async () => {
     try {
-      const [careersRes, skillsRes, coursesRes] = await Promise.all([
+      const [careersRes, skillsRes, coursesRes, allCoursesRes] = await Promise.all([
         supabase.from("careers").select("*").order("display_order"),
         supabase.from("career_skills").select("*").order("display_order"),
         supabase.from("career_courses").select("*, course:course_id(id, name, slug)"),
+        supabase.from("courses").select("id, name, slug, description, featured_image"),
       ]);
 
       if (careersRes.data) {
         setCareers(careersRes.data);
+      }
+
+      if (allCoursesRes.data) {
+        setAllCourses(allCoursesRes.data);
       }
 
       if (skillsRes.data) {
@@ -151,6 +165,7 @@ export const useCareers = () => {
     careers,
     careerSkills,
     careerCourses,
+    allCourses,
     loading,
     getCareerBySlug,
     getCareerById,
