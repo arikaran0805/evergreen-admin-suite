@@ -120,6 +120,24 @@ export const useCourseStats = (courseId: string | undefined, user: User | null) 
 
       if (error) throw error;
 
+      // Create enrollment achievement
+      const { data: course } = await supabase
+        .from("courses")
+        .select("name")
+        .eq("id", courseId)
+        .single();
+
+      await supabase
+        .from("achievements")
+        .insert({
+          user_id: user.id,
+          achievement_type: "enrollment",
+          achievement_name: "Course Enrolled",
+          description: `Enrolled in ${course?.name || 'a course'}`,
+          icon: "BookOpen",
+          color: "blue",
+        });
+
       setStats(prev => ({
         ...prev,
         isEnrolled: true,
