@@ -231,6 +231,9 @@ const AdminCareerEditor = () => {
   const [contributionValue, setContributionValue] = useState(50);
   const [sharedContribution, setSharedContribution] = useState(50);
   const [useSharedContribution, setUseSharedContribution] = useState(true);
+  
+  // Track if user has attempted to save (for validation display)
+  const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
   // DnD sensors for skill reordering
   const sensors = useSensors(
@@ -673,6 +676,9 @@ const AdminCareerEditor = () => {
 
   // Save
   const handleSubmit = async () => {
+    // Mark that user has attempted to save
+    setHasAttemptedSave(true);
+    
     try {
       const errors = getValidationErrors();
       
@@ -850,7 +856,7 @@ const AdminCareerEditor = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            {!isValid() && (
+            {hasAttemptedSave && !isValid() && (
               <Badge variant="destructive" className="text-xs">
                 <Icons.AlertTriangle className="h-3 w-3 mr-1" />
                 {getValidationErrors().length} issue(s)
@@ -863,7 +869,7 @@ const AdminCareerEditor = () => {
               className="w-[136px]" 
               onClick={handleSubmit} 
               disabled={loading}
-              variant={isValid() ? "default" : "outline"}
+              variant={(hasAttemptedSave && !isValid()) ? "outline" : "default"}
             >
               <Save className="h-4 w-4 mr-2" />
               {id ? "Update" : "Create"}
