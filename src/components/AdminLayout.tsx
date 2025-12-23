@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AdminLayoutProps {
   children: ReactNode;
+  defaultSidebarCollapsed?: boolean;
 }
 
 const adminMenuItems = [
@@ -33,8 +34,8 @@ const adminMenuItems = [
   { icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" },
 ];
 
-const AdminLayout = ({ children }: AdminLayoutProps) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
+  const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
