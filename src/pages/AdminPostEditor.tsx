@@ -15,6 +15,7 @@ import { ArrowLeft, Save, X, FileText, MessageCircle } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isChatTranscript } from "@/lib/chatContent";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -191,6 +192,11 @@ const AdminPostEditor = () => {
           lesson_order: data.lesson_order || 0,
           parent_id: data.parent_id || "none",
         });
+        
+        // Auto-switch to chat editor if content is a chat transcript
+        if (data.content && isChatTranscript(data.content)) {
+          setEditorType("chat");
+        }
       }
     } catch (error: any) {
       toast({
