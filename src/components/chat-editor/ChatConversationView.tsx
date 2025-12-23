@@ -1,12 +1,20 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { COURSE_CHARACTERS, MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
+import { MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatConversationViewProps {
   content: string;
   courseType?: string;
   className?: string;
+}
+
+interface Course {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
 }
 
 const parseConversation = (content: string): ChatMessage[] => {
@@ -25,20 +33,64 @@ const ChatConversationView = ({
   courseType = "python",
   className,
 }: ChatConversationViewProps) => {
+  const [courses, setCourses] = useState<Course[]>([]);
   const messages = useMemo(() => parseConversation(content), [content]);
   const explanation = useMemo(() => extractExplanation(content), [content]);
-  const courseCharacter = COURSE_CHARACTERS[courseType] || COURSE_CHARACTERS.python;
 
-  const getCharacterForSpeaker = (speaker: string): CourseCharacter => {
+  // Fetch courses from database
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id, name, slug, icon")
+        .order("name");
+      
+      if (!error && data) {
+        setCourses(data);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Get course character from fetched courses
+  const getCourseCharacter = useCallback((courseSlug: string): CourseCharacter => {
+    const course = courses.find(c => c.slug === courseSlug);
+    if (course) {
+      return {
+        name: course.name,
+        emoji: course.icon || "📚",
+        color: "hsl(var(--foreground))",
+        bgColor: "hsl(var(--muted))",
+      };
+    }
+    return {
+      name: "Course",
+      emoji: "📚",
+      color: "hsl(var(--foreground))",
+      bgColor: "hsl(var(--muted))",
+    };
+  }, [courses]);
+
+  const courseCharacter = getCourseCharacter(courseType);
+
+  const getCharacterForSpeaker = useCallback((speaker: string): CourseCharacter => {
     if (speaker.toLowerCase() === "karan") {
       return MENTOR_CHARACTER;
     }
-    return (
-      Object.values(COURSE_CHARACTERS).find(
-        (c) => c.name.toLowerCase() === speaker.toLowerCase()
-      ) || courseCharacter
+    // Find matching course by name
+    const matchingCourse = courses.find(
+      (c) => c.name.toLowerCase() === speaker.toLowerCase()
     );
-  };
+    if (matchingCourse) {
+      return {
+        name: matchingCourse.name,
+        emoji: matchingCourse.icon || "📚",
+        color: "hsl(var(--foreground))",
+        bgColor: "hsl(var(--muted))",
+      };
+    }
+    return courseCharacter;
+  }, [courses, courseCharacter]);
 
   const isMentor = (speaker: string) => speaker.toLowerCase() === "karan";
 
