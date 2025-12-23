@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Menu, User, LogOut, Shield, UserCircle } from "lucide-react";
+import { Search, Menu, User, LogOut, Shield, UserCircle, LayoutDashboard, BookOpen, Bookmark, Gamepad2, FlaskConical, Library, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -207,7 +207,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                         <UserCircle className="h-[22px] w-[22px] text-foreground/80" strokeWidth={1.5} />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className="w-56 bg-popover border border-border shadow-lg z-50">
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm font-medium">My Account</p>
@@ -219,7 +219,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                         <>
                           <DropdownMenuItem asChild>
                             <Link to="/admin" className="cursor-pointer">
-                              <User className="mr-2 h-4 w-4" />
+                              <Shield className="mr-2 h-4 w-4" />
                               Admin Dashboard
                             </Link>
                           </DropdownMenuItem>
@@ -228,8 +228,46 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                       )}
                       <DropdownMenuItem asChild>
                         <Link to="/profile" className="cursor-pointer">
-                          <User className="mr-2 h-4 w-4" />
-                          Profile
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile?tab=learnings" className="cursor-pointer">
+                          <BookOpen className="mr-2 h-4 w-4" />
+                          My Learnings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile?tab=bookmarks" className="cursor-pointer">
+                          <Bookmark className="mr-2 h-4 w-4" />
+                          Bookmarks
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/arcade" className="cursor-pointer">
+                          <Gamepad2 className="mr-2 h-4 w-4" />
+                          Arcade
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/practice-lab" className="cursor-pointer">
+                          <FlaskConical className="mr-2 h-4 w-4" />
+                          Practice Lab
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/library" className="cursor-pointer">
+                          <Library className="mr-2 h-4 w-4" />
+                          Library
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile?tab=settings" className="cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
