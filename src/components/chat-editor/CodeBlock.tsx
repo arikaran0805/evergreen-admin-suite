@@ -90,10 +90,10 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false }: CodeBlockPro
   };
 
   return (
-    <div className="relative group mt-3">
+    <div className="relative group mt-3 w-full min-w-[300px] max-w-[600px]">
       <pre
         className={cn(
-          "p-4 rounded-xl text-xs font-mono overflow-x-auto",
+          "p-4 rounded-xl text-xs font-mono overflow-x-auto w-full",
           "border shadow-inner",
           isMentorBubble
             ? "bg-blue-600/20 border-blue-400/30"
