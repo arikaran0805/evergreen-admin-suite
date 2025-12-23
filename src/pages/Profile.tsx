@@ -1419,7 +1419,7 @@ const Profile = () => {
     ];
 
     return (
-      <div className={`space-y-8 ${activeTab === 'learnings' ? 'dashboard-bg -mx-4 px-4 py-6 rounded-2xl' : ''}`}>
+      <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between animate-fade-in">
           <h2 className="text-2xl font-bold">Study Plan</h2>
@@ -1842,22 +1842,22 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className={`flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] -mx-4 px-4 py-6 rounded-2xl ${activeTab === 'dashboard' ? 'dashboard-bg' : 'bg-background'}`}>
+        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] -mx-4 px-4 py-6 rounded-2xl dashboard-bg">
           {/* Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <Card className={`sticky top-28 rounded-xl ${activeTab === 'dashboard' ? 'sidebar-premium animate-sidebar' : 'bg-card border'}`}>
-              <CardContent className="p-2">
+          <aside className="lg:w-64 flex-shrink-0 animate-sidebar">
+            <Card className="sticky top-28 rounded-xl bg-card/80 backdrop-blur-sm border shadow-lg">
+              <CardContent className="p-4">
                 {/* Profile Summary */}
-                <div className="p-4 text-center border-b border-border/50 mb-2">
-                  <div className={activeTab === 'dashboard' ? 'avatar-premium mx-auto w-fit' : 'mx-auto w-fit'}>
-                    <Avatar className={`h-16 w-16 ${activeTab === 'dashboard' ? 'ring-2 ring-primary/20 ring-offset-2 ring-offset-background' : ''}`}>
+                <div className="text-center pb-4 mb-4 border-b border-border/50">
+                  <div className="mx-auto w-fit">
+                    <Avatar className="h-20 w-20 ring-4 ring-primary/20 ring-offset-2 ring-offset-background shadow-lg">
                       <AvatarImage src={avatarUrl} alt={fullName} />
-                      <AvatarFallback className={`text-xl font-semibold ${activeTab === 'dashboard' ? 'bg-gradient-to-br from-primary to-accent text-primary-foreground' : 'bg-primary text-primary-foreground'}`}>
+                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
                         {fullName?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  <h3 className="font-semibold truncate mt-3 text-foreground">{fullName || 'User'}</h3>
+                  <h3 className="font-semibold text-lg truncate mt-3 text-foreground">{fullName || 'User'}</h3>
                   <p className="text-sm text-muted-foreground truncate">{email}</p>
                 </div>
                 
@@ -1867,14 +1867,14 @@ const Profile = () => {
                     <button
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-all duration-200 ${
                         activeTab === item.id 
-                          ? 'bg-primary text-primary-foreground font-medium' 
-                          : 'hover:bg-muted text-foreground'
+                          ? 'bg-primary text-primary-foreground font-medium shadow-md' 
+                          : 'hover:bg-muted/70 text-foreground hover:translate-x-1'
                       }`}
                     >
-                      <item.icon className={`h-5 w-5 ${activeTab === item.id ? 'drop-shadow-sm' : ''}`} />
-                      <span className="font-medium">{item.label}</span>
+                      <item.icon className={`h-5 w-5 ${activeTab === item.id ? '' : 'text-muted-foreground'}`} />
+                      <span>{item.label}</span>
                     </button>
                   ))}
                 </nav>
