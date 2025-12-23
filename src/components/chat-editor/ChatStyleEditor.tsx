@@ -7,27 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText, icons } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
-// Helper to render icon - handles both emoji and Lucide icon names
-const renderCourseIcon = (icon: string | null, size: number = 16) => {
-  if (!icon) return "📚";
-  
-  // Check if it's an emoji (starts with an emoji character)
-  const emojiRegex = /^[\p{Emoji}]/u;
-  if (emojiRegex.test(icon)) {
-    return icon;
-  }
-  
-  // Try to render as Lucide icon
-  const LucideIcon = icons[icon as keyof typeof icons];
-  if (LucideIcon) {
-    return <LucideIcon size={size} />;
-  }
-  
-  return "📚";
-};
+import { renderCourseIcon } from "./utils";
 
 interface ChatStyleEditorProps {
   value: string;
