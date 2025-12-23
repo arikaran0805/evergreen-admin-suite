@@ -200,31 +200,6 @@ const Arcade = () => {
           </Button>
         </div>
 
-        {/* Overall Progress */}
-        <Card className="mb-8 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
-              <div className="flex-1">
-                <h2 className="text-xl font-bold mb-2">
-                  {career?.name || "Career"} Readiness
-                </h2>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Complete courses to improve your career readiness score
-                </p>
-                <Progress value={readinessPercent} className="h-3" />
-                <p className="text-sm text-muted-foreground mt-2">
-                  {readinessPercent}% ready • {journeySteps.filter(s => s?.isCompleted).length} of {journeySteps.length} courses completed
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
-                  <span className="text-3xl font-bold text-primary">{readinessPercent}%</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Career Roadmap Chart - X/Y Axis visualization */}
         {journeySteps.length > 0 ? (
           <CareerRoadmapChart
