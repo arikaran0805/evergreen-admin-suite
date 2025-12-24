@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,10 +19,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Save, X, BookOpen, Sparkles, MousePointerClick,
   GripVertical, Trash2, Settings, Palette, ChevronRight, ChevronLeft, Search,
-  Target, TrendingUp, Zap, Move
+  Target, TrendingUp, Zap, Move, Send
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
+import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import {
   ChartConfig,
   ChartContainer,
@@ -188,6 +190,7 @@ const AdminCareerEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
   const canvasRef = useRef<HTMLDivElement>(null);
   
   // Core state
@@ -203,6 +206,8 @@ const AdminCareerEditor = () => {
   const [careerIcon, setCareerIcon] = useState("Briefcase");
   const [careerColor, setCareerColor] = useState(careerColorOptions[0].value);
   const [displayOrder, setDisplayOrder] = useState(0);
+  const [careerStatus, setCareerStatus] = useState("draft");
+  const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
   
   // Canvas state
   const [skillNodes, setSkillNodes] = useState<SkillNode[]>([]);
@@ -261,34 +266,27 @@ const AdminCareerEditor = () => {
 
   // Initialize
   useEffect(() => {
-    checkAdminAccess();
-    fetchCourses();
-    if (id) {
-      fetchCareer(id);
-    } else {
-      fetchCareersCount();
+    if (!roleLoading) {
+      checkAccess();
     }
-  }, [id]);
+  }, [roleLoading]);
 
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
+  useEffect(() => {
+    if (isAdmin || isModerator) {
+      fetchCourses();
+      if (id) {
+        fetchCareer(id);
+      } else {
+        fetchCareersCount();
       }
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!roleData) {
-        toast({ title: "Access Denied", variant: "destructive" });
-        navigate("/");
-      }
-    } catch (error) {
+    }
+  }, [id, isAdmin, isModerator]);
+
+  const checkAccess = async () => {
+    if (!isAdmin && !isModerator) {
+      toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
+      return;
     }
   };
 
@@ -328,12 +326,26 @@ const AdminCareerEditor = () => {
       if (careerRes.error) throw careerRes.error;
 
       const career = careerRes.data;
+
+      // Check if moderator is trying to edit someone else's career
+      if (isModerator && !isAdmin && career.author_id && career.author_id !== userId) {
+        toast({
+          title: "Access Denied",
+          description: "You can only edit your own careers",
+          variant: "destructive",
+        });
+        navigate("/admin/careers");
+        return;
+      }
+
+      setOriginalAuthorId(career.author_id);
       setCareerName(career.name);
       setCareerSlug(career.slug);
       setCareerDescription(career.description || "");
       setCareerIcon(career.icon);
       setCareerColor(career.color);
       setDisplayOrder(career.display_order);
+      setCareerStatus(career.status || "draft");
 
       // Convert skills to nodes with positions
       const nodes: SkillNode[] = (skillsRes.data || []).map((skill, index) => {
