@@ -1775,13 +1775,13 @@ const Profile = () => {
                 {emailVerified === null ? (
                   <span className="text-xs text-muted-foreground">Checking verification status...</span>
                 ) : emailVerified ? (
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-1.5 text-xs text-primary">
                     <CheckCircle2 className="h-4 w-4" />
                     <span>Email verified</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                    <div className="flex items-center gap-1.5 text-xs text-accent">
                       <AlertCircle className="h-4 w-4" />
                       <span>Email not verified</span>
                     </div>

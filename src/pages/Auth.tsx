@@ -18,7 +18,11 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(() => {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const searchParams = new URLSearchParams(window.location.search);
+    return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery";
+  });
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -27,29 +31,36 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // Don't auto-redirect if we're in password recovery mode
-      if (session && !passwordRecoveryMode) {
-        checkAdminAndRedirect(session.user.id);
-      }
-    });
+    const isRecoveryLink = () => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const searchParams = new URLSearchParams(window.location.search);
+      return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery";
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // User clicked password reset link - show password update form
+      const recovery = event === "PASSWORD_RECOVERY" || isRecoveryLink();
+
+      if (recovery) {
         setPasswordRecoveryMode(true);
         return;
       }
-      
-      if (session && event === "SIGNED_IN" && !passwordRecoveryMode) {
+
+      if (session && event === "SIGNED_IN") {
         setTimeout(() => {
           checkAdminAndRedirect(session.user.id);
         }, 0);
       }
     });
 
+    // Listener is set up; now check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !isRecoveryLink()) {
+        checkAdminAndRedirect(session.user.id);
+      }
+    });
+
     return () => subscription.unsubscribe();
-  }, [navigate, passwordRecoveryMode]);
+  }, [navigate]);
 
   const checkAdminAndRedirect = async (userId: string) => {
     try {
