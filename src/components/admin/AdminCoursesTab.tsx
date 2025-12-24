@@ -378,7 +378,7 @@ const AdminCoursesTab = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => window.open(`/courses/${category.slug}`, "_blank")}
+                              onClick={() => window.open(`/course/${category.slug}?preview=true`, "_blank")}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>

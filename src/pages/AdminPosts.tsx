@@ -404,7 +404,7 @@ const AdminPosts = () => {
                           className="h-8 w-8"
                           onClick={() => {
                             if (post.courses?.slug) {
-                              window.open(`/course/${post.courses.slug}?lesson=${post.slug}`, "_blank");
+                              window.open(`/course/${post.courses.slug}?lesson=${post.slug}&preview=true`, "_blank");
                             } else {
                               toast({
                                 title: "No Course",
