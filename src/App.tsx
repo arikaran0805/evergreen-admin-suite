@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { ThemeProvider } from "next-themes";
@@ -47,7 +47,19 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   usePageTracking();
   const location = useLocation();
+  const navigate = useNavigate();
   const prevLocationRef = useRef(location.pathname);
+
+  // If user opens an email recovery link that lands on / (or any page), move them to /auth
+  useEffect(() => {
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const searchParams = new URLSearchParams(location.search);
+    const type = hashParams.get("type") ?? searchParams.get("type");
+
+    if (type === "recovery" && location.pathname !== "/auth") {
+      navigate("/auth", { replace: true });
+    }
+  }, [location.hash, location.search, location.pathname, navigate]);
   
   // Prevent scroll to top when navigating between admin pages
   useEffect(() => {
