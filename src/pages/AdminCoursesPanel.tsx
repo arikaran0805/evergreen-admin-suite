@@ -65,18 +65,18 @@ const AdminCoursesPanel = () => {
         <h1 className="text-3xl font-bold text-foreground">Courses Panel</h1>
 
         <Tabs value={currentTab} onValueChange={handleTabChange}>
-          <TabsList className={`grid w-full max-w-xs ${isAdmin ? "grid-cols-2" : "grid-cols-1"}`}>
-            <TabsTrigger value="courses" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Courses
-            </TabsTrigger>
-            {isAdmin && (
+          {isAdmin && (
+            <TabsList className="grid w-full max-w-xs grid-cols-2">
+              <TabsTrigger value="courses" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Courses
+              </TabsTrigger>
               <TabsTrigger value="difficulty" className="flex items-center gap-2">
                 <Layers className="h-4 w-4" />
                 Difficulty
               </TabsTrigger>
-            )}
-          </TabsList>
+            </TabsList>
+          )}
 
           <TabsContent value="courses" className="mt-6">
             <AdminCoursesTab />
