@@ -94,7 +94,7 @@ const AdminPostEditor = () => {
 
   // Version and annotation hooks
   const { versions, loading: versionsLoading, saveVersion, publishVersion, restoreVersion } = usePostVersions(id);
-  const { annotations, loading: annotationsLoading, createAnnotation, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
+  const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin && !isModerator) {
@@ -556,6 +556,8 @@ const AdminPostEditor = () => {
                   onAddAnnotation={handleAddAnnotation}
                   onUpdateStatus={updateAnnotationStatus}
                   onDelete={deleteAnnotation}
+                  onAddReply={createReply}
+                  onDeleteReply={deleteReply}
                   selectedText={selectedText}
                   onClearSelection={() => setSelectedText(null)}
                 />

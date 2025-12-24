@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { PostAnnotation } from "@/hooks/usePostAnnotations";
+import { PostAnnotation, AnnotationReply } from "@/hooks/usePostAnnotations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,11 +14,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { MessageSquare, CheckCircle, XCircle, Trash2, Plus } from "lucide-react";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { MessageSquare, CheckCircle, XCircle, Trash2, Plus, Reply, ChevronDown, ChevronRight } from "lucide-react";
 
 interface AnnotationPanelProps {
   annotations: PostAnnotation[];
@@ -32,6 +32,8 @@ interface AnnotationPanelProps {
   ) => void;
   onUpdateStatus: (annotationId: string, status: "open" | "resolved" | "dismissed") => void;
   onDelete: (annotationId: string) => void;
+  onAddReply: (annotationId: string, content: string) => void;
+  onDeleteReply: (replyId: string) => void;
   selectedText?: { start: number; end: number; text: string } | null;
   onClearSelection?: () => void;
 }
@@ -43,6 +45,8 @@ const AnnotationPanel = ({
   onAddAnnotation,
   onUpdateStatus,
   onDelete,
+  onAddReply,
+  onDeleteReply,
   selectedText,
   onClearSelection,
 }: AnnotationPanelProps) => {
@@ -162,6 +166,8 @@ const AnnotationPanel = ({
                         isAdmin={isAdmin}
                         onUpdateStatus={onUpdateStatus}
                         onDelete={onDelete}
+                        onAddReply={onAddReply}
+                        onDeleteReply={onDeleteReply}
                         getStatusColor={getStatusColor}
                       />
                     ))}
@@ -183,6 +189,8 @@ const AnnotationPanel = ({
                         isAdmin={isAdmin}
                         onUpdateStatus={onUpdateStatus}
                         onDelete={onDelete}
+                        onAddReply={onAddReply}
+                        onDeleteReply={onDeleteReply}
                         getStatusColor={getStatusColor}
                       />
                     ))}
@@ -202,6 +210,8 @@ interface AnnotationCardProps {
   isAdmin: boolean;
   onUpdateStatus: (id: string, status: "open" | "resolved" | "dismissed") => void;
   onDelete: (id: string) => void;
+  onAddReply: (annotationId: string, content: string) => void;
+  onDeleteReply: (replyId: string) => void;
   getStatusColor: (status: string) => string;
 }
 
@@ -210,8 +220,23 @@ const AnnotationCard = ({
   isAdmin,
   onUpdateStatus,
   onDelete,
+  onAddReply,
+  onDeleteReply,
   getStatusColor,
 }: AnnotationCardProps) => {
+  const [showReplyInput, setShowReplyInput] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [repliesExpanded, setRepliesExpanded] = useState(true);
+
+  const handleAddReply = () => {
+    if (!replyContent.trim()) return;
+    onAddReply(annotation.id, replyContent.trim());
+    setReplyContent("");
+    setShowReplyInput(false);
+  };
+
+  const replyCount = annotation.replies?.length || 0;
+
   return (
     <div className="p-4 border rounded-lg">
       <div className="flex items-start justify-between mb-2">
@@ -235,8 +260,69 @@ const AnnotationCard = ({
         By: {annotation.author_profile?.full_name || annotation.author_profile?.email || "Admin"}
       </div>
 
+      {/* Replies section */}
+      {replyCount > 0 && (
+        <Collapsible open={repliesExpanded} onOpenChange={setRepliesExpanded} className="mb-3">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto text-muted-foreground hover:text-foreground">
+              {repliesExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+              <span className="text-xs">{replyCount} {replyCount === 1 ? 'reply' : 'replies'}</span>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 space-y-2">
+            {annotation.replies?.map((reply) => (
+              <ReplyCard
+                key={reply.id}
+                reply={reply}
+                isAdmin={isAdmin}
+                onDelete={onDeleteReply}
+              />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Reply input */}
+      {showReplyInput && (
+        <div className="mb-3 p-3 bg-muted/50 rounded-lg space-y-2">
+          <Textarea
+            placeholder="Write a reply..."
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            rows={2}
+            className="text-sm"
+          />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleAddReply} disabled={!replyContent.trim()}>
+              Reply
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              setShowReplyInput(false);
+              setReplyContent("");
+            }}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        {!showReplyInput && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowReplyInput(true)}
+            className="gap-1"
+          >
+            <Reply className="h-3 w-3" />
+            Reply
+          </Button>
+        )}
         {annotation.status === "open" && (
           <>
             <Button
@@ -274,6 +360,43 @@ const AnnotationCard = ({
             variant="ghost"
             onClick={() => onDelete(annotation.id)}
             className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface ReplyCardProps {
+  reply: AnnotationReply;
+  isAdmin: boolean;
+  onDelete: (replyId: string) => void;
+}
+
+const ReplyCard = ({ reply, isAdmin, onDelete }: ReplyCardProps) => {
+  return (
+    <div className="pl-3 border-l-2 border-muted-foreground/20">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <p className="text-sm">{reply.content}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-muted-foreground">
+              {reply.author_profile?.full_name || reply.author_profile?.email || "User"}
+            </span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground">
+              {format(new Date(reply.created_at), "MMM d, h:mm a")}
+            </span>
+          </div>
+        </div>
+        {isAdmin && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onDelete(reply.id)}
+            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
