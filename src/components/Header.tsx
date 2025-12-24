@@ -195,7 +195,11 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                   {(isAdmin || isModerator) && (
                     <Button 
                       asChild
-                      className="h-8 px-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200"
+                      className={`h-8 px-3 rounded-full transition-all duration-200 ${
+                        isAdmin 
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                          : 'bg-amber-500 text-white hover:bg-amber-600'
+                      }`}
                     >
                       <Link to="/admin">
                         <Shield className="h-4 w-4" strokeWidth={1.5} />
@@ -225,7 +229,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                           <DropdownMenuItem asChild>
                             <Link to="/admin" className="cursor-pointer">
                               <Shield className="mr-2 h-4 w-4" />
-                              Admin Dashboard
+                              {isAdmin ? 'Admin Dashboard' : 'Moderator Dashboard'}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -352,7 +356,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                               className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 rounded-xl transition-all duration-300"
                             >
                               <Shield className="h-5 w-5" />
-                              Admin Dashboard
+                              {isAdmin ? 'Admin Dashboard' : 'Moderator Dashboard'}
                             </Link>
                           )}
                           <Link

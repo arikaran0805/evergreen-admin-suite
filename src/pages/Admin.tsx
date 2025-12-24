@@ -74,20 +74,19 @@ const Admin = () => {
         return;
       }
 
-      // Check if user has admin role
+      // Check if user has admin or moderator role
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin", "moderator"]);
 
       if (roleError) throw roleError;
 
-      if (!roleData) {
+      if (!roleData || roleData.length === 0) {
         toast({
           title: "Access Denied",
-          description: "You don't have admin privileges",
+          description: "You don't have admin or moderator privileges",
           variant: "destructive",
         });
         navigate("/");
