@@ -50,12 +50,11 @@ export const ContinueLearningCard = () => {
           const course = enrollment.courses as any;
           if (!course) continue;
 
-          // Get total lessons for this course
+          // Get total lessons for this course (all lessons regardless of status)
           const { count: totalLessons } = await supabase
             .from('posts')
             .select('*', { count: 'exact', head: true })
-            .eq('category_id', course.id)
-            .eq('status', 'published');
+            .eq('category_id', course.id);
 
           // Get completed lessons for this course
           const { count: completedLessons } = await supabase
