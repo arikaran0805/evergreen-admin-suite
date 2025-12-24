@@ -15,9 +15,10 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Play, Pencil, ChevronUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
+import { supabase } from "@/integrations/supabase/client";
 
 // Dynamic theme imports
 const loadTheme = async (theme: string) => {
@@ -53,6 +54,8 @@ interface CodeBlockProps {
   language?: string;
   isMentorBubble?: boolean;
   overrideTheme?: string;
+  onEdit?: (code: string) => void;
+  editable?: boolean;
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -66,9 +69,25 @@ const LANGUAGE_MAP: Record<string, string> = {
   cs: "csharp",
 };
 
-const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme }: CodeBlockProps) => {
+// Languages that support execution
+const EXECUTABLE_LANGUAGES = ["python", "javascript", "typescript"];
+
+const CodeBlock = ({ 
+  code, 
+  language = "", 
+  isMentorBubble = false, 
+  overrideTheme,
+  onEdit,
+  editable = false,
+}: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCode, setEditedCode] = useState(code);
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState<string | null>(null);
+  const [outputError, setOutputError] = useState(false);
   const { theme: globalTheme } = useCodeTheme();
   
   // Use override theme if provided, otherwise fall back to global theme
@@ -80,6 +99,7 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
   const isCustomTheme = isGrayTheme || isCleanTheme;
   
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
+  const canExecute = EXECUTABLE_LANGUAGES.includes(normalizedLang);
 
   // Load theme dynamically
   useEffect(() => {
@@ -92,18 +112,69 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
   }, [theme, isCustomTheme]);
 
   useEffect(() => {
-    if (codeRef.current) {
+    if (codeRef.current && !isEditing) {
       Prism.highlightElement(codeRef.current);
     }
-  }, [code, normalizedLang, theme]);
+  }, [code, editedCode, normalizedLang, theme, isEditing]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(isEditing ? editedCode : code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy code:", err);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedCode(code);
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const handleSaveEdit = () => {
+    setIsEditing(false);
+    if (onEdit) {
+      onEdit(editedCode);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedCode(code);
+  };
+
+  const handleRun = async () => {
+    if (!canExecute) return;
+    
+    setIsRunning(true);
+    setOutput(null);
+    setOutputError(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('execute-code', {
+        body: { 
+          code: isEditing ? editedCode : code, 
+          language: normalizedLang 
+        },
+      });
+
+      if (error) {
+        setOutput(error.message || 'Execution failed');
+        setOutputError(true);
+      } else if (data?.error) {
+        setOutput(data.error);
+        setOutputError(true);
+      } else {
+        setOutput(data?.output || 'No output');
+        setOutputError(false);
+      }
+    } catch (err: any) {
+      setOutput(err.message || 'Failed to execute code');
+      setOutputError(true);
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -128,6 +199,8 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
     return "bg-[#1d1f21] border-border/50";
   };
 
+  const displayCode = isEditing ? editedCode : code;
+
   return (
     <div 
       className={cn(
@@ -142,7 +215,7 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
           getPreStyles()
         )}
       >
-        {/* Header with language and copy button */}
+        {/* Header with language and action buttons */}
         <div className="flex items-center justify-between mb-2">
           {language && (
             <span className={cn(
@@ -152,40 +225,148 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
               {language}
             </span>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCopy}
+          <div className="flex items-center gap-1">
+            {/* Edit button */}
+            {editable && !isEditing && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleEdit}
+                className={cn(
+                  "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+                  isCleanTheme
+                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            
+            {/* Run button */}
+            {canExecute && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRun}
+                disabled={isRunning}
+                className={cn(
+                  "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+                  isCleanTheme
+                    ? "text-gray-400 hover:text-green-600 hover:bg-green-50"
+                    : "text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
+                )}
+              >
+                {isRunning ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5" />
+                )}
+              </Button>
+            )}
+            
+            {/* Copy button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleCopy}
+              className={cn(
+                "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+                isMentorBubble 
+                  ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
+                  : isCleanTheme
+                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-green-500" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Code content or editor */}
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              ref={textareaRef}
+              value={editedCode}
+              onChange={(e) => setEditedCode(e.target.value)}
+              className={cn(
+                "w-full min-h-[100px] bg-transparent resize-y outline-none text-sm font-mono leading-relaxed",
+                isCleanTheme ? "text-gray-800" : "text-gray-100"
+              )}
+              spellCheck={false}
+            />
+            <div className="flex items-center gap-2 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="h-7 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveEdit}
+                className="h-7 text-xs"
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <code
+            ref={codeRef}
             className={cn(
-              "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-              isMentorBubble 
-                ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
-                : isCleanTheme
-                  ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              `language-${normalizedLang} leading-relaxed`,
+              isCleanTheme && "text-gray-800"
             )}
           >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-500" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </Button>
-        </div>
-        <code
-          ref={codeRef}
-          className={cn(
-            `language-${normalizedLang} leading-relaxed`,
-            isCleanTheme && "text-gray-800"
-          )}
-        >
-          {code}
-        </code>
+            {displayCode}
+          </code>
+        )}
       </pre>
+      
+      {/* Output section */}
+      {output !== null && (
+        <div className={cn(
+          "mt-0 rounded-b-xl border border-t-0 overflow-hidden",
+          isCleanTheme 
+            ? "bg-gray-100 border-gray-200" 
+            : "bg-muted/50 border-border/50"
+        )}>
+          <div className="flex items-start gap-3 p-3">
+            <div className={cn(
+              "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
+              isCleanTheme ? "bg-gray-200" : "bg-muted"
+            )}>
+              <ChevronUp className={cn(
+                "w-4 h-4",
+                isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+              )} />
+            </div>
+            <pre className={cn(
+              "flex-1 text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+              outputError 
+                ? "text-red-500" 
+                : isCleanTheme 
+                  ? "text-gray-800" 
+                  : "text-foreground"
+            )}>
+              {output}
+            </pre>
+          </div>
+        </div>
+      )}
       
       {/* Copied tooltip */}
       {copied && (
-        <div className="absolute top-2 right-10 px-2 py-1 text-xs bg-green-500 text-white rounded shadow-lg animate-in fade-in-0 zoom-in-95">
+        <div className="absolute top-2 right-16 px-2 py-1 text-xs bg-green-500 text-white rounded shadow-lg animate-in fade-in-0 zoom-in-95">
           Copied!
         </div>
       )}
