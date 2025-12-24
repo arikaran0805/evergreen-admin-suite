@@ -21,14 +21,13 @@ const AdminCareers = () => {
       return;
     }
 
-    const { data: roleData } = await supabase
+    const { data: rolesData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "moderator"]);
 
-    if (!roleData) {
+    if (roleError || !rolesData || rolesData.length === 0) {
       toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
       return;

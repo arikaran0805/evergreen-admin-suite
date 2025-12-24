@@ -47,57 +47,77 @@ const AdminPosts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postStats, setPostStats] = useState<PostStats>({});
   const [loading, setLoading] = useState(true);
+  const [moderatorOnly, setModeratorOnly] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    checkAdminAccess();
-    fetchPosts();
+    checkAccessAndLoad();
   }, []);
 
-  const checkAdminAccess = async () => {
+  const checkAccessAndLoad = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      setLoading(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) {
         navigate("/auth");
         return;
       }
 
-      const { data: roleData } = await supabase
+      const { data: rolesData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin", "moderator"]);
 
-      if (!roleData) {
+      if (roleError) throw roleError;
+
+      if (!rolesData || rolesData.length === 0) {
         toast({
           title: "Access Denied",
-          description: "You don't have admin privileges",
+          description: "You don't have admin or moderator privileges",
           variant: "destructive",
         });
         navigate("/");
+        return;
       }
+
+      const roles = (rolesData || []).map((r) => r.role);
+      const isModeratorOnly = roles.includes("moderator") && !roles.includes("admin");
+      setModeratorOnly(isModeratorOnly);
+      setCurrentUserId(session.user.id);
+
+      await fetchPosts(session.user.id, isModeratorOnly);
     } catch (error: any) {
       console.error("Error checking access:", error);
       navigate("/");
     }
   };
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (viewerUserId: string, isModeratorOnly: boolean) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("posts")
-        .select("id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, courses:category_id(slug)")
-        .order("created_at", { ascending: false });
+        .select(
+          "id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, courses:category_id(slug)"
+        );
+
+      if (isModeratorOnly) {
+        query = query.eq("author_id", viewerUserId);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setPosts(data || []);
-      
+
       // Fetch stats for each post
       if (data && data.length > 0) {
-        await fetchPostStats(data.map(p => p.id));
+        await fetchPostStats(data.map((p) => p.id));
       }
     } catch (error: any) {
       toast({
@@ -229,9 +249,11 @@ const AdminPosts = () => {
       </div>
 
       {/* Lesson Reorder Section */}
-      <div className="mb-8">
-        <LessonReorder />
-      </div>
+      {!moderatorOnly && (
+        <div className="mb-8">
+          <LessonReorder />
+        </div>
+      )}
 
       <Card>
         <CardHeader>

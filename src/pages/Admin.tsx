@@ -38,7 +38,9 @@ interface PostStats {
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // can access /admin (admin or moderator)
+  const [isModerator, setIsModerator] = useState(false); // moderator-only (not admin)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
   const [postStats, setPostStats] = useState<PostStats>({});
   const [filterType, setFilterType] = useState<"posted" | "edited">("posted");
@@ -93,6 +95,11 @@ const Admin = () => {
         return;
       }
 
+      const roles = roleData.map((r) => r.role);
+      const moderatorOnly = roles.includes("moderator") && !roles.includes("admin");
+      setIsModerator(moderatorOnly);
+      setCurrentUserId(session.user.id);
+
       setIsAdmin(true);
       await fetchStats();
     } catch (error: any) {
@@ -137,8 +144,8 @@ const Admin = () => {
   const fetchRecentPosts = async () => {
     try {
       const orderField = filterType === "posted" ? "created_at" : "updated_at";
-      
-      const { data: postsData, error: postsError } = await supabase
+
+      let query = supabase
         .from("posts")
         .select(`
           id,
@@ -154,12 +161,18 @@ const Admin = () => {
         .order(orderField, { ascending: false })
         .limit(7);
 
+      if (isModerator && currentUserId) {
+        query = query.eq("author_id", currentUserId);
+      }
+
+      const { data: postsData, error: postsError } = await query;
+
       if (postsError) throw postsError;
       setRecentPosts(postsData || []);
-      
+
       // Fetch stats for each post
       if (postsData && postsData.length > 0) {
-        await fetchPostStats(postsData.map(p => p.id));
+        await fetchPostStats(postsData.map((p) => p.id));
       }
     } catch (error: any) {
       console.error("Error fetching recent posts:", error);
@@ -253,8 +266,12 @@ const Admin = () => {
     <AdminLayout>
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your blog content and users</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            {isModerator ? "Moderator Dashboard" : "Admin Dashboard"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isModerator ? "Manage your content" : "Manage your blog content and users"}
+          </p>
         </div>
         <Link to="/">
           <Button variant="outline" className="gap-2">
@@ -317,30 +334,46 @@ const Admin = () => {
                 Manage Courses
               </Button>
             </Link>
-            <Link to="/admin/comments">
-              <Button className="w-full justify-start" variant="outline">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Manage Comments
-              </Button>
-            </Link>
-            <Link to="/admin/users">
-              <Button className="w-full justify-start" variant="outline">
-                <Users className="mr-2 h-4 w-4" />
-                Manage Users
-              </Button>
-            </Link>
-            <Link to="/admin/pages">
+            <Link to="/admin/careers">
               <Button className="w-full justify-start" variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
-                Manage Pages
+                Manage Careers
               </Button>
             </Link>
-            <Link to="/admin/monetization">
+            <Link to="/admin/tags">
               <Button className="w-full justify-start" variant="outline">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Monetization
+                <FileText className="mr-2 h-4 w-4" />
+                Manage Tags
               </Button>
             </Link>
+            {!isModerator && (
+              <>
+                <Link to="/admin/comments">
+                  <Button className="w-full justify-start" variant="outline">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Manage Comments
+                  </Button>
+                </Link>
+                <Link to="/admin/users">
+                  <Button className="w-full justify-start" variant="outline">
+                    <Users className="mr-2 h-4 w-4" />
+                    Manage Users
+                  </Button>
+                </Link>
+                <Link to="/admin/pages">
+                  <Button className="w-full justify-start" variant="outline">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Manage Pages
+                  </Button>
+                </Link>
+                <Link to="/admin/monetization">
+                  <Button className="w-full justify-start" variant="outline">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Monetization
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
