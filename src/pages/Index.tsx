@@ -80,11 +80,12 @@ const Index = () => {
   }, []);
 
   const fetchFeaturedCourses = async () => {
-    // Show all featured courses regardless of status on public pages
+    // Only show published featured courses on public pages
     const { data, error } = await supabase
       .from('courses')
       .select('id, name, slug, description, level, featured_image, status')
       .eq('featured', true)
+      .eq('status', 'published')
       .order('name', { ascending: true })
       .limit(6);
 
