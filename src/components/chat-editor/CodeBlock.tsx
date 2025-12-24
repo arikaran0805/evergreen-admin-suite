@@ -56,7 +56,6 @@ interface CodeBlockProps {
   overrideTheme?: string;
   onEdit?: (code: string) => void;
   editable?: boolean;
-  highlightLines?: number[];
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -80,7 +79,6 @@ const CodeBlock = ({
   overrideTheme,
   onEdit,
   editable = false,
-  highlightLines = [],
 }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -116,10 +114,11 @@ const CodeBlock = ({
     }
   }, [theme, isCustomTheme]);
 
-  // NOTE: We render highlighted HTML manually (per-line) below,
-  // so we intentionally do NOT call Prism.highlightElement here.
-  // Prism.highlightElement would rewrite DOM and break line wrappers.
-
+  useEffect(() => {
+    if (codeRef.current && !isEditing) {
+      Prism.highlightElement(codeRef.current);
+    }
+  }, [code, editedCode, normalizedLang, theme, isEditing]);
 
   const handleCopy = async () => {
     try {
@@ -252,7 +251,7 @@ const CodeBlock = ({
   return (
     <div 
       className={cn(
-        "relative group mt-3 w-full min-w-[450px]",
+        "relative group mt-3 w-full",
         getThemeClass()
       )}
     >
@@ -358,39 +357,11 @@ const CodeBlock = ({
           <code
             ref={codeRef}
             className={cn(
-              `language-${normalizedLang} block leading-relaxed`,
-              "-mx-4 px-0",
-              // Prevent Prism theme from styling this like inline code (which can create "pills")
-              "bg-transparent p-0 rounded-none",
-              // Force token/inner backgrounds to stay transparent in mentor bubble
-              isMentorBubble && "[&_*]:!bg-transparent [&_*]:!shadow-none [&_*]:!p-0 [&_*]:!rounded-none",
-              isCleanTheme && "text-gray-800",
-              isMentorBubble && "text-white"
+              `language-${normalizedLang} leading-relaxed`,
+              isCleanTheme && "text-gray-800"
             )}
           >
-            {displayCode.split("\n").map((line, index) => {
-              const lineNumber = index + 1;
-              const isHighlighted = highlightLines.includes(lineNumber);
-
-              const highlightedHtml = Prism.languages[normalizedLang]
-                ? Prism.highlight(line || " ", Prism.languages[normalizedLang], normalizedLang)
-                : (line || " ");
-
-              return (
-                <span
-                  key={index}
-                  className={cn(
-                    "block px-4 py-0.5",
-                    isHighlighted && (isCleanTheme
-                      ? "bg-blue-50 border-l-2 border-blue-400"
-                      : isMentorBubble
-                        ? "bg-white/10 border-l-2 border-white/50"
-                        : "bg-blue-500/20 border-l-2 border-blue-400")
-                  )}
-                  dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-                />
-              );
-            })}
+            {displayCode}
           </code>
         )}
       </pre>
