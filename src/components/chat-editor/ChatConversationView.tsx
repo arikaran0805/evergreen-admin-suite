@@ -10,6 +10,7 @@ interface ChatConversationViewProps {
   content: string;
   courseType?: string;
   className?: string;
+  codeTheme?: string;
 }
 
 interface Course {
@@ -34,6 +35,7 @@ const ChatConversationView = ({
   content,
   courseType = "python",
   className,
+  codeTheme,
 }: ChatConversationViewProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const messages = useMemo(() => parseConversation(content), [content]);
@@ -127,6 +129,7 @@ const ChatConversationView = ({
             code={part.content}
             language={part.language}
             isMentorBubble={isMentorBubble}
+            overrideTheme={codeTheme}
           />
         );
       }

@@ -79,9 +79,12 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
   
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
 
-  // Load theme dynamically (skip for gray theme as it uses custom styling)
+  // Load theme dynamically
   useEffect(() => {
-    if (!isGrayTheme) {
+    // For gray theme, we load the base prism.css then apply our custom overrides via CSS class
+    if (isGrayTheme) {
+      import("prismjs/themes/prism.css");
+    } else {
       loadTheme(theme);
     }
   }, [theme, isGrayTheme]);
