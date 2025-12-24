@@ -65,7 +65,7 @@ const AdminPostEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!id);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -108,13 +108,28 @@ const AdminPostEditor = () => {
 
   useEffect(() => {
     if (!roleLoading && (isAdmin || isModerator)) {
-      fetchCategories();
-      fetchMainLessons();
-      fetchTags();
-      if (id) {
-        fetchPost(id);
-        fetchPostTags(id);
-      }
+      const loadData = async () => {
+        // Fetch all data in parallel
+        const promises = [
+          fetchCategories(),
+          fetchMainLessons(),
+          fetchTags(),
+        ];
+        
+        if (id) {
+          promises.push(fetchPost(id));
+          promises.push(fetchPostTags(id));
+        }
+        
+        await Promise.all(promises);
+        
+        // Only set loading to false after all data is loaded (for new posts)
+        if (!id) {
+          setLoading(false);
+        }
+      };
+      
+      loadData();
     }
   }, [id, isAdmin, isModerator, roleLoading]);
 
@@ -490,10 +505,12 @@ const AdminPostEditor = () => {
   // Check if content has admin edits (different from original)
   const hasAdminEdits = isAdmin && id && formData.content !== originalContent && originalContent !== "";
 
-  if (roleLoading || (loading && id)) {
+  if (roleLoading || loading) {
     return (
       <AdminLayout>
-        <div className="text-center">Loading...</div>
+        <div className="flex items-center justify-center min-h-[200px]">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </AdminLayout>
     );
   }
