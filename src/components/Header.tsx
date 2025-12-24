@@ -81,11 +81,12 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
       }
     };
 
-    // Fetch categories
+    // Fetch categories - only published courses
     const fetchCourses = async () => {
       const { data, error } = await supabase
         .from('courses')
         .select('id, name, slug')
+        .eq('status', 'published')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
