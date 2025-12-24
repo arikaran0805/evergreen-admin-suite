@@ -15,7 +15,7 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Play, Pencil, ChevronUp, Loader2, X } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,7 +88,7 @@ const CodeBlock = ({
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputError, setOutputError] = useState(false);
-  const [outputExpanded, setOutputExpanded] = useState(true);
+  const [showOutput, setShowOutput] = useState(false);
   const { theme: globalTheme } = useCodeTheme();
   
   // Use override theme if provided, otherwise fall back to global theme
@@ -152,6 +152,7 @@ const CodeBlock = ({
     setIsRunning(true);
     setOutput(null);
     setOutputError(false);
+    setShowOutput(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('execute-code', {
@@ -178,6 +179,38 @@ const CodeBlock = ({
       setIsRunning(false);
     }
   };
+
+  const handleCloseOutput = () => {
+    setShowOutput(false);
+    setOutput(null);
+  };
+
+  // Auto-resize textarea based on content
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedCode(e.target.value);
+    adjustTextareaHeight();
+  };
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Shift+Enter adds a new line (default behavior, just adjust height after)
+    if (e.key === 'Enter' && e.shiftKey) {
+      setTimeout(adjustTextareaHeight, 0);
+    }
+  };
+
+  // Adjust height when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setTimeout(adjustTextareaHeight, 0);
+    }
+  }, [isEditing]);
 
   // Get the appropriate theme class
   const getThemeClass = () => {
@@ -298,9 +331,10 @@ const CodeBlock = ({
           <textarea
             ref={textareaRef}
             value={editedCode}
-            onChange={(e) => setEditedCode(e.target.value)}
+            onChange={handleTextareaChange}
+            onKeyDown={handleTextareaKeyDown}
             className={cn(
-              "w-full min-h-[100px] bg-transparent resize-y outline-none text-sm font-mono leading-relaxed",
+              "w-full min-h-[60px] bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden",
               isCleanTheme ? "text-gray-800" : "text-gray-100"
             )}
             spellCheck={false}
@@ -318,67 +352,58 @@ const CodeBlock = ({
         )}
       </pre>
       
-      {/* Collapsible Output section */}
-      {output !== null && (
+      {/* Output section - only show when showOutput is true */}
+      {showOutput && output !== null && (
         <div className={cn(
-          "mt-0 rounded-b-xl border border-t-0 overflow-hidden",
+          "mt-0 rounded-b-xl border border-t-0 overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200",
           isCleanTheme 
             ? "bg-gray-100 border-gray-200" 
             : "bg-muted/50 border-border/50"
         )}>
-          {/* Header - always visible, clickable to toggle */}
-          <button
-            onClick={() => setOutputExpanded(!outputExpanded)}
-            className={cn(
-              "w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
-              isCleanTheme 
-                ? "hover:bg-gray-200/50" 
-                : "hover:bg-muted"
-            )}
-          >
-            <div className={cn(
-              "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform duration-200",
-              isCleanTheme ? "bg-gray-200" : "bg-muted",
-              outputExpanded ? "rotate-0" : "rotate-180"
-            )}>
-              <ChevronUp className={cn(
-                "w-3 h-3",
-                isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-              )} />
+          {/* Header with close button */}
+          <div className={cn(
+            "flex items-center justify-between px-3 py-2",
+            isCleanTheme ? "bg-gray-50" : "bg-muted/30"
+          )}>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-xs font-medium",
+                outputError 
+                  ? "text-red-500" 
+                  : isCleanTheme 
+                    ? "text-gray-600" 
+                    : "text-muted-foreground"
+              )}>
+                {outputError ? "Error" : "Output"}
+              </span>
             </div>
-            <span className={cn(
-              "text-xs font-medium",
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleCloseOutput}
+              className={cn(
+                "h-5 w-5 rounded-full",
+                isCleanTheme
+                  ? "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+          
+          {/* Output content */}
+          <div className="px-3 pb-3">
+            <pre className={cn(
+              "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
               outputError 
                 ? "text-red-500" 
                 : isCleanTheme 
-                  ? "text-gray-600" 
-                  : "text-muted-foreground"
+                  ? "text-gray-800" 
+                  : "text-foreground"
             )}>
-              {outputError ? "Error" : "Output"}
-            </span>
-          </button>
-          
-          {/* Collapsible content with animation */}
-          <div 
-            className={cn(
-              "grid transition-all duration-200 ease-out",
-              outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-            )}
-          >
-            <div className="overflow-hidden">
-              <div className="px-3 pb-3">
-                <pre className={cn(
-                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
-                  outputError 
-                    ? "text-red-500" 
-                    : isCleanTheme 
-                      ? "text-gray-800" 
-                      : "text-foreground"
-                )}>
-                  {output}
-                </pre>
-              </div>
-            </div>
+              {output}
+            </pre>
           </div>
         </div>
       )}
