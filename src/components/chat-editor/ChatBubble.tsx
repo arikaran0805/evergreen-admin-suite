@@ -63,10 +63,10 @@ const ChatBubble = ({
     onEndEdit();
   };
 
-  // Parse content for code blocks
+  // Parse content for code blocks and inline code
   const renderContent = (content: string) => {
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
-    const parts = [];
+    const parts: { type: string; language?: string; content: string }[] = [];
     let lastIndex = 0;
     let match;
 
@@ -86,6 +86,48 @@ const ChatBubble = ({
       parts.push({ type: "text", content });
     }
 
+    // Render inline code within text parts
+    const renderTextWithInlineCode = (text: string, key: number) => {
+      const inlineCodeRegex = /`([^`]+)`/g;
+      const segments: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let inlineMatch;
+
+      while ((inlineMatch = inlineCodeRegex.exec(text)) !== null) {
+        if (inlineMatch.index > lastIdx) {
+          segments.push(
+            <span key={`${key}-text-${lastIdx}`} className="whitespace-pre-wrap">
+              {text.slice(lastIdx, inlineMatch.index)}
+            </span>
+          );
+        }
+        segments.push(
+          <code
+            key={`${key}-code-${inlineMatch.index}`}
+            className={cn(
+              "px-1.5 py-0.5 rounded text-xs font-mono",
+              isMentor
+                ? "bg-blue-500/30 text-blue-100"
+                : "bg-muted-foreground/20 text-foreground"
+            )}
+          >
+            {inlineMatch[1]}
+          </code>
+        );
+        lastIdx = inlineMatch.index + inlineMatch[0].length;
+      }
+
+      if (lastIdx < text.length) {
+        segments.push(
+          <span key={`${key}-text-end`} className="whitespace-pre-wrap">
+            {text.slice(lastIdx)}
+          </span>
+        );
+      }
+
+      return segments.length > 0 ? segments : <span className="whitespace-pre-wrap">{text}</span>;
+    };
+
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
@@ -98,11 +140,7 @@ const ChatBubble = ({
           />
         );
       }
-      return (
-        <span key={idx} className="whitespace-pre-wrap">
-          {part.content}
-        </span>
-      );
+      return <span key={idx}>{renderTextWithInlineCode(part.content, idx)}</span>;
     });
   };
 
