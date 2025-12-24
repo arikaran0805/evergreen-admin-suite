@@ -76,13 +76,18 @@ const AdminPostEditor = () => {
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!roleLoading) {
-      checkAccess();
+    if (!roleLoading && !isAdmin && !isModerator) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this page",
+        variant: "destructive",
+      });
+      navigate("/");
     }
-  }, [roleLoading]);
+  }, [roleLoading, isAdmin, isModerator]);
 
   useEffect(() => {
-    if (isAdmin || isModerator) {
+    if (!roleLoading && (isAdmin || isModerator)) {
       fetchCategories();
       fetchMainLessons();
       fetchTags();
@@ -91,19 +96,7 @@ const AdminPostEditor = () => {
         fetchPostTags(id);
       }
     }
-  }, [id, isAdmin, isModerator]);
-
-  const checkAccess = async () => {
-    if (!isAdmin && !isModerator) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access this page",
-        variant: "destructive",
-      });
-      navigate("/");
-      return;
-    }
-  };
+  }, [id, isAdmin, isModerator, roleLoading]);
 
   const fetchCategories = async () => {
     try {
