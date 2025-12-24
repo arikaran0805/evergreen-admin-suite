@@ -570,14 +570,14 @@ const AdminPostEditor = () => {
             <div>
               <Label htmlFor="category">Course</Label>
               <Select 
-                value={formData.category_id} 
-                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                value={formData.category_id || "none"} 
+                onValueChange={(value) => setFormData({ ...formData, category_id: value === "none" ? "" : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a course" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No course</SelectItem>
+                  <SelectItem value="none">No course</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
