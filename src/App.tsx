@@ -39,6 +39,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
 import AdminTags from "./pages/AdminTags";
 import AdminApprovals from "./pages/AdminApprovals";
+import AdminDeleteRequests from "./pages/AdminDeleteRequests";
 import TagPosts from "./pages/TagPosts";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -110,6 +111,7 @@ const AppContent = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/approvals" element={<AdminApprovals />} />
+        <Route path="/admin/delete-requests" element={<AdminDeleteRequests />} />
         <Route path="/admin/posts" element={<AdminPosts />} />
         <Route path="/admin/posts/new" element={<AdminPostEditor />} />
         <Route path="/admin/posts/edit/:id" element={<AdminPostEditor />} />

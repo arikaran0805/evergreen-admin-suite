@@ -622,6 +622,51 @@ export type Database = {
         }
         Relationships: []
       }
+      delete_requests: {
+        Row: {
+          content_id: string
+          content_title: string
+          content_type: string
+          created_at: string
+          id: string
+          reason: string | null
+          requested_by: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_title: string
+          content_type: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requested_by: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_title?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requested_by?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       difficulty_levels: {
         Row: {
           created_at: string

@@ -17,6 +17,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -26,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Plus, 
   Eye, 
@@ -75,6 +77,9 @@ const AdminCoursesTab = () => {
   const [users, setUsers] = useState<Map<string, UserWithRole>>(new Map());
   const [loading, setLoading] = useState(true);
   const [previewCategory, setPreviewCategory] = useState<Category | null>(null);
+  const [deleteRequestCategory, setDeleteRequestCategory] = useState<Category | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin, isModerator, userId } = useUserRole();
@@ -187,8 +192,31 @@ const AdminCoursesTab = () => {
     }
   };
 
-  const handleDeleteRequest = async (course: Category) => {
-    toast({ title: `Delete request sent for "${course.name}"` });
+  const handleDeleteRequest = async () => {
+    if (!deleteRequestCategory || !userId) return;
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from("delete_requests")
+        .insert({
+          content_type: "course",
+          content_id: deleteRequestCategory.id,
+          content_title: deleteRequestCategory.name,
+          requested_by: userId,
+          reason: deleteReason || null
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Delete request submitted", description: "An admin will review your request" });
+      setDeleteRequestCategory(null);
+      setDeleteReason("");
+    } catch (error: any) {
+      toast({ title: "Error submitting request", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getUserDisplay = (userId: string | null) => {
@@ -394,7 +422,7 @@ const AdminCoursesTab = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-orange-500 hover:text-orange-600"
-                                  onClick={() => handleDeleteRequest(category)}
+                                  onClick={() => setDeleteRequestCategory(category)}
                                 >
                                   <Send className="h-4 w-4" />
                                 </Button>
@@ -448,6 +476,46 @@ const AdminCoursesTab = () => {
                 </div>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Request Dialog */}
+        <Dialog open={!!deleteRequestCategory} onOpenChange={() => setDeleteRequestCategory(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Request Course Deletion</DialogTitle>
+              <DialogDescription>
+                Request to delete: {deleteRequestCategory?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Reason for deletion (optional)</label>
+                <Textarea
+                  placeholder="Explain why this course should be deleted..."
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteRequestCategory(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteRequest}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                <Send className="h-4 w-4" />
+                Submit Request
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
