@@ -253,7 +253,7 @@ const CodeBlock = ({
   return (
     <div 
       className={cn(
-        "relative group mt-3 w-full min-w-[320px]",
+        "relative group mt-3 w-full min-w-[400px]",
         getThemeClass()
       )}
     >
@@ -367,14 +367,17 @@ const CodeBlock = ({
                     "px-4 py-0.5",
                     isHighlighted && (isCleanTheme 
                       ? "bg-blue-50 border-l-2 border-blue-400" 
-                      : "bg-blue-500/20 border-l-2 border-blue-400")
+                      : isMentorBubble
+                        ? "bg-white/10 border-l-2 border-white/50"
+                        : "bg-blue-500/20 border-l-2 border-blue-400")
                   )}
                 >
                   <code
                     ref={index === 0 ? codeRef : undefined}
                     className={cn(
                       `language-${normalizedLang} leading-relaxed`,
-                      isCleanTheme && "text-gray-800"
+                      isCleanTheme && "text-gray-800",
+                      isMentorBubble && "[&_*]:!bg-transparent [&_.token]:!text-inherit"
                     )}
                     dangerouslySetInnerHTML={{
                       __html: Prism.languages[normalizedLang] 
