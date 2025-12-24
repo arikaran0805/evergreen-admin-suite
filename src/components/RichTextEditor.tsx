@@ -1,6 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { Copy, Check, Play, Pencil, Loader2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface RichTextEditorProps {
   value: string;
@@ -8,8 +12,21 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
+interface CodeBlockOverlay {
+  element: HTMLPreElement;
+  rect: DOMRect;
+  code: string;
+}
+
 const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) => {
   const quillRef = useRef<ReactQuill>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [codeBlocks, setCodeBlocks] = useState<CodeBlockOverlay[]>([]);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [runningIndex, setRunningIndex] = useState<number | null>(null);
+  const [outputs, setOutputs] = useState<Record<number, { text: string; error: boolean }>>({});
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editedCode, setEditedCode] = useState("");
 
   const modules = {
     toolbar: [
@@ -53,8 +70,128 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     "video",
   ];
 
+  // Find and track code blocks
+  const updateCodeBlocks = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const preElements = containerRef.current.querySelectorAll<HTMLPreElement>('.ql-editor pre.ql-syntax');
+    const containerRect = containerRef.current.getBoundingClientRect();
+    
+    const blocks: CodeBlockOverlay[] = [];
+    preElements.forEach((pre) => {
+      const rect = pre.getBoundingClientRect();
+      blocks.push({
+        element: pre,
+        rect: new DOMRect(
+          rect.left - containerRect.left,
+          rect.top - containerRect.top,
+          rect.width,
+          rect.height
+        ),
+        code: pre.textContent || "",
+      });
+    });
+    
+    setCodeBlocks(blocks);
+  }, []);
+
+  // Update code blocks on content change
+  useEffect(() => {
+    const timeout = setTimeout(updateCodeBlocks, 100);
+    return () => clearTimeout(timeout);
+  }, [value, updateCodeBlocks]);
+
+  // Update positions on scroll/resize
+  useEffect(() => {
+    const handleUpdate = () => updateCodeBlocks();
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
+    return () => {
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
+    };
+  }, [updateCodeBlocks]);
+
+  const handleCopy = async (index: number) => {
+    const code = codeBlocks[index]?.code;
+    if (!code) return;
+    
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const handleRun = async (index: number) => {
+    const code = codeBlocks[index]?.code;
+    if (!code) return;
+    
+    setRunningIndex(index);
+    setOutputs(prev => ({ ...prev, [index]: { text: "", error: false } }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('execute-code', {
+        body: { code, language: 'python' },
+      });
+
+      if (error) {
+        setOutputs(prev => ({ ...prev, [index]: { text: error.message || 'Execution failed', error: true } }));
+      } else if (data?.error) {
+        setOutputs(prev => ({ ...prev, [index]: { text: data.error, error: true } }));
+      } else {
+        setOutputs(prev => ({ ...prev, [index]: { text: data?.output || 'No output', error: false } }));
+      }
+    } catch (err: any) {
+      setOutputs(prev => ({ ...prev, [index]: { text: err.message || 'Failed to execute', error: true } }));
+    } finally {
+      setRunningIndex(null);
+    }
+  };
+
+  const handleEdit = (index: number) => {
+    setEditingIndex(index);
+    setEditedCode(codeBlocks[index]?.code || "");
+  };
+
+  const handleSaveEdit = (index: number) => {
+    const pre = codeBlocks[index]?.element;
+    if (pre) {
+      pre.textContent = editedCode;
+      // Trigger Quill to pick up the change
+      const quill = quillRef.current?.getEditor();
+      if (quill) {
+        quill.update();
+      }
+      // Force re-read of content
+      setTimeout(() => {
+        const editor = quillRef.current?.getEditor();
+        if (editor) {
+          onChange(editor.root.innerHTML);
+        }
+      }, 50);
+    }
+    setEditingIndex(null);
+    updateCodeBlocks();
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setEditedCode("");
+  };
+
+  const closeOutput = (index: number) => {
+    setOutputs(prev => {
+      const newOutputs = { ...prev };
+      delete newOutputs[index];
+      return newOutputs;
+    });
+  };
+
   return (
-    <div className="rich-text-editor">
+    <div className="rich-text-editor" ref={containerRef}>
       <ReactQuill
         ref={quillRef}
         theme="snow"
@@ -65,7 +202,137 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         placeholder={placeholder || "Write your content here..."}
         className="bg-background"
       />
+      
+      {/* Code block action buttons overlay */}
+      {codeBlocks.map((block, index) => (
+        <div
+          key={index}
+          className="absolute pointer-events-none"
+          style={{
+            left: block.rect.left,
+            top: block.rect.top,
+            width: block.rect.width,
+            height: block.rect.height,
+          }}
+        >
+          {/* Action buttons */}
+          <div className="absolute top-2 right-2 flex items-center gap-1 pointer-events-auto z-10">
+            {/* Edit button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editingIndex === index ? handleCancelEdit() : handleEdit(index)}
+              className="h-7 w-7 rounded-full bg-white/80 hover:bg-white text-gray-500 hover:text-gray-700 shadow-sm"
+            >
+              {editingIndex === index ? (
+                <X className="w-3.5 h-3.5" />
+              ) : (
+                <Pencil className="w-3.5 h-3.5" />
+              )}
+            </Button>
+            
+            {/* Run button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleRun(index)}
+              disabled={runningIndex === index}
+              className="h-7 w-7 rounded-full bg-white/80 hover:bg-white text-gray-500 hover:text-green-600 shadow-sm"
+            >
+              {runningIndex === index ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+            </Button>
+            
+            {/* Copy button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleCopy(index)}
+              className="h-7 w-7 rounded-full bg-white/80 hover:bg-white text-gray-500 hover:text-gray-700 shadow-sm"
+            >
+              {copiedIndex === index ? (
+                <Check className="w-3.5 h-3.5 text-green-500" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          </div>
+          
+          {/* Edit overlay */}
+          {editingIndex === index && (
+            <div className="absolute inset-0 pointer-events-auto bg-white border border-gray-200 rounded-lg overflow-hidden z-20">
+              <textarea
+                value={editedCode}
+                onChange={(e) => setEditedCode(e.target.value)}
+                className="w-full h-full p-4 font-mono text-sm resize-none outline-none bg-white text-gray-800"
+                autoFocus
+              />
+              <div className="absolute bottom-2 right-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  className="h-7 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleSaveEdit(index)}
+                  className="h-7 text-xs"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Output display */}
+          {outputs[index] && (
+            <div 
+              className={cn(
+                "absolute left-0 right-0 pointer-events-auto border rounded-lg mt-1 overflow-hidden",
+                outputs[index].error 
+                  ? "bg-red-50 border-red-200" 
+                  : "bg-gray-50 border-gray-200"
+              )}
+              style={{ top: block.rect.height }}
+            >
+              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                <span className={cn(
+                  "text-xs font-medium",
+                  outputs[index].error ? "text-red-600" : "text-gray-600"
+                )}>
+                  {outputs[index].error ? "Error" : "Output"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => closeOutput(index)}
+                  className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+              <pre className={cn(
+                "px-3 py-2 text-sm font-mono whitespace-pre-wrap",
+                outputs[index].error ? "text-red-600" : "text-gray-800"
+              )}>
+                {outputs[index].text}
+              </pre>
+            </div>
+          )}
+        </div>
+      ))}
+      
       <style>{`
+        .rich-text-editor {
+          position: relative;
+        }
+        
         .rich-text-editor .ql-container {
           min-height: 300px;
           font-family: inherit;
@@ -145,16 +412,18 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         
         /* Code block styling */
         .rich-text-editor .ql-editor pre.ql-syntax {
-          background-color: hsl(var(--muted));
+          background-color: hsl(143 20% 95%);
           color: hsl(var(--foreground));
-          border: 1px solid hsl(var(--border));
-          border-radius: var(--radius);
+          border: 1px solid hsl(143 20% 88%);
+          border-radius: 12px;
           padding: 1rem;
+          padding-top: 2.5rem;
           margin: 1rem 0;
           overflow-x: auto;
           font-family: 'Courier New', Courier, monospace;
           font-size: 13px;
           line-height: 1.5;
+          position: relative;
         }
         
         /* Inline code styling */
