@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bell, Flag, BookOpen, GraduationCap, Tags, MessageSquare, User, Check, X } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Bell, Flag, BookOpen, GraduationCap, Tags, MessageSquare, User, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -33,9 +33,28 @@ interface NotificationDropdownProps {
 
 const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDropdownProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchNotifications = async () => {
+  // Fetch read notification IDs
+  const fetchReadNotifications = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const { data } = await supabase
+        .from("notification_reads")
+        .select("notification_id")
+        .eq("user_id", userId);
+
+      if (data) {
+        setReadNotificationIds(new Set(data.map(r => r.notification_id)));
+      }
+    } catch (error) {
+      console.error("Error fetching read notifications:", error);
+    }
+  }, [userId]);
+
+  const fetchNotifications = useCallback(async () => {
     if (!isAdmin && !isModerator) {
       setIsLoading(false);
       return;
@@ -47,15 +66,47 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
       yesterday.setDate(yesterday.getDate() - 7); // Last 7 days
 
       if (isAdmin) {
-        // Fetch pending reports
-        const { data: reports } = await supabase
-          .from("content_reports")
-          .select("id, report_type, description, created_at")
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(5);
+        // Fetch all data in parallel
+        const [reportsRes, postsRes, coursesRes, tagsRes, commentsRes, usersRes] = await Promise.all([
+          supabase
+            .from("content_reports")
+            .select("id, report_type, description, created_at")
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("posts")
+            .select("id, title, created_at")
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("courses")
+            .select("id, name, created_at")
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("tags")
+            .select("id, name, created_at")
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("comments")
+            .select("id, content, created_at")
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("profiles")
+            .select("id, full_name, email, created_at")
+            .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+            .order("created_at", { ascending: false })
+            .limit(5)
+        ]);
 
-        reports?.forEach((report) => {
+        reportsRes.data?.forEach((report) => {
           notificationsList.push({
             id: `report-${report.id}`,
             type: "report",
@@ -67,15 +118,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           });
         });
 
-        // Fetch pending posts
-        const { data: posts } = await supabase
-          .from("posts")
-          .select("id, title, created_at")
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        posts?.forEach((post) => {
+        postsRes.data?.forEach((post) => {
           notificationsList.push({
             id: `post-${post.id}`,
             type: "post",
@@ -87,15 +130,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           });
         });
 
-        // Fetch pending courses
-        const { data: courses } = await supabase
-          .from("courses")
-          .select("id, name, created_at")
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        courses?.forEach((course) => {
+        coursesRes.data?.forEach((course) => {
           notificationsList.push({
             id: `course-${course.id}`,
             type: "course",
@@ -107,15 +142,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           });
         });
 
-        // Fetch pending tags
-        const { data: tags } = await supabase
-          .from("tags")
-          .select("id, name, created_at")
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        tags?.forEach((tag) => {
+        tagsRes.data?.forEach((tag) => {
           notificationsList.push({
             id: `tag-${tag.id}`,
             type: "tag",
@@ -127,15 +154,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           });
         });
 
-        // Fetch pending comments
-        const { data: comments } = await supabase
-          .from("comments")
-          .select("id, content, created_at")
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        comments?.forEach((comment) => {
+        commentsRes.data?.forEach((comment) => {
           notificationsList.push({
             id: `comment-${comment.id}`,
             type: "comment",
@@ -147,17 +166,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           });
         });
 
-        // Fetch new users (last 24 hours)
-        const oneDayAgo = new Date();
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        const { data: newUsers } = await supabase
-          .from("profiles")
-          .select("id, full_name, email, created_at")
-          .gte("created_at", oneDayAgo.toISOString())
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        newUsers?.forEach((user) => {
+        usersRes.data?.forEach((user) => {
           notificationsList.push({
             id: `user-${user.id}`,
             type: "user",
@@ -177,7 +186,6 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           .order("created_at", { ascending: false })
           .limit(10);
 
-        // Filter to only show moderator's content (would need content_id join in real scenario)
         approvals?.forEach((approval) => {
           notificationsList.push({
             id: `approval-${approval.id}`,
@@ -200,26 +208,74 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAdmin, isModerator, userId]);
 
   useEffect(() => {
     fetchNotifications();
+    fetchReadNotifications();
 
     // Set up realtime subscriptions
     const channel = supabase
       .channel('header-notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'content_reports' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, fetchNotifications)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, fetchNotifications)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, fetchNotifications)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'content_reports' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, () => fetchNotifications())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, () => fetchNotifications())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notification_reads' }, () => fetchReadNotifications())
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, isModerator, userId]);
+  }, [isAdmin, isModerator, userId, fetchNotifications, fetchReadNotifications]);
+
+  // Mark a single notification as read
+  const markAsRead = async (notificationId: string) => {
+    if (!userId || readNotificationIds.has(notificationId)) return;
+
+    try {
+      const notificationType = notificationId.split('-')[0];
+      
+      await supabase.from("notification_reads").insert({
+        user_id: userId,
+        notification_type: notificationType,
+        notification_id: notificationId,
+      });
+
+      setReadNotificationIds(prev => new Set([...prev, notificationId]));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!userId) return;
+
+    try {
+      const unreadNotifications = notifications.filter(n => !readNotificationIds.has(n.id));
+      
+      if (unreadNotifications.length === 0) return;
+
+      const inserts = unreadNotifications.map(n => ({
+        user_id: userId,
+        notification_type: n.id.split('-')[0],
+        notification_id: n.id,
+      }));
+
+      await supabase.from("notification_reads").insert(inserts);
+
+      setReadNotificationIds(prev => {
+        const newSet = new Set(prev);
+        unreadNotifications.forEach(n => newSet.add(n.id));
+        return newSet;
+      });
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
 
   const getIcon = (type: Notification["type"]) => {
     switch (type) {
@@ -240,7 +296,8 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Calculate unread using the read IDs set
+  const unreadCount = notifications.filter(n => !readNotificationIds.has(n.id)).length;
 
   if (!isAdmin && !isModerator) return null;
 
@@ -266,11 +323,28 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
       <DropdownMenuContent align="end" className="w-80 bg-popover border border-border shadow-xl z-50">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span className="font-semibold">Notifications</span>
-          {unreadCount > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {unreadCount} new
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <>
+                <Badge variant="secondary" className="text-xs">
+                  {unreadCount} new
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    markAllAsRead();
+                  }}
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <CheckCheck className="h-3 w-3 mr-1" />
+                  Mark all read
+                </Button>
+              </>
+            )}
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <ScrollArea className="h-[320px]">
@@ -285,30 +359,36 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
             </div>
           ) : (
             <div className="py-1">
-              {notifications.map((notification) => (
-                <DropdownMenuItem key={notification.id} asChild className="p-0">
-                  <Link
-                    to={notification.link}
-                    className="flex items-start gap-3 px-3 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="mt-0.5 flex-shrink-0">{getIcon(notification.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {notification.description}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground/70 mt-1">
-                        {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                    )}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
+              {notifications.map((notification) => {
+                const isRead = readNotificationIds.has(notification.id);
+                return (
+                  <DropdownMenuItem key={notification.id} asChild className="p-0">
+                    <Link
+                      to={notification.link}
+                      onClick={() => markAsRead(notification.id)}
+                      className={`flex items-start gap-3 px-3 py-3 cursor-pointer hover:bg-muted/50 transition-colors ${
+                        isRead ? "opacity-60" : ""
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0">{getIcon(notification.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium text-foreground truncate ${isRead ? "font-normal" : ""}`}>
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {notification.description}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-1">
+                          {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+                        </p>
+                      </div>
+                      {!isRead && (
+                        <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
             </div>
           )}
         </ScrollArea>
