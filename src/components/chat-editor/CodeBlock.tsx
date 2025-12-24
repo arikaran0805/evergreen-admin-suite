@@ -56,6 +56,7 @@ interface CodeBlockProps {
   overrideTheme?: string;
   onEdit?: (code: string) => void;
   editable?: boolean;
+  highlightLines?: number[];
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -79,6 +80,7 @@ const CodeBlock = ({
   overrideTheme,
   onEdit,
   editable = false,
+  highlightLines = [],
 }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -354,15 +356,36 @@ const CodeBlock = ({
             spellCheck={false}
           />
         ) : (
-          <code
-            ref={codeRef}
-            className={cn(
-              `language-${normalizedLang} leading-relaxed`,
-              isCleanTheme && "text-gray-800"
-            )}
-          >
-            {displayCode}
-          </code>
+          <div className="-mx-4 px-0">
+            {displayCode.split('\n').map((line, index) => {
+              const lineNumber = index + 1;
+              const isHighlighted = highlightLines.includes(lineNumber);
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "px-4 py-0.5",
+                    isHighlighted && (isCleanTheme 
+                      ? "bg-blue-50 border-l-2 border-blue-400" 
+                      : "bg-blue-500/20 border-l-2 border-blue-400")
+                  )}
+                >
+                  <code
+                    ref={index === 0 ? codeRef : undefined}
+                    className={cn(
+                      `language-${normalizedLang} leading-relaxed`,
+                      isCleanTheme && "text-gray-800"
+                    )}
+                    dangerouslySetInnerHTML={{
+                      __html: Prism.languages[normalizedLang] 
+                        ? Prism.highlight(line || ' ', Prism.languages[normalizedLang], normalizedLang)
+                        : line || ' '
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         )}
       </pre>
       
