@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import Prism from "prismjs";
+import "prismjs/themes/prism.css";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-sql";
+import "prismjs/components/prism-json";
+import "prismjs/components/prism-bash";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-markup";
 import { Copy, Check, Play, Pencil, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +26,7 @@ interface CodeBlockOverlay {
   element: HTMLPreElement;
   rect: DOMRect;
   code: string;
+  language: string;
 }
 
 const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) => {
@@ -70,6 +81,22 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     "video",
   ];
 
+  // Detect language from code content
+  const detectLanguage = (code: string): string => {
+    if (code.match(/^(function|const|let|var|import|export)\s/m)) {
+      return 'javascript';
+    } else if (code.match(/^(def|class|import|from|print)\s/m)) {
+      return 'python';
+    } else if (code.match(/^(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP)\s/im)) {
+      return 'sql';
+    } else if (code.match(/^\s*{[\s\S]*}$/m) || code.match(/^\s*\[[\s\S]*]$/m)) {
+      return 'json';
+    } else if (code.match(/<[a-z][\s\S]*>/i)) {
+      return 'markup';
+    }
+    return 'python'; // Default
+  };
+
   // Find and track code blocks
   const updateCodeBlocks = useCallback(() => {
     if (!containerRef.current) return;
@@ -80,6 +107,9 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     const blocks: CodeBlockOverlay[] = [];
     preElements.forEach((pre) => {
       const rect = pre.getBoundingClientRect();
+      const code = pre.textContent || "";
+      const language = detectLanguage(code);
+      
       blocks.push({
         element: pre,
         rect: new DOMRect(
@@ -88,8 +118,14 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
           rect.width,
           rect.height
         ),
-        code: pre.textContent || "",
+        code,
+        language,
       });
+
+      // Apply syntax highlighting
+      const highlighted = Prism.highlight(code, Prism.languages[language] || Prism.languages.plaintext, language);
+      pre.innerHTML = highlighted;
+      pre.classList.add(`language-${language}`);
     });
     
     setCodeBlocks(blocks);
@@ -126,15 +162,15 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   };
 
   const handleRun = async (index: number) => {
-    const code = codeBlocks[index]?.code;
-    if (!code) return;
+    const block = codeBlocks[index];
+    if (!block?.code) return;
     
     setRunningIndex(index);
     setOutputs(prev => ({ ...prev, [index]: { text: "", error: false } }));
     
     try {
       const { data, error } = await supabase.functions.invoke('execute-code', {
-        body: { code, language: 'python' },
+        body: { code: block.code, language: block.language },
       });
 
       if (error) {
@@ -413,7 +449,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         /* Code block styling */
         .rich-text-editor .ql-editor pre.ql-syntax {
           background-color: hsl(143 20% 95%);
-          color: hsl(var(--foreground));
+          color: hsl(143 30% 25%);
           border: 1px solid hsl(143 20% 88%);
           border-radius: 12px;
           padding: 1rem;
@@ -424,6 +460,61 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
           font-size: 13px;
           line-height: 1.5;
           position: relative;
+        }
+        
+        /* Prism syntax highlighting colors for green theme */
+        .rich-text-editor .ql-editor pre.ql-syntax .token.comment,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.prolog,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.doctype,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.cdata {
+          color: hsl(143 15% 50%);
+          font-style: italic;
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.punctuation {
+          color: hsl(143 20% 40%);
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.property,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.tag,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.boolean,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.number,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.constant,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.symbol,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.deleted {
+          color: hsl(340 70% 45%);
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.selector,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.attr-name,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.string,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.char,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.builtin,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.inserted {
+          color: hsl(143 50% 35%);
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.operator,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.entity,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.url,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.variable {
+          color: hsl(143 30% 30%);
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.atrule,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.attr-value,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.keyword {
+          color: hsl(200 70% 40%);
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.function,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.class-name {
+          color: hsl(280 60% 45%);
+        }
+        
+        .rich-text-editor .ql-editor pre.ql-syntax .token.regex,
+        .rich-text-editor .ql-editor pre.ql-syntax .token.important {
+          color: hsl(30 80% 45%);
         }
         
         /* Inline code styling */
