@@ -30,7 +30,7 @@ const AdminCourseEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!id);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [difficultyLevels, setDifficultyLevels] = useState<{ id: string; name: string }[]>([]);
@@ -66,13 +66,26 @@ const AdminCourseEditor = () => {
 
   useEffect(() => {
     if (!roleLoading && (isAdmin || isModerator)) {
-      fetchDifficultyLevels();
-      if (isAdmin) {
-        fetchAssignableUsers();
-      }
-      if (id) {
-        fetchCategory();
-      }
+      const loadData = async () => {
+        const promises: Promise<void>[] = [fetchDifficultyLevels()];
+        
+        if (isAdmin) {
+          promises.push(fetchAssignableUsers());
+        }
+        
+        if (id) {
+          promises.push(fetchCategory());
+        }
+        
+        await Promise.all(promises);
+        
+        // Only set loading to false for new courses (edit loading handled in fetchCategory)
+        if (!id) {
+          setLoading(false);
+        }
+      };
+      
+      loadData();
     }
   }, [id, isAdmin, isModerator, roleLoading]);
 
