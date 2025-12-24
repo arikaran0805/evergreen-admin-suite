@@ -31,6 +31,43 @@ const parseConversation = (content: string): ChatMessage[] => {
   }));
 };
 
+// Helper to extract code blocks from HTML and replace with placeholders
+const extractCodeBlocksFromHtml = (html: string): {
+  processedHtml: string;
+  codeBlocks: { code: string; language: string }[];
+} => {
+  const codeBlocks: { code: string; language: string }[] = [];
+
+  // Match <pre class="ql-syntax"...>...</pre> from Quill editor
+  const preRegex = /<pre[^>]*class="[^"]*ql-syntax[^"]*"[^>]*>([\s\S]*?)<\/pre>/gi;
+
+  const processedHtml = html.replace(preRegex, (_match, content) => {
+    const decodedContent = String(content)
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/<br\s*\/?>(\r?\n)?/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+
+    let language = "python";
+    if (decodedContent.match(/^(function|const|let|var|import|export)\s/m)) {
+      language = "javascript";
+    } else if (decodedContent.match(/^(def|class|import|from|print)\s/m)) {
+      language = "python";
+    } else if (decodedContent.match(/^(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP)\s/im)) {
+      language = "sql";
+    }
+
+    codeBlocks.push({ code: decodedContent, language });
+    return `<!--CODE_BLOCK_${codeBlocks.length - 1}-->`;
+  });
+
+  return { processedHtml, codeBlocks };
+};
+
 const ChatConversationView = ({
   content,
   courseType = "python",
@@ -40,6 +77,11 @@ const ChatConversationView = ({
   const [courses, setCourses] = useState<Course[]>([]);
   const messages = useMemo(() => parseConversation(content), [content]);
   const explanation = useMemo(() => extractExplanation(content), [content]);
+
+  const { processedHtml: explanationHtml, codeBlocks: explanationCodeBlocks } = useMemo(() => {
+    if (!explanation) return { processedHtml: "", codeBlocks: [] as { code: string; language: string }[] };
+    return extractCodeBlocksFromHtml(explanation);
+  }, [explanation]);
 
   // Fetch courses from database
   useEffect(() => {
@@ -309,10 +351,39 @@ const ChatConversationView = ({
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <span className="text-xl">📝</span> Explanation
           </h3>
-          <div 
-            className="leading-relaxed text-foreground/90"
-            dangerouslySetInnerHTML={{ __html: explanation }}
-          />
+
+          {explanationCodeBlocks.length === 0 ? (
+            <div
+              className="leading-relaxed text-foreground/90"
+              dangerouslySetInnerHTML={{ __html: explanation }}
+            />
+          ) : (
+            <div className="leading-relaxed text-foreground/90">
+              {explanationHtml.split(/<!--CODE_BLOCK_(\d+)-->/).map((part, idx) => {
+                if (idx % 2 === 0) {
+                  return part ? (
+                    <div key={idx} dangerouslySetInnerHTML={{ __html: part }} />
+                  ) : null;
+                }
+
+                const codeBlockIndex = parseInt(part, 10);
+                const block = explanationCodeBlocks[codeBlockIndex];
+                if (!block) return null;
+
+                return (
+                  <div key={idx} className="my-4 not-prose">
+                    <CodeBlock
+                      code={block.code}
+                      language={block.language}
+                      overrideTheme={codeTheme}
+                      editable
+                      showToolbarAlways
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
