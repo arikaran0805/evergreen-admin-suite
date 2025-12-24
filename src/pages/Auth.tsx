@@ -18,24 +18,38 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      // Don't auto-redirect if we're in password recovery mode
+      if (session && !passwordRecoveryMode) {
         checkAdminAndRedirect(session.user.id);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session && event === "SIGNED_IN") {
-        await checkAdminAndRedirect(session.user.id);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        // User clicked password reset link - show password update form
+        setPasswordRecoveryMode(true);
+        return;
+      }
+      
+      if (session && event === "SIGNED_IN" && !passwordRecoveryMode) {
+        setTimeout(() => {
+          checkAdminAndRedirect(session.user.id);
+        }, 0);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, passwordRecoveryMode]);
 
   const checkAdminAndRedirect = async (userId: string) => {
     try {
@@ -63,6 +77,61 @@ const Auth = () => {
       }
     } catch (error: any) {
       navigate("/");
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password updated!",
+        description: "Your password has been successfully changed.",
+      });
+
+      setPasswordRecoveryMode(false);
+      setNewPassword("");
+      setConfirmNewPassword("");
+      
+      // Redirect after password update
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await checkAdminAndRedirect(session.user.id);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -303,7 +372,73 @@ const Auth = () => {
             <span className="text-2xl font-bold text-foreground">BlogHub</span>
           </Link>
 
-          {forgotPasswordMode ? (
+          {passwordRecoveryMode ? (
+            /* Set New Password Form */
+            <div className="space-y-6">
+              <div className="text-center lg:text-left">
+                <h1 className="text-3xl font-black text-foreground mb-2">Set New Password</h1>
+                <p className="text-muted-foreground">
+                  Enter your new password below.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdatePassword} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">New Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Enter new password"
+                      className="h-12 pl-12 pr-12 rounded-xl border-border focus:border-primary focus:ring-primary"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Confirm New Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type={showConfirmNewPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      className="h-12 pl-12 pr-12 rounded-xl border-border focus:border-primary focus:ring-primary"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirmNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-primary via-emerald-500 to-teal-500 text-primary-foreground font-bold shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Updating..." : "Update Password"}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </form>
+            </div>
+          ) : forgotPasswordMode ? (
             /* Forgot Password Form */
             <div className="space-y-6">
               <div className="text-center lg:text-left">
