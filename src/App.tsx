@@ -55,12 +55,15 @@ const AppContent = () => {
   useEffect(() => {
     const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
     const searchParams = new URLSearchParams(location.search);
-    const type = hashParams.get("type") ?? searchParams.get("type");
 
-    if (type === "recovery" && location.pathname !== "/auth") {
+    const type = hashParams.get("type") ?? searchParams.get("type");
+    const hasRecoveryTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
+
+    if ((type === "recovery" || (hasRecoveryTokens && !type)) && location.pathname !== "/auth") {
       navigate(`/auth${location.search}${location.hash}`, { replace: true });
     }
   }, [location.hash, location.search, location.pathname, navigate]);
+
   
   // Prevent scroll to top when navigating between admin pages
   useEffect(() => {

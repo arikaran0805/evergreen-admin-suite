@@ -21,7 +21,12 @@ const Auth = () => {
   const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const searchParams = new URLSearchParams(window.location.search);
-    return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery";
+
+    const type = hashParams.get("type") ?? searchParams.get("type");
+    const hasRecoveryTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
+
+    // Some email clients/redirects can drop the `type=recovery` param; tokens are a reliable fallback.
+    return type === "recovery" || (hasRecoveryTokens && !type);
   });
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -34,7 +39,11 @@ const Auth = () => {
     const isRecoveryLink = () => {
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const searchParams = new URLSearchParams(window.location.search);
-      return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery";
+
+      const type = hashParams.get("type") ?? searchParams.get("type");
+      const hasRecoveryTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
+
+      return type === "recovery" || (hasRecoveryTokens && !type);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
