@@ -14,6 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { usePostVersions } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import AdminLayout from "@/components/AdminLayout";
+import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import AnnotationPanel from "@/components/AnnotationPanel";
@@ -508,9 +509,7 @@ const AdminPostEditor = () => {
   if (roleLoading || loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[200px]">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+        <AdminEditorSkeleton type="post" />
       </AdminLayout>
     );
   }
