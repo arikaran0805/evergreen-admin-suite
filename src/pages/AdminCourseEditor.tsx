@@ -11,8 +11,19 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, X, Image, icons, Save, Send } from "lucide-react";
+import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users } from "lucide-react";
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
+interface UserWithRole extends UserProfile {
+  role: string;
+}
 
 const AdminCourseEditor = () => {
   const { id } = useParams();
@@ -23,6 +34,9 @@ const AdminCourseEditor = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [difficultyLevels, setDifficultyLevels] = useState<{ id: string; name: string }[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<UserWithRole[]>([]);
+  const [authorInfo, setAuthorInfo] = useState<UserWithRole | null>(null);
+  const [assigneeInfo, setAssigneeInfo] = useState<UserWithRole | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -33,6 +47,7 @@ const AdminCourseEditor = () => {
     icon: "BookOpen",
     learning_hours: 0,
     status: "draft" as string,
+    assigned_to: "" as string,
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
 
@@ -50,13 +65,16 @@ const AdminCourseEditor = () => {
   }, [roleLoading]);
 
   useEffect(() => {
-    if (isAdmin || isModerator) {
+    if (!roleLoading && (isAdmin || isModerator)) {
       fetchDifficultyLevels();
+      if (isAdmin) {
+        fetchAssignableUsers();
+      }
       if (id) {
         fetchCategory();
       }
     }
-  }, [id, isAdmin, isModerator]);
+  }, [id, isAdmin, isModerator, roleLoading]);
 
   const fetchDifficultyLevels = async () => {
     try {
@@ -69,6 +87,66 @@ const AdminCourseEditor = () => {
       setDifficultyLevels(data || []);
     } catch (error: any) {
       toast({ title: "Error fetching difficulty levels", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const fetchAssignableUsers = async () => {
+    try {
+      // Get all admins and moderators
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["admin", "moderator"]);
+
+      if (rolesError) throw rolesError;
+
+      if (rolesData && rolesData.length > 0) {
+        const userIds = rolesData.map(r => r.user_id);
+        
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+
+        if (profilesError) throw profilesError;
+
+        const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
+          const roleInfo = rolesData.find(r => r.user_id === profile.id);
+          return {
+            ...profile,
+            role: roleInfo?.role || "user"
+          };
+        });
+
+        setAssignableUsers(usersWithRoles);
+      }
+    } catch (error: any) {
+      console.error("Error fetching assignable users:", error);
+    }
+  };
+
+  const fetchUserInfo = async (userId: string): Promise<UserWithRole | null> => {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .eq("id", userId)
+        .single();
+
+      if (!profile) return null;
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      return {
+        ...profile,
+        role: roleData?.role || "user"
+      };
+    } catch {
+      return null;
     }
   };
 
@@ -94,11 +172,11 @@ const AdminCourseEditor = () => {
       if (error) throw error;
       
       if (data) {
-        // Check if moderator is trying to edit someone else's course
-        if (isModerator && !isAdmin && data.author_id && data.author_id !== userId) {
+        // Check if moderator is trying to edit someone else's course (and it's not assigned to them)
+        if (isModerator && !isAdmin && data.author_id && data.author_id !== userId && data.assigned_to !== userId) {
           toast({
             title: "Access Denied",
-            description: "You can only edit your own courses",
+            description: "You can only edit your own or assigned courses",
             variant: "destructive",
           });
           navigate("/admin/courses");
@@ -116,7 +194,20 @@ const AdminCourseEditor = () => {
           icon: (data as any).icon || "BookOpen",
           learning_hours: (data as any).learning_hours || 0,
           status: data.status || "draft",
+          assigned_to: (data as any).assigned_to || "",
         });
+
+        // Fetch author info
+        if (data.author_id) {
+          const author = await fetchUserInfo(data.author_id);
+          setAuthorInfo(author);
+        }
+
+        // Fetch assignee info
+        if ((data as any).assigned_to) {
+          const assignee = await fetchUserInfo((data as any).assigned_to);
+          setAssigneeInfo(assignee);
+        }
       }
     } catch (error: any) {
       toast({ title: "Error fetching course", description: error.message, variant: "destructive" });
@@ -141,11 +232,23 @@ const AdminCourseEditor = () => {
         status = "draft";
       }
 
-      const courseData = {
-        ...formData,
+      const courseData: any = {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
+        featured: formData.featured,
+        level: formData.level,
+        featured_image: formData.featured_image || null,
+        icon: formData.icon,
+        learning_hours: formData.learning_hours,
         status,
         author_id: originalAuthorId || session.user.id,
       };
+
+      // Only admins can set assigned_to
+      if (isAdmin) {
+        courseData.assigned_to = formData.assigned_to || null;
+      }
 
       let courseId = id;
 
@@ -224,6 +327,26 @@ const AdminCourseEditor = () => {
 
   const removeImage = () => {
     setFormData({ ...formData, featured_image: "" });
+  };
+
+  const getRoleBadge = (role: string) => {
+    if (role === "admin") {
+      return (
+        <Badge className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
+          <Shield className="h-3 w-3" />
+          Admin
+        </Badge>
+      );
+    }
+    if (role === "moderator") {
+      return (
+        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1">
+          <UserCog className="h-3 w-3" />
+          Moderator
+        </Badge>
+      );
+    }
+    return null;
   };
 
   const canPublishDirectly = isAdmin;
@@ -305,6 +428,99 @@ const AdminCourseEditor = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Ownership & Assignment Card - Admin Only */}
+            {isAdmin && id && (
+              <Card className="border-primary/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Ownership & Assignment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Created By */}
+                  {authorInfo && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        Created by
+                      </Label>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                        <span className="text-sm font-medium">
+                          {authorInfo.full_name || authorInfo.email.split("@")[0]}
+                        </span>
+                        {getRoleBadge(authorInfo.role)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Assign To */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <UserCog className="h-3 w-3" />
+                      Assign to
+                    </Label>
+                    <Select
+                      value={formData.assigned_to || "none"}
+                      onValueChange={(value) => setFormData({ ...formData, assigned_to: value === "none" ? "" : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select user to assign" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not assigned</SelectItem>
+                        {assignableUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{user.full_name || user.email.split("@")[0]}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({user.role})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Assigned users can edit this course
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Show ownership info for moderators (read-only) */}
+            {!isAdmin && id && (authorInfo || assigneeInfo) && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Ownership Info
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {authorInfo && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Created by:</span>
+                      <div className="flex items-center gap-2">
+                        <span>{authorInfo.full_name || authorInfo.email.split("@")[0]}</span>
+                        {getRoleBadge(authorInfo.role)}
+                      </div>
+                    </div>
+                  )}
+                  {assigneeInfo && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Assigned to:</span>
+                      <div className="flex items-center gap-2">
+                        <span>{assigneeInfo.full_name || assigneeInfo.email.split("@")[0]}</span>
+                        {getRoleBadge(assigneeInfo.role)}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Featured Image</CardTitle>
@@ -440,16 +656,18 @@ const AdminCourseEditor = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between space-x-2">
-                  <Label htmlFor="featured" className="cursor-pointer">
-                    Featured Course
-                  </Label>
-                  <Switch
-                    id="featured"
-                    checked={formData.featured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
-                  />
-                </div>
+                {isAdmin && (
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="featured" className="cursor-pointer">
+                      Featured Course
+                    </Label>
+                    <Switch
+                      id="featured"
+                      checked={formData.featured}
+                      onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
