@@ -86,7 +86,6 @@ const CodeBlock = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(code);
   const [lineCount, setLineCount] = useState(code.split('\n').length);
-  const [currentLine, setCurrentLine] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputError, setOutputError] = useState(false);
@@ -204,8 +203,6 @@ const CodeBlock = ({
     setEditedCode(newValue);
     // Update line count based on content
     setLineCount(newValue.split('\n').length);
-    // Update current line
-    updateCurrentLine(e.target);
   };
 
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -226,37 +223,6 @@ const CodeBlock = ({
         }
       }
     }
-  };
-
-  const updateCurrentLine = (textarea: HTMLTextAreaElement) => {
-    const cursorPos = textarea.selectionStart;
-    const textBefore = editedCode.substring(0, cursorPos);
-    const lineNumber = textBefore.split('\n').length - 1;
-    setCurrentLine(lineNumber);
-  };
-
-  const handleTextareaClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
-    updateCurrentLine(e.currentTarget);
-  };
-
-  const handleTextareaSelect = () => {
-    if (textareaRef.current) {
-      updateCurrentLine(textareaRef.current);
-    }
-  };
-
-  // Generate line highlight overlay - blue border style
-  const renderLineHighlight = () => {
-    if (!isEditing) return null;
-    return (
-      <div 
-        className="absolute left-0 right-0 pointer-events-none transition-all duration-100 rounded border-2 border-blue-400 bg-blue-400/10"
-        style={{
-          top: `${currentLine * lineHeight}px`,
-          height: `${lineHeight}px`,
-        }}
-      />
-    );
   };
 
   // Get the appropriate theme class
@@ -374,37 +340,30 @@ const CodeBlock = ({
         </div>
         
         {/* Code content or editor */}
-        <div className="relative">
-          {/* Line highlight overlay */}
-          {renderLineHighlight()}
-          
-          {isEditing ? (
-            <textarea
-              ref={textareaRef}
-              value={editedCode}
-              onChange={handleTextareaChange}
-              onKeyDown={handleTextareaKeyDown}
-              onClick={handleTextareaClick}
-              onSelect={handleTextareaSelect}
-              style={{ height: `${lineCount * lineHeight}px` }}
-              className={cn(
-                "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150 relative z-10",
-                isCleanTheme ? "text-gray-800" : "text-gray-100"
-              )}
-              spellCheck={false}
-            />
-          ) : (
-            <code
-              ref={codeRef}
-              className={cn(
-                `language-${normalizedLang} leading-relaxed whitespace-pre-wrap`,
-                isCleanTheme && "text-gray-800"
-              )}
-            >
-              {displayCode}
-            </code>
-          )}
-        </div>
+        {isEditing ? (
+          <textarea
+            ref={textareaRef}
+            value={editedCode}
+            onChange={handleTextareaChange}
+            onKeyDown={handleTextareaKeyDown}
+            style={{ height: `${lineCount * lineHeight}px` }}
+            className={cn(
+              "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
+              isCleanTheme ? "text-gray-800" : "text-gray-100"
+            )}
+            spellCheck={false}
+          />
+        ) : (
+          <code
+            ref={codeRef}
+            className={cn(
+              `language-${normalizedLang} leading-relaxed`,
+              isCleanTheme && "text-gray-800"
+            )}
+          >
+            {displayCode}
+          </code>
+        )}
       </pre>
       
       {/* Collapsible Output section */}
