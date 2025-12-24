@@ -51,13 +51,14 @@ const AppContent = () => {
   const prevLocationRef = useRef(location.pathname);
 
   // If user opens an email recovery link that lands on / (or any page), move them to /auth
+  // IMPORTANT: preserve the hash/search so the recovery flow isn't lost.
   useEffect(() => {
     const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
     const searchParams = new URLSearchParams(location.search);
     const type = hashParams.get("type") ?? searchParams.get("type");
 
     if (type === "recovery" && location.pathname !== "/auth") {
-      navigate("/auth", { replace: true });
+      navigate(`/auth${location.search}${location.hash}`, { replace: true });
     }
   }, [location.hash, location.search, location.pathname, navigate]);
   

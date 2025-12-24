@@ -123,18 +123,15 @@ const Auth = () => {
 
       toast({
         title: "Password updated!",
-        description: "Your password has been successfully changed.",
+        description: "Now sign in manually with your new password.",
       });
 
+      // After resetting, require a fresh manual login.
+      await supabase.auth.signOut();
       setPasswordRecoveryMode(false);
       setNewPassword("");
       setConfirmNewPassword("");
-      
-      // Redirect after password update
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await checkAdminAndRedirect(session.user.id);
-      }
+      navigate("/auth", { replace: true });
     } catch (error: any) {
       toast({
         title: "Error",
