@@ -57,13 +57,15 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       });
     }
 
-    // Delete Requests - available to both admins and moderators
-    items.push({ 
-      icon: Trash2, 
-      label: "Delete Requests", 
-      path: "/admin/delete-requests",
-      badge: isAdmin && pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
-    });
+    // Delete Requests - Admin only
+    if (isAdmin) {
+      items.push({ 
+        icon: Trash2, 
+        label: "Delete Requests", 
+        path: "/admin/delete-requests",
+        badge: pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
+      });
+    }
 
     // Content management - available to both admins and moderators
     items.push(
@@ -86,6 +88,9 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     // Social Analytics - Available to both
     items.push({ icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" });
 
+    // Analytics - Available to both (moderators see only their posts)
+    items.push({ icon: BarChart3, label: "Analytics", path: "/admin/analytics" });
+
     // Admin-only sections
     if (isAdmin) {
       items.push(
@@ -95,7 +100,6 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         { icon: DollarSign, label: "Monetization", path: "/admin/monetization", adminOnly: true },
         { icon: Link2, label: "Redirects", path: "/admin/redirects", adminOnly: true },
         { icon: Key, label: "API & Integrations", path: "/admin/api", adminOnly: true },
-        { icon: BarChart3, label: "Analytics", path: "/admin/analytics", adminOnly: true },
       );
     }
 
