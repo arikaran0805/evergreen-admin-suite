@@ -245,15 +245,12 @@ const CodeBlock = ({
     }
   };
 
-  // Generate line highlight overlay
+  // Generate line highlight overlay - blue border style
   const renderLineHighlight = () => {
     if (!isEditing) return null;
     return (
       <div 
-        className={cn(
-          "absolute left-0 right-0 pointer-events-none transition-all duration-100",
-          isCleanTheme ? "bg-yellow-100/50" : "bg-primary/10"
-        )}
+        className="absolute left-0 right-0 pointer-events-none transition-all duration-100 rounded border-2 border-blue-400 bg-blue-400/10"
         style={{
           top: `${currentLine * lineHeight}px`,
           height: `${lineHeight}px`,
@@ -400,7 +397,7 @@ const CodeBlock = ({
             <code
               ref={codeRef}
               className={cn(
-                `language-${normalizedLang} leading-relaxed`,
+                `language-${normalizedLang} leading-relaxed whitespace-pre-wrap`,
                 isCleanTheme && "text-gray-800"
               )}
             >
