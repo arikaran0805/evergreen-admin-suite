@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Briefcase,
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap,
-  ClipboardCheck
+  ClipboardCheck, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,10 +27,15 @@ interface MenuItem {
   badge?: number;
 }
 
+interface PendingCounts {
+  approvals: number;
+  deleteRequests: number;
+}
+
 const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCounts, setPendingCounts] = useState<PendingCounts>({ approvals: 0, deleteRequests: 0 });
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,13 +47,19 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     ];
 
-    // Admin-only: Approval Queue
+    // Admin-only: Approval Queue and Delete Requests
     if (isAdmin) {
       items.push({ 
         icon: ClipboardCheck, 
         label: "Approval Queue", 
         path: "/admin/approvals",
-        badge: pendingCount > 0 ? pendingCount : undefined
+        badge: pendingCounts.approvals > 0 ? pendingCounts.approvals : undefined
+      });
+      items.push({ 
+        icon: Trash2, 
+        label: "Delete Requests", 
+        path: "/admin/delete-requests",
+        badge: pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
       });
     }
 
@@ -137,8 +148,17 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         .select("*", { count: "exact", head: true })
         .eq("status", "pending");
 
-      const total = (postsCount || 0) + (coursesCount || 0) + (careersCount || 0) + (tagsCount || 0);
-      setPendingCount(total);
+      // Count pending delete requests
+      const { count: deleteRequestsCount } = await supabase
+        .from("delete_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      const approvalsTotal = (postsCount || 0) + (coursesCount || 0) + (careersCount || 0) + (tagsCount || 0);
+      setPendingCounts({
+        approvals: approvalsTotal,
+        deleteRequests: deleteRequestsCount || 0
+      });
     } catch (error) {
       console.error("Error fetching pending count:", error);
     }
