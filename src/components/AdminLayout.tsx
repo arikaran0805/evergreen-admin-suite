@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Briefcase,
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap,
-  ClipboardCheck, Trash2
+  ClipboardCheck, Trash2, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -84,6 +84,11 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
 
     // Media Library - Available to both (moderators see only their own)
     items.push({ icon: Image, label: "Media Library", path: "/admin/media" });
+
+    // My Activity - Moderators only (shows their actions and admin feedback)
+    if (isModerator && !isAdmin) {
+      items.push({ icon: Activity, label: "My Activity", path: "/admin/activity" });
+    }
 
     // Social Analytics - Available to both
     items.push({ icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" });

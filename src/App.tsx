@@ -40,6 +40,7 @@ import AdminSocialAnalytics from "./pages/AdminSocialAnalytics";
 import AdminTags from "./pages/AdminTags";
 import AdminApprovals from "./pages/AdminApprovals";
 import AdminDeleteRequests from "./pages/AdminDeleteRequests";
+import AdminModeratorActivity from "./pages/AdminModeratorActivity";
 import TagPosts from "./pages/TagPosts";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -132,6 +133,7 @@ const AppContent = () => {
         <Route path="/admin/api" element={<AdminAPI />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/social-analytics" element={<AdminSocialAnalytics />} />
+        <Route path="/admin/activity" element={<AdminModeratorActivity />} />
         <Route path="/admin/seo" element={<Navigate to="/admin/settings" replace />} />
         <Route path="/admin/ad-settings" element={<Navigate to="/admin/api" replace />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
