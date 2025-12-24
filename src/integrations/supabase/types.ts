@@ -169,6 +169,41 @@ export type Database = {
           },
         ]
       }
+      annotation_replies: {
+        Row: {
+          annotation_id: string
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          annotation_id: string
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          annotation_id?: string
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotation_replies_annotation_id_fkey"
+            columns: ["annotation_id"]
+            isOneToOne: false
+            referencedRelation: "post_annotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_integrations: {
         Row: {
           config: Json
