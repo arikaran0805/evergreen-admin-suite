@@ -11,10 +11,27 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-markup";
-import { Copy, Check, Play, Pencil, Loader2, X } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const SUPPORTED_LANGUAGES = [
+  { value: 'python', label: 'Python' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'json', label: 'JSON' },
+  { value: 'bash', label: 'Bash' },
+  { value: 'css', label: 'CSS' },
+  { value: 'markup', label: 'HTML' },
+];
 
 interface RichTextEditorProps {
   value: string;
@@ -38,6 +55,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   const [outputs, setOutputs] = useState<Record<number, { text: string; error: boolean }>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editedCode, setEditedCode] = useState("");
+  const [languageOverrides, setLanguageOverrides] = useState<Record<number, string>>({});
 
   const modules = {
     toolbar: [
@@ -105,10 +123,11 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     const containerRect = containerRef.current.getBoundingClientRect();
     
     const blocks: CodeBlockOverlay[] = [];
-    preElements.forEach((pre) => {
+    preElements.forEach((pre, idx) => {
       const rect = pre.getBoundingClientRect();
       const code = pre.textContent || "";
-      const language = detectLanguage(code);
+      // Use override if set, otherwise detect
+      const language = languageOverrides[idx] || detectLanguage(code);
       
       blocks.push({
         element: pre,
@@ -122,14 +141,14 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         language,
       });
 
-      // Apply syntax highlighting
+      // Apply syntax highlighting with current language
       const highlighted = Prism.highlight(code, Prism.languages[language] || Prism.languages.plaintext, language);
       pre.innerHTML = highlighted;
       pre.classList.add(`language-${language}`);
     });
     
     setCodeBlocks(blocks);
-  }, []);
+  }, [languageOverrides]);
 
   // Update code blocks on content change
   useEffect(() => {
@@ -226,6 +245,21 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     });
   };
 
+  const handleLanguageChange = (index: number, language: string) => {
+    setLanguageOverrides(prev => ({ ...prev, [index]: language }));
+    // Re-apply highlighting immediately
+    const block = codeBlocks[index];
+    if (block?.element) {
+      const highlighted = Prism.highlight(block.code, Prism.languages[language] || Prism.languages.plaintext, language);
+      block.element.innerHTML = highlighted;
+      block.element.className = `ql-syntax language-${language}`;
+    }
+  };
+
+  const getLanguageLabel = (langValue: string) => {
+    return SUPPORTED_LANGUAGES.find(l => l.value === langValue)?.label || langValue;
+  };
+
   return (
     <div className="rich-text-editor" ref={containerRef}>
       <ReactQuill
@@ -251,8 +285,38 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
             height: block.rect.height,
           }}
         >
-          {/* Action buttons */}
-          <div className="absolute top-2 right-2 flex items-center gap-1 pointer-events-auto z-10">
+          {/* Language selector and action buttons */}
+          <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-auto z-10">
+            {/* Language dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 gap-1 bg-white/80 hover:bg-white text-gray-600 text-xs font-medium shadow-sm rounded-full"
+                >
+                  {getLanguageLabel(block.language)}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="bg-white border border-gray-200 shadow-lg z-50">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.value}
+                    onClick={() => handleLanguageChange(index, lang.value)}
+                    className={cn(
+                      "cursor-pointer",
+                      block.language === lang.value && "bg-gray-100 font-medium"
+                    )}
+                  >
+                    {lang.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Action buttons */}
+            <div className="flex items-center gap-1">
             {/* Edit button */}
             <Button
               variant="ghost"
@@ -295,6 +359,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
                 <Copy className="w-3.5 h-3.5" />
               )}
             </Button>
+            </div>
           </div>
           
           {/* Edit overlay */}
