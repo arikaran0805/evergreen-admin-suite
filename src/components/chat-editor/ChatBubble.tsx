@@ -131,14 +131,15 @@ const ChatBubble = ({
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
-          <CodeBlock
-            key={idx}
-            code={part.content}
-            language={part.language}
-            isMentorBubble={isMentor}
-            overrideTheme={codeTheme}
-            editable
-          />
+          <div key={idx} className="-mx-4 px-0">
+            <CodeBlock
+              code={part.content}
+              language={part.language}
+              isMentorBubble={isMentor}
+              overrideTheme={codeTheme}
+              editable
+            />
+          </div>
         );
       }
       return <span key={idx}>{renderTextWithInlineCode(part.content, idx)}</span>;
