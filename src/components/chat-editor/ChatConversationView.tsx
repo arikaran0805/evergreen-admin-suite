@@ -251,7 +251,7 @@ const ChatConversationView = ({
                 {/* Bubble */}
                 <div
                   className={cn(
-                    "relative max-w-[75%] px-5 py-3 rounded-2xl",
+                    "relative max-w-[85%] px-5 py-3 rounded-2xl",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
                     isMentorBubble
                       ? "bg-gradient-to-br from-[hsl(210,100%,52%)] to-[hsl(210,100%,45%)] text-white rounded-br-md"
