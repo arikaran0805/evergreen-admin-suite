@@ -58,14 +58,14 @@ const AdminSocialAnalytics = () => {
       return;
     }
 
+    // Check for admin or moderator role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "moderator"]);
 
-    if (!roleData) {
+    if (!roleData || roleData.length === 0) {
       toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
       return;

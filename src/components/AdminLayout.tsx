@@ -47,7 +47,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     ];
 
-    // Admin-only: Approval Queue and Delete Requests
+    // Admin-only: Approval Queue
     if (isAdmin) {
       items.push({ 
         icon: ClipboardCheck, 
@@ -55,13 +55,15 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         path: "/admin/approvals",
         badge: pendingCounts.approvals > 0 ? pendingCounts.approvals : undefined
       });
-      items.push({ 
-        icon: Trash2, 
-        label: "Delete Requests", 
-        path: "/admin/delete-requests",
-        badge: pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
-      });
     }
+
+    // Delete Requests - available to both admins and moderators
+    items.push({ 
+      icon: Trash2, 
+      label: "Delete Requests", 
+      path: "/admin/delete-requests",
+      badge: isAdmin && pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
+    });
 
     // Content management - available to both admins and moderators
     items.push(
@@ -78,18 +80,22 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     // Comments - Available to both, but moderators see only their own
     items.push({ icon: MessageSquare, label: "Comments", path: "/admin/comments" });
 
+    // Media Library - Available to both (moderators see only their own)
+    items.push({ icon: Image, label: "Media Library", path: "/admin/media" });
+
+    // Social Analytics - Available to both
+    items.push({ icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" });
+
     // Admin-only sections
     if (isAdmin) {
       items.push(
         { icon: Files, label: "Pages", path: "/admin/pages", adminOnly: true },
         { icon: Users, label: "Users", path: "/admin/users", adminOnly: true },
         { icon: UserCog, label: "Authors/Admins", path: "/admin/authors", adminOnly: true },
-        { icon: Image, label: "Media Library", path: "/admin/media", adminOnly: true },
         { icon: DollarSign, label: "Monetization", path: "/admin/monetization", adminOnly: true },
         { icon: Link2, label: "Redirects", path: "/admin/redirects", adminOnly: true },
         { icon: Key, label: "API & Integrations", path: "/admin/api", adminOnly: true },
         { icon: BarChart3, label: "Analytics", path: "/admin/analytics", adminOnly: true },
-        { icon: Share2, label: "Social Analytics", path: "/admin/social-analytics", adminOnly: true },
       );
     }
 

@@ -47,6 +47,7 @@ const AdminMedia = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [isModerator, setIsModerator] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -61,27 +62,38 @@ const AdminMedia = () => {
 
     setUserId(session.user.id);
 
+    // Check for admin or moderator role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "moderator"]);
 
-    if (!roleData) {
+    if (!roleData || roleData.length === 0) {
       toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
       return;
     }
 
-    fetchMedia();
+    const roles = roleData.map(r => r.role);
+    const moderatorOnly = roles.includes("moderator") && !roles.includes("admin");
+    setIsModerator(moderatorOnly);
+
+    fetchMedia(session.user.id, moderatorOnly);
   };
 
-  const fetchMedia = async () => {
-    const { data, error } = await supabase
+  const fetchMedia = async (currentUserId: string, moderatorOnly: boolean) => {
+    let query = supabase
       .from("media")
       .select("*")
       .order("created_at", { ascending: false });
+
+    // If moderator, only show their own media
+    if (moderatorOnly) {
+      query = query.eq("user_id", currentUserId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Error fetching media", variant: "destructive" });
@@ -130,7 +142,7 @@ const AdminMedia = () => {
 
     toast({ title: "Upload complete" });
     setUploading(false);
-    fetchMedia();
+    if (userId) fetchMedia(userId, isModerator);
     e.target.value = "";
   };
 
@@ -146,7 +158,7 @@ const AdminMedia = () => {
       toast({ title: "Failed to rename", variant: "destructive" });
     } else {
       toast({ title: "File renamed" });
-      fetchMedia();
+      if (userId) fetchMedia(userId, isModerator);
     }
     setRenameDialogOpen(false);
     setSelectedFile(null);
@@ -168,7 +180,7 @@ const AdminMedia = () => {
       toast({ title: "Failed to delete", variant: "destructive" });
     } else {
       toast({ title: "File deleted" });
-      fetchMedia();
+      if (userId) fetchMedia(userId, isModerator);
     }
     setDeleteDialogOpen(false);
     setSelectedFile(null);
