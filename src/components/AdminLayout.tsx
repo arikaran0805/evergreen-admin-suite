@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Briefcase,
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap,
-  ClipboardCheck, Trash2, Activity
+  ClipboardCheck, Trash2, Activity, Flag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,6 +64,15 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         label: "Delete Requests", 
         path: "/admin/delete-requests",
         badge: pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
+      });
+    }
+
+    // Reports & Suggestions - Admin only
+    if (isAdmin) {
+      items.push({ 
+        icon: Flag, 
+        label: "Reports", 
+        path: "/admin/reports"
       });
     }
 

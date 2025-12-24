@@ -525,6 +525,54 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          description: string
+          id: string
+          reason: string | null
+          report_type: string
+          reporter_email: string | null
+          reporter_id: string | null
+          review_notes: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          description: string
+          id?: string
+          reason?: string | null
+          report_type: string
+          reporter_email?: string | null
+          reporter_id?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reason?: string | null
+          report_type?: string
+          reporter_email?: string | null
+          reporter_id?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       course_enrollments: {
         Row: {
           course_id: string
