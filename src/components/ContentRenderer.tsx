@@ -107,8 +107,9 @@ const ContentRenderer = ({
                 code={editedCodes[codeBlockIndex] ?? block.code}
                 language={block.language}
                 editable={true}
-                overrideTheme={codeTheme}
+                overrideTheme={codeTheme || "clean"}
                 onEdit={(newCode) => handleCodeEdit(codeBlockIndex, newCode)}
+                showToolbarAlways
               />
             </div>
           );

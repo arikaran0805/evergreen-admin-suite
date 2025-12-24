@@ -56,6 +56,7 @@ interface CodeBlockProps {
   overrideTheme?: string;
   onEdit?: (code: string) => void;
   editable?: boolean;
+  showToolbarAlways?: boolean;
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -79,6 +80,7 @@ const CodeBlock = ({
   overrideTheme,
   onEdit,
   editable = false,
+  showToolbarAlways = false,
 }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -248,10 +250,14 @@ const CodeBlock = ({
 
   const displayCode = isEditing ? editedCode : code;
 
+  // Visibility class for toolbar buttons
+  const toolbarVisibility = showToolbarAlways ? "opacity-100" : "opacity-0 group-hover:opacity-100";
+
   return (
     <div 
       className={cn(
-        "relative group mt-3 w-full min-w-[450px]",
+        "relative group mt-3 w-full",
+        !showToolbarAlways && "min-w-[450px]",
         getThemeClass()
       )}
     >
@@ -280,7 +286,8 @@ const CodeBlock = ({
                 size="icon"
                 onClick={isEditing ? handleCancelEdit : handleEdit}
                 className={cn(
-                  "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+                  "h-7 w-7 rounded-full transition-opacity",
+                  toolbarVisibility,
                   isCleanTheme
                     ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -302,7 +309,8 @@ const CodeBlock = ({
                 onClick={handleRun}
                 disabled={isRunning}
                 className={cn(
-                  "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+                  "h-7 w-7 rounded-full transition-opacity",
+                  toolbarVisibility,
                   isCleanTheme
                     ? "text-gray-400 hover:text-green-600 hover:bg-green-50"
                     : "text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
@@ -322,7 +330,8 @@ const CodeBlock = ({
               size="icon"
               onClick={handleCopy}
               className={cn(
-                "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+                "h-7 w-7 rounded-full transition-opacity",
+                toolbarVisibility,
                 isMentorBubble 
                   ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
                   : isCleanTheme
