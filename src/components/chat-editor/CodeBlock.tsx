@@ -15,7 +15,7 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Play, Pencil, ChevronUp, ChevronDown, Loader2, X } from "lucide-react";
+import { Copy, Check, Play, Pencil, ChevronUp, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
@@ -337,20 +337,14 @@ const CodeBlock = ({
             )}
           >
             <div className={cn(
-              "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform",
-              isCleanTheme ? "bg-gray-200" : "bg-muted"
+              "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform duration-200",
+              isCleanTheme ? "bg-gray-200" : "bg-muted",
+              outputExpanded ? "rotate-0" : "rotate-180"
             )}>
-              {outputExpanded ? (
-                <ChevronUp className={cn(
-                  "w-3 h-3",
-                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-                )} />
-              ) : (
-                <ChevronDown className={cn(
-                  "w-3 h-3",
-                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-                )} />
-              )}
+              <ChevronUp className={cn(
+                "w-3 h-3",
+                isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+              )} />
             </div>
             <span className={cn(
               "text-xs font-medium",
@@ -364,21 +358,28 @@ const CodeBlock = ({
             </span>
           </button>
           
-          {/* Collapsible content */}
-          {outputExpanded && (
-            <div className="px-3 pb-3">
-              <pre className={cn(
-                "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
-                outputError 
-                  ? "text-red-500" 
-                  : isCleanTheme 
-                    ? "text-gray-800" 
-                    : "text-foreground"
-              )}>
-                {output}
-              </pre>
+          {/* Collapsible content with animation */}
+          <div 
+            className={cn(
+              "grid transition-all duration-200 ease-out",
+              outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            )}
+          >
+            <div className="overflow-hidden">
+              <div className="px-3 pb-3">
+                <pre className={cn(
+                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+                  outputError 
+                    ? "text-red-500" 
+                    : isCleanTheme 
+                      ? "text-gray-800" 
+                      : "text-foreground"
+                )}>
+                  {output}
+                </pre>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
       
