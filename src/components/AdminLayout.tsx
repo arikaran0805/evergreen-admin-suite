@@ -56,9 +56,16 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     items.push(
       { icon: BookOpen, label: "Posts", path: "/admin/posts" },
       { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
-      { icon: Briefcase, label: "Careers", path: "/admin/careers" },
       { icon: Tags, label: "Tags", path: "/admin/tags" },
     );
+
+    // Careers - Admin only
+    if (isAdmin) {
+      items.push({ icon: Briefcase, label: "Careers", path: "/admin/careers" });
+    }
+
+    // Comments - Available to both, but moderators see only their own
+    items.push({ icon: MessageSquare, label: "Comments", path: "/admin/comments" });
 
     // Admin-only sections
     if (isAdmin) {
@@ -66,7 +73,6 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         { icon: Files, label: "Pages", path: "/admin/pages", adminOnly: true },
         { icon: Users, label: "Users", path: "/admin/users", adminOnly: true },
         { icon: UserCog, label: "Authors/Admins", path: "/admin/authors", adminOnly: true },
-        { icon: MessageSquare, label: "Comments", path: "/admin/comments", adminOnly: true },
         { icon: Image, label: "Media Library", path: "/admin/media", adminOnly: true },
         { icon: DollarSign, label: "Monetization", path: "/admin/monetization", adminOnly: true },
         { icon: Link2, label: "Redirects", path: "/admin/redirects", adminOnly: true },

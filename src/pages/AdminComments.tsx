@@ -73,6 +73,8 @@ const AdminComments = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedComments, setSelectedComments] = useState<Set<string>>(new Set());
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -89,26 +91,32 @@ const AdminComments = () => {
 
     setCurrentUserId(session.user.id);
 
-    const { data: roleData } = await supabase
+    const { data: rolesData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "moderator"]);
 
-    if (!roleData) {
+    if (roleError || !rolesData || rolesData.length === 0) {
       toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
       return;
     }
 
-    fetchComments();
+    const roles = rolesData.map(r => r.role);
+    const userIsAdmin = roles.includes("admin");
+    const userIsModerator = roles.includes("moderator");
+    
+    setIsAdmin(userIsAdmin);
+    setIsModerator(userIsModerator);
+
+    fetchComments(session.user.id, userIsAdmin);
     fetchReactions();
   };
 
-  const fetchComments = async () => {
+  const fetchComments = async (userId: string, userIsAdmin: boolean) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("comments")
         .select(`
           *,
@@ -116,6 +124,13 @@ const AdminComments = () => {
           posts:post_id (title, slug, category_id, courses:category_id (name, slug))
         `)
         .order("created_at", { ascending: false });
+
+      // Moderators only see comments they created
+      if (!userIsAdmin) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setComments(data || []);
@@ -157,7 +172,7 @@ const AdminComments = () => {
       const { error } = await supabase.from("comments").delete().eq("id", id);
       if (error) throw error;
       toast({ title: "Comment deleted" });
-      fetchComments();
+      if (currentUserId) fetchComments(currentUserId, isAdmin);
     } catch (error: any) {
       toast({ title: "Error deleting comment", description: error.message, variant: "destructive" });
     }
@@ -177,7 +192,7 @@ const AdminComments = () => {
       
       toast({ title: `${selectedComments.size} comment(s) deleted` });
       setSelectedComments(new Set());
-      fetchComments();
+      if (currentUserId) fetchComments(currentUserId, isAdmin);
     } catch (error: any) {
       toast({ title: "Error deleting comments", description: error.message, variant: "destructive" });
     }
@@ -203,7 +218,7 @@ const AdminComments = () => {
         .eq("id", id);
       if (error) throw error;
       toast({ title: "Comment rejected" });
-      fetchComments();
+      if (currentUserId) fetchComments(currentUserId, isAdmin);
     } catch (error: any) {
       toast({ title: "Error rejecting comment", description: error.message, variant: "destructive" });
     }
@@ -217,7 +232,7 @@ const AdminComments = () => {
         .eq("id", id);
       if (error) throw error;
       toast({ title: "Comment approved" });
-      fetchComments();
+      if (currentUserId) fetchComments(currentUserId, isAdmin);
     } catch (error: any) {
       toast({ title: "Error approving comment", description: error.message, variant: "destructive" });
     }
@@ -243,7 +258,7 @@ const AdminComments = () => {
       toast({ title: "Reply posted successfully" });
       setReplyContent("");
       setReplyingTo(null);
-      fetchComments();
+      if (currentUserId) fetchComments(currentUserId, isAdmin);
     } catch (error: any) {
       toast({ title: "Error posting reply", description: error.message, variant: "destructive" });
     } finally {
