@@ -253,7 +253,7 @@ const CodeBlock = ({
   return (
     <div 
       className={cn(
-        "relative group mt-3 w-full min-w-[400px]",
+        "relative group mt-3 w-full min-w-[450px]",
         getThemeClass()
       )}
     >
@@ -360,6 +360,14 @@ const CodeBlock = ({
             {displayCode.split('\n').map((line, index) => {
               const lineNumber = index + 1;
               const isHighlighted = highlightLines.includes(lineNumber);
+              
+              // For mentor bubble, don't use Prism highlighting to avoid background issues
+              const highlightedHtml = isMentorBubble 
+                ? (line || ' ')
+                : (Prism.languages[normalizedLang] 
+                    ? Prism.highlight(line || ' ', Prism.languages[normalizedLang], normalizedLang)
+                    : line || ' ');
+              
               return (
                 <div
                   key={index}
@@ -377,13 +385,9 @@ const CodeBlock = ({
                     className={cn(
                       `language-${normalizedLang} leading-relaxed`,
                       isCleanTheme && "text-gray-800",
-                      isMentorBubble && "[&_*]:!bg-transparent [&_.token]:!text-inherit"
+                      isMentorBubble && "text-white"
                     )}
-                    dangerouslySetInnerHTML={{
-                      __html: Prism.languages[normalizedLang] 
-                        ? Prism.highlight(line || ' ', Prism.languages[normalizedLang], normalizedLang)
-                        : line || ' '
-                    }}
+                    dangerouslySetInnerHTML={{ __html: highlightedHtml }}
                   />
                 </div>
               );
