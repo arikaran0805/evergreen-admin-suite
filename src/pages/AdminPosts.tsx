@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LessonReorder from "@/components/LessonReorder";
 import {
@@ -15,9 +16,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Plus, Edit, Trash2, Eye, Info } from "lucide-react";
+import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
+import { Plus, Edit, Trash2, Eye, Info, User, UserCog, Shield } from "lucide-react";
 import { format } from "date-fns";
-
 
 interface Post {
   id: string;
@@ -29,9 +30,22 @@ interface Post {
   updated_at: string;
   parent_id: string | null;
   category_id: string | null;
+  author_id: string;
+  assigned_to: string | null;
   courses: {
     slug: string;
   } | null;
+}
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
+interface UserWithRole {
+  profile: UserProfile;
+  role: string;
 }
 
 interface PostStats {
@@ -46,6 +60,7 @@ interface PostStats {
 const AdminPosts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postStats, setPostStats] = useState<PostStats>({});
+  const [users, setUsers] = useState<Map<string, UserWithRole>>(new Map());
   const [loading, setLoading] = useState(true);
   const [moderatorOnly, setModeratorOnly] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -98,26 +113,68 @@ const AdminPosts = () => {
     }
   };
 
+  const fetchUsers = async (userIds: string[]) => {
+    try {
+      const uniqueIds = [...new Set(userIds.filter(Boolean))];
+      if (uniqueIds.length === 0) return;
+
+      // Fetch profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", uniqueIds);
+
+      // Fetch roles
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", uniqueIds);
+
+      const userMap = new Map<string, UserWithRole>();
+      
+      profiles?.forEach(profile => {
+        const userRole = roles?.find(r => r.user_id === profile.id);
+        userMap.set(profile.id, {
+          profile,
+          role: userRole?.role || "user"
+        });
+      });
+
+      setUsers(userMap);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
   const fetchPosts = async (viewerUserId: string, isModeratorOnly: boolean) => {
     try {
       let query = supabase
         .from("posts")
         .select(
-          "id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, courses:category_id(slug)"
+          "id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, author_id, assigned_to, courses:category_id(slug)"
         );
 
+      // Moderators see their own posts AND posts assigned to them
       if (isModeratorOnly) {
-        query = query.eq("author_id", viewerUserId);
+        query = query.or(`author_id.eq.${viewerUserId},assigned_to.eq.${viewerUserId}`);
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPosts(data || []);
+      setPosts((data as Post[]) || []);
 
-      // Fetch stats for each post
+      // Fetch stats and user info for each post
       if (data && data.length > 0) {
         await fetchPostStats(data.map((p) => p.id));
+        
+        // Collect all unique user IDs
+        const userIds: string[] = [];
+        data.forEach(p => {
+          if (p.author_id) userIds.push(p.author_id);
+          if (p.assigned_to) userIds.push(p.assigned_to);
+        });
+        await fetchUsers(userIds);
       }
     } catch (error: any) {
       toast({
@@ -228,6 +285,36 @@ const AdminPosts = () => {
     navigate(`/admin/posts/edit/${post.id}`);
   };
 
+  const getUserDisplay = (userId: string | null) => {
+    if (!userId) return null;
+    const user = users.get(userId);
+    if (!user) return { name: "Unknown", role: "user" };
+    return {
+      name: user.profile.full_name || user.profile.email.split("@")[0],
+      role: user.role
+    };
+  };
+
+  const getRoleBadge = (role: string, small = false) => {
+    if (role === "admin") {
+      return (
+        <Badge className={`bg-primary/10 text-primary border-primary/20 gap-1 ${small ? 'text-[10px] px-1.5 py-0' : 'text-xs'}`}>
+          <Shield className={small ? "h-2.5 w-2.5" : "h-3 w-3"} />
+          Admin
+        </Badge>
+      );
+    }
+    if (role === "moderator") {
+      return (
+        <Badge className={`bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 ${small ? 'text-[10px] px-1.5 py-0' : 'text-xs'}`}>
+          <UserCog className={small ? "h-2.5 w-2.5" : "h-3 w-3"} />
+          Mod
+        </Badge>
+      );
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -241,7 +328,9 @@ const AdminPosts = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Manage Posts</h1>
-          <p className="text-muted-foreground">Create and manage blog posts</p>
+          <p className="text-muted-foreground">
+            {moderatorOnly ? "Your posts and assigned posts" : "Create and manage all blog posts"}
+          </p>
         </div>
 
         <Button onClick={() => navigate("/admin/posts/new")}>
@@ -260,106 +349,129 @@ const AdminPosts = () => {
       <Card>
         <CardHeader>
           <CardTitle>All Posts</CardTitle>
-          <CardDescription>Manage all your blog posts</CardDescription>
+          <CardDescription>
+            {moderatorOnly ? "Posts you created or were assigned to you" : "Manage all blog posts"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
+                <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Published</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {posts.map((post) => (
-                <TableRow key={post.id}>
-                  <TableCell className="font-medium">{post.title}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      post.status === "published" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                    }`}>
-                      {post.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {post.published_at ? format(new Date(post.published_at), "MMM d, yyyy") : "-"}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(post.created_at), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          if (post.courses?.slug) {
-                            window.open(`/course/${post.courses.slug}?lesson=${post.slug}`, "_blank");
-                          } else {
-                            toast({
-                              title: "No Course",
-                              description: "This post doesn't have a course assigned.",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(post)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="p-3">
-                            <div className="space-y-1 text-sm">
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-muted-foreground">Views:</span>
-                                <span className="font-medium">{postStats[post.id]?.views || 0}</span>
+              {posts.map((post) => {
+                const author = getUserDisplay(post.author_id);
+                const assignee = getUserDisplay(post.assigned_to);
+                
+                return (
+                  <TableRow key={post.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <span className="font-medium">{post.title}</span>
+                        {assignee && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <UserCog className="h-3 w-3" />
+                            Assigned to: {assignee.name}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {author && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{author.name}</span>
+                          {getRoleBadge(author.role, true)}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <ContentStatusBadge status={post.status as ContentStatus} />
+                    </TableCell>
+                    <TableCell>
+                      {post.published_at ? format(new Date(post.published_at), "MMM d, yyyy") : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            if (post.courses?.slug) {
+                              window.open(`/course/${post.courses.slug}?lesson=${post.slug}`, "_blank");
+                            } else {
+                              toast({
+                                title: "No Course",
+                                description: "This post doesn't have a course assigned.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleEdit(post)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="p-3">
+                              <div className="space-y-1 text-sm">
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-muted-foreground">Views:</span>
+                                  <span className="font-medium">{postStats[post.id]?.views || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-muted-foreground">Likes:</span>
+                                  <span className="font-medium">{postStats[post.id]?.likes || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-muted-foreground">Comments:</span>
+                                  <span className="font-medium">{postStats[post.id]?.comments || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-muted-foreground">Shares:</span>
+                                  <span className="font-medium">{postStats[post.id]?.shares || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-muted-foreground">Created:</span>
+                                  <span className="font-medium">{format(new Date(post.created_at), "MMM d, yyyy")}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-muted-foreground">Likes:</span>
-                                <span className="font-medium">{postStats[post.id]?.likes || 0}</span>
-                              </div>
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-muted-foreground">Comments:</span>
-                                <span className="font-medium">{postStats[post.id]?.comments || 0}</span>
-                              </div>
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-muted-foreground">Shares:</span>
-                                <span className="font-medium">{postStats[post.id]?.shares || 0}</span>
-                              </div>
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-muted-foreground">Last Updated:</span>
-                                <span className="font-medium">{format(new Date(post.updated_at), "MMM d, yyyy")}</span>
-                              </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(post.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        {!moderatorOnly && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleDelete(post.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {posts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">

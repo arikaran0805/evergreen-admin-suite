@@ -573,6 +573,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          assigned_to: string | null
           author_id: string | null
           created_at: string
           description: string | null
@@ -588,6 +589,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assigned_to?: string | null
           author_id?: string | null
           created_at?: string
           description?: string | null
@@ -603,6 +605,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assigned_to?: string | null
           author_id?: string | null
           created_at?: string
           description?: string | null
@@ -991,6 +994,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          assigned_to: string | null
           author_id: string
           category_id: string | null
           code_theme: string | null
@@ -1008,6 +1012,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           author_id: string
           category_id?: string | null
           code_theme?: string | null
@@ -1025,6 +1030,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           author_id?: string
           category_id?: string | null
           code_theme?: string | null
