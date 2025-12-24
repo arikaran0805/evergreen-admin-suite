@@ -596,6 +596,7 @@ const AdminCourseEditor = () => {
                         <SelectItem value="draft">Draft</SelectItem>
                         <SelectItem value="pending">Pending Approval</SelectItem>
                         <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
                         <SelectItem value="rejected">Rejected</SelectItem>
                       </SelectContent>
                     </Select>
