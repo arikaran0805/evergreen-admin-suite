@@ -55,6 +55,7 @@ interface Post {
   content?: string;
   parent_id: string | null;
   lesson_order: number | null;
+  code_theme?: string | null;
   profiles: {
     full_name: string | null;
   };
@@ -983,6 +984,7 @@ const CourseDetail = () => {
                     <ContentRenderer 
                       htmlContent={selectedPost.content || ''}
                       courseType={course?.slug?.toLowerCase()}
+                      codeTheme={selectedPost.code_theme || undefined}
                     />
 
                     {/* Mark as Complete Button */}
