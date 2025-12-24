@@ -249,7 +249,7 @@ const AdminComments = () => {
         parent_id: parentComment.id,
         user_id: currentUserId,
         is_anonymous: false,
-        display_name: "Admin",
+        display_name: isAdmin ? "Admin" : "Moderator",
         status: "approved"
       });
 
