@@ -15,7 +15,7 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Play, Pencil, ChevronUp, Loader2, X } from "lucide-react";
+import { Copy, Check, Play, Pencil, ChevronUp, ChevronDown, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,6 +88,7 @@ const CodeBlock = ({
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputError, setOutputError] = useState(false);
+  const [outputExpanded, setOutputExpanded] = useState(true);
   const { theme: globalTheme } = useCodeTheme();
   
   // Use override theme if provided, otherwise fall back to global theme
@@ -317,7 +318,7 @@ const CodeBlock = ({
         )}
       </pre>
       
-      {/* Output section */}
+      {/* Collapsible Output section */}
       {output !== null && (
         <div className={cn(
           "mt-0 rounded-b-xl border border-t-0 overflow-hidden",
@@ -325,27 +326,59 @@ const CodeBlock = ({
             ? "bg-gray-100 border-gray-200" 
             : "bg-muted/50 border-border/50"
         )}>
-          <div className="flex items-start gap-3 p-3">
+          {/* Header - always visible, clickable to toggle */}
+          <button
+            onClick={() => setOutputExpanded(!outputExpanded)}
+            className={cn(
+              "w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
+              isCleanTheme 
+                ? "hover:bg-gray-200/50" 
+                : "hover:bg-muted"
+            )}
+          >
             <div className={cn(
-              "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
+              "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform",
               isCleanTheme ? "bg-gray-200" : "bg-muted"
             )}>
-              <ChevronUp className={cn(
-                "w-4 h-4",
-                isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-              )} />
+              {outputExpanded ? (
+                <ChevronUp className={cn(
+                  "w-3 h-3",
+                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                )} />
+              ) : (
+                <ChevronDown className={cn(
+                  "w-3 h-3",
+                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                )} />
+              )}
             </div>
-            <pre className={cn(
-              "flex-1 text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+            <span className={cn(
+              "text-xs font-medium",
               outputError 
                 ? "text-red-500" 
                 : isCleanTheme 
-                  ? "text-gray-800" 
-                  : "text-foreground"
+                  ? "text-gray-600" 
+                  : "text-muted-foreground"
             )}>
-              {output}
-            </pre>
-          </div>
+              {outputError ? "Error" : "Output"}
+            </span>
+          </button>
+          
+          {/* Collapsible content */}
+          {outputExpanded && (
+            <div className="px-3 pb-3">
+              <pre className={cn(
+                "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+                outputError 
+                  ? "text-red-500" 
+                  : isCleanTheme 
+                    ? "text-gray-800" 
+                    : "text-foreground"
+              )}>
+                {output}
+              </pre>
+            </div>
+          )}
         </div>
       )}
       
