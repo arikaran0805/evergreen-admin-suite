@@ -239,13 +239,17 @@ const AdminPostEditor = () => {
     try {
       setLoading(true);
       
-      // Determine status
+      // Determine status - Moderators can only create drafts or submit for approval
       let status = formData.status;
-      if (submitForApproval) {
+      if (isModerator && !isAdmin) {
+        // Moderators can only set draft or pending status
+        if (submitForApproval) {
+          status = "pending";
+        } else {
+          status = "draft";
+        }
+      } else if (submitForApproval) {
         status = "pending";
-      } else if (isModerator && !isAdmin && status === "published") {
-        // Moderators cannot publish directly
-        status = "draft";
       }
 
       const validated = postSchema.parse({ ...formData, status });
