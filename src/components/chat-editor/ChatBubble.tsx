@@ -167,7 +167,7 @@ const ChatBubble = ({
       {/* Bubble */}
       <div
         className={cn(
-          "relative max-w-[70%] min-w-[60px] px-4 py-2.5 rounded-2xl shadow-sm",
+          "relative max-w-[85%] min-w-[60px] px-4 py-2.5 rounded-2xl shadow-sm",
           "transition-all duration-200",
           isMentor
             ? "bg-[hsl(210,100%,52%)] text-white rounded-br-md"
