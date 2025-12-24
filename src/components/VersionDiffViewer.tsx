@@ -17,23 +17,49 @@ const VersionDiffViewer = ({
   currentContent,
 }: VersionDiffViewerProps) => {
   const diff = useMemo(() => {
-    const oldContent = compareVersion?.content || currentContent || "";
+    // For diff comparison:
+    // - If compareVersion exists, compare compareVersion.content (old) with currentVersion.content (new)
+    // - If no compareVersion but currentContent exists and differs, compare currentVersion.content with currentContent
+    // - Otherwise show "no previous version" state
+    
+    const hasCompareVersion = compareVersion !== null;
+    const oldContent = hasCompareVersion 
+      ? compareVersion.content 
+      : "";
     const newContent = currentVersion.content;
+
+    // If no old content, show all as "added"
+    if (!oldContent) {
+      if (isChatTranscript(newContent)) {
+        const bubbles = extractChatSegments(newContent, { allowSingle: true });
+        return { 
+          type: "chat" as const, 
+          data: bubbles.map(bubble => ({ bubble, status: "added" as const })),
+          isFirstVersion: true
+        };
+      }
+      // For first version, show all content as added
+      return { 
+        type: "rich" as const, 
+        data: [{ type: "added" as const, text: newContent }],
+        isFirstVersion: true
+      };
+    }
 
     // Check if it's chat content
     if (isChatTranscript(newContent)) {
-      return { type: "chat" as const, data: compareChatBubbles(oldContent, newContent) };
+      return { type: "chat" as const, data: compareChatBubbles(oldContent, newContent), isFirstVersion: false };
     }
 
     // Rich text diff
-    return { type: "rich" as const, data: computeWordDiff(oldContent, newContent) };
+    return { type: "rich" as const, data: computeWordDiff(oldContent, newContent), isFirstVersion: false };
   }, [currentVersion, compareVersion, currentContent]);
 
   if (diff.type === "chat") {
-    return <ChatDiffView bubbles={diff.data} />;
+    return <ChatDiffView bubbles={diff.data} isFirstVersion={diff.isFirstVersion} />;
   }
 
-  return <RichTextDiffView segments={diff.data} />;
+  return <RichTextDiffView segments={diff.data} isFirstVersion={diff.isFirstVersion} />;
 };
 
 // Compare chat bubbles and return highlighted version
@@ -69,12 +95,14 @@ function compareChatBubbles(oldContent: string, newContent: string) {
 // Render chat diff view
 const ChatDiffView = ({
   bubbles,
+  isFirstVersion,
 }: {
   bubbles: Array<{
     bubble: any;
     status: "unchanged" | "added" | "removed" | "modified";
     oldBubble?: any;
   }>;
+  isFirstVersion?: boolean;
 }) => {
   const getStatusStyles = (status: string) => {
     switch (status) {
@@ -142,7 +170,7 @@ const ChatDiffView = ({
 };
 
 // Render rich text diff view
-const RichTextDiffView = ({ segments }: { segments: DiffSegment[] }) => {
+const RichTextDiffView = ({ segments, isFirstVersion }: { segments: DiffSegment[]; isFirstVersion?: boolean }) => {
   return (
     <ScrollArea className="h-[400px]">
       <div className="prose dark:prose-invert max-w-none p-4">
