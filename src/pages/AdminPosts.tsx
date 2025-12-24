@@ -212,7 +212,9 @@ const AdminPosts = () => {
         description: "Post deleted successfully",
       });
 
-      fetchPosts();
+      if (currentUserId) {
+        fetchPosts(currentUserId, moderatorOnly);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
