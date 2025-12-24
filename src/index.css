@@ -338,6 +338,72 @@ All colors MUST be HSL.
     opacity: 0;
   }
 
+  /* Clean Light code theme - matches the minimal white design */
+  .code-theme-clean code[class*="language-"],
+  .code-theme-clean pre[class*="language-"] {
+    color: #333 !important;
+    background: #fff !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+    font-size: 0.9rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .code-theme-clean .token.comment,
+  .code-theme-clean .token.prolog,
+  .code-theme-clean .token.doctype,
+  .code-theme-clean .token.cdata {
+    color: #6a9955 !important;
+    font-style: italic !important;
+  }
+
+  .code-theme-clean .token.punctuation {
+    color: #333 !important;
+  }
+
+  .code-theme-clean .token.property,
+  .code-theme-clean .token.tag,
+  .code-theme-clean .token.boolean,
+  .code-theme-clean .token.number,
+  .code-theme-clean .token.constant,
+  .code-theme-clean .token.symbol,
+  .code-theme-clean .token.deleted {
+    color: #0550ae !important;
+  }
+
+  .code-theme-clean .token.selector,
+  .code-theme-clean .token.attr-name,
+  .code-theme-clean .token.string,
+  .code-theme-clean .token.char,
+  .code-theme-clean .token.builtin,
+  .code-theme-clean .token.inserted {
+    color: #a31515 !important;
+  }
+
+  .code-theme-clean .token.operator,
+  .code-theme-clean .token.entity,
+  .code-theme-clean .token.url,
+  .code-theme-clean .language-css .token.string,
+  .code-theme-clean .style .token.string {
+    color: #333 !important;
+  }
+
+  .code-theme-clean .token.atrule,
+  .code-theme-clean .token.attr-value,
+  .code-theme-clean .token.keyword {
+    color: #0000ff !important;
+  }
+
+  .code-theme-clean .token.function,
+  .code-theme-clean .token.class-name {
+    color: #795e26 !important;
+  }
+
+  .code-theme-clean .token.regex,
+  .code-theme-clean .token.important,
+  .code-theme-clean .token.variable {
+    color: #811f3f !important;
+  }
+
   /* Gray code theme - custom styling with !important to override Prism defaults */
   .code-theme-gray code[class*="language-"],
   .code-theme-gray pre[class*="language-"] {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const CODE_THEMES = [
+  { value: "clean", label: "Clean Light", description: "Minimal white theme with colored syntax" },
   { value: "tomorrow", label: "Tomorrow Night", description: "Dark theme with muted colors" },
   { value: "okaidia", label: "Okaidia", description: "Monokai-inspired dark theme" },
   { value: "solarizedlight", label: "Solarized Light", description: "Light theme with warm tones" },

@@ -74,20 +74,22 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
   // Use override theme if provided, otherwise fall back to global theme
   const theme = overrideTheme || globalTheme;
   
-  // Check if using gray theme
+  // Check theme types
   const isGrayTheme = theme === "gray";
+  const isCleanTheme = theme === "clean";
+  const isCustomTheme = isGrayTheme || isCleanTheme;
   
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
 
   // Load theme dynamically
   useEffect(() => {
-    // For gray theme, we load the base prism.css then apply our custom overrides via CSS class
-    if (isGrayTheme) {
+    if (isCustomTheme) {
+      // Custom themes use base prism.css with CSS overrides
       import("prismjs/themes/prism.css");
     } else {
       loadTheme(theme);
     }
-  }, [theme, isGrayTheme]);
+  }, [theme, isCustomTheme]);
 
   useEffect(() => {
     if (codeRef.current) {
@@ -105,41 +107,48 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
     }
   };
 
-  // Gray theme token colors - applied via style to override Prism defaults
-  const grayThemeStyles = isGrayTheme ? {
-    '--comment-color': '#999',
-    '--punctuation-color': '#ccc',
-    '--property-color': '#f08d49',
-    '--string-color': '#b9ca4a',
-    '--operator-color': '#ccc',
-    '--keyword-color': '#cc99cd',
-    '--function-color': '#6699cc',
-    '--variable-color': '#e6c07b',
-  } as React.CSSProperties : {};
+  // Get the appropriate theme class
+  const getThemeClass = () => {
+    if (isCleanTheme) return "code-theme-clean";
+    if (isGrayTheme) return "code-theme-gray";
+    return "";
+  };
+
+  // Get background/border styles based on theme
+  const getPreStyles = () => {
+    if (isMentorBubble) {
+      return "bg-blue-600/20 border-blue-400/30";
+    }
+    if (isCleanTheme) {
+      return "bg-white border-gray-200 shadow-sm";
+    }
+    if (isGrayTheme) {
+      return "bg-[#3a3a3a] border-[#555]";
+    }
+    return "bg-[#1d1f21] border-border/50";
+  };
 
   return (
     <div 
       className={cn(
         "relative group mt-3 w-full min-w-[300px] max-w-[600px]",
-        isGrayTheme && "code-theme-gray"
+        getThemeClass()
       )}
-      style={grayThemeStyles}
     >
       <pre
         className={cn(
-          "p-4 rounded-xl text-xs font-mono overflow-x-auto w-full",
-          "border shadow-inner",
-          isMentorBubble
-            ? "bg-blue-600/20 border-blue-400/30"
-            : isGrayTheme
-              ? "bg-[#3a3a3a] border-[#555]"
-              : "bg-[#1d1f21] border-border/50"
+          "p-4 rounded-xl text-sm font-mono overflow-x-auto w-full",
+          "border",
+          getPreStyles()
         )}
       >
         {/* Header with language and copy button */}
         <div className="flex items-center justify-between mb-2">
           {language && (
-            <span className="text-[10px] uppercase tracking-wider opacity-50 text-muted-foreground">
+            <span className={cn(
+              "text-[10px] uppercase tracking-wider opacity-50",
+              isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+            )}>
               {language}
             </span>
           )}
@@ -150,8 +159,10 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
             className={cn(
               "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
               isMentorBubble 
-                ? "text-blue-100 hover:text-white hover:bg-blue-500/30" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
+                : isCleanTheme
+                  ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
             {copied ? (
@@ -163,7 +174,10 @@ const CodeBlock = ({ code, language = "", isMentorBubble = false, overrideTheme 
         </div>
         <code
           ref={codeRef}
-          className={`language-${normalizedLang} leading-relaxed`}
+          className={cn(
+            `language-${normalizedLang} leading-relaxed`,
+            isCleanTheme && "text-gray-800"
+          )}
         >
           {code}
         </code>
