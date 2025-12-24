@@ -524,6 +524,7 @@ const AdminPostEditor = () => {
                   versions={versions}
                   loading={versionsLoading}
                   isAdmin={isAdmin}
+                  currentContent={formData.content}
                   onRestore={handleRestoreVersion}
                   onPublish={handlePublishVersion}
                   onPreview={handlePreviewVersion}
