@@ -30,6 +30,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
   const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({ site_name: "BlogHub" });
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -49,7 +50,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        checkUserRoles(session.user.id);
       }
     });
 
@@ -57,9 +58,10 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        checkUserRoles(session.user.id);
       } else {
         setIsAdmin(false);
+        setIsModerator(false);
       }
     });
 
@@ -97,17 +99,20 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminRole = async (userId: string) => {
-    const { data, error } = await supabase.rpc('has_role', {
+  const checkUserRoles = async (userId: string) => {
+    // Check admin role
+    const { data: adminData } = await supabase.rpc('has_role', {
       _user_id: userId,
       _role: 'admin'
     });
+    setIsAdmin(!!adminData);
 
-    if (!error && data) {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
+    // Check moderator role
+    const { data: modData } = await supabase.rpc('has_role', {
+      _user_id: userId,
+      _role: 'moderator'
+    });
+    setIsModerator(!!modData);
   };
 
   const handleLogout = async () => {
@@ -187,7 +192,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
               {/* User Menu - Desktop */}
               {user ? (
                 <div className="hidden md:flex items-center gap-1">
-                  {isAdmin && (
+                  {(isAdmin || isModerator) && (
                     <Button 
                       asChild
                       className="h-8 px-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200"
@@ -215,7 +220,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {isAdmin && (
+                      {(isAdmin || isModerator) && (
                         <>
                           <DropdownMenuItem asChild>
                             <Link to="/admin" className="cursor-pointer">
@@ -312,10 +317,10 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                     </div>
                     
                     <nav className="flex-1 py-6">
-                      {isAdmin && (
+                      {(isAdmin || isModerator) && (
                         <div className="mb-4 px-2">
                           <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-                            Admin User
+                            {isAdmin ? 'Admin User' : 'Moderator'}
                           </Badge>
                         </div>
                       )}
@@ -341,12 +346,12 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                     <div className="py-6 border-t border-border/50 space-y-2">
                       {user ? (
                         <>
-                          {isAdmin && (
+                          {(isAdmin || isModerator) && (
                             <Link
                               to="/admin"
                               className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 rounded-xl transition-all duration-300"
                             >
-                              <User className="h-5 w-5" />
+                              <Shield className="h-5 w-5" />
                               Admin Dashboard
                             </Link>
                           )}
