@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { SearchDialog } from "./SearchDialog";
+import NotificationDropdown from "./NotificationDropdown";
 
 interface SiteSettings {
   site_name: string;
@@ -186,6 +187,15 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
 
               {/* Search Dialog */}
               <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+
+              {/* Notification Bell - Only for Admin/Moderator */}
+              {user && (isAdmin || isModerator) && (
+                <NotificationDropdown 
+                  isAdmin={isAdmin} 
+                  isModerator={isModerator} 
+                  userId={user?.id || null} 
+                />
+              )}
               
               {/* Theme Toggle */}
               <ThemeToggle />
