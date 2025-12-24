@@ -26,7 +26,7 @@ import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { z } from "zod";
-import { icons, RotateCcw, Code2, Play } from "lucide-react";
+import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -307,6 +307,8 @@ const Profile = () => {
   const [isFreezingStreak, setIsFreezingStreak] = useState(false);
   const [weeklyActivityData, setWeeklyActivityData] = useState<{ totalSeconds: number; activeDays: number; dailySeconds: Record<string, number> }>({ totalSeconds: 0, activeDays: 0, dailySeconds: {} });
   const [achievements, setAchievements] = useState<any[]>([]);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -479,6 +481,9 @@ const Profile = () => {
         navigate("/auth");
         return;
       }
+
+      // Check email verification status from session
+      setEmailVerified(session.user.email_confirmed_at !== null);
 
       // Fetch profile data
       const { data: profile, error } = await supabase
@@ -707,6 +712,36 @@ const Profile = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
+  };
+
+  const handleResendVerification = async () => {
+    if (resendingVerification || !email) return;
+    
+    setResendingVerification(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Verification email sent!",
+        description: "Please check your inbox and spam folder.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend verification email.",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   const useStreakFreeze = async () => {
@@ -1727,7 +1762,7 @@ const Profile = () => {
               </div>
             </div>
             
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -1736,7 +1771,34 @@ const Profile = () => {
                 disabled
                 className="bg-muted"
               />
-              <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+              <div className="flex items-center gap-2 mt-2">
+                {emailVerified === null ? (
+                  <span className="text-xs text-muted-foreground">Checking verification status...</span>
+                ) : emailVerified ? (
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Email verified</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Email not verified</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={resendingVerification}
+                      className="h-7 text-xs"
+                    >
+                      <Mail className="h-3 w-3 mr-1" />
+                      {resendingVerification ? "Sending..." : "Resend verification"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
