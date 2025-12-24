@@ -98,7 +98,7 @@ const ChatConversationView = ({
 
   const isMentor = (speaker: string) => speaker.toLowerCase() === "karan";
 
-  // Render code blocks within messages
+  // Render code blocks and inline code within messages
   const renderContent = (text: string, isMentorBubble: boolean) => {
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
     const parts: { type: string; language?: string; content: string }[] = [];
@@ -121,6 +121,48 @@ const ChatConversationView = ({
       parts.push({ type: "text", content: text });
     }
 
+    // Render inline code within text parts
+    const renderTextWithInlineCode = (textContent: string, key: number) => {
+      const inlineCodeRegex = /`([^`]+)`/g;
+      const segments: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let inlineMatch;
+
+      while ((inlineMatch = inlineCodeRegex.exec(textContent)) !== null) {
+        if (inlineMatch.index > lastIdx) {
+          segments.push(
+            <span key={`${key}-text-${lastIdx}`} className="whitespace-pre-wrap">
+              {textContent.slice(lastIdx, inlineMatch.index)}
+            </span>
+          );
+        }
+        segments.push(
+          <code
+            key={`${key}-code-${inlineMatch.index}`}
+            className={cn(
+              "px-1.5 py-0.5 rounded text-xs font-mono",
+              isMentorBubble
+                ? "bg-blue-500/30 text-blue-100"
+                : "bg-muted-foreground/20 text-foreground"
+            )}
+          >
+            {inlineMatch[1]}
+          </code>
+        );
+        lastIdx = inlineMatch.index + inlineMatch[0].length;
+      }
+
+      if (lastIdx < textContent.length) {
+        segments.push(
+          <span key={`${key}-text-end`} className="whitespace-pre-wrap">
+            {textContent.slice(lastIdx)}
+          </span>
+        );
+      }
+
+      return segments.length > 0 ? segments : <span className="whitespace-pre-wrap">{textContent}</span>;
+    };
+
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
@@ -133,11 +175,7 @@ const ChatConversationView = ({
           />
         );
       }
-      return (
-        <span key={idx} className="whitespace-pre-wrap">
-          {part.content}
-        </span>
-      );
+      return <span key={idx}>{renderTextWithInlineCode(part.content, idx)}</span>;
     });
   };
 

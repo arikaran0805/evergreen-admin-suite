@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -350,6 +350,10 @@ const ChatStyleEditor = ({
     insertAtCursor("*italic text*", "italic text");
   };
 
+  const handleInsertInlineCode = () => {
+    insertAtCursor("`code`", "code");
+  };
+
   const insertAtCursor = (text: string, selectText?: string) => {
     setNewMessage((prev) => prev + (prev ? "\n" : "") + text);
     inputRef.current?.focus();
@@ -657,6 +661,10 @@ const ChatStyleEditor = ({
                 <DropdownMenuItem onClick={handleInsertItalic} className="cursor-pointer">
                   <Italic className="w-4 h-4 mr-2" />
                   Italic Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertInlineCode} className="cursor-pointer">
+                  <Terminal className="w-4 h-4 mr-2" />
+                  Inline Code
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
