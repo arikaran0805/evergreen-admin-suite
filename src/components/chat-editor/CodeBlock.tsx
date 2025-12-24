@@ -15,7 +15,7 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Play, Pencil, Loader2, X, ChevronUp, ChevronDown, Bug } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,8 +91,6 @@ const CodeBlock = ({
   const [outputError, setOutputError] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(true);
-  const [debugMode, setDebugMode] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { theme: globalTheme } = useCodeTheme();
   
   // Use override theme if provided, otherwise fall back to global theme
@@ -153,7 +151,7 @@ const CodeBlock = ({
     setOutput(null);
   };
 
-  const handleRun = async (withDebug = false) => {
+  const handleRun = async () => {
     if (!canExecute) return;
     
     setIsRunning(true);
@@ -161,25 +159,8 @@ const CodeBlock = ({
     setOutputError(false);
     setShowOutput(true);
     setOutputExpanded(true);
-    setDebugMode(withDebug);
-    setDebugLogs([]);
-
-    const logs: string[] = [];
-    const startTime = Date.now();
-
-    if (withDebug) {
-      logs.push(`[${new Date().toLocaleTimeString()}] Starting execution...`);
-      logs.push(`[${new Date().toLocaleTimeString()}] Language: ${normalizedLang}`);
-      logs.push(`[${new Date().toLocaleTimeString()}] Code length: ${(isEditing ? editedCode : code).length} characters`);
-      setDebugLogs([...logs]);
-    }
 
     try {
-      if (withDebug) {
-        logs.push(`[${new Date().toLocaleTimeString()}] Sending request to execution server...`);
-        setDebugLogs([...logs]);
-      }
-
       const { data, error } = await supabase.functions.invoke('execute-code', {
         body: { 
           code: isEditing ? editedCode : code, 
@@ -187,44 +168,17 @@ const CodeBlock = ({
         },
       });
 
-      const executionTime = Date.now() - startTime;
-
-      if (withDebug) {
-        logs.push(`[${new Date().toLocaleTimeString()}] Response received in ${executionTime}ms`);
-      }
-
       if (error) {
-        if (withDebug) {
-          logs.push(`[${new Date().toLocaleTimeString()}] ❌ Error: ${error.message}`);
-        }
         setOutput(error.message || 'Execution failed');
         setOutputError(true);
       } else if (data?.error) {
-        if (withDebug) {
-          logs.push(`[${new Date().toLocaleTimeString()}] ❌ Execution error: ${data.error}`);
-        }
         setOutput(data.error);
         setOutputError(true);
       } else {
-        if (withDebug) {
-          logs.push(`[${new Date().toLocaleTimeString()}] ✓ Execution successful`);
-          if (data?.version) {
-            logs.push(`[${new Date().toLocaleTimeString()}] Runtime version: ${data.version}`);
-          }
-        }
         setOutput(data?.output || 'No output');
         setOutputError(false);
       }
-
-      if (withDebug) {
-        logs.push(`[${new Date().toLocaleTimeString()}] Execution completed`);
-        setDebugLogs([...logs]);
-      }
     } catch (err: any) {
-      if (withDebug) {
-        logs.push(`[${new Date().toLocaleTimeString()}] ❌ Network error: ${err.message}`);
-        setDebugLogs([...logs]);
-      }
       setOutput(err.message || 'Failed to execute code');
       setOutputError(true);
     } finally {
@@ -293,7 +247,6 @@ const CodeBlock = ({
   };
 
   const displayCode = isEditing ? editedCode : code;
-  const codeLines = displayCode.split('\n');
 
   return (
     <div 
@@ -327,16 +280,16 @@ const CodeBlock = ({
                 size="icon"
                 onClick={isEditing ? handleCancelEdit : handleEdit}
                 className={cn(
-                  "h-7 w-7 rounded-full transition-colors",
+                  "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
                   isCleanTheme
-                    ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                    : "text-gray-400 hover:text-foreground hover:bg-muted"
+                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 {isEditing ? (
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 ) : (
-                  <Pencil className="w-4 h-4" />
+                  <Pencil className="w-3.5 h-3.5" />
                 )}
               </Button>
             )}
@@ -346,39 +299,20 @@ const CodeBlock = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleRun(false)}
+                onClick={handleRun}
                 disabled={isRunning}
                 className={cn(
-                  "h-7 w-7 rounded-full transition-colors",
+                  "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
                   isCleanTheme
-                    ? "text-gray-500 hover:text-green-600 hover:bg-green-50"
-                    : "text-gray-400 hover:text-green-500 hover:bg-green-500/10"
+                    ? "text-gray-400 hover:text-green-600 hover:bg-green-50"
+                    : "text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
                 )}
               >
                 {isRunning ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Play className="w-4 h-4" />
+                  <Play className="w-3.5 h-3.5" />
                 )}
-              </Button>
-            )}
-
-            {/* Debug button */}
-            {canExecute && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRun(true)}
-                disabled={isRunning}
-                className={cn(
-                  "h-7 w-7 rounded-full transition-colors",
-                  isCleanTheme
-                    ? "text-gray-500 hover:text-orange-600 hover:bg-orange-50"
-                    : "text-gray-400 hover:text-orange-500 hover:bg-orange-500/10"
-                )}
-                title="Run with debug info"
-              >
-                <Bug className="w-4 h-4" />
               </Button>
             )}
             
@@ -388,69 +322,48 @@ const CodeBlock = ({
               size="icon"
               onClick={handleCopy}
               className={cn(
-                "h-7 w-7 rounded-full transition-colors",
+                "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
                 isMentorBubble 
-                  ? "text-blue-200 hover:text-white hover:bg-blue-500/30"
+                  ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
                   : isCleanTheme
-                    ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                    : "text-gray-400 hover:text-foreground hover:bg-muted"
+                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               {copied ? (
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-3.5 h-3.5 text-green-500" />
               ) : (
-                <Copy className="w-4 h-4" />
+                <Copy className="w-3.5 h-3.5" />
               )}
             </Button>
           </div>
         </div>
         
-        {/* Code content with line numbers */}
-        <div className="flex">
-          {/* Line numbers */}
-          <div className={cn(
-            "select-none pr-4 text-right border-r mr-4",
-            isCleanTheme 
-              ? "text-gray-400 border-gray-200" 
-              : isMentorBubble
-                ? "text-blue-300/50 border-blue-400/20"
-                : "text-gray-500 border-gray-600/30"
-          )}>
-            {codeLines.map((_, idx) => (
-              <div key={idx} className="leading-relaxed text-xs">
-                {idx + 1}
-              </div>
-            ))}
-          </div>
-          
-          {/* Code content or editor */}
-          <div className="flex-1 overflow-x-auto">
-            {isEditing ? (
-              <textarea
-                ref={textareaRef}
-                value={editedCode}
-                onChange={handleTextareaChange}
-                onKeyDown={handleTextareaKeyDown}
-                style={{ height: `${lineCount * lineHeight}px` }}
-                className={cn(
-                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
-                  isCleanTheme ? "text-gray-800" : "text-gray-100"
-                )}
-                spellCheck={false}
-              />
-            ) : (
-              <code
-                ref={codeRef}
-                className={cn(
-                  `language-${normalizedLang} leading-relaxed`,
-                  isCleanTheme && "text-gray-800"
-                )}
-              >
-                {displayCode}
-              </code>
+        {/* Code content or editor */}
+        {isEditing ? (
+          <textarea
+            ref={textareaRef}
+            value={editedCode}
+            onChange={handleTextareaChange}
+            onKeyDown={handleTextareaKeyDown}
+            style={{ height: `${lineCount * lineHeight}px` }}
+            className={cn(
+              "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
+              isCleanTheme ? "text-gray-800" : "text-gray-100"
             )}
-          </div>
-        </div>
+            spellCheck={false}
+          />
+        ) : (
+          <code
+            ref={codeRef}
+            className={cn(
+              `language-${normalizedLang} leading-relaxed`,
+              isCleanTheme && "text-gray-800"
+            )}
+          >
+            {displayCode}
+          </code>
+        )}
       </pre>
       
       {/* Collapsible Output section */}
@@ -523,33 +436,7 @@ const CodeBlock = ({
             )}
           >
             <div className="overflow-hidden">
-              <div className="px-3 pb-3 space-y-2">
-                {/* Debug logs */}
-                {debugMode && debugLogs.length > 0 && (
-                  <div className={cn(
-                    "p-2 rounded-lg text-xs font-mono space-y-0.5",
-                    isCleanTheme ? "bg-orange-50 border border-orange-200" : "bg-orange-500/10 border border-orange-500/20"
-                  )}>
-                    <div className={cn(
-                      "text-[10px] uppercase tracking-wider font-medium mb-1",
-                      isCleanTheme ? "text-orange-600" : "text-orange-400"
-                    )}>
-                      Debug Log
-                    </div>
-                    {debugLogs.map((log, idx) => (
-                      <div key={idx} className={cn(
-                        "leading-relaxed",
-                        log.includes('❌') ? "text-red-500" : 
-                        log.includes('✓') ? "text-green-500" :
-                        isCleanTheme ? "text-orange-700" : "text-orange-300"
-                      )}>
-                        {log}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Output */}
+              <div className="px-3 pb-3">
                 <pre className={cn(
                   "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
                   outputError 
