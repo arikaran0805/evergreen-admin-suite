@@ -101,9 +101,22 @@ const AdminUsers = () => {
     if (!userToDelete) return;
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userToDelete.id);
-      
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await supabase.functions.invoke("delete-user", {
+        body: { userId: userToDelete.id },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to delete user");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       toast({ title: "User deleted successfully" });
       setDeleteDialogOpen(false);
