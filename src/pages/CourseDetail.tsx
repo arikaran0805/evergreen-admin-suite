@@ -26,6 +26,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
+import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import {
   SidebarAdTop,
   SidebarAdMiddle,
@@ -113,6 +114,8 @@ const CourseDetail = () => {
   const [hasLiked, setHasLiked] = useState(false);
   const [likingPost, setLikingPost] = useState(false);
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [suggestDialogOpen, setSuggestDialogOpen] = useState(false);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
   const { isBookmarked, toggleBookmark } = useBookmarks();
@@ -989,11 +992,11 @@ const CourseDetail = () => {
                                 <ThumbsUp className={`mr-2 h-4 w-4 ${hasLiked ? 'fill-current' : ''}`} />
                                 <span>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setReportDialogOpen(true)}>
                                 <Flag className="mr-2 h-4 w-4" />
                                 <span>Report</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setSuggestDialogOpen(true)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Suggest Changes</span>
                               </DropdownMenuItem>
@@ -1131,6 +1134,7 @@ const CourseDetail = () => {
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-8 w-8 hover:bg-transparent"
+                                  onClick={() => setSuggestDialogOpen(true)}
                                 >
                                   <Edit className="h-5 w-5 text-foreground" />
                                 </Button>
@@ -1143,6 +1147,28 @@ const CourseDetail = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Report/Suggest Dialogs */}
+                    {selectedPost && (
+                      <>
+                        <ReportSuggestDialog
+                          open={reportDialogOpen}
+                          onOpenChange={setReportDialogOpen}
+                          contentType="post"
+                          contentId={selectedPost.id}
+                          contentTitle={selectedPost.title}
+                          type="report"
+                        />
+                        <ReportSuggestDialog
+                          open={suggestDialogOpen}
+                          onOpenChange={setSuggestDialogOpen}
+                          contentType="post"
+                          contentId={selectedPost.id}
+                          contentTitle={selectedPost.title}
+                          type="suggestion"
+                        />
+                      </>
+                    )}
 
                     {/* Lesson Navigation */}
                     <div className="mt-8">
