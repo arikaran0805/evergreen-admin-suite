@@ -25,6 +25,7 @@ import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
+import { useUserRole } from "@/hooks/useUserRole";
 import { z } from "zod";
 import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { 
@@ -314,6 +315,7 @@ const Profile = () => {
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
+  const { isAdmin, isModerator } = useUserRole();
 
   // Navigate to a course with the last viewed lesson
   const navigateToCourseWithLastLesson = async (courseSlug: string, courseId: string) => {
@@ -1971,6 +1973,15 @@ const Profile = () => {
                       <FlaskConical className="h-5 w-5" />
                       <span className="font-medium">Practice Lab</span>
                     </button>
+                    {(isAdmin || isModerator) && (
+                      <button
+                        onClick={() => navigate('/admin')}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                      >
+                        <Shield className="h-5 w-5" />
+                        <span className="font-medium">Admin Panel</span>
+                      </button>
+                    )}
                   </nav>
                 </div>
               </CardContent>
