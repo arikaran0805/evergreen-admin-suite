@@ -891,6 +891,69 @@ export type Database = {
           },
         ]
       }
+      post_annotations: {
+        Row: {
+          author_id: string
+          bubble_index: number | null
+          comment: string
+          created_at: string
+          editor_type: string | null
+          id: string
+          post_id: string
+          selected_text: string
+          selection_end: number
+          selection_start: number
+          status: string
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          author_id: string
+          bubble_index?: number | null
+          comment: string
+          created_at?: string
+          editor_type?: string | null
+          id?: string
+          post_id: string
+          selected_text: string
+          selection_end: number
+          selection_start: number
+          status?: string
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          bubble_index?: number | null
+          comment?: string
+          created_at?: string
+          editor_type?: string | null
+          id?: string
+          post_id?: string
+          selected_text?: string
+          selection_end?: number
+          selection_start?: number
+          status?: string
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_annotations_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_annotations_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "post_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string
@@ -994,6 +1057,50 @@ export type Database = {
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_versions: {
+        Row: {
+          change_summary: string | null
+          content: string
+          created_at: string
+          edited_by: string
+          editor_type: string | null
+          id: string
+          is_published: boolean | null
+          post_id: string
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          content: string
+          created_at?: string
+          edited_by: string
+          editor_type?: string | null
+          id?: string
+          is_published?: boolean | null
+          post_id: string
+          version_number?: number
+        }
+        Update: {
+          change_summary?: string | null
+          content?: string
+          created_at?: string
+          edited_by?: string
+          editor_type?: string | null
+          id?: string
+          is_published?: boolean | null
+          post_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_versions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]

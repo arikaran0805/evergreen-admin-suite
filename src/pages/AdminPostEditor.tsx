@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,14 +11,25 @@ import { ChatStyleEditor } from "@/components/chat-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { usePostVersions } from "@/hooks/usePostVersions";
+import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import AdminLayout from "@/components/AdminLayout";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send } from "lucide-react";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
+import AnnotationPanel from "@/components/AnnotationPanel";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isChatTranscript } from "@/lib/chatContent";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -74,6 +85,15 @@ const AdminPostEditor = () => {
     code_theme: "" as string,
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
+  const [originalContent, setOriginalContent] = useState<string>("");
+  const [selectedText, setSelectedText] = useState<{ start: number; end: number; text: string } | null>(null);
+  const [previewVersion, setPreviewVersion] = useState<any>(null);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const previousContentRef = useRef<string>("");
+
+  // Version and annotation hooks
+  const { versions, loading: versionsLoading, saveVersion, publishVersion, restoreVersion } = usePostVersions(id);
+  const { annotations, loading: annotationsLoading, createAnnotation, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin && !isModerator) {
@@ -194,6 +214,10 @@ const AdminPostEditor = () => {
           code_theme: data.code_theme || "",
         });
         
+        // Store original content for change detection
+        setOriginalContent(data.content || "");
+        previousContentRef.current = data.content || "";
+        
         // Auto-switch to chat editor if content is a chat transcript
         if (data.content && isChatTranscript(data.content)) {
           setEditorType("chat");
@@ -247,6 +271,16 @@ const AdminPostEditor = () => {
       let postId = id;
 
       if (id) {
+        // Save version before updating if content changed
+        if (formData.content !== previousContentRef.current) {
+          await saveVersion(
+            formData.content,
+            editorType === "chat" ? "chat" : "rich-text",
+            `Updated by ${isAdmin ? "admin" : "moderator"}`
+          );
+          previousContentRef.current = formData.content;
+        }
+
         const { error } = await supabase
           .from("posts")
           .update(postData)
@@ -393,6 +427,65 @@ const AdminPostEditor = () => {
   const canPublishDirectly = isAdmin;
   const showSubmitForApproval = isModerator && !isAdmin;
 
+  // Handle text selection for annotations (admin only)
+  const handleTextSelection = useCallback(() => {
+    if (!isAdmin) return;
+    
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const text = selection.toString();
+      const range = selection.getRangeAt(0);
+      setSelectedText({
+        start: range.startOffset,
+        end: range.endOffset,
+        text,
+      });
+    }
+  }, [isAdmin]);
+
+  // Handle version actions
+  const handleRestoreVersion = async (version: any) => {
+    const restoredContent = await restoreVersion(version);
+    if (restoredContent) {
+      setFormData(prev => ({ ...prev, content: restoredContent }));
+      toast({
+        title: "Version Restored",
+        description: `Restored to version ${version.version_number}`,
+      });
+    }
+  };
+
+  const handlePublishVersion = async (version: any) => {
+    const success = await publishVersion(version.id, version.content);
+    if (success) {
+      setFormData(prev => ({ ...prev, content: version.content, status: "published" }));
+    }
+  };
+
+  const handlePreviewVersion = (version: any) => {
+    setPreviewVersion(version);
+    setShowPreviewDialog(true);
+  };
+
+  // Handle annotation creation
+  const handleAddAnnotation = async (
+    selectionStart: number,
+    selectionEnd: number,
+    selectedTextStr: string,
+    comment: string
+  ) => {
+    await createAnnotation(
+      selectionStart,
+      selectionEnd,
+      selectedTextStr,
+      comment,
+      editorType === "chat" ? "chat" : "rich-text"
+    );
+  };
+
+  // Check if content has admin edits (different from original)
+  const hasAdminEdits = isAdmin && id && formData.content !== originalContent && originalContent !== "";
+
   if (roleLoading || (loading && id)) {
     return (
       <AdminLayout>
@@ -406,22 +499,68 @@ const AdminPostEditor = () => {
       <div className="flex gap-6 h-full">
         {/* Main Content Area */}
         <div className="flex-1 space-y-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/admin/posts")}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Posts
-            </Button>
-            <h1 className="text-3xl font-bold">
-              {id ? "Edit Post" : "Create New Post"}
-            </h1>
-            {formData.status && formData.status !== "draft" && (
-              <ContentStatusBadge status={formData.status as ContentStatus} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/admin/posts")}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Posts
+              </Button>
+              <h1 className="text-3xl font-bold">
+                {id ? "Edit Post" : "Create New Post"}
+              </h1>
+              {formData.status && formData.status !== "draft" && (
+                <ContentStatusBadge status={formData.status as ContentStatus} />
+              )}
+            </div>
+            
+            {/* Version and Annotation Controls */}
+            {id && (
+              <div className="flex items-center gap-2">
+                <VersionHistoryPanel
+                  versions={versions}
+                  loading={versionsLoading}
+                  isAdmin={isAdmin}
+                  onRestore={handleRestoreVersion}
+                  onPublish={handlePublishVersion}
+                  onPreview={handlePreviewVersion}
+                />
+                <AnnotationPanel
+                  annotations={annotations}
+                  loading={annotationsLoading}
+                  isAdmin={isAdmin}
+                  onAddAnnotation={handleAddAnnotation}
+                  onUpdateStatus={updateAnnotationStatus}
+                  onDelete={deleteAnnotation}
+                  selectedText={selectedText}
+                  onClearSelection={() => setSelectedText(null)}
+                />
+              </div>
             )}
           </div>
+
+          {/* Admin edit warning */}
+          {hasAdminEdits && (
+            <div className="flex items-center gap-2 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              <span className="text-sm text-amber-800 dark:text-amber-200">
+                You have made changes to this moderator's post. Changes will be highlighted for the author.
+              </span>
+            </div>
+          )}
+
+          {/* Open annotations indicator */}
+          {annotations.filter(a => a.status === "open").length > 0 && !isAdmin && (
+            <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <span className="text-sm text-red-800 dark:text-red-200">
+                You have {annotations.filter(a => a.status === "open").length} pending feedback comments from admin. Check the Annotations panel.
+              </span>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -681,6 +820,21 @@ const AdminPostEditor = () => {
           </Card>
         </div>
       </div>
+
+      {/* Version Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Version {previewVersion?.version_number} Preview</DialogTitle>
+            <DialogDescription>
+              Preview of content from this version
+            </DialogDescription>
+          </DialogHeader>
+          <div className="prose dark:prose-invert max-w-none mt-4">
+            <div dangerouslySetInnerHTML={{ __html: previewVersion?.content || "" }} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
