@@ -56,7 +56,19 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editedCode, setEditedCode] = useState("");
   const [languageOverrides, setLanguageOverrides] = useState<Record<number, string>>({});
-
+  
+  // Use ref to track value to prevent cursor jumping
+  const valueRef = useRef(value);
+  
+  // Only update internal value ref, not trigger re-render
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+  
+  // Memoized onChange handler to prevent re-renders
+  const handleChange = useCallback((content: string) => {
+    onChange(content);
+  }, [onChange]);
   const modules = {
     toolbar: [
       [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -265,8 +277,8 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
       <ReactQuill
         ref={quillRef}
         theme="snow"
-        value={value}
-        onChange={onChange}
+        defaultValue={value}
+        onChange={handleChange}
         modules={modules}
         formats={formats}
         placeholder={placeholder || "Write your content here..."}
