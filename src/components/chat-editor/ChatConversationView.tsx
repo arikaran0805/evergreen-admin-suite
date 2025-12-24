@@ -172,6 +172,7 @@ const ChatConversationView = ({
             language={part.language}
             isMentorBubble={isMentorBubble}
             overrideTheme={codeTheme}
+            editable
           />
         );
       }

@@ -137,6 +137,7 @@ const ChatBubble = ({
             language={part.language}
             isMentorBubble={isMentor}
             overrideTheme={codeTheme}
+            editable
           />
         );
       }
