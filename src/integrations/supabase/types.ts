@@ -199,6 +199,36 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_history: {
+        Row: {
+          action: string
+          content_id: string
+          content_type: string
+          created_at: string
+          feedback: string | null
+          id: string
+          performed_by: string
+        }
+        Insert: {
+          action: string
+          content_id: string
+          content_type: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          performed_by: string
+        }
+        Update: {
+          action?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          performed_by?: string
+        }
+        Relationships: []
+      }
       bookmarks: {
         Row: {
           course_id: string | null
@@ -327,6 +357,7 @@ export type Database = {
       }
       careers: {
         Row: {
+          author_id: string | null
           color: string
           created_at: string
           description: string | null
@@ -335,9 +366,11 @@ export type Database = {
           id: string
           name: string
           slug: string
+          status: string
           updated_at: string
         }
         Insert: {
+          author_id?: string | null
           color?: string
           created_at?: string
           description?: string | null
@@ -346,9 +379,11 @@ export type Database = {
           id?: string
           name: string
           slug: string
+          status?: string
           updated_at?: string
         }
         Update: {
+          author_id?: string | null
           color?: string
           created_at?: string
           description?: string | null
@@ -357,6 +392,7 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -537,6 +573,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          author_id: string | null
           created_at: string
           description: string | null
           featured: boolean | null
@@ -547,8 +584,11 @@ export type Database = {
           level: string | null
           name: string
           slug: string
+          status: string
+          updated_at: string | null
         }
         Insert: {
+          author_id?: string | null
           created_at?: string
           description?: string | null
           featured?: boolean | null
@@ -559,8 +599,11 @@ export type Database = {
           level?: string | null
           name: string
           slug: string
+          status?: string
+          updated_at?: string | null
         }
         Update: {
+          author_id?: string | null
           created_at?: string
           description?: string | null
           featured?: boolean | null
@@ -571,6 +614,8 @@ export type Database = {
           level?: string | null
           name?: string
           slug?: string
+          status?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1259,22 +1304,28 @@ export type Database = {
       }
       tags: {
         Row: {
+          author_id: string | null
           created_at: string
           id: string
           name: string
           slug: string
+          status: string
         }
         Insert: {
+          author_id?: string | null
           created_at?: string
           id?: string
           name: string
           slug: string
+          status?: string
         }
         Update: {
+          author_id?: string | null
           created_at?: string
           id?: string
           name?: string
           slug?: string
+          status?: string
         }
         Relationships: []
       }

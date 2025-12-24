@@ -3,47 +3,91 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Briefcase,
-  Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap
+  Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap,
+  ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface AdminLayoutProps {
   children: ReactNode;
   defaultSidebarCollapsed?: boolean;
 }
 
-const adminMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-  { icon: BookOpen, label: "Posts", path: "/admin/posts" },
-  { icon: Files, label: "Pages", path: "/admin/pages" },
-  { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
-  { icon: Briefcase, label: "Careers", path: "/admin/careers" },
-  { icon: Tags, label: "Tags", path: "/admin/tags" },
-  { icon: Users, label: "Users", path: "/admin/users" },
-  { icon: UserCog, label: "Authors/Admins", path: "/admin/authors" },
-  { icon: MessageSquare, label: "Comments", path: "/admin/comments" },
-  { icon: Image, label: "Media Library", path: "/admin/media" },
-  { icon: DollarSign, label: "Monetization", path: "/admin/monetization" },
-  { icon: Link2, label: "Redirects", path: "/admin/redirects" },
-  { icon: Key, label: "API & Integrations", path: "/admin/api" },
-  { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
-  { icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" },
-];
+interface MenuItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  adminOnly?: boolean;
+  badge?: number;
+}
 
 const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isModerator, isLoading: roleLoading, userId } = useUserRole();
+
+  // Menu items with role-based visibility
+  const getMenuItems = (): MenuItem[] => {
+    const items: MenuItem[] = [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+    ];
+
+    // Admin-only: Approval Queue
+    if (isAdmin) {
+      items.push({ 
+        icon: ClipboardCheck, 
+        label: "Approval Queue", 
+        path: "/admin/approvals",
+        badge: pendingCount > 0 ? pendingCount : undefined
+      });
+    }
+
+    // Content management - available to both admins and moderators
+    items.push(
+      { icon: BookOpen, label: "Posts", path: "/admin/posts" },
+      { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
+      { icon: Briefcase, label: "Careers", path: "/admin/careers" },
+      { icon: Tags, label: "Tags", path: "/admin/tags" },
+    );
+
+    // Admin-only sections
+    if (isAdmin) {
+      items.push(
+        { icon: Files, label: "Pages", path: "/admin/pages", adminOnly: true },
+        { icon: Users, label: "Users", path: "/admin/users", adminOnly: true },
+        { icon: UserCog, label: "Authors/Admins", path: "/admin/authors", adminOnly: true },
+        { icon: MessageSquare, label: "Comments", path: "/admin/comments", adminOnly: true },
+        { icon: Image, label: "Media Library", path: "/admin/media", adminOnly: true },
+        { icon: DollarSign, label: "Monetization", path: "/admin/monetization", adminOnly: true },
+        { icon: Link2, label: "Redirects", path: "/admin/redirects", adminOnly: true },
+        { icon: Key, label: "API & Integrations", path: "/admin/api", adminOnly: true },
+        { icon: BarChart3, label: "Analytics", path: "/admin/analytics", adminOnly: true },
+        { icon: Share2, label: "Social Analytics", path: "/admin/social-analytics", adminOnly: true },
+      );
+    }
+
+    return items;
+  };
 
   useEffect(() => {
     fetchUserProfile();
-  }, []);
+  }, [userId]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPendingCount();
+    }
+  }, [isAdmin]);
 
   const fetchUserProfile = async () => {
     try {
@@ -58,6 +102,39 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       }
     } catch (error) {
       console.error("Error fetching user profile:", error);
+    }
+  };
+
+  const fetchPendingCount = async () => {
+    try {
+      // Count pending posts
+      const { count: postsCount } = await supabase
+        .from("posts")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      // Count pending courses
+      const { count: coursesCount } = await supabase
+        .from("courses")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      // Count pending careers
+      const { count: careersCount } = await supabase
+        .from("careers")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      // Count pending tags
+      const { count: tagsCount } = await supabase
+        .from("tags")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      const total = (postsCount || 0) + (coursesCount || 0) + (careersCount || 0) + (tagsCount || 0);
+      setPendingCount(total);
+    } catch (error) {
+      console.error("Error fetching pending count:", error);
     }
   };
 
@@ -84,6 +161,9 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     return location.pathname.startsWith(path);
   };
 
+  const menuItems = getMenuItems();
+  const roleLabel = isAdmin ? "Admin" : isModerator ? "Moderator" : "User";
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
@@ -101,9 +181,14 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
                   {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
                 </AvatarFallback>
               </Avatar>
-              <span className="font-semibold text-sidebar-foreground truncate max-w-[140px]">
-                {userProfile?.full_name || "Admin"}
-              </span>
+              <div className="flex flex-col">
+                <span className="font-semibold text-sidebar-foreground truncate max-w-[120px] text-sm">
+                  {userProfile?.full_name || "User"}
+                </span>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 w-fit">
+                  {roleLabel}
+                </Badge>
+              </div>
             </div>
           )}
           <Button
@@ -118,7 +203,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
 
         <ScrollArea className="h-[calc(100vh-200px)]">
           <nav className="p-2">
-            {adminMenuItems.map((item) => (
+            {menuItems.map((item) => (
               <Link key={item.path} to={item.path}>
                 <Button
                   variant={isActive(item.path) ? "default" : "ghost"}
@@ -129,12 +214,19 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
                   }`}
                 >
                   <item.icon className={`${sidebarOpen ? "mr-2" : ""} h-5 w-5`} />
-                  {sidebarOpen && <span>{item.label}</span>}
+                  {sidebarOpen && (
+                    <span className="flex-1 text-left">{item.label}</span>
+                  )}
+                  {sidebarOpen && item.badge && (
+                    <Badge variant="destructive" className="ml-auto text-xs h-5 min-w-5 flex items-center justify-center">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
             ))}
             
-            {/* Settings - Less Prominent */}
+            {/* Settings - Available to all */}
             <div className="mt-6 pt-4 border-t border-sidebar-border/50">
               <Link to="/admin/settings">
                 <Button
