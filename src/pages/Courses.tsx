@@ -35,10 +35,11 @@ const Courses = () => {
 
   const fetchCourses = async () => {
     setLoading(true);
-    // Show all courses regardless of status on public pages
+    // Only show published courses on public pages
     const { data, error } = await supabase
       .from('courses')
       .select('id, name, slug, description, featured_image, level, status')
+      .eq('status', 'published')
       .order('name', { ascending: true });
 
     if (!error && data) {

@@ -30,10 +30,11 @@ const Library = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // Fetch all courses regardless of status on public pages
+        // Only show published courses on public pages
         const { data: coursesData, error } = await supabase
           .from("courses")
           .select("*")
+          .eq("status", "published")
           .order("name");
 
         if (error) throw error;
