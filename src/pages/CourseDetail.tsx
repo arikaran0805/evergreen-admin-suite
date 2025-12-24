@@ -13,13 +13,14 @@ import { useCourseStats } from "@/hooks/useCourseStats";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
+import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import CourseReviewDialog from "@/components/CourseReviewDialog";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck, CheckCircle, Circle } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck, CheckCircle, Circle, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -87,6 +88,7 @@ const CourseDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const lessonSlug = searchParams.get("lesson");
+  const isPreviewMode = searchParams.get("preview") === "true";
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -96,6 +98,8 @@ const CourseDetail = () => {
   const [email, setEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [siteSettings, setSiteSettings] = useState<any>(null);
+  const [canPreview, setCanPreview] = useState(false);
+  const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
   const [footerCategories, setFooterCategories] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
@@ -175,12 +179,21 @@ const CourseDetail = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Set preview access based on user role
   useEffect(() => {
-    fetchCourseAndLessons();
-    fetchRecentCourses();
-    fetchSiteSettings();
-    fetchFooterCategories();
-  }, [slug]);
+    if (!roleLoading) {
+      setCanPreview(isAdmin || isModerator);
+    }
+  }, [isAdmin, isModerator, roleLoading]);
+
+  useEffect(() => {
+    if (!roleLoading) {
+      fetchCourseAndLessons();
+      fetchRecentCourses();
+      fetchSiteSettings();
+      fetchFooterCategories();
+    }
+  }, [slug, roleLoading, canPreview]);
 
   // Auto-select lesson from URL query param (supports browser back/forward)
   useEffect(() => {
@@ -264,18 +277,30 @@ const CourseDetail = () => {
 
   const fetchCourseAndLessons = async () => {
     try {
-      // Fetch course
-      const { data: courseData, error: courseError } = await supabase
+      // Fetch course - in preview mode, allow any status for admins/moderators
+      let courseQuery = supabase
         .from("courses")
         .select("*")
-        .eq("slug", slug)
-        .single();
+        .eq("slug", slug);
+      
+      // Only filter by published status if not in preview mode or user can't preview
+      if (!isPreviewMode || !canPreview) {
+        courseQuery = courseQuery.eq("status", "published");
+      }
 
-      if (courseError) throw courseError;
+      const { data: courseData, error: courseError } = await courseQuery.single();
+
+      if (courseError) {
+        if (courseError.code === 'PGRST116') {
+          // No rows found - course doesn't exist or not accessible
+          throw new Error("Course not found or not published yet");
+        }
+        throw courseError;
+      }
       setCourse(courseData);
 
-      // Fetch posts in this course
-      const { data: postsData, error: postsError } = await supabase
+      // Fetch posts in this course - in preview mode, show all statuses
+      let postsQuery = supabase
         .from("posts")
         .select(`
           id,
@@ -287,12 +312,19 @@ const CourseDetail = () => {
           updated_at,
           lesson_order,
           parent_id,
+          status,
           profiles:author_id (full_name)
         `)
         .eq("category_id", courseData.id)
-        .eq("status", "published")
         .order("lesson_order", { ascending: true })
         .order("created_at", { ascending: true });
+
+      // Only filter by published status if not in preview mode or user can't preview
+      if (!isPreviewMode || !canPreview) {
+        postsQuery = postsQuery.eq("status", "published");
+      }
+
+      const { data: postsData, error: postsError } = await postsQuery;
 
       if (postsError) throw postsError;
       setPosts(postsData || []);
@@ -693,7 +725,7 @@ const CourseDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="fixed top-0 left-0 right-0 z-[60]">
@@ -716,6 +748,9 @@ const CourseDetail = () => {
         <Header announcementVisible={showAnnouncement} />
         <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
           <h1 className="text-2xl font-bold mb-4">Course not found</h1>
+          {isPreviewMode && !canPreview && (
+            <p className="text-muted-foreground mb-4">You don't have permission to preview this content.</p>
+          )}
           <Link to="/">
             <Button className="bg-primary hover:bg-primary/90">Back to Home</Button>
           </Link>
@@ -733,18 +768,29 @@ const CourseDetail = () => {
         ogTitle={`${course.name} Course`}
         ogDescription={course.description || `Learn ${course.name} with our comprehensive course materials`}
       />
-      <div className="fixed top-0 left-0 right-0 z-[60]">
+      
+      {/* Preview Mode Banner */}
+      {isPreviewMode && canPreview && (
+        <div className="fixed top-0 left-0 right-0 z-[70] bg-amber-500 text-amber-950 py-2 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2 text-sm font-medium">
+            <AlertTriangle className="h-4 w-4" />
+            <span>Preview Mode - This content is not published yet</span>
+          </div>
+        </div>
+      )}
+      
+      <div className={`fixed ${isPreviewMode && canPreview ? 'top-10' : 'top-0'} left-0 right-0 z-[60]`}>
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
       <Header announcementVisible={showAnnouncement} />
 
       {/* 3-Column Layout */}
-      <div className={`w-full ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
+      <div className={`w-full ${isPreviewMode && canPreview ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
         <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Course Topics/Lessons List */}
           <aside className="lg:w-64 bg-green-50 border-r border-green-100 flex-shrink-0">
-            <div className={`sticky ${showAnnouncement ? 'top-32' : 'top-24'}`}>
+            <div className={`sticky ${isPreviewMode && canPreview ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') : (showAnnouncement ? 'top-32' : 'top-24')}`}>
               <div className="px-6 py-4 border-b border-green-100 bg-green-100/50">
                 <div 
                   className="flex items-center justify-center gap-2 cursor-pointer hover:text-green-700 transition-colors"
