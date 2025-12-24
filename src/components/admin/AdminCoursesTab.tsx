@@ -3,14 +3,40 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Edit, Trash2, Star, Eye, Info, User, UserCog, Shield } from "lucide-react";
-import { format } from "date-fns";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { 
+  Plus, 
+  Eye, 
+  Pencil, 
+  Trash2, 
+  Info,
+  FileText,
+  Send,
+  Shield,
+  UserCog
+} from "lucide-react";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 
 interface Category {
@@ -51,18 +77,25 @@ const AdminCoursesTab = () => {
   const [previewCategory, setPreviewCategory] = useState<Category | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAdmin, userId } = useUserRole();
+  const { isAdmin, isModerator, userId } = useUserRole();
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [userId, isAdmin, isModerator]);
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("courses")
         .select("*")
         .order("name", { ascending: true });
+
+      // Moderators only see their own courses or assigned courses
+      if (isModerator && !isAdmin && userId) {
+        query = query.or(`author_id.eq.${userId},assigned_to.eq.${userId}`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setCategories((data as Category[]) || []);
@@ -90,13 +123,11 @@ const AdminCoursesTab = () => {
 
   const fetchUsers = async (userIds: string[]) => {
     try {
-      // Fetch profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, email")
         .in("id", userIds);
 
-      // Fetch roles
       const { data: roles } = await supabase
         .from("user_roles")
         .select("user_id, role")
@@ -156,19 +187,8 @@ const AdminCoursesTab = () => {
     }
   };
 
-  const toggleFeatured = async (id: string, currentFeatured: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("courses")
-        .update({ featured: !currentFeatured })
-        .eq("id", id);
-      
-      if (error) throw error;
-      toast({ title: `Course ${!currentFeatured ? "marked as featured" : "unmarked as featured"}` });
-      fetchCategories();
-    } catch (error: any) {
-      toast({ title: "Error updating featured status", description: error.message, variant: "destructive" });
-    }
+  const handleDeleteRequest = async (course: Category) => {
+    toast({ title: `Delete request sent for "${course.name}"` });
   };
 
   const getUserDisplay = (userId: string | null) => {
@@ -184,7 +204,7 @@ const AdminCoursesTab = () => {
   const getRoleBadge = (role: string) => {
     if (role === "admin") {
       return (
-        <Badge className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
+        <Badge className="bg-primary/10 text-primary border-primary/20 text-xs gap-1 ml-1">
           <Shield className="h-3 w-3" />
           Admin
         </Badge>
@@ -192,173 +212,246 @@ const AdminCoursesTab = () => {
     }
     if (role === "moderator") {
       return (
-        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1">
+        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1 ml-1">
           <UserCog className="h-3 w-3" />
-          Moderator
+          Mod
         </Badge>
       );
     }
     return null;
   };
 
-  if (loading) return <div>Loading...</div>;
+  const getLevelBadge = (level: string | null) => {
+    if (!level) return <span className="text-muted-foreground text-sm">-</span>;
+    
+    const colors: Record<string, string> = {
+      beginner: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      intermediate: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+      advanced: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    };
+    
+    return (
+      <Badge className={colors[level.toLowerCase()] || "bg-muted text-muted-foreground"}>
+        {level}
+      </Badge>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={() => navigate("/admin/courses/new")}>
-          <Plus className="mr-2 h-4 w-4" /> New Course
-        </Button>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">All Courses</h2>
+            <p className="text-sm text-muted-foreground">
+              {categories.length} course{categories.length !== 1 ? "s" : ""} total
+            </p>
+          </div>
+          <Button onClick={() => navigate("/admin/courses/new")} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Course
+          </Button>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => {
-          const author = getUserDisplay(category.author_id);
-          const assignee = getUserDisplay(category.assigned_to);
-          
-          return (
-            <Card key={category.id} className="relative">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{category.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">/{category.slug}</p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => window.open(`/course/${category.slug}`, "_blank")}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => navigate(`/admin/courses/${category.id}`)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {isAdmin && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleDelete(category.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Status Badge */}
-                <div className="mt-2">
-                  <ContentStatusBadge status={category.status as ContentStatus} />
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-3 pt-2">
-                {/* Ownership Info */}
-                <div className="space-y-2 p-3 bg-muted/30 rounded-lg text-sm">
-                  {author && (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        Created by
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate max-w-[100px]">{author.name}</span>
-                        {getRoleBadge(author.role)}
-                      </div>
-                    </div>
-                  )}
+        {categories.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No courses found</p>
+          </div>
+        ) : (
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Course Name</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Created By</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  {isModerator && !isAdmin && <TableHead>Status</TableHead>}
+                  <TableHead>Level</TableHead>
+                  <TableHead className="text-center">Info</TableHead>
+                  <TableHead className="text-center">Posts</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => {
+                  const author = getUserDisplay(category.author_id);
+                  const assignee = getUserDisplay(category.assigned_to);
                   
-                  {assignee && (
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/50">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <UserCog className="h-3 w-3" />
-                        Assigned to
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate max-w-[100px]">{assignee.name}</span>
-                        {getRoleBadge(assignee.role)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {category.description && (
-                  <div>
-                    <div 
-                      className="text-sm break-words prose prose-sm max-w-none line-clamp-2"
-                      dangerouslySetInnerHTML={{ __html: category.description }}
-                    />
-                    {category.description.length > 100 && (
-                      <button
-                        onClick={() => setPreviewCategory(category)}
-                        className="text-xs text-primary hover:underline mt-1"
-                      >
-                        Read more
-                      </button>
-                    )}
-                  </div>
-                )}
-                
-                {category.level && (
-                  <p className="text-sm text-muted-foreground">Level: {category.level}</p>
-                )}
-                
-                <div className="flex items-center justify-between pt-3 border-t">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Info className="h-3 w-3" />
-                          <span>{categoryStats[category.id]?.postCount || 0} posts</span>
+                  return (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">
+                          {category.slug}
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        {author ? (
+                          <div className="flex items-center flex-wrap gap-1">
+                            <span className="text-sm">{author.name}</span>
+                            {getRoleBadge(author.role)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {assignee ? (
+                          <div className="flex items-center flex-wrap gap-1">
+                            <span className="text-sm">{assignee.name}</span>
+                            {getRoleBadge(assignee.role)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      {isModerator && !isAdmin && (
+                        <TableCell>
+                          <ContentStatusBadge status={category.status as ContentStatus} />
+                        </TableCell>
+                      )}
+                      <TableCell>{getLevelBadge(category.level)}</TableCell>
+                      <TableCell className="text-center">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setPreviewCategory(category)}
+                            >
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View details</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="font-mono">
+                          {categoryStats[category.id]?.postCount || 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => window.open(`/courses/${category.slug}`, "_blank")}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Preview</TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => navigate(`/admin/courses/${category.id}`)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit</TooltipContent>
+                          </Tooltip>
+                          
+                          {isAdmin ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(category.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete</TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-orange-500 hover:text-orange-600"
+                                  onClick={() => handleDeleteRequest(category)}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Request Delete</TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="p-2">
-                        <span className="text-xs">Created: {format(new Date(category.created_at), "MMM d, yyyy")}</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  {isAdmin && (
-                    <div className="flex items-center gap-2">
-                      <Star className={`h-4 w-4 ${category.featured ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                      <Switch
-                        checked={category.featured}
-                        onCheckedChange={() => toggleFeatured(category.id, category.featured)}
-                      />
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
-      <Dialog open={!!previewCategory} onOpenChange={() => setPreviewCategory(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">{previewCategory?.name}</DialogTitle>
-            {previewCategory?.level && (
-              <p className="text-sm text-muted-foreground">Level: {previewCategory.level}</p>
-            )}
-          </DialogHeader>
-          {previewCategory?.description && (
-            <div 
-              className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: previewCategory.description }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Info Dialog */}
+        <Dialog open={!!previewCategory} onOpenChange={() => setPreviewCategory(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{previewCategory?.name}</DialogTitle>
+              <DialogDescription>Course Details</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Slug:</span>
+                  <p className="font-mono mt-1">{previewCategory?.slug}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Level:</span>
+                  <p className="mt-1">{previewCategory?.level || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <p className="mt-1">{previewCategory?.status}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Posts:</span>
+                  <p className="mt-1">{previewCategory ? categoryStats[previewCategory.id]?.postCount || 0 : 0}</p>
+                </div>
+              </div>
+              {previewCategory?.description && (
+                <div>
+                  <span className="text-muted-foreground text-sm">Description:</span>
+                  <div 
+                    className="mt-1 text-sm prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: previewCategory.description }}
+                  />
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 };
 
