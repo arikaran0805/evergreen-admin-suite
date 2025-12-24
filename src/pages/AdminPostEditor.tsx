@@ -10,8 +10,10 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { ChatStyleEditor } from "@/components/chat-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import AdminLayout from "@/components/AdminLayout";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette } from "lucide-react";
+import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +27,7 @@ const postSchema = z.object({
   content: z.string().min(1, "Content is required"),
   featured_image: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   category_id: z.string().uuid().optional().or(z.literal("")),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published", "pending", "rejected", "changes_requested"]),
   lesson_order: z.number().int().min(0).optional(),
   parent_id: z.string().uuid().optional().or(z.literal("")).or(z.literal("none")),
 });
@@ -51,6 +53,7 @@ const AdminPostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
@@ -65,50 +68,40 @@ const AdminPostEditor = () => {
     content: "",
     featured_image: "",
     category_id: "",
-    status: "draft" as "draft" | "published",
+    status: "draft" as "draft" | "published" | "pending" | "rejected" | "changes_requested",
     lesson_order: 0,
     parent_id: "none",
     code_theme: "" as string,
   });
+  const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAdminAccess();
-    fetchCategories();
-    fetchMainLessons();
-    fetchTags();
-    if (id) {
-      fetchPost(id);
-      fetchPostTags(id);
+    if (!roleLoading) {
+      checkAccess();
     }
-  }, [id]);
+  }, [roleLoading]);
 
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/auth");
-        return;
+  useEffect(() => {
+    if (isAdmin || isModerator) {
+      fetchCategories();
+      fetchMainLessons();
+      fetchTags();
+      if (id) {
+        fetchPost(id);
+        fetchPostTags(id);
       }
+    }
+  }, [id, isAdmin, isModerator]);
 
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (!roleData) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have admin privileges",
-          variant: "destructive",
-        });
-        navigate("/");
-      }
-    } catch (error: any) {
-      console.error("Error checking access:", error);
+  const checkAccess = async () => {
+    if (!isAdmin && !isModerator) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this page",
+        variant: "destructive",
+      });
       navigate("/");
+      return;
     }
   };
 
@@ -183,6 +176,18 @@ const AdminPostEditor = () => {
       if (error) throw error;
       
       if (data) {
+        // Check if moderator is trying to edit someone else's post
+        if (isModerator && !isAdmin && data.author_id !== userId) {
+          toast({
+            title: "Access Denied",
+            description: "You can only edit your own posts",
+            variant: "destructive",
+          });
+          navigate("/admin/posts");
+          return;
+        }
+
+        setOriginalAuthorId(data.author_id);
         setFormData({
           title: data.title || "",
           slug: data.slug || "",
@@ -190,7 +195,7 @@ const AdminPostEditor = () => {
           content: data.content || "",
           featured_image: data.featured_image || "",
           category_id: data.category_id || "",
-          status: (data.status as "draft" | "published") || "draft",
+          status: (data.status as any) || "draft",
           lesson_order: data.lesson_order || 0,
           parent_id: data.parent_id || "none",
           code_theme: data.code_theme || "",
@@ -213,10 +218,20 @@ const AdminPostEditor = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (submitForApproval: boolean = false) => {
     try {
       setLoading(true);
-      const validated = postSchema.parse(formData);
+      
+      // Determine status
+      let status = formData.status;
+      if (submitForApproval) {
+        status = "pending";
+      } else if (isModerator && !isAdmin && status === "published") {
+        // Moderators cannot publish directly
+        status = "draft";
+      }
+
+      const validated = postSchema.parse({ ...formData, status });
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -229,7 +244,7 @@ const AdminPostEditor = () => {
         featured_image: validated.featured_image || null,
         category_id: validated.category_id || null,
         status: validated.status,
-        author_id: session.user.id,
+        author_id: originalAuthorId || session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
         lesson_order: validated.lesson_order || 0,
         parent_id: validated.parent_id && validated.parent_id !== "" && validated.parent_id !== "none" ? validated.parent_id : null,
@@ -261,9 +276,21 @@ const AdminPostEditor = () => {
         await savePostTags(postId);
       }
 
+      // Record approval history if submitting for approval
+      if (submitForApproval && postId) {
+        await supabase.from("approval_history").insert({
+          content_type: "post",
+          content_id: postId,
+          action: "submitted",
+          performed_by: session.user.id,
+        });
+      }
+
       toast({
         title: "Success",
-        description: id ? "Post updated successfully" : "Post created successfully",
+        description: submitForApproval 
+          ? "Post submitted for approval" 
+          : (id ? "Post updated successfully" : "Post created successfully"),
       });
 
       navigate("/admin/posts");
@@ -325,9 +352,15 @@ const AdminPostEditor = () => {
     if (!tag) {
       // Create new tag
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const { data, error } = await supabase
           .from("tags")
-          .insert([{ name: tagName, slug: tagSlug }])
+          .insert([{ 
+            name: tagName, 
+            slug: tagSlug,
+            author_id: session?.user.id,
+            status: isAdmin ? "approved" : "pending"
+          }])
           .select()
           .single();
 
@@ -363,7 +396,11 @@ const AdminPostEditor = () => {
       .replace(/(^-|-$)/g, "");
   };
 
-  if (loading && id) {
+  // Check if moderator can only save as draft or submit for approval
+  const canPublishDirectly = isAdmin;
+  const showSubmitForApproval = isModerator && !isAdmin;
+
+  if (roleLoading || (loading && id)) {
     return (
       <AdminLayout>
         <div className="text-center">Loading...</div>
@@ -388,6 +425,9 @@ const AdminPostEditor = () => {
             <h1 className="text-3xl font-bold">
               {id ? "Edit Post" : "Create New Post"}
             </h1>
+            {formData.status && formData.status !== "draft" && (
+              <ContentStatusBadge status={formData.status as ContentStatus} />
+            )}
           </div>
 
           <div className="space-y-4">
@@ -469,39 +509,70 @@ const AdminPostEditor = () => {
         {/* Right Sidebar */}
         <div className="w-80 space-y-4">
           <Card className="p-4 space-y-4 sticky top-6">
-            <div className="flex gap-2">
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              {canPublishDirectly ? (
+                <Button
+                  onClick={() => handleSubmit(false)}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {id ? "Update" : "Publish"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => handleSubmit(false)}
+                    disabled={loading}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Draft
+                  </Button>
+                  {showSubmitForApproval && (
+                    <Button
+                      onClick={() => handleSubmit(true)}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit for Approval
+                    </Button>
+                  )}
+                </>
+              )}
               <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="flex-1"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {id ? "Update" : "Publish"}
-              </Button>
-              <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => navigate("/admin/posts")}
                 disabled={loading}
+                className="w-full"
               >
                 Cancel
               </Button>
             </div>
 
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value: "draft" | "published") => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Status - Only show to admins */}
+            {canPublishDirectly && (
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="pending">Pending Approval</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="category">Course</Label>
@@ -510,12 +581,13 @@ const AdminPostEditor = () => {
                 onValueChange={(value) => setFormData({ ...formData, category_id: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select course" />
+                  <SelectValue placeholder="Select a course" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
+                  <SelectItem value="">No course</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -525,33 +597,16 @@ const AdminPostEditor = () => {
             <div>
               <Label htmlFor="parent">Parent Lesson</Label>
               <Select 
-                value={formData.parent_id || ""} 
-                onValueChange={(value) => {
-                  if (value !== "none" && value) {
-                    const parentLesson = mainLessons.find(l => l.id === value);
-                    if (parentLesson && parentLesson.category_id) {
-                      setFormData({ 
-                        ...formData, 
-                        parent_id: value,
-                        category_id: parentLesson.category_id 
-                      });
-                      return;
-                    }
-                  }
-                  setFormData({ ...formData, parent_id: value });
-                }}
+                value={formData.parent_id} 
+                onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder="No parent (main lesson)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None - Main Lesson</SelectItem>
+                  <SelectItem value="none">No parent (main lesson)</SelectItem>
                   {mainLessons
-                    .filter(lesson => {
-                      if (id && lesson.id === id) return false;
-                      if (formData.category_id && lesson.category_id !== formData.category_id) return false;
-                      return true;
-                    })
+                    .filter(lesson => lesson.id !== id)
                     .map((lesson) => (
                       <SelectItem key={lesson.id} value={lesson.id}>
                         {lesson.title}
@@ -559,9 +614,6 @@ const AdminPostEditor = () => {
                     ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Make this a sub-lesson
-              </p>
             </div>
 
             <div>
@@ -572,86 +624,63 @@ const AdminPostEditor = () => {
                 min="0"
                 value={formData.lesson_order}
                 onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
-                placeholder="0"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Lower numbers appear first
-              </p>
             </div>
 
             <div>
               <Label htmlFor="featured_image">Featured Image URL</Label>
               <Input
                 id="featured_image"
-                type="url"
                 value={formData.featured_image}
                 onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
                 placeholder="https://..."
               />
             </div>
 
-            {editorType === "chat" && (
-              <div>
-                <Label htmlFor="code_theme" className="flex items-center gap-2">
-                  <Palette className="h-4 w-4" />
-                  Code Theme
-                </Label>
-                <Select 
-                  value={formData.code_theme || "default"} 
-                  onValueChange={(value) => setFormData({ ...formData, code_theme: value === "default" ? "" : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Use global theme" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Use Global Theme</SelectItem>
-                    {CODE_THEMES.map((theme) => (
-                      <SelectItem key={theme.value} value={theme.value}>
-                        {theme.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Override code theme for this post
-                </p>
-              </div>
-            )}
+            <div>
+              <Label className="flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                Code Theme
+              </Label>
+              <Select 
+                value={formData.code_theme || "default"} 
+                onValueChange={(value) => setFormData({ ...formData, code_theme: value === "default" ? "" : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Use site default" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Use site default</SelectItem>
+                  {CODE_THEMES.map((theme) => (
+                    <SelectItem key={theme.value} value={theme.value}>
+                      {theme.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div>
-              <Label htmlFor="tags">Tags</Label>
-              <div className="flex gap-2">
+              <Label>Tags</Label>
+              <div className="flex gap-2 mb-2">
                 <Input
-                  id="tags"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
                   placeholder="Add a tag..."
                 />
-                <Button
-                  type="button"
-                  onClick={handleAddTag}
-                  variant="secondary"
-                  size="sm"
-                >
+                <Button type="button" onClick={handleAddTag} size="sm">
                   Add
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-1">
                 {selectedTags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    variant="secondary"
-                    className="gap-1 pr-1"
-                  >
+                  <Badge key={tag.id} variant="secondary" className="gap-1">
                     {tag.name}
-                    <button
-                      type="button"
+                    <X 
+                      className="h-3 w-3 cursor-pointer" 
                       onClick={() => handleRemoveTag(tag.id)}
-                      className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    />
                   </Badge>
                 ))}
               </div>

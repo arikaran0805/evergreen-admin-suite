@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import AdminLayout from "@/components/AdminLayout";
+import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -10,12 +12,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, X, Image, icons } from "lucide-react";
+import { ArrowLeft, Upload, X, Image, icons, Save, Send } from "lucide-react";
 
 const AdminCourseEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,7 +32,9 @@ const AdminCourseEditor = () => {
     featured_image: "",
     icon: "BookOpen",
     learning_hours: 0,
+    status: "draft" as string,
   });
+  const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
 
   // Get a list of popular icons for courses
   const courseIcons = [
@@ -39,9 +44,19 @@ const AdminCourseEditor = () => {
   ];
 
   useEffect(() => {
-    checkAdminAccess();
-    fetchDifficultyLevels();
-  }, []);
+    if (!roleLoading) {
+      checkAccess();
+    }
+  }, [roleLoading]);
+
+  useEffect(() => {
+    if (isAdmin || isModerator) {
+      fetchDifficultyLevels();
+      if (id) {
+        fetchCategory();
+      }
+    }
+  }, [id, isAdmin, isModerator]);
 
   const fetchDifficultyLevels = async () => {
     try {
@@ -57,28 +72,11 @@ const AdminCourseEditor = () => {
     }
   };
 
-  const checkAdminAccess = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!roleData) {
+  const checkAccess = async () => {
+    if (!isAdmin && !isModerator) {
       toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
       return;
-    }
-
-    if (id) {
-      fetchCategory();
     }
   };
 
@@ -96,6 +94,18 @@ const AdminCourseEditor = () => {
       if (error) throw error;
       
       if (data) {
+        // Check if moderator is trying to edit someone else's course
+        if (isModerator && !isAdmin && data.author_id && data.author_id !== userId) {
+          toast({
+            title: "Access Denied",
+            description: "You can only edit your own courses",
+            variant: "destructive",
+          });
+          navigate("/admin/courses");
+          return;
+        }
+
+        setOriginalAuthorId(data.author_id);
         setFormData({
           name: data.name,
           slug: data.slug,
@@ -105,6 +115,7 @@ const AdminCourseEditor = () => {
           featured_image: data.featured_image || "",
           icon: (data as any).icon || "BookOpen",
           learning_hours: (data as any).learning_hours || 0,
+          status: data.status || "draft",
         });
       }
     } catch (error: any) {
@@ -114,25 +125,59 @@ const AdminCourseEditor = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, submitForApproval: boolean = false) => {
     e.preventDefault();
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Determine status
+      let status = formData.status;
+      if (submitForApproval) {
+        status = "pending";
+      } else if (isModerator && !isAdmin && status === "approved") {
+        // Moderators cannot approve directly
+        status = "draft";
+      }
+
+      const courseData = {
+        ...formData,
+        status,
+        author_id: originalAuthorId || session.user.id,
+      };
+
+      let courseId = id;
+
       if (id) {
         const { error } = await supabase
           .from("courses")
-          .update(formData)
+          .update(courseData)
           .eq("id", id);
         
         if (error) throw error;
         toast({ title: "Course updated successfully" });
       } else {
-        const { error } = await supabase
+        const { data: newCourse, error } = await supabase
           .from("courses")
-          .insert([formData]);
+          .insert([courseData])
+          .select()
+          .single();
         
         if (error) throw error;
+        courseId = newCourse.id;
         toast({ title: "Course created successfully" });
+      }
+
+      // Record approval history if submitting for approval
+      if (submitForApproval && courseId) {
+        await supabase.from("approval_history").insert({
+          content_type: "course",
+          content_id: courseId,
+          action: "submitted",
+          performed_by: session.user.id,
+        });
+        toast({ title: "Course submitted for approval" });
       }
       
       navigate("/admin/courses");
@@ -181,7 +226,10 @@ const AdminCourseEditor = () => {
     setFormData({ ...formData, featured_image: "" });
   };
 
-  if (loading) {
+  const canPublishDirectly = isAdmin;
+  const showSubmitForApproval = isModerator && !isAdmin;
+
+  if (roleLoading || loading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -202,9 +250,12 @@ const AdminCourseEditor = () => {
           <h1 className="text-3xl font-bold text-foreground">
             {id ? "Edit Course" : "Create New Course"}
           </h1>
+          {formData.status && formData.status !== "draft" && (
+            <ContentStatusBadge status={formData.status as ContentStatus} />
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
+        <form onSubmit={(e) => handleSubmit(e, false)} className="grid gap-6 lg:grid-cols-3">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
@@ -314,6 +365,27 @@ const AdminCourseEditor = () => {
                 <CardTitle>Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Status - Only show to admins */}
+                {canPublishDirectly && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="pending">Pending Approval</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="level">Difficulty Level</Label>
                   <Select
@@ -382,12 +454,32 @@ const AdminCourseEditor = () => {
             </Card>
 
             <div className="flex flex-col gap-2">
-              <Button type="submit" className="w-full">
-                {id ? "Update Course" : "Create Course"}
-              </Button>
+              {canPublishDirectly ? (
+                <Button type="submit" className="w-full">
+                  <Save className="mr-2 h-4 w-4" />
+                  {id ? "Update Course" : "Create Course"}
+                </Button>
+              ) : (
+                <>
+                  <Button type="submit" variant="outline" className="w-full">
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Draft
+                  </Button>
+                  {showSubmitForApproval && (
+                    <Button 
+                      type="button" 
+                      className="w-full"
+                      onClick={(e) => handleSubmit(e as any, true)}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit for Approval
+                    </Button>
+                  )}
+                </>
+              )}
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 className="w-full"
                 onClick={() => navigate("/admin/courses")}
               >
