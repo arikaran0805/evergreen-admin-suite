@@ -17,33 +17,53 @@ const ResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we have a valid recovery session
+    let cancelled = false;
+
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Check URL for recovery indicators
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const searchParams = new URLSearchParams(window.location.search);
-      const type = hashParams.get("type") ?? searchParams.get("type");
-      const hasTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
-      
-      if (session || type === "recovery" || hasTokens) {
-        setIsValidSession(true);
-      } else {
-        setIsValidSession(false);
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const type = hashParams.get("type") ?? searchParams.get("type");
+        const hasTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
+        const code = searchParams.get("code");
+
+        // Some recovery emails use PKCE and provide `?code=...` instead of hash tokens.
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+
+          // Remove the one-time code from the URL (refreshing would otherwise fail).
+          navigate("/reset-password", { replace: true });
+        }
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const valid = !!session || type === "recovery" || hasTokens || !!code;
+        if (!cancelled) setIsValidSession(valid);
+      } catch {
+        if (!cancelled) setIsValidSession(false);
       }
     };
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsValidSession(true);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();

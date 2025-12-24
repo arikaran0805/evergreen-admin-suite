@@ -58,11 +58,16 @@ const AppContent = () => {
 
     const type = hashParams.get("type") ?? searchParams.get("type");
     const hasRecoveryTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
+    const hasRecoveryCode = searchParams.has("code");
 
-    if ((type === "recovery" || (hasRecoveryTokens && !type)) && location.pathname !== "/reset-password") {
+    if (
+      (type === "recovery" || (hasRecoveryTokens && !type) || (hasRecoveryCode && !type)) &&
+      location.pathname !== "/reset-password"
+    ) {
       navigate(`/reset-password${location.search}${location.hash}`, { replace: true });
     }
   }, [location.hash, location.search, location.pathname, navigate]);
+
 
   
   // Prevent scroll to top when navigating between admin pages
