@@ -253,7 +253,7 @@ const CodeBlock = ({
   return (
     <div 
       className={cn(
-        "relative group mt-3 w-full",
+        "relative group mt-3 w-full min-w-[320px]",
         getThemeClass()
       )}
     >
