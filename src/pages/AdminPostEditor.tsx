@@ -701,6 +701,7 @@ const AdminPostEditor = () => {
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="pending">Pending Approval</SelectItem>
                     <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="changes_requested">Changes Requested</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
