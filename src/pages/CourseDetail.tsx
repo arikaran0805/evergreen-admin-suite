@@ -277,16 +277,11 @@ const CourseDetail = () => {
 
   const fetchCourseAndLessons = async () => {
     try {
-      // Fetch course - in preview mode, allow any status for admins/moderators
+      // Fetch course - show all courses regardless of status on public pages
       let courseQuery = supabase
         .from("courses")
         .select("*")
         .eq("slug", slug);
-      
-      // Only filter by published status if not in preview mode or user can't preview
-      if (!isPreviewMode || !canPreview) {
-        courseQuery = courseQuery.eq("status", "published");
-      }
 
       const { data: courseData, error: courseError } = await courseQuery.single();
 
@@ -299,7 +294,7 @@ const CourseDetail = () => {
       }
       setCourse(courseData);
 
-      // Fetch posts in this course - in preview mode, show all statuses
+      // Fetch posts in this course - show all posts regardless of status
       let postsQuery = supabase
         .from("posts")
         .select(`
@@ -318,11 +313,6 @@ const CourseDetail = () => {
         .eq("category_id", courseData.id)
         .order("lesson_order", { ascending: true })
         .order("created_at", { ascending: true });
-
-      // Only filter by published status if not in preview mode or user can't preview
-      if (!isPreviewMode || !canPreview) {
-        postsQuery = postsQuery.eq("status", "published");
-      }
 
       const { data: postsData, error: postsError } = await postsQuery;
 

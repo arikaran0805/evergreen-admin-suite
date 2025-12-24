@@ -57,7 +57,7 @@ const TagPosts = () => {
       if (postTagsData && postTagsData.length > 0) {
         const postIds = postTagsData.map(pt => pt.post_id);
 
-        // Get the posts
+        // Get the posts (all posts regardless of status on public pages)
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
           .select(`
@@ -71,7 +71,6 @@ const TagPosts = () => {
             courses:category_id (name, slug)
           `)
           .in("id", postIds)
-          .eq("status", "published")
           .order("published_at", { ascending: false });
 
         if (postsError) throw postsError;

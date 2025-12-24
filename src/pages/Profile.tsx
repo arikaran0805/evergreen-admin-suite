@@ -114,11 +114,11 @@ const OngoingCourseCard = ({
     const fetchProgress = async () => {
       if (!course?.id || !userId) return;
 
+      // Count all lessons regardless of status on public pages
       const { count: totalLessons } = await supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
-        .eq('category_id', course.id)
-        .eq('status', 'published');
+        .eq('category_id', course.id);
 
       const { count: completedLessons } = await supabase
         .from('lesson_progress')
@@ -238,11 +238,11 @@ const FeaturedCourseCard = ({
     const fetchLessonCount = async () => {
       if (!course?.id) return;
 
+      // Count all lessons regardless of status on public pages
       const { count } = await supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
-        .eq('category_id', course.id)
-        .eq('status', 'published');
+        .eq('category_id', course.id);
 
       setLessonCount(count || 0);
     };
@@ -549,11 +549,10 @@ const Profile = () => {
         .eq("user_id", session.user.id)
         .eq("completed", true);
 
-      // Fetch lesson counts per course (only published lessons count)
+      // Fetch lesson counts per course (all lessons regardless of status)
       const { data: courseLessons } = await supabase
         .from("posts")
-        .select("id, category_id")
-        .eq("status", "published");
+        .select("id, category_id");
 
       if (lessonProgress && courseLessons && courses) {
         // Count lessons per course

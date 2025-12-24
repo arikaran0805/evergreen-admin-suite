@@ -33,12 +33,11 @@ export const useCourseProgress = (courseId: string | undefined) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Get total lessons in course
+      // Get total lessons in course (all lessons regardless of status)
       const { count: totalLessons } = await supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
-        .eq('category_id', courseId)
-        .eq('status', 'published');
+        .eq('category_id', courseId);
 
       if (!user) {
         setProgress({

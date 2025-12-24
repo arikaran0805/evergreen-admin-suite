@@ -30,7 +30,7 @@ const Library = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // Fetch all courses
+        // Fetch all courses regardless of status on public pages
         const { data: coursesData, error } = await supabase
           .from("courses")
           .select("*")
@@ -49,8 +49,7 @@ const Library = () => {
               supabase
                 .from("posts")
                 .select("*", { count: "exact", head: true })
-                .eq("category_id", course.id)
-                .eq("status", "published"),
+                .eq("category_id", course.id),
               supabase
                 .from("course_reviews")
                 .select("rating")

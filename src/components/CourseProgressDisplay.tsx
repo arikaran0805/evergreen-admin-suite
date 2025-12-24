@@ -18,12 +18,11 @@ export const CourseProgressDisplay = ({ courseId, userId, className = '' }: Cour
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        // Get total lessons in course
+        // Get total lessons in course (all lessons regardless of status)
         const { count: totalLessons } = await supabase
           .from('posts')
           .select('*', { count: 'exact', head: true })
-          .eq('category_id', courseId)
-          .eq('status', 'published');
+          .eq('category_id', courseId);
 
         // Get user's progress for this course
         const { count: viewedLessons } = await supabase
