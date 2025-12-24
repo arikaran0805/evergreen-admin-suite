@@ -51,7 +51,7 @@ interface UserProfile {
 const AdminDeleteRequests = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const { isAdmin, isModerator, isLoading: roleLoading, userId } = useUserRole();
   const [requests, setRequests] = useState<DeleteRequest[]>([]);
   const [users, setUsers] = useState<Map<string, UserProfile>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -60,21 +60,28 @@ const AdminDeleteRequests = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin) {
+    if (!roleLoading && !isAdmin && !isModerator) {
       navigate("/admin");
       return;
     }
-    if (!roleLoading && isAdmin) {
+    if (!roleLoading && (isAdmin || isModerator)) {
       fetchRequests();
     }
-  }, [isAdmin, roleLoading]);
+  }, [isAdmin, isModerator, roleLoading]);
 
   const fetchRequests = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("delete_requests")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // Moderators can only see their own delete requests
+      if (isModerator && !isAdmin && userId) {
+        query = query.eq("requested_by", userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests(data || []);

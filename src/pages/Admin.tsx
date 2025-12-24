@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
-import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit, Info, DollarSign } from "lucide-react";
+import { Users, FileText, MessageSquare, Home, Calendar, Eye, Edit, Info, DollarSign, Image, Trash2, Tag, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -36,6 +36,11 @@ interface PostStats {
   };
 }
 
+interface SocialAnalytics {
+  platform: string;
+  clicks: number;
+}
+
 const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false); // can access /admin (admin or moderator)
@@ -44,10 +49,14 @@ const Admin = () => {
   const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
   const [postStats, setPostStats] = useState<PostStats>({});
   const [filterType, setFilterType] = useState<"posted" | "edited">("posted");
+  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalytics[]>([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPosts: 0,
     totalComments: 0,
+    myPosts: 0,
+    myComments: 0,
+    totalShares: 0,
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -116,25 +125,86 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
       // Get total users
       const { count: usersCount } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true });
 
-      // Get total posts
-      const { count: postsCount } = await supabase
-        .from("posts")
-        .select("*", { count: "exact", head: true });
+      // Get total posts (for admin) or my posts (for moderator)
+      const postsQuery = supabase.from("posts").select("*", { count: "exact", head: true });
+      const { count: postsCount } = isModerator && userId 
+        ? await postsQuery.eq("author_id", userId)
+        : await postsQuery;
+
+      // Get my posts count for moderator
+      let myPostsCount = 0;
+      if (userId) {
+        const { count } = await supabase
+          .from("posts")
+          .select("*", { count: "exact", head: true })
+          .eq("author_id", userId);
+        myPostsCount = count || 0;
+      }
+
+      // Get comments on my posts for moderator
+      let myCommentsCount = 0;
+      if (userId) {
+        // First get all post IDs by this user
+        const { data: myPosts } = await supabase
+          .from("posts")
+          .select("id")
+          .eq("author_id", userId);
+        
+        if (myPosts && myPosts.length > 0) {
+          const postIds = myPosts.map(p => p.id);
+          const { count } = await supabase
+            .from("comments")
+            .select("*", { count: "exact", head: true })
+            .in("post_id", postIds);
+          myCommentsCount = count || 0;
+        }
+      }
 
       // Get total comments
       const { count: commentsCount } = await supabase
         .from("comments")
         .select("*", { count: "exact", head: true });
 
+      // Get total shares for social analytics
+      const { count: sharesCount } = await supabase
+        .from("post_shares")
+        .select("*", { count: "exact", head: true });
+
+      // Fetch social media analytics
+      const { data: socialData } = await supabase
+        .from("social_media_clicks")
+        .select("platform");
+      
+      // Group by platform
+      const platformCounts: { [key: string]: number } = {};
+      if (socialData) {
+        socialData.forEach(item => {
+          platformCounts[item.platform] = (platformCounts[item.platform] || 0) + 1;
+        });
+      }
+      
+      const socialStats = Object.entries(platformCounts).map(([platform, clicks]) => ({
+        platform,
+        clicks
+      })).sort((a, b) => b.clicks - a.clicks);
+      
+      setSocialAnalytics(socialStats);
+
       setStats({
         totalUsers: usersCount || 0,
         totalPosts: postsCount || 0,
         totalComments: commentsCount || 0,
+        myPosts: myPostsCount,
+        myComments: myCommentsCount,
+        totalShares: sharesCount || 0,
       });
     } catch (error: any) {
       console.error("Error fetching stats:", error);
@@ -282,43 +352,67 @@ const Admin = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-          </CardContent>
-        </Card>
+      <div className={`grid grid-cols-1 ${isModerator ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 mb-8`}>
+        {!isModerator && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
+            <CardTitle className="text-sm font-medium">{isModerator ? "My Posts" : "Total Posts"}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPosts}</div>
+            <div className="text-2xl font-bold">{isModerator ? stats.myPosts : stats.totalPosts}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Comments</CardTitle>
+            <CardTitle className="text-sm font-medium">{isModerator ? "Comments on My Posts" : "Total Comments"}</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalComments}</div>
+            <div className="text-2xl font-bold">{isModerator ? stats.myComments : stats.totalComments}</div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Shares</CardTitle>
+            <Share2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalShares}</div>
+          </CardContent>
+        </Card>
+
+        {isModerator && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Quick Actions */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Manage your blog content</CardDescription>
+          <CardDescription>{isModerator ? "Manage your content and requests" : "Manage your blog content"}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -334,16 +428,30 @@ const Admin = () => {
                 Manage Courses
               </Button>
             </Link>
-            <Link to="/admin/careers">
-              <Button className="w-full justify-start" variant="outline">
-                <FileText className="mr-2 h-4 w-4" />
-                Manage Careers
-              </Button>
-            </Link>
+            {!isModerator && (
+              <Link to="/admin/careers">
+                <Button className="w-full justify-start" variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Manage Careers
+                </Button>
+              </Link>
+            )}
             <Link to="/admin/tags">
               <Button className="w-full justify-start" variant="outline">
-                <FileText className="mr-2 h-4 w-4" />
+                <Tag className="mr-2 h-4 w-4" />
                 Manage Tags
+              </Button>
+            </Link>
+            <Link to="/admin/media">
+              <Button className="w-full justify-start" variant="outline">
+                <Image className="mr-2 h-4 w-4" />
+                Media Library
+              </Button>
+            </Link>
+            <Link to="/admin/delete-requests">
+              <Button className="w-full justify-start" variant="outline">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Requests
               </Button>
             </Link>
             {!isModerator && (
@@ -377,6 +485,29 @@ const Admin = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Social Analytics for moderators */}
+      {isModerator && socialAnalytics.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5" />
+              Social Media Analytics
+            </CardTitle>
+            <CardDescription>Click statistics from social media platforms</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {socialAnalytics.map((item) => (
+                <div key={item.platform} className="p-4 bg-muted/50 rounded-lg text-center">
+                  <div className="text-2xl font-bold">{item.clicks}</div>
+                  <div className="text-sm text-muted-foreground capitalize">{item.platform}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Posts */}
       <Card>
@@ -421,16 +552,16 @@ const Admin = () => {
                       {post.status}
                     </Badge>
                     {post.courses?.slug ? (
-                      <Link to={`/course/${post.courses.slug}?lesson=${post.slug}`} target="_blank">
+                      <Link to={`/course/${post.courses.slug}?lesson=${post.slug}&preview=true`} target="_blank">
                         <Button size="sm" variant="outline" className="gap-1">
                           <Eye className="h-3 w-3" />
-                          View
+                          Preview
                         </Button>
                       </Link>
                     ) : (
                       <Button size="sm" variant="outline" className="gap-1" disabled title="No course assigned">
                         <Eye className="h-3 w-3" />
-                        View
+                        Preview
                       </Button>
                     )}
                     <Link to={`/admin/posts/edit/${post.id}`}>
