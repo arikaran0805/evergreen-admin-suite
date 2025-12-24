@@ -293,6 +293,7 @@ const CodeBlock = ({
   };
 
   const displayCode = isEditing ? editedCode : code;
+  const codeLines = displayCode.split('\n');
 
   return (
     <div 
@@ -404,31 +405,52 @@ const CodeBlock = ({
           </div>
         </div>
         
-        {/* Code content or editor */}
-        {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={editedCode}
-            onChange={handleTextareaChange}
-            onKeyDown={handleTextareaKeyDown}
-            style={{ height: `${lineCount * lineHeight}px` }}
-            className={cn(
-              "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
-              isCleanTheme ? "text-gray-800" : "text-gray-100"
+        {/* Code content with line numbers */}
+        <div className="flex">
+          {/* Line numbers */}
+          <div className={cn(
+            "select-none pr-4 text-right border-r mr-4",
+            isCleanTheme 
+              ? "text-gray-400 border-gray-200" 
+              : isMentorBubble
+                ? "text-blue-300/50 border-blue-400/20"
+                : "text-gray-500 border-gray-600/30"
+          )}>
+            {codeLines.map((_, idx) => (
+              <div key={idx} className="leading-relaxed text-xs">
+                {idx + 1}
+              </div>
+            ))}
+          </div>
+          
+          {/* Code content or editor */}
+          <div className="flex-1 overflow-x-auto">
+            {isEditing ? (
+              <textarea
+                ref={textareaRef}
+                value={editedCode}
+                onChange={handleTextareaChange}
+                onKeyDown={handleTextareaKeyDown}
+                style={{ height: `${lineCount * lineHeight}px` }}
+                className={cn(
+                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
+                  isCleanTheme ? "text-gray-800" : "text-gray-100"
+                )}
+                spellCheck={false}
+              />
+            ) : (
+              <code
+                ref={codeRef}
+                className={cn(
+                  `language-${normalizedLang} leading-relaxed`,
+                  isCleanTheme && "text-gray-800"
+                )}
+              >
+                {displayCode}
+              </code>
             )}
-            spellCheck={false}
-          />
-        ) : (
-          <code
-            ref={codeRef}
-            className={cn(
-              `language-${normalizedLang} leading-relaxed`,
-              isCleanTheme && "text-gray-800"
-            )}
-          >
-            {displayCode}
-          </code>
-        )}
+          </div>
+        </div>
       </pre>
       
       {/* Collapsible Output section */}
