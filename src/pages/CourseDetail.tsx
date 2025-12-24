@@ -179,21 +179,17 @@ const CourseDetail = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Set preview access based on user role
+  // Set preview access based on user role and fetch data
   useEffect(() => {
     if (!roleLoading) {
-      setCanPreview(isAdmin || isModerator);
-    }
-  }, [isAdmin, isModerator, roleLoading]);
-
-  useEffect(() => {
-    if (!roleLoading) {
+      const hasPreviewAccess = isAdmin || isModerator;
+      setCanPreview(hasPreviewAccess);
       fetchCourseAndLessons();
       fetchRecentCourses();
       fetchSiteSettings();
       fetchFooterCategories();
     }
-  }, [slug, roleLoading, canPreview]);
+  }, [slug, roleLoading, isAdmin, isModerator]);
 
   // Auto-select lesson from URL query param (supports browser back/forward)
   useEffect(() => {
