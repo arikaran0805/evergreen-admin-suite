@@ -5,14 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +30,9 @@ import {
   FileText,
   Send,
   Shield,
-  UserCog
+  UserCog,
+  User,
+  BookOpen
 } from "lucide-react";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 
@@ -295,61 +290,22 @@ const AdminCoursesTab = () => {
             <p>No courses found</p>
           </div>
         ) : (
-          <div className="rounded-lg border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Course Name</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  {isModerator && !isAdmin && <TableHead>Status</TableHead>}
-                  <TableHead>Level</TableHead>
-                  <TableHead className="text-center">Info</TableHead>
-                  <TableHead className="text-center">Posts</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category) => {
-                  const author = getUserDisplay(category.author_id);
-                  const assignee = getUserDisplay(category.assigned_to);
-                  
-                  return (
-                    <TableRow key={category.id}>
-                      <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {category.slug}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {categories.map((category) => {
+              const author = getUserDisplay(category.author_id);
+              const assignee = getUserDisplay(category.assigned_to);
+              
+              return (
+                <Card key={category.id} className="group hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">{category.name}</h3>
+                        <code className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          /{category.slug}
                         </code>
-                      </TableCell>
-                      <TableCell>
-                        {author ? (
-                          <div className="flex items-center flex-wrap gap-1">
-                            <span className="text-sm">{author.name}</span>
-                            {getRoleBadge(author.role)}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {assignee ? (
-                          <div className="flex items-center flex-wrap gap-1">
-                            <span className="text-sm">{assignee.name}</span>
-                            {getRoleBadge(assignee.role)}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">-</span>
-                        )}
-                      </TableCell>
-                      {isModerator && !isAdmin && (
-                        <TableCell>
-                          <ContentStatusBadge status={category.status as ContentStatus} />
-                        </TableCell>
-                      )}
-                      <TableCell>{getLevelBadge(category.level)}</TableCell>
-                      <TableCell className="text-center">
+                      </div>
+                      <div className="flex items-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -361,82 +317,124 @@ const AdminCoursesTab = () => {
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View details</p>
-                          </TooltipContent>
+                          <TooltipContent>View details</TooltipContent>
                         </Tooltip>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="font-mono">
-                          {categoryStats[category.id]?.postCount || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => window.open(`/courses/${category.slug}`, "_blank")}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Preview</TooltipContent>
-                          </Tooltip>
-                          
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => navigate(`/admin/courses/${category.id}`)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Edit</TooltipContent>
-                          </Tooltip>
-                          
-                          {isAdmin ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => handleDelete(category.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Delete</TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-orange-500 hover:text-orange-600"
-                                  onClick={() => setDeleteRequestCategory(category)}
-                                >
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Request Delete</TooltipContent>
-                            </Tooltip>
-                          )}
+                      </div>
+                    </div>
+                    
+                    {/* Status Badge - for moderators only */}
+                    {isModerator && !isAdmin && (
+                      <div className="mt-2">
+                        <ContentStatusBadge status={category.status as ContentStatus} />
+                      </div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Level and Posts */}
+                    <div className="flex items-center justify-between">
+                      {getLevelBadge(category.level)}
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <BookOpen className="h-4 w-4" />
+                        <span>{categoryStats[category.id]?.postCount || 0} posts</span>
+                      </div>
+                    </div>
+
+                    {/* Ownership Info */}
+                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg text-sm">
+                      {author && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Created by
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium truncate max-w-[100px]">{author.name}</span>
+                            {getRoleBadge(author.role)}
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                      )}
+                      
+                      {assignee && (
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <UserCog className="h-3 w-3" />
+                            Assigned to
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium truncate max-w-[100px]">{assignee.name}</span>
+                            {getRoleBadge(assignee.role)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => window.open(`/courses/${category.slug}`, "_blank")}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Preview</TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => navigate(`/admin/courses/${category.id}`)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      
+                      {isAdmin ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(category.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-orange-500 hover:text-orange-600"
+                              onClick={() => setDeleteRequestCategory(category)}
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Request Delete</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
