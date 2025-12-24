@@ -17,7 +17,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
-import { Plus, Edit, Trash2, Eye, Info, User, UserCog, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Info, User, UserCog, Shield, Send } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 
 interface Post {
@@ -66,6 +75,9 @@ const AdminPosts = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [deleteRequestPost, setDeleteRequestPost] = useState<Post | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     checkAccessAndLoad();
@@ -281,6 +293,33 @@ const AdminPosts = () => {
     }
   };
 
+  const handleDeleteRequest = async () => {
+    if (!deleteRequestPost || !currentUserId) return;
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from("delete_requests")
+        .insert({
+          content_type: "post",
+          content_id: deleteRequestPost.id,
+          content_title: deleteRequestPost.title,
+          requested_by: currentUserId,
+          reason: deleteReason || null
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Delete request submitted", description: "An admin will review your request" });
+      setDeleteRequestPost(null);
+      setDeleteReason("");
+    } catch (error: any) {
+      toast({ title: "Error submitting request", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEdit = (post: Post) => {
     navigate(`/admin/posts/edit/${post.id}`);
   };
@@ -457,7 +496,7 @@ const AdminPosts = () => {
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                        {!moderatorOnly && (
+                        {!moderatorOnly ? (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -465,6 +504,15 @@ const AdminPosts = () => {
                             onClick={() => handleDelete(post.id)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-orange-500 hover:text-orange-600"
+                            onClick={() => setDeleteRequestPost(post)}
+                          >
+                            <Send className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -483,6 +531,37 @@ const AdminPosts = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Delete Request Dialog */}
+      <Dialog open={!!deleteRequestPost} onOpenChange={() => setDeleteRequestPost(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Post Deletion</DialogTitle>
+            <DialogDescription>
+              Request deletion for "{deleteRequestPost?.title}". An admin will review your request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Reason (optional)</label>
+              <Textarea
+                placeholder="Why should this post be deleted?"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteRequestPost(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteRequest} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
