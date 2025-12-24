@@ -20,12 +20,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { History, RotateCcw, Upload, Eye, CheckCircle } from "lucide-react";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare } from "lucide-react";
+import VersionDiffViewer from "@/components/VersionDiffViewer";
 
 interface VersionHistoryPanelProps {
   versions: PostVersion[];
   loading: boolean;
   isAdmin: boolean;
+  currentContent?: string;
   onRestore: (version: PostVersion) => void;
   onPublish: (version: PostVersion) => void;
   onPreview: (version: PostVersion) => void;
@@ -35,12 +37,15 @@ const VersionHistoryPanel = ({
   versions,
   loading,
   isAdmin,
+  currentContent,
   onRestore,
   onPublish,
   onPreview,
 }: VersionHistoryPanelProps) => {
   const [selectedVersion, setSelectedVersion] = useState<PostVersion | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [diffDialogOpen, setDiffDialogOpen] = useState(false);
+  const [compareVersion, setCompareVersion] = useState<PostVersion | null>(null);
 
   const handlePublishClick = (version: PostVersion) => {
     setSelectedVersion(version);
@@ -52,6 +57,14 @@ const VersionHistoryPanel = ({
       onPublish(selectedVersion);
       setPublishDialogOpen(false);
     }
+  };
+
+  const handleCompareClick = (version: PostVersion) => {
+    setSelectedVersion(version);
+    const currentIndex = versions.findIndex(v => v.id === version.id);
+    const prevVersion = currentIndex < versions.length - 1 ? versions[currentIndex + 1] : null;
+    setCompareVersion(prevVersion);
+    setDiffDialogOpen(true);
   };
 
   return (
@@ -131,7 +144,16 @@ const VersionHistoryPanel = ({
                       Edited by: {version.editor_profile?.full_name || version.editor_profile?.email || "Unknown"}
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCompareClick(version)}
+                        className="gap-1"
+                      >
+                        <GitCompare className="h-3 w-3" />
+                        Diff
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -184,6 +206,63 @@ const VersionHistoryPanel = ({
             </Button>
             <Button onClick={handleConfirmPublish}>
               Publish This Version
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={diffDialogOpen} onOpenChange={setDiffDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompare className="h-5 w-5" />
+              Version {selectedVersion?.version_number} Changes
+            </DialogTitle>
+            <DialogDescription>
+              {compareVersion 
+                ? `Comparing with Version ${compareVersion.version_number}`
+                : "Showing all content (no previous version to compare)"
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <div className="flex items-center gap-4 mb-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-green-200 dark:bg-green-800/50" />
+                <span>Added</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-red-200 dark:bg-red-800/50" />
+                <span>Removed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-amber-200 dark:bg-amber-800/50" />
+                <span>Modified (chat)</span>
+              </div>
+            </div>
+
+            {selectedVersion && (
+              <VersionDiffViewer
+                currentVersion={selectedVersion}
+                compareVersion={compareVersion}
+                currentContent={currentContent}
+              />
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDiffDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              if (selectedVersion) {
+                onRestore(selectedVersion);
+                setDiffDialogOpen(false);
+              }
+            }}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restore This Version
             </Button>
           </DialogFooter>
         </DialogContent>
