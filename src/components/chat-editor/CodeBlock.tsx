@@ -15,7 +15,7 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Play, Pencil, ChevronUp, Loader2 } from "lucide-react";
+import { Copy, Check, Play, Pencil, ChevronUp, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
@@ -226,12 +226,12 @@ const CodeBlock = ({
             </span>
           )}
           <div className="flex items-center gap-1">
-            {/* Edit button */}
-            {editable && !isEditing && (
+            {/* Edit/Cancel button */}
+            {editable && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleEdit}
+                onClick={isEditing ? handleCancelEdit : handleEdit}
                 className={cn(
                   "h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
                   isCleanTheme
@@ -239,7 +239,11 @@ const CodeBlock = ({
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
-                <Pencil className="w-3.5 h-3.5" />
+                {isEditing ? (
+                  <X className="w-3.5 h-3.5" />
+                ) : (
+                  <Pencil className="w-3.5 h-3.5" />
+                )}
               </Button>
             )}
             
@@ -290,35 +294,16 @@ const CodeBlock = ({
         
         {/* Code content or editor */}
         {isEditing ? (
-          <div className="space-y-2">
-            <textarea
-              ref={textareaRef}
-              value={editedCode}
-              onChange={(e) => setEditedCode(e.target.value)}
-              className={cn(
-                "w-full min-h-[100px] bg-transparent resize-y outline-none text-sm font-mono leading-relaxed",
-                isCleanTheme ? "text-gray-800" : "text-gray-100"
-              )}
-              spellCheck={false}
-            />
-            <div className="flex items-center gap-2 justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancelEdit}
-                className="h-7 text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSaveEdit}
-                className="h-7 text-xs"
-              >
-                Save
-              </Button>
-            </div>
-          </div>
+          <textarea
+            ref={textareaRef}
+            value={editedCode}
+            onChange={(e) => setEditedCode(e.target.value)}
+            className={cn(
+              "w-full min-h-[100px] bg-transparent resize-y outline-none text-sm font-mono leading-relaxed",
+              isCleanTheme ? "text-gray-800" : "text-gray-100"
+            )}
+            spellCheck={false}
+          />
         ) : (
           <code
             ref={codeRef}
