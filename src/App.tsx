@@ -16,6 +16,7 @@ import PracticeLab from "./pages/PracticeLab";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AdminPosts from "./pages/AdminPosts";
@@ -50,8 +51,7 @@ const AppContent = () => {
   const navigate = useNavigate();
   const prevLocationRef = useRef(location.pathname);
 
-  // If user opens an email recovery link that lands on / (or any page), move them to /auth
-  // IMPORTANT: preserve the hash/search so the recovery flow isn't lost.
+  // If user opens an email recovery link, redirect to the dedicated /reset-password page.
   useEffect(() => {
     const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
     const searchParams = new URLSearchParams(location.search);
@@ -59,8 +59,8 @@ const AppContent = () => {
     const type = hashParams.get("type") ?? searchParams.get("type");
     const hasRecoveryTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
 
-    if ((type === "recovery" || (hasRecoveryTokens && !type)) && location.pathname !== "/auth") {
-      navigate(`/auth${location.search}${location.hash}`, { replace: true });
+    if ((type === "recovery" || (hasRecoveryTokens && !type)) && location.pathname !== "/reset-password") {
+      navigate(`/reset-password${location.search}${location.hash}`, { replace: true });
     }
   }, [location.hash, location.search, location.pathname, navigate]);
 
@@ -100,6 +100,7 @@ const AppContent = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/posts" element={<AdminPosts />} />
