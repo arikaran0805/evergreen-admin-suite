@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, Users, Eye, MousePointerClick } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface AnalyticsStats {
   totalViews: number;
@@ -50,37 +51,38 @@ const AdminAnalytics = () => {
   const [dailyViews, setDailyViews] = useState<DailyView[]>([]);
   const [topPosts, setTopPosts] = useState<TopPost[]>([]);
   const [timeRange, setTimeRange] = useState<'7' | '30' | '90'>('30');
+  const [moderatorPostIds, setModeratorPostIds] = useState<string[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
 
   useEffect(() => {
-    checkAdminAccess();
-  }, []);
+    if (!roleLoading) {
+      checkAccess();
+    }
+  }, [roleLoading]);
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && (isAdmin || moderatorPostIds.length > 0)) {
       fetchAnalytics();
     }
-  }, [timeRange, loading]);
+  }, [timeRange, loading, moderatorPostIds]);
 
-  const checkAdminAccess = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!roleData) {
+  const checkAccess = async () => {
+    if (!isAdmin && !isModerator) {
       toast({ title: "Access Denied", variant: "destructive" });
       navigate("/");
       return;
+    }
+
+    // For moderators, fetch their post IDs first
+    if (isModerator && !isAdmin && userId) {
+      const { data: posts } = await supabase
+        .from("posts")
+        .select("id")
+        .or(`author_id.eq.${userId},assigned_to.eq.${userId}`);
+      
+      setModeratorPostIds(posts?.map(p => p.id) || []);
     }
 
     setLoading(false);
@@ -92,13 +94,77 @@ const AdminAnalytics = () => {
       daysAgo.setDate(daysAgo.getDate() - parseInt(timeRange));
       const dateFilter = daysAgo.toISOString();
 
-      // Fetch total views
+      const isModeratorOnly = isModerator && !isAdmin;
+
+      // For moderators, only show stats for their posts
+      if (isModeratorOnly) {
+        if (moderatorPostIds.length === 0) {
+          setStats({ totalViews: 0, totalUsers: 0, totalSessions: 0, avgViewsPerSession: 0 });
+          setPageViews([]);
+          setTrafficSources([]);
+          setDailyViews([]);
+          setTopPosts([]);
+          return;
+        }
+
+        // Fetch post views for moderator's posts only
+        const { data: postViewsData } = await supabase
+          .from("post_views")
+          .select("id, post_id, created_at, session_id, user_id, posts:post_id(title)")
+          .in("post_id", moderatorPostIds)
+          .gte("created_at", dateFilter);
+
+        const totalViews = postViewsData?.length || 0;
+        const uniqueUserCount = new Set(postViewsData?.map(v => v.user_id).filter(Boolean)).size;
+        const uniqueSessionCount = new Set(postViewsData?.map(v => v.session_id)).size;
+
+        setStats({
+          totalViews,
+          totalUsers: uniqueUserCount,
+          totalSessions: uniqueSessionCount,
+          avgViewsPerSession: uniqueSessionCount > 0 ? Math.round(totalViews / uniqueSessionCount) : 0,
+        });
+
+        // Daily views for moderator's posts
+        const dailyCounts: { [key: string]: number } = {};
+        postViewsData?.forEach(item => {
+          const date = new Date(item.created_at).toLocaleDateString();
+          dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+        });
+
+        const dailyViewsData = Object.entries(dailyCounts)
+          .map(([date, views]) => ({ date, views }))
+          .slice(-14);
+
+        setDailyViews(dailyViewsData);
+
+        // Top posts for moderator
+        const postCounts: { [key: string]: { title: string; count: number } } = {};
+        postViewsData?.forEach((item: any) => {
+          const title = item.posts?.title || "Unknown";
+          if (!postCounts[title]) {
+            postCounts[title] = { title, count: 0 };
+          }
+          postCounts[title].count++;
+        });
+
+        const topPostsData = Object.values(postCounts)
+          .map(p => ({ title: p.title, views: p.count }))
+          .sort((a, b) => b.views - a.views)
+          .slice(0, 5);
+
+        setTopPosts(topPostsData);
+        setPageViews([]);
+        setTrafficSources([]);
+        return;
+      }
+
+      // Admin: Full analytics
       const { count: totalViews } = await supabase
         .from("analytics")
         .select("*", { count: "exact", head: true })
         .gte("created_at", dateFilter);
 
-      // Fetch unique users
       const { data: uniqueUsers } = await supabase
         .from("analytics")
         .select("user_id")
@@ -106,7 +172,6 @@ const AdminAnalytics = () => {
 
       const uniqueUserCount = new Set(uniqueUsers?.map(u => u.user_id).filter(Boolean)).size;
 
-      // Fetch unique sessions
       const { data: uniqueSessions } = await supabase
         .from("analytics")
         .select("session_id")
@@ -121,7 +186,6 @@ const AdminAnalytics = () => {
         avgViewsPerSession: uniqueSessionCount > 0 ? Math.round((totalViews || 0) / uniqueSessionCount) : 0,
       });
 
-      // Fetch top pages
       const { data: analyticsData } = await supabase
         .from("analytics")
         .select("page_path")
@@ -139,7 +203,6 @@ const AdminAnalytics = () => {
 
       setPageViews(topPages);
 
-      // Fetch traffic sources
       const { data: referrerData } = await supabase
         .from("analytics")
         .select("referrer")
@@ -148,8 +211,12 @@ const AdminAnalytics = () => {
       const sourceCounts: { [key: string]: number } = {};
       referrerData?.forEach(item => {
         const source = item.referrer || "Direct";
-        const domain = source === "Direct" ? "Direct" : new URL(source).hostname;
-        sourceCounts[domain] = (sourceCounts[domain] || 0) + 1;
+        try {
+          const domain = source === "Direct" ? "Direct" : new URL(source).hostname;
+          sourceCounts[domain] = (sourceCounts[domain] || 0) + 1;
+        } catch {
+          sourceCounts["Other"] = (sourceCounts["Other"] || 0) + 1;
+        }
       });
 
       const topSources = Object.entries(sourceCounts)
@@ -159,7 +226,6 @@ const AdminAnalytics = () => {
 
       setTrafficSources(topSources);
 
-      // Fetch daily views
       const { data: dailyData } = await supabase
         .from("analytics")
         .select("created_at")
@@ -174,17 +240,13 @@ const AdminAnalytics = () => {
 
       const dailyViewsData = Object.entries(dailyCounts)
         .map(([date, views]) => ({ date, views }))
-        .slice(-14); // Last 14 days
+        .slice(-14);
 
       setDailyViews(dailyViewsData);
 
-      // Fetch top posts
       const { data: postViewsData } = await supabase
         .from("post_views")
-        .select(`
-          post_id,
-          posts:post_id (title)
-        `)
+        .select(`post_id, posts:post_id (title)`)
         .gte("created_at", dateFilter);
 
       const postCounts: { [key: string]: { title: string; count: number } } = {};
@@ -216,7 +278,9 @@ const AdminAnalytics = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Analytics Dashboard</h1>
-            <p className="text-muted-foreground">Track views, traffic sources, and user engagement</p>
+            <p className="text-muted-foreground">
+              {isModerator && !isAdmin ? "Analytics for your posts" : "Track views, traffic sources, and user engagement"}
+            </p>
           </div>
           <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as '7' | '30' | '90')}>
             <TabsList>
