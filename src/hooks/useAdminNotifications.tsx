@@ -27,96 +27,69 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchNotifications = async () => {
-    if (!isAdmin) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      // Fetch pending reports
-      const { count: reportsCount } = await supabase
-        .from("content_reports")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Fetch pending posts (by moderators)
-      const { count: postsCount } = await supabase
-        .from("posts")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Fetch pending courses (by moderators)
-      const { count: coursesCount } = await supabase
-        .from("courses")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Fetch pending tags (by moderators)
-      const { count: tagsCount } = await supabase
-        .from("tags")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Fetch pending comments (need approval)
-      const { count: commentsCount } = await supabase
-        .from("comments")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Fetch new media uploads (last 24 hours)
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const { count: mediaCount } = await supabase
-        .from("media")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", yesterday.toISOString());
-
-      // Fetch new users (last 24 hours)
-      const { count: newUsersCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", yesterday.toISOString());
-
-      // Fetch pending delete requests
-      const { count: deleteRequestsCount } = await supabase
-        .from("delete_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      const totalApprovals = (postsCount || 0) + (coursesCount || 0) + (tagsCount || 0);
-
-      setNotifications({
-        reports: reportsCount || 0,
-        pendingPosts: postsCount || 0,
-        pendingCourses: coursesCount || 0,
-        pendingTags: tagsCount || 0,
-        pendingComments: commentsCount || 0,
-        mediaLibrary: mediaCount || 0,
-        newUsers: newUsersCount || 0,
-        deleteRequests: deleteRequestsCount || 0,
-        totalApprovals,
-      });
-    } catch (error) {
-      console.error("Error fetching admin notifications:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!isAdmin) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch all counts in parallel
+        const [
+          reportsResult,
+          postsResult,
+          coursesResult,
+          tagsResult,
+          commentsResult,
+          mediaResult,
+          usersResult,
+          deleteRequestsResult
+        ] = await Promise.all([
+          supabase.from("content_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("tags").select("*", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("comments").select("*", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+          supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+          supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
+        ]);
+
+        const totalApprovals = (postsResult.count || 0) + (coursesResult.count || 0) + (tagsResult.count || 0);
+
+        setNotifications({
+          reports: reportsResult.count || 0,
+          pendingPosts: postsResult.count || 0,
+          pendingCourses: coursesResult.count || 0,
+          pendingTags: tagsResult.count || 0,
+          pendingComments: commentsResult.count || 0,
+          mediaLibrary: mediaResult.count || 0,
+          newUsers: usersResult.count || 0,
+          deleteRequests: deleteRequestsResult.count || 0,
+          totalApprovals,
+        });
+      } catch (error) {
+        console.error("Error fetching admin notifications:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchNotifications();
+
+    if (!isAdmin) return;
 
     // Set up realtime subscriptions for updates
     const channel = supabase
       .channel('admin-notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'content_reports' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchNotifications)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'delete_requests' }, fetchNotifications)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'content_reports' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'delete_requests' }, () => fetchNotifications())
       .subscribe();
 
     return () => {
@@ -124,5 +97,50 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
     };
   }, [isAdmin, userId]);
 
-  return { notifications, isLoading, refetch: fetchNotifications };
+  const refetch = async () => {
+    if (!isAdmin) return;
+    
+    setIsLoading(true);
+    try {
+      const [
+        reportsResult,
+        postsResult,
+        coursesResult,
+        tagsResult,
+        commentsResult,
+        mediaResult,
+        usersResult,
+        deleteRequestsResult
+      ] = await Promise.all([
+        supabase.from("content_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("tags").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("comments").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
+      ]);
+
+      const totalApprovals = (postsResult.count || 0) + (coursesResult.count || 0) + (tagsResult.count || 0);
+
+      setNotifications({
+        reports: reportsResult.count || 0,
+        pendingPosts: postsResult.count || 0,
+        pendingCourses: coursesResult.count || 0,
+        pendingTags: tagsResult.count || 0,
+        pendingComments: commentsResult.count || 0,
+        mediaLibrary: mediaResult.count || 0,
+        newUsers: usersResult.count || 0,
+        deleteRequests: deleteRequestsResult.count || 0,
+        totalApprovals,
+      });
+    } catch (error) {
+      console.error("Error refetching admin notifications:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { notifications, isLoading, refetch };
 };
