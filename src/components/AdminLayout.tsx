@@ -226,23 +226,25 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
               </Link>
             ))}
             
-            {/* Settings - Available to all */}
-            <div className="mt-6 pt-4 border-t border-sidebar-border/50">
-              <Link to="/admin/settings">
-                <Button
-                  variant={isActive("/admin/settings") ? "default" : "ghost"}
-                  size="sm"
-                  className={`w-full justify-start ${
-                    isActive("/admin/settings")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  }`}
-                >
-                  <Settings className={`${sidebarOpen ? "mr-2" : ""} h-4 w-4`} />
-                  {sidebarOpen && <span className="text-xs">Settings</span>}
-                </Button>
-              </Link>
-            </div>
+            {/* Settings - Admin only */}
+            {isAdmin && (
+              <div className="mt-6 pt-4 border-t border-sidebar-border/50">
+                <Link to="/admin/settings">
+                  <Button
+                    variant={isActive("/admin/settings") ? "default" : "ghost"}
+                    size="sm"
+                    className={`w-full justify-start ${
+                      isActive("/admin/settings")
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    <Settings className={`${sidebarOpen ? "mr-2" : ""} h-4 w-4`} />
+                    {sidebarOpen && <span className="text-xs">Settings</span>}
+                  </Button>
+                </Link>
+              </div>
+            )}
           </nav>
         </ScrollArea>
 

@@ -49,23 +49,24 @@ const AdminTags = () => {
   const checkAdminAccess = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+
+      if (!session?.user) {
         navigate("/auth");
         return;
       }
 
-      const { data: roleData } = await supabase
+      const { data: rolesData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin", "moderator"]);
 
-      if (!roleData) {
+      if (roleError) throw roleError;
+
+      if (!rolesData || rolesData.length === 0) {
         toast({
           title: "Access Denied",
-          description: "You don't have admin privileges",
+          description: "You don't have admin or moderator privileges",
           variant: "destructive",
         });
         navigate("/");
