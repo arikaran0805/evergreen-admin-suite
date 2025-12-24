@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -27,19 +28,14 @@ interface MenuItem {
   badge?: number;
 }
 
-interface PendingCounts {
-  approvals: number;
-  deleteRequests: number;
-}
-
 const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
-  const [pendingCounts, setPendingCounts] = useState<PendingCounts>({ approvals: 0, deleteRequests: 0 });
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isModerator, isLoading: roleLoading, userId } = useUserRole();
+  const { notifications } = useAdminNotifications(isAdmin, userId);
 
   // Menu items with role-based visibility
   const getMenuItems = (): MenuItem[] => {
@@ -53,7 +49,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         icon: ClipboardCheck, 
         label: "Approval Queue", 
         path: "/admin/approvals",
-        badge: pendingCounts.approvals > 0 ? pendingCounts.approvals : undefined
+        badge: notifications.totalApprovals > 0 ? notifications.totalApprovals : undefined
       });
     }
 
@@ -63,7 +59,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         icon: Trash2, 
         label: "Delete Requests", 
         path: "/admin/delete-requests",
-        badge: pendingCounts.deleteRequests > 0 ? pendingCounts.deleteRequests : undefined
+        badge: notifications.deleteRequests > 0 ? notifications.deleteRequests : undefined
       });
     }
 
@@ -72,16 +68,25 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       items.push({ 
         icon: Flag, 
         label: "Reports", 
-        path: "/admin/reports"
+        path: "/admin/reports",
+        badge: notifications.reports > 0 ? notifications.reports : undefined
       });
     }
 
     // Content management - available to both admins and moderators
-    items.push(
-      { icon: BookOpen, label: "Posts", path: "/admin/posts" },
-      { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
-      { icon: Tags, label: "Tags", path: "/admin/tags" },
-    );
+    if (isAdmin) {
+      items.push(
+        { icon: BookOpen, label: "Posts", path: "/admin/posts", badge: notifications.pendingPosts > 0 ? notifications.pendingPosts : undefined },
+        { icon: GraduationCap, label: "Courses", path: "/admin/courses", badge: notifications.pendingCourses > 0 ? notifications.pendingCourses : undefined },
+        { icon: Tags, label: "Tags", path: "/admin/tags", badge: notifications.pendingTags > 0 ? notifications.pendingTags : undefined },
+      );
+    } else {
+      items.push(
+        { icon: BookOpen, label: "Posts", path: "/admin/posts" },
+        { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
+        { icon: Tags, label: "Tags", path: "/admin/tags" },
+      );
+    }
 
     // Careers - Admin only
     if (isAdmin) {
@@ -89,10 +94,20 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     }
 
     // Comments - Available to both, but moderators see only their own
-    items.push({ icon: MessageSquare, label: "Comments", path: "/admin/comments" });
+    items.push({ 
+      icon: MessageSquare, 
+      label: "Comments", 
+      path: "/admin/comments",
+      badge: isAdmin && notifications.pendingComments > 0 ? notifications.pendingComments : undefined
+    });
 
     // Media Library - Available to both (moderators see only their own)
-    items.push({ icon: Image, label: "Media Library", path: "/admin/media" });
+    items.push({ 
+      icon: Image, 
+      label: "Media Library", 
+      path: "/admin/media",
+      badge: isAdmin && notifications.mediaLibrary > 0 ? notifications.mediaLibrary : undefined
+    });
 
     // My Activity - Moderators only (shows their actions and admin feedback)
     if (isModerator && !isAdmin) {
@@ -109,7 +124,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     if (isAdmin) {
       items.push(
         { icon: Files, label: "Pages", path: "/admin/pages", adminOnly: true },
-        { icon: Users, label: "Users", path: "/admin/users", adminOnly: true },
+        { icon: Users, label: "Users", path: "/admin/users", adminOnly: true, badge: notifications.newUsers > 0 ? notifications.newUsers : undefined },
         { icon: UserCog, label: "Authors/Admins", path: "/admin/authors", adminOnly: true },
         { icon: DollarSign, label: "Monetization", path: "/admin/monetization", adminOnly: true },
         { icon: Link2, label: "Redirects", path: "/admin/redirects", adminOnly: true },
@@ -124,12 +139,6 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     fetchUserProfile();
   }, [userId]);
 
-  useEffect(() => {
-    if (isAdmin) {
-      fetchPendingCount();
-    }
-  }, [isAdmin]);
-
   const fetchUserProfile = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -143,48 +152,6 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       }
     } catch (error) {
       console.error("Error fetching user profile:", error);
-    }
-  };
-
-  const fetchPendingCount = async () => {
-    try {
-      // Count pending posts
-      const { count: postsCount } = await supabase
-        .from("posts")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Count pending courses
-      const { count: coursesCount } = await supabase
-        .from("courses")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Count pending careers
-      const { count: careersCount } = await supabase
-        .from("careers")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Count pending tags
-      const { count: tagsCount } = await supabase
-        .from("tags")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      // Count pending delete requests
-      const { count: deleteRequestsCount } = await supabase
-        .from("delete_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      const approvalsTotal = (postsCount || 0) + (coursesCount || 0) + (careersCount || 0) + (tagsCount || 0);
-      setPendingCounts({
-        approvals: approvalsTotal,
-        deleteRequests: deleteRequestsCount || 0
-      });
-    } catch (error) {
-      console.error("Error fetching pending count:", error);
     }
   };
 
