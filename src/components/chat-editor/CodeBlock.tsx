@@ -15,7 +15,7 @@ import "prismjs/components/prism-c";
 import "prismjs/components/prism-cpp";
 import "prismjs/components/prism-r";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Play, Pencil, Loader2, X } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,10 +85,12 @@ const CodeBlock = ({
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(code);
+  const [lineCount, setLineCount] = useState(code.split('\n').length);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputError, setOutputError] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
+  const [outputExpanded, setOutputExpanded] = useState(true);
   const { theme: globalTheme } = useCodeTheme();
   
   // Use override theme if provided, otherwise fall back to global theme
@@ -131,6 +133,7 @@ const CodeBlock = ({
   const handleEdit = () => {
     setIsEditing(true);
     setEditedCode(code);
+    setLineCount(code.split('\n').length);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
@@ -144,6 +147,8 @@ const CodeBlock = ({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedCode(code);
+    setShowOutput(false);
+    setOutput(null);
   };
 
   const handleRun = async () => {
@@ -153,6 +158,7 @@ const CodeBlock = ({
     setOutput(null);
     setOutputError(false);
     setShowOutput(true);
+    setOutputExpanded(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('execute-code', {
@@ -185,32 +191,39 @@ const CodeBlock = ({
     setOutput(null);
   };
 
-  // Auto-resize textarea based on content
-  const adjustTextareaHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
+  const handleToggleOutput = () => {
+    setOutputExpanded(!outputExpanded);
   };
 
+  // Calculate line height for textarea
+  const lineHeight = 24; // Approximate line height in pixels
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedCode(e.target.value);
-    adjustTextareaHeight();
+    const newValue = e.target.value;
+    setEditedCode(newValue);
+    // Update line count based on content
+    setLineCount(newValue.split('\n').length);
   };
 
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Shift+Enter adds a new line (default behavior, just adjust height after)
+    // Shift+Enter adds a new line - expand by one line
     if (e.key === 'Enter' && e.shiftKey) {
-      setTimeout(adjustTextareaHeight, 0);
+      setLineCount(prev => prev + 1);
+    }
+    // Backspace at the start of a line might reduce lines
+    if (e.key === 'Backspace') {
+      const textarea = e.currentTarget;
+      const cursorPos = textarea.selectionStart;
+      const textBefore = editedCode.substring(0, cursorPos);
+      // If cursor is at the start of a line (after a newline)
+      if (textBefore.endsWith('\n') || cursorPos === 0) {
+        const newLineCount = editedCode.split('\n').length - 1;
+        if (newLineCount >= 1) {
+          setTimeout(() => setLineCount(editedCode.split('\n').length), 0);
+        }
+      }
     }
   };
-
-  // Adjust height when entering edit mode
-  useEffect(() => {
-    if (isEditing) {
-      setTimeout(adjustTextareaHeight, 0);
-    }
-  }, [isEditing]);
 
   // Get the appropriate theme class
   const getThemeClass = () => {
@@ -238,7 +251,7 @@ const CodeBlock = ({
   return (
     <div 
       className={cn(
-        "relative group mt-3 w-full min-w-[300px] max-w-[600px]",
+        "relative group mt-3 w-full",
         getThemeClass()
       )}
     >
@@ -333,8 +346,9 @@ const CodeBlock = ({
             value={editedCode}
             onChange={handleTextareaChange}
             onKeyDown={handleTextareaKeyDown}
+            style={{ height: `${lineCount * lineHeight}px` }}
             className={cn(
-              "w-full min-h-[60px] bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden",
+              "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
               isCleanTheme ? "text-gray-800" : "text-gray-100"
             )}
             spellCheck={false}
@@ -352,20 +366,39 @@ const CodeBlock = ({
         )}
       </pre>
       
-      {/* Output section - only show when showOutput is true */}
+      {/* Collapsible Output section */}
       {showOutput && output !== null && (
         <div className={cn(
-          "mt-0 rounded-b-xl border border-t-0 overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200",
+          "mt-0 rounded-b-xl border border-t-0 overflow-hidden",
           isCleanTheme 
             ? "bg-gray-100 border-gray-200" 
             : "bg-muted/50 border-border/50"
         )}>
-          {/* Header with close button */}
-          <div className={cn(
-            "flex items-center justify-between px-3 py-2",
-            isCleanTheme ? "bg-gray-50" : "bg-muted/30"
-          )}>
+          {/* Header - clickable to toggle */}
+          <button
+            onClick={handleToggleOutput}
+            className={cn(
+              "w-full flex items-center justify-between px-3 py-2 transition-colors",
+              isCleanTheme ? "hover:bg-gray-200/50" : "hover:bg-muted"
+            )}
+          >
             <div className="flex items-center gap-2">
+              <div className={cn(
+                "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform duration-200",
+                isCleanTheme ? "bg-gray-200" : "bg-muted"
+              )}>
+                {outputExpanded ? (
+                  <ChevronUp className={cn(
+                    "w-3 h-3",
+                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                  )} />
+                ) : (
+                  <ChevronDown className={cn(
+                    "w-3 h-3",
+                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                  )} />
+                )}
+              </div>
               <span className={cn(
                 "text-xs font-medium",
                 outputError 
@@ -380,7 +413,10 @@ const CodeBlock = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleCloseOutput}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCloseOutput();
+              }}
               className={cn(
                 "h-5 w-5 rounded-full",
                 isCleanTheme
@@ -390,20 +426,29 @@ const CodeBlock = ({
             >
               <X className="w-3 h-3" />
             </Button>
-          </div>
+          </button>
           
-          {/* Output content */}
-          <div className="px-3 pb-3">
-            <pre className={cn(
-              "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
-              outputError 
-                ? "text-red-500" 
-                : isCleanTheme 
-                  ? "text-gray-800" 
-                  : "text-foreground"
-            )}>
-              {output}
-            </pre>
+          {/* Collapsible output content */}
+          <div 
+            className={cn(
+              "grid transition-all duration-200 ease-out",
+              outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            )}
+          >
+            <div className="overflow-hidden">
+              <div className="px-3 pb-3">
+                <pre className={cn(
+                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+                  outputError 
+                    ? "text-red-500" 
+                    : isCleanTheme 
+                      ? "text-gray-800" 
+                      : "text-foreground"
+                )}>
+                  {output}
+                </pre>
+              </div>
+            </div>
           </div>
         </div>
       )}
