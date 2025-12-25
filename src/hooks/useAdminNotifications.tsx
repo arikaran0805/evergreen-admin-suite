@@ -50,7 +50,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
           supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
           supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending"),
           supabase.from("tags").select("*", { count: "exact", head: true }).eq("status", "pending"),
-          supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+          supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
           supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
           supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
           supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
@@ -116,7 +116,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
         supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("tags").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
         supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")

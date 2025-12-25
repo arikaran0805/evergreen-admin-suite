@@ -95,7 +95,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           supabase
             .from("comments")
             .select("id, content, created_at")
-            .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+            .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
             .order("created_at", { ascending: false })
             .limit(5),
           supabase
