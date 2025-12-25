@@ -97,7 +97,7 @@ const AdminPostEditor = () => {
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
-  const { versions, loading: versionsLoading, metadata, saveVersion, publishVersion, restoreVersion } = usePostVersions(id);
+  const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionOnPublish, publishVersion, restoreVersion } = usePostVersions(id);
   const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
 
   // Check if moderator should see admin edit banner
@@ -296,25 +296,34 @@ const AdminPostEditor = () => {
       };
 
       let postId = id;
+      const isPublishing = validated.status === "published";
 
       if (id) {
-        // Save version before updating if content changed
-        if (formData.content !== previousContentRef.current) {
-          await saveVersion(
-            formData.content,
-            editorType === "chat" ? "chat" : "rich-text",
-            `Updated by ${isAdmin ? "admin" : "moderator"}`
-          );
-          previousContentRef.current = formData.content;
-        }
-
+        // Update existing post
         const { error } = await supabase
           .from("posts")
           .update(postData)
           .eq("id", id);
 
         if (error) throw error;
+
+        // Save version on publish (every publish creates a new version)
+        if (isPublishing) {
+          await saveVersionOnPublish(
+            formData.content,
+            editorType === "chat" ? "chat" : "rich-text"
+          );
+        } else if (formData.content !== previousContentRef.current) {
+          // Save draft version if content changed but not publishing
+          await saveVersion(
+            formData.content,
+            editorType === "chat" ? "chat" : "rich-text",
+            `Draft saved by ${isAdmin ? "admin" : "moderator"}`
+          );
+        }
+        previousContentRef.current = formData.content;
       } else {
+        // Create new post
         const { data: newPost, error } = await supabase
           .from("posts")
           .insert([postData])
@@ -323,6 +332,26 @@ const AdminPostEditor = () => {
 
         if (error) throw error;
         postId = newPost.id;
+
+        // Save v1 on first publish
+        if (isPublishing && postId) {
+          // Need to save version after post is created
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (currentSession?.user) {
+            await supabase
+              .from("post_versions")
+              .insert({
+                post_id: postId,
+                version_number: 1,
+                content: formData.content,
+                editor_type: editorType === "chat" ? "chat" : "rich-text",
+                edited_by: currentSession.user.id,
+                editor_role: isAdmin ? "admin" : "moderator",
+                change_summary: "Initial publish (v1)",
+                is_published: true,
+              });
+          }
+        }
       }
 
       // Save tags
