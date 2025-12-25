@@ -95,7 +95,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           supabase
             .from("comments")
             .select("id, content, created_at")
-            .eq("status", "pending")
+            .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
             .order("created_at", { ascending: false })
             .limit(5),
           supabase
@@ -158,7 +158,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
           notificationsList.push({
             id: `comment-${comment.id}`,
             type: "comment",
-            title: "Pending Comment",
+            title: "New Comment",
             description: comment.content?.substring(0, 50) + "..." || "No content",
             timestamp: comment.created_at,
             read: false,
