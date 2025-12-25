@@ -42,6 +42,7 @@ import AdminApprovals from "./pages/AdminApprovals";
 import AdminDeleteRequests from "./pages/AdminDeleteRequests";
 import AdminModeratorActivity from "./pages/AdminModeratorActivity";
 import AdminReports from "./pages/AdminReports";
+import AdminPostVersions from "./pages/AdminPostVersions";
 import TagPosts from "./pages/TagPosts";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -117,6 +118,7 @@ const AppContent = () => {
         <Route path="/admin/posts" element={<AdminPosts />} />
         <Route path="/admin/posts/new" element={<AdminPostEditor />} />
         <Route path="/admin/posts/edit/:id" element={<AdminPostEditor />} />
+        <Route path="/admin/posts/:id/versions" element={<AdminPostVersions />} />
         <Route path="/admin/pages" element={<AdminPages />} />
         <Route path="/admin/courses" element={<AdminCoursesPanel />} />
         <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
