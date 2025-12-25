@@ -20,10 +20,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User } from "lucide-react";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
+import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
 
 interface VersionHistoryPanelProps {
   versions: PostVersion[];
@@ -47,6 +58,7 @@ const VersionHistoryPanel = ({
   const [selectedVersion, setSelectedVersion] = useState<PostVersion | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
   const [compareVersion, setCompareVersion] = useState<PostVersion | null>(null);
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
 
@@ -59,6 +71,18 @@ const VersionHistoryPanel = ({
     if (selectedVersion) {
       onPublish(selectedVersion);
       setPublishDialogOpen(false);
+    }
+  };
+
+  const handleRevertClick = (version: PostVersion) => {
+    setSelectedVersion(version);
+    setRevertDialogOpen(true);
+  };
+
+  const handleConfirmRevert = () => {
+    if (selectedVersion) {
+      onRestore(selectedVersion);
+      setRevertDialogOpen(false);
     }
   };
 
@@ -187,7 +211,7 @@ const VersionHistoryPanel = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onRestore(version)}
+                        onClick={() => handleRevertClick(version)}
                         className="gap-1"
                       >
                         <RotateCcw className="h-3 w-3" />
@@ -307,14 +331,109 @@ const VersionHistoryPanel = ({
             {isAdmin && (
               <Button onClick={() => {
                 if (selectedVersion) {
-                  onRestore(selectedVersion);
                   setDiffDialogOpen(false);
+                  handleRevertClick(selectedVersion);
                 }
               }}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Restore This Version
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revert Confirmation Dialog with Preview */}
+      <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Restore to Version {selectedVersion?.version_number}?
+            </DialogTitle>
+            <DialogDescription>
+              This will replace your current editor content with the content from this version.
+              Review the content below before confirming.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedVersion && (
+            <div className="flex-1 overflow-hidden mt-4">
+              <div className="flex items-center gap-3 mb-3 p-3 bg-muted/50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium">Version {selectedVersion.version_number}</span>
+                    {selectedVersion.editor_role === "admin" ? (
+                      <Badge className="bg-primary text-primary-foreground gap-1 text-xs">
+                        <Shield className="h-3 w-3" />
+                        Admin
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        <User className="h-3 w-3" />
+                        Moderator
+                      </Badge>
+                    )}
+                    {selectedVersion.is_published && (
+                      <Badge className="bg-green-600 text-white text-xs">Published</Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Created on {format(new Date(selectedVersion.created_at), "MMMM d, yyyy 'at' h:mm a")} by{" "}
+                    {selectedVersion.editor_profile?.full_name || selectedVersion.editor_profile?.email || "Unknown"}
+                  </div>
+                  {selectedVersion.change_summary && (
+                    <div className="text-sm text-muted-foreground mt-1 italic">
+                      "{selectedVersion.change_summary}"
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/30 px-3 py-2 border-b text-sm font-medium">
+                  Content Preview
+                </div>
+                <ScrollArea className="h-[300px]">
+                  <div className="p-4">
+                    {isChatTranscript(selectedVersion.content) ? (
+                      <div className="space-y-3">
+                        {extractChatSegments(selectedVersion.content, { allowSingle: true }).map((bubble: any, index: number) => (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-lg ${
+                              bubble.sender === "user" 
+                                ? "bg-primary/10 ml-8" 
+                                : "bg-muted mr-8"
+                            }`}
+                          >
+                            <div className="text-xs text-muted-foreground mb-1">
+                              {bubble.sender === "user" ? "👤 User" : "🤖 Assistant"}
+                            </div>
+                            <div className="text-sm">{bubble.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div 
+                        className="prose dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: selectedVersion.content }}
+                      />
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="mt-4 pt-4 border-t">
+            <Button variant="outline" onClick={() => setRevertDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmRevert} className="gap-2">
+              <RotateCcw className="h-4 w-4" />
+              Confirm Restore
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
