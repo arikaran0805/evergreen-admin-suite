@@ -98,7 +98,8 @@ export const usePostVersions = (postId: string | undefined) => {
   const saveVersion = async (
     content: string,
     editorType: "rich-text" | "chat",
-    changeSummary?: string
+    changeSummary?: string,
+    markAsPublished: boolean = false
   ) => {
     if (!postId) return null;
 
@@ -114,6 +115,14 @@ export const usePostVersions = (postId: string | undefined) => {
       // Determine editor role
       const editorRole = isAdmin ? "admin" : "moderator";
 
+      // If marking as published, unmark other versions first
+      if (markAsPublished) {
+        await supabase
+          .from("post_versions")
+          .update({ is_published: false })
+          .eq("post_id", postId);
+      }
+
       const { data, error } = await supabase
         .from("post_versions")
         .insert({
@@ -124,6 +133,7 @@ export const usePostVersions = (postId: string | undefined) => {
           edited_by: session.user.id,
           editor_role: editorRole,
           change_summary: changeSummary,
+          is_published: markAsPublished,
         })
         .select()
         .single();
@@ -141,6 +151,23 @@ export const usePostVersions = (postId: string | undefined) => {
       });
       return null;
     }
+  };
+
+  // Save version on publish (creates a new version and marks it as published)
+  const saveVersionOnPublish = async (
+    content: string,
+    editorType: "rich-text" | "chat"
+  ) => {
+    const versionNumber = versions.length > 0 
+      ? Math.max(...versions.map(v => v.version_number)) + 1 
+      : 1;
+    
+    return saveVersion(
+      content,
+      editorType,
+      `Published as v${versionNumber}`,
+      true
+    );
   };
 
   const publishVersion = async (versionId: string, postContent: string) => {
@@ -218,6 +245,7 @@ export const usePostVersions = (postId: string | undefined) => {
     metadata,
     fetchVersions,
     saveVersion,
+    saveVersionOnPublish,
     publishVersion,
     restoreVersion,
     getAdminChangesAfterVersion,
