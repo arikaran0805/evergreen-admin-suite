@@ -11,13 +11,15 @@ import { ChatStyleEditor } from "@/components/chat-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { usePostVersions } from "@/hooks/usePostVersions";
+import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import AdminLayout from "@/components/AdminLayout";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import AnnotationPanel from "@/components/AnnotationPanel";
+import AdminEditBanner from "@/components/AdminEditBanner";
+import SideBySideComparison from "@/components/SideBySideComparison";
 import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
@@ -90,11 +92,16 @@ const AdminPostEditor = () => {
   const [selectedText, setSelectedText] = useState<{ start: number; end: number; text: string } | null>(null);
   const [previewVersion, setPreviewVersion] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showAdminChangesDialog, setShowAdminChangesDialog] = useState(false);
+  const [dismissedAdminBanner, setDismissedAdminBanner] = useState(false);
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
-  const { versions, loading: versionsLoading, saveVersion, publishVersion, restoreVersion } = usePostVersions(id);
+  const { versions, loading: versionsLoading, metadata, saveVersion, publishVersion, restoreVersion } = usePostVersions(id);
   const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
+
+  // Check if moderator should see admin edit banner
+  const shouldShowAdminBanner = !isAdmin && isModerator && metadata.hasAdminEdits && !dismissedAdminBanner && metadata.lastAdminEdit;
 
   useEffect(() => {
     if (!roleLoading && !isAdmin && !isModerator) {
@@ -565,7 +572,16 @@ const AdminPostEditor = () => {
             )}
           </div>
 
-          {/* Admin edit warning */}
+          {/* Admin edit notification banner for moderators */}
+          {shouldShowAdminBanner && metadata.lastAdminEdit && (
+            <AdminEditBanner
+              lastAdminEdit={metadata.lastAdminEdit}
+              onViewChanges={() => setShowAdminChangesDialog(true)}
+              onDismiss={() => setDismissedAdminBanner(true)}
+            />
+          )}
+
+          {/* Admin edit warning (shown to admins) */}
           {hasAdminEdits && (
             <div className="flex items-center gap-2 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
               <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -857,6 +873,24 @@ const AdminPostEditor = () => {
           <div className="prose dark:prose-invert max-w-none mt-4">
             <div dangerouslySetInnerHTML={{ __html: previewVersion?.content || "" }} />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Changes Side-by-Side Dialog */}
+      <Dialog open={showAdminChangesDialog} onOpenChange={setShowAdminChangesDialog}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Admin Changes Review</DialogTitle>
+            <DialogDescription>
+              Compare the previous version with the admin's updates
+            </DialogDescription>
+          </DialogHeader>
+          {metadata.lastAdminEdit && versions.length >= 2 && (
+            <SideBySideComparison
+              oldVersion={versions.find(v => v.version_number === metadata.lastAdminEdit!.version_number - 1) || versions[1]}
+              newVersion={metadata.lastAdminEdit}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </AdminLayout>
