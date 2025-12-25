@@ -21,17 +21,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle } from "lucide-react";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
@@ -257,11 +254,11 @@ const VersionHistoryPanel = ({
       </Dialog>
 
       <Dialog open={diffDialogOpen} onOpenChange={setDiffDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <GitCompare className="h-5 w-5" />
-              Version {selectedVersion?.version_number} Changes
+              Compare Versions
               {selectedVersion?.editor_role === "admin" && (
                 <Badge className="bg-primary text-primary-foreground gap-1 ml-2">
                   <Shield className="h-3 w-3" />
@@ -270,14 +267,95 @@ const VersionHistoryPanel = ({
               )}
             </DialogTitle>
             <DialogDescription>
-              {compareVersion 
-                ? `Comparing with Version ${compareVersion.version_number}`
-                : "Showing all content (no previous version to compare)"
-              }
+              Compare any two versions to see the differences
             </DialogDescription>
           </DialogHeader>
           
-          <div className="mt-2">
+          {/* Version Selectors */}
+          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg flex-shrink-0">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Compare From (Older)
+              </label>
+              <Select
+                value={compareVersion?.id || "none"}
+                onValueChange={(value) => {
+                  if (value === "none") {
+                    setCompareVersion(null);
+                  } else {
+                    const version = versions.find(v => v.id === value);
+                    setCompareVersion(version || null);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select version" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No comparison (show all)</SelectItem>
+                  {versions
+                    .filter(v => v.id !== selectedVersion?.id)
+                    .map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        <div className="flex items-center gap-2">
+                          <span>v{v.version_number}</span>
+                          {v.editor_role === "admin" && (
+                            <Shield className="h-3 w-3 text-primary" />
+                          )}
+                          {v.is_published && (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          )}
+                          <span className="text-muted-foreground text-xs">
+                            {format(new Date(v.created_at), "MMM d")}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <ArrowLeftRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-5" />
+            
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Compare To (Newer)
+              </label>
+              <Select
+                value={selectedVersion?.id || ""}
+                onValueChange={(value) => {
+                  const version = versions.find(v => v.id === value);
+                  setSelectedVersion(version || null);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select version" />
+                </SelectTrigger>
+                <SelectContent>
+                  {versions
+                    .filter(v => v.id !== compareVersion?.id)
+                    .map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        <div className="flex items-center gap-2">
+                          <span>v{v.version_number}</span>
+                          {v.editor_role === "admin" && (
+                            <Shield className="h-3 w-3 text-primary" />
+                          )}
+                          {v.is_published && (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          )}
+                          <span className="text-muted-foreground text-xs">
+                            {format(new Date(v.created_at), "MMM d")}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex-1 min-h-0 overflow-hidden mt-2">
             <Tabs value={diffViewMode} onValueChange={(v) => setDiffViewMode(v as "inline" | "side-by-side")}>
               <TabsList className="grid w-full max-w-[300px] grid-cols-2">
                 <TabsTrigger value="side-by-side">Side by Side</TabsTrigger>
@@ -290,9 +368,14 @@ const VersionHistoryPanel = ({
                     oldVersion={compareVersion}
                     newVersion={selectedVersion}
                   />
+                ) : selectedVersion ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Select a version to compare from the dropdown above</p>
+                    <p className="text-sm mt-1">Or view all content without comparison</p>
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    No previous version to compare
+                    Select versions to compare
                   </div>
                 )}
               </TabsContent>
@@ -324,19 +407,17 @@ const VersionHistoryPanel = ({
             </Tabs>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
             <Button variant="outline" onClick={() => setDiffDialogOpen(false)}>
               Close
             </Button>
-            {isAdmin && (
+            {isAdmin && selectedVersion && (
               <Button onClick={() => {
-                if (selectedVersion) {
-                  setDiffDialogOpen(false);
-                  handleRevertClick(selectedVersion);
-                }
+                setDiffDialogOpen(false);
+                handleRevertClick(selectedVersion);
               }}>
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Restore This Version
+                Restore Version {selectedVersion.version_number}
               </Button>
             )}
           </DialogFooter>
