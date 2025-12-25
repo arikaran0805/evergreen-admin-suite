@@ -131,6 +131,136 @@ const HighlightToggle = ({
   );
 };
 
+// Render word-level diff for inline view
+const renderInlineWordDiff = (oldText: string, newText: string) => {
+  const diff = computeWordDiff(oldText, newText);
+  
+  return diff.map((segment, index) => {
+    if (segment.type === "unchanged") {
+      return <span key={index}>{segment.text}</span>;
+    }
+    if (segment.type === "removed") {
+      return (
+        <span
+          key={index}
+          className="bg-red-200 dark:bg-red-800/50 line-through text-red-700 dark:text-red-300 px-0.5 rounded"
+        >
+          {segment.text}
+        </span>
+      );
+    }
+    if (segment.type === "added") {
+      return (
+        <span
+          key={index}
+          className="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 px-0.5 rounded"
+        >
+          {segment.text}
+        </span>
+      );
+    }
+    return <span key={index}>{segment.text}</span>;
+  });
+};
+
+// Chat bubble for inline diff view
+const InlineChatBubble = ({
+  bubble,
+  status,
+  oldBubble,
+  showHighlights,
+}: {
+  bubble: any;
+  status: string;
+  oldBubble?: any;
+  showHighlights: boolean;
+}) => {
+  const isMentor = bubble?.speaker?.toLowerCase() === "karan";
+  
+  const getStatusRing = () => {
+    if (!showHighlights) return "";
+    switch (status) {
+      case "added":
+        return "ring-2 ring-green-400 dark:ring-green-600";
+      case "removed":
+        return "ring-2 ring-red-400 dark:ring-red-600";
+      case "modified":
+        return "ring-2 ring-amber-400 dark:ring-amber-600";
+      default:
+        return "";
+    }
+  };
+
+  const getStatusBadge = () => {
+    if (!showHighlights) return null;
+    switch (status) {
+      case "added":
+        return <Badge className="bg-green-500 text-white text-xs">Added</Badge>;
+      case "removed":
+        return <Badge className="bg-red-500 text-white text-xs">Removed</Badge>;
+      case "modified":
+        return <Badge className="bg-amber-500 text-white text-xs">Modified</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  // Render word-level diff content for modified bubbles
+  const renderContent = () => {
+    if (status === "modified" && oldBubble && showHighlights) {
+      return renderInlineWordDiff(oldBubble.content || "", bubble?.content || "");
+    }
+    return bubble?.content;
+  };
+  
+  return (
+    <div className="relative">
+      {/* Status badge */}
+      <div className="absolute -top-2 right-2 z-10">
+        {getStatusBadge()}
+      </div>
+      
+      <div
+        className={`flex items-end gap-2.5 ${isMentor ? "flex-row-reverse" : "flex-row"}`}
+      >
+        {/* Avatar */}
+        <div
+          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-md ${
+            isMentor
+              ? "bg-gradient-to-br from-blue-400 to-blue-600"
+              : "bg-gradient-to-br from-muted to-muted/80"
+          }`}
+        >
+          {isMentor ? "👨‍💻" : "🤖"}
+        </div>
+
+        {/* Bubble */}
+        <div
+          className={`relative max-w-[85%] px-4 py-2.5 rounded-2xl shadow-sm ${
+            isMentor
+              ? "bg-gradient-to-br from-[hsl(210,100%,52%)] to-[hsl(210,100%,45%)] text-white rounded-br-md"
+              : "bg-muted/80 text-foreground rounded-bl-md border border-border/30"
+          } ${getStatusRing()} ${status === "removed" && showHighlights ? "opacity-60" : ""}`}
+        >
+          {/* Speaker indicator */}
+          <div
+            className={`text-[10px] font-semibold mb-1 tracking-wide uppercase ${
+              isMentor ? "text-blue-100/80" : "text-primary"
+            }`}
+          >
+            {bubble?.speaker || "Assistant"}
+          </div>
+
+          {/* Content with word-level diff */}
+          <div className={`text-sm leading-relaxed ${status === "removed" && showHighlights ? "line-through" : ""}`}>
+            {renderContent()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Render chat diff view
 const ChatDiffView = ({
   bubbles,
@@ -147,74 +277,38 @@ const ChatDiffView = ({
   showHighlights: boolean;
   onToggleHighlights?: (value: boolean) => void;
 }) => {
-  const getStatusStyles = (status: string) => {
-    if (!showHighlights) return "border-l-4 border-transparent";
-    
-    switch (status) {
-      case "added":
-        return "border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20";
-      case "removed":
-        return "border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20 opacity-60";
-      case "modified":
-        return "border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20";
-      default:
-        return "border-l-4 border-transparent";
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    if (!showHighlights) return null;
-    
-    switch (status) {
-      case "added":
-        return <Badge className="bg-green-500 text-white text-xs">Added</Badge>;
-      case "removed":
-        return <Badge className="bg-red-500 text-white text-xs">Removed</Badge>;
-      case "modified":
-        return <Badge className="bg-amber-500 text-white text-xs">Modified</Badge>;
-      default:
-        return null;
-    }
-  };
-
   return (
     <div>
       <HighlightToggle showHighlights={showHighlights} onToggle={onToggleHighlights} />
-      <ScrollArea className="h-[400px]">
-        <div className="space-y-3 p-4">
-          {bubbles.map((item, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg transition-colors ${getStatusStyles(item.status)}`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground font-medium">
-                  {item.bubble?.sender === "user" ? "👤 User" : "🤖 Assistant"}
-                </span>
-                {getStatusBadge(item.status)}
-              </div>
-
-              {item.status === "modified" && item.oldBubble && showHighlights && (
-                <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm line-through opacity-70">
-                  {item.oldBubble.content?.substring(0, 100)}
-                  {item.oldBubble.content?.length > 100 && "..."}
-                </div>
-              )}
-
-              <div className={`text-sm ${item.status === "removed" && showHighlights ? "line-through" : ""}`}>
-                {item.bubble?.content?.substring(0, 200)}
-                {item.bubble?.content?.length > 200 && "..."}
-              </div>
+      <div className="border rounded-2xl overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 shadow-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-xs shadow">
+              🤖
             </div>
-          ))}
-
-          {bubbles.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              No differences to display
-            </div>
-          )}
+            <span className="text-sm font-medium">Inline Diff View</span>
+          </div>
         </div>
-      </ScrollArea>
+        <ScrollArea className="h-[400px]">
+          <div className="p-4 space-y-4">
+            {bubbles.map((item, index) => (
+              <InlineChatBubble
+                key={index}
+                bubble={item.bubble}
+                status={item.status}
+                oldBubble={item.oldBubble}
+                showHighlights={showHighlights}
+              />
+            ))}
+
+            {bubbles.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No differences to display
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 };
