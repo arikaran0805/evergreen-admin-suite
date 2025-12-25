@@ -139,9 +139,8 @@ const RichTextSideBySide = ({
               <span
                 key={index}
                 className="bg-red-200 dark:bg-red-800/50 line-through text-red-700 dark:text-red-300 px-0.5 rounded"
-              >
-                {segment.text}
-              </span>
+                dangerouslySetInnerHTML={{ __html: segment.text }}
+              />
             );
           }
           return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
@@ -166,9 +165,8 @@ const RichTextSideBySide = ({
               <span
                 key={index}
                 className="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 px-0.5 rounded"
-              >
-                {segment.text}
-              </span>
+                dangerouslySetInnerHTML={{ __html: segment.text }}
+              />
             );
           }
           // Check if this unchanged segment is adjacent to changes
