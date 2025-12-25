@@ -35,6 +35,24 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [notificationWindowDays, setNotificationWindowDays] = useState(7);
+
+  // Fetch notification window setting
+  const fetchNotificationWindowSetting = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("notification_window_days")
+        .limit(1)
+        .maybeSingle();
+      
+      if (data?.notification_window_days) {
+        setNotificationWindowDays(data.notification_window_days);
+      }
+    } catch (error) {
+      console.error("Error fetching notification window setting:", error);
+    }
+  }, []);
 
   // Fetch read notification IDs
   const fetchReadNotifications = useCallback(async () => {
@@ -62,8 +80,8 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
 
     try {
       const notificationsList: Notification[] = [];
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 7); // Last 7 days
+      const windowMs = notificationWindowDays * 24 * 60 * 60 * 1000;
+      const windowDate = new Date(Date.now() - windowMs).toISOString();
 
       if (isAdmin) {
         // Fetch all data in parallel
@@ -182,7 +200,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
         const { data: approvals } = await supabase
           .from("approval_history")
           .select("id, content_type, action, feedback, created_at")
-          .gte("created_at", yesterday.toISOString())
+          .gte("created_at", windowDate)
           .order("created_at", { ascending: false })
           .limit(10);
 
@@ -208,9 +226,10 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
     } finally {
       setIsLoading(false);
     }
-  }, [isAdmin, isModerator, userId]);
+  }, [isAdmin, isModerator, userId, notificationWindowDays]);
 
   useEffect(() => {
+    fetchNotificationWindowSetting();
     fetchNotifications();
     fetchReadNotifications();
 
@@ -229,7 +248,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, isModerator, userId, fetchNotifications, fetchReadNotifications]);
+  }, [isAdmin, isModerator, userId, fetchNotifications, fetchReadNotifications, fetchNotificationWindowSetting]);
 
   // Mark a single notification as read
   const markAsRead = async (notificationId: string) => {
