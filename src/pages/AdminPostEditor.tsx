@@ -17,7 +17,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
-import AnnotationPanel from "@/components/AnnotationPanel";
+import { AnnotationPanel } from "@/components/annotations";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
@@ -90,7 +90,13 @@ const AdminPostEditor = () => {
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
   const [originalContent, setOriginalContent] = useState<string>("");
-  const [selectedText, setSelectedText] = useState<{ start: number; end: number; text: string } | null>(null);
+  const [selectedText, setSelectedText] = useState<{ 
+    start: number; 
+    end: number; 
+    text: string;
+    type?: "paragraph" | "code" | "conversation";
+    bubbleIndex?: number;
+  } | null>(null);
   const [previewVersion, setPreviewVersion] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showAdminChangesDialog, setShowAdminChangesDialog] = useState(false);
@@ -486,8 +492,11 @@ const AdminPostEditor = () => {
   const showSubmitForApproval = isModerator && !isAdmin;
 
   // Handle text selection for annotations (admin only)
-  const handleTextSelection = useCallback(() => {
-    if (!isAdmin) return;
+  // Handle text selection for annotations (admin and moderators)
+  const handleTextSelection = useCallback((type: "paragraph" | "code" | "conversation" = "paragraph", bubbleIndex?: number) => {
+    // Admins can annotate anything, moderators only paragraphs and code
+    if (!isAdmin && !isModerator) return;
+    if (isModerator && !isAdmin && type === "conversation") return;
     
     const selection = window.getSelection();
     if (selection && selection.toString().trim().length > 0) {
@@ -497,9 +506,11 @@ const AdminPostEditor = () => {
         start: range.startOffset,
         end: range.endOffset,
         text,
+        type,
+        bubbleIndex,
       });
     }
-  }, [isAdmin]);
+  }, [isAdmin, isModerator]);
 
   // Handle version actions
   const handleRestoreVersion = async (version: any) => {
@@ -563,19 +574,24 @@ const AdminPostEditor = () => {
     }, 0);
   };
 
-  // Handle annotation creation
+  // Handle annotation creation with type support
   const handleAddAnnotation = async (
     selectionStart: number,
     selectionEnd: number,
     selectedTextStr: string,
-    comment: string
+    comment: string,
+    annotationType?: "paragraph" | "code" | "conversation"
   ) => {
+    // Get bubble index from selected text if it's a conversation annotation
+    const bubbleIndex = selectedText?.bubbleIndex;
+    
     await createAnnotation(
       selectionStart,
       selectionEnd,
       selectedTextStr,
       comment,
-      editorType === "chat" ? "chat" : "rich-text"
+      editorType === "chat" ? "chat" : "rich-text",
+      bubbleIndex
     );
   };
 
@@ -629,6 +645,8 @@ const AdminPostEditor = () => {
                   annotations={annotations}
                   loading={annotationsLoading}
                   isAdmin={isAdmin}
+                  isModerator={isModerator}
+                  userId={userId}
                   onAddAnnotation={handleAddAnnotation}
                   onUpdateStatus={updateAnnotationStatus}
                   onDelete={deleteAnnotation}
