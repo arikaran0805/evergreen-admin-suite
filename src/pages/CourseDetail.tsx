@@ -44,6 +44,7 @@ interface Course {
   slug: string;
   description: string | null;
   featured_image: string | null;
+  status: string;
 }
 
 interface Post {
@@ -758,8 +759,8 @@ const CourseDetail = () => {
         ogDescription={course.description || `Learn ${course.name} with our comprehensive course materials`}
       />
       
-      {/* Preview Mode Banner */}
-      {isPreviewMode && canPreview && (
+      {/* Preview Mode Banner - Only show for unpublished content */}
+      {isPreviewMode && canPreview && course?.status !== 'published' && (
         <div className="fixed top-0 left-0 right-0 z-[70] bg-amber-500 text-amber-950 py-2 px-4">
           <div className="container mx-auto flex items-center justify-center gap-2 text-sm font-medium">
             <AlertTriangle className="h-4 w-4" />
