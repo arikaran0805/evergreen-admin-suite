@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { PostVersion } from "@/hooks/usePostVersions";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight, ExternalLink } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
@@ -52,6 +53,8 @@ const VersionHistoryPanel = ({
   onPublish,
   onPreview,
 }: VersionHistoryPanelProps) => {
+  const navigate = useNavigate();
+  const { id } = useParams();
   const [selectedVersion, setSelectedVersion] = useState<PostVersion | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
@@ -124,7 +127,20 @@ const VersionHistoryPanel = ({
         </SheetTrigger>
         <SheetContent className="w-[400px] sm:w-[540px]">
           <SheetHeader>
-            <SheetTitle>Version History</SheetTitle>
+            <SheetTitle className="flex items-center justify-between">
+              Version History
+              {id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/admin/posts/${id}/versions`)}
+                  className="gap-1"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Full View
+                </Button>
+              )}
+            </SheetTitle>
             <SheetDescription>
               View and manage all saved versions of this post
             </SheetDescription>

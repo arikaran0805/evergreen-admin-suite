@@ -107,10 +107,10 @@ export const usePostVersions = (postId: string | undefined) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Not authenticated");
 
-      // Get the next version number
+      // Get the next version number (start at 0)
       const nextVersionNumber = versions.length > 0 
         ? Math.max(...versions.map(v => v.version_number)) + 1 
-        : 1;
+        : 0;
 
       // Determine editor role
       const editorRole = isAdmin ? "admin" : "moderator";
@@ -160,7 +160,7 @@ export const usePostVersions = (postId: string | undefined) => {
   ) => {
     const versionNumber = versions.length > 0 
       ? Math.max(...versions.map(v => v.version_number)) + 1 
-      : 1;
+      : 0;
     
     return saveVersion(
       content,
@@ -168,6 +168,41 @@ export const usePostVersions = (postId: string | undefined) => {
       `Published as v${versionNumber}`,
       true
     );
+  };
+
+  // Create initial v0 when post is first saved
+  const createInitialVersion = async (
+    content: string,
+    editorType: "rich-text" | "chat",
+    postId: string
+  ) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Not authenticated");
+
+      const editorRole = isAdmin ? "admin" : "moderator";
+
+      const { data, error } = await supabase
+        .from("post_versions")
+        .insert({
+          post_id: postId,
+          version_number: 0,
+          content,
+          editor_type: editorType,
+          edited_by: session.user.id,
+          editor_role: editorRole,
+          change_summary: "Initial version (v0)",
+          is_published: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error("Error creating initial version:", error);
+      return null;
+    }
   };
 
   const publishVersion = async (versionId: string, postContent: string) => {
@@ -246,6 +281,7 @@ export const usePostVersions = (postId: string | undefined) => {
     fetchVersions,
     saveVersion,
     saveVersionOnPublish,
+    createInitialVersion,
     publishVersion,
     restoreVersion,
     getAdminChangesAfterVersion,
