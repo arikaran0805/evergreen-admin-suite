@@ -343,9 +343,8 @@ const RichTextDiffView = ({
                     key={index}
                     className="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100 px-0.5 rounded"
                     title="Added"
-                  >
-                    {segment.text}
-                  </span>
+                    dangerouslySetInnerHTML={{ __html: segment.text }}
+                  />
                 );
               case "removed":
                 return (
@@ -353,9 +352,8 @@ const RichTextDiffView = ({
                     key={index}
                     className="bg-red-200 dark:bg-red-800/50 line-through px-0.5 rounded text-red-700 dark:text-red-300"
                     title="Removed"
-                  >
-                    {segment.text}
-                  </span>
+                    dangerouslySetInnerHTML={{ __html: segment.text }}
+                  />
                 );
               default:
                 return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
