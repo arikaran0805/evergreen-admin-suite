@@ -214,19 +214,21 @@ const RichTextSideBySide = ({
   );
 };
 
-// Chat bubble styled like public post view
+// Chat bubble styled like public post view with word-level diff support
 const ChatBubble = ({
   bubble,
   showHighlight,
   highlightClass,
   isStrikethrough,
+  diffContent,
 }: {
   bubble: { speaker: string; content: string };
   showHighlight?: boolean;
   highlightClass?: string;
   isStrikethrough?: boolean;
+  diffContent?: React.ReactNode;
 }) => {
-  const isMentor = bubble.speaker.toLowerCase() === "karan";
+  const isMentor = bubble.speaker?.toLowerCase() === "karan";
   
   return (
     <div
@@ -265,16 +267,54 @@ const ChatBubble = ({
             isMentor ? "text-blue-100/80" : "text-primary"
           )}
         >
-          {bubble.speaker}
+          {bubble.speaker || "Assistant"}
         </div>
 
-        {/* Content */}
+        {/* Content with word-level diff */}
         <div className={cn("text-sm leading-relaxed", isStrikethrough && "line-through opacity-60")}>
-          {bubble.content}
+          {diffContent || bubble.content}
         </div>
       </div>
     </div>
   );
+};
+
+// Render word-level diff content
+const renderWordDiff = (oldText: string, newText: string, showAdded: boolean) => {
+  const diff = computeWordDiff(oldText, newText);
+  
+  return diff.map((segment, index) => {
+    if (segment.type === "unchanged") {
+      return <span key={index}>{segment.text}</span>;
+    }
+    if (segment.type === "removed") {
+      if (!showAdded) {
+        return (
+          <span
+            key={index}
+            className="bg-red-300/50 dark:bg-red-700/50 line-through px-0.5 rounded"
+          >
+            {segment.text}
+          </span>
+        );
+      }
+      return null;
+    }
+    if (segment.type === "added") {
+      if (showAdded) {
+        return (
+          <span
+            key={index}
+            className="bg-green-300/50 dark:bg-green-700/50 px-0.5 rounded"
+          >
+            {segment.text}
+          </span>
+        );
+      }
+      return null;
+    }
+    return <span key={index}>{segment.text}</span>;
+  });
 };
 
 const ChatSideBySide = ({
@@ -334,6 +374,11 @@ const ChatSideBySide = ({
                   ? "ring-2 ring-amber-400 dark:ring-amber-600"
                   : "";
                 
+                // For modified bubbles, show word-level diff
+                const diffContent = comp.status === "modified" && showHighlights && comp.newBubble
+                  ? renderWordDiff(comp.oldBubble.content || "", comp.newBubble.content || "", false)
+                  : undefined;
+                
                 return (
                   <ChatBubble
                     key={index}
@@ -341,6 +386,7 @@ const ChatSideBySide = ({
                     showHighlight={showHighlights}
                     highlightClass={highlightClass}
                     isStrikethrough={comp.status === "removed" && showHighlights}
+                    diffContent={diffContent}
                   />
                 );
               })}
@@ -368,12 +414,18 @@ const ChatSideBySide = ({
                   ? "ring-2 ring-amber-400 dark:ring-amber-600"
                   : "";
                 
+                // For modified bubbles, show word-level diff
+                const diffContent = comp.status === "modified" && showHighlights && comp.oldBubble
+                  ? renderWordDiff(comp.oldBubble.content || "", comp.newBubble.content || "", true)
+                  : undefined;
+                
                 return (
                   <ChatBubble
                     key={index}
                     bubble={comp.newBubble}
                     showHighlight={showHighlights}
                     highlightClass={highlightClass}
+                    diffContent={diffContent}
                   />
                 );
               })}
