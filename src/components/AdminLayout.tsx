@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
-
+import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 interface AdminLayoutProps {
   children: ReactNode;
   defaultSidebarCollapsed?: boolean;
@@ -36,6 +36,37 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
   const { toast } = useToast();
   const { isAdmin, isModerator, isLoading: roleLoading, userId } = useUserRole();
   const { notifications } = useAdminNotifications(isAdmin, userId);
+  const { getUnreadCount, markBadgeSeen } = useAdminBadgeReads(userId);
+
+  // Badge key mapping to route paths
+  const badgeKeyMap: Record<string, string> = useMemo(() => ({
+    "/admin/approvals": "totalApprovals",
+    "/admin/delete-requests": "deleteRequests",
+    "/admin/reports": "reports",
+    "/admin/posts": "pendingPosts",
+    "/admin/courses": "pendingCourses",
+    "/admin/tags": "pendingTags",
+    "/admin/comments": "pendingComments",
+    "/admin/media": "mediaLibrary",
+    "/admin/users": "newUsers",
+  }), []);
+
+  // Mark badge as seen when visiting a page
+  useEffect(() => {
+    const badgeKey = badgeKeyMap[location.pathname];
+    if (badgeKey && notifications[badgeKey as keyof typeof notifications] !== undefined) {
+      const currentCount = notifications[badgeKey as keyof typeof notifications];
+      if (typeof currentCount === "number" && currentCount > 0) {
+        markBadgeSeen(badgeKey, currentCount);
+      }
+    }
+  }, [location.pathname, notifications, badgeKeyMap, markBadgeSeen]);
+
+  // Helper to get badge count (unread only)
+  const getBadgeCount = (badgeKey: string, currentCount: number): number | undefined => {
+    const unread = getUnreadCount(badgeKey, currentCount);
+    return unread > 0 ? unread : undefined;
+  };
 
   // Menu items with role-based visibility
   const getMenuItems = (): MenuItem[] => {
@@ -49,7 +80,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         icon: ClipboardCheck, 
         label: "Approval Queue", 
         path: "/admin/approvals",
-        badge: notifications.totalApprovals > 0 ? notifications.totalApprovals : undefined
+        badge: getBadgeCount("totalApprovals", notifications.totalApprovals)
       });
     }
 
@@ -59,7 +90,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         icon: Trash2, 
         label: "Delete Requests", 
         path: "/admin/delete-requests",
-        badge: notifications.deleteRequests > 0 ? notifications.deleteRequests : undefined
+        badge: getBadgeCount("deleteRequests", notifications.deleteRequests)
       });
     }
 
@@ -69,16 +100,16 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         icon: Flag, 
         label: "Reports", 
         path: "/admin/reports",
-        badge: notifications.reports > 0 ? notifications.reports : undefined
+        badge: getBadgeCount("reports", notifications.reports)
       });
     }
 
     // Content management - available to both admins and moderators
     if (isAdmin) {
       items.push(
-        { icon: BookOpen, label: "Posts", path: "/admin/posts", badge: notifications.pendingPosts > 0 ? notifications.pendingPosts : undefined },
-        { icon: GraduationCap, label: "Courses", path: "/admin/courses", badge: notifications.pendingCourses > 0 ? notifications.pendingCourses : undefined },
-        { icon: Tags, label: "Tags", path: "/admin/tags", badge: notifications.pendingTags > 0 ? notifications.pendingTags : undefined },
+        { icon: BookOpen, label: "Posts", path: "/admin/posts", badge: getBadgeCount("pendingPosts", notifications.pendingPosts) },
+        { icon: GraduationCap, label: "Courses", path: "/admin/courses", badge: getBadgeCount("pendingCourses", notifications.pendingCourses) },
+        { icon: Tags, label: "Tags", path: "/admin/tags", badge: getBadgeCount("pendingTags", notifications.pendingTags) },
       );
     } else {
       items.push(
@@ -98,7 +129,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       icon: MessageSquare, 
       label: "Comments", 
       path: "/admin/comments",
-      badge: isAdmin && notifications.pendingComments > 0 ? notifications.pendingComments : undefined
+      badge: isAdmin ? getBadgeCount("pendingComments", notifications.pendingComments) : undefined
     });
 
     // Media Library - Available to both (moderators see only their own)
@@ -106,7 +137,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       icon: Image, 
       label: "Media Library", 
       path: "/admin/media",
-      badge: isAdmin && notifications.mediaLibrary > 0 ? notifications.mediaLibrary : undefined
+      badge: isAdmin ? getBadgeCount("mediaLibrary", notifications.mediaLibrary) : undefined
     });
 
     // My Activity - Moderators only (shows their actions and admin feedback)
@@ -124,7 +155,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     if (isAdmin) {
       items.push(
         { icon: Files, label: "Pages", path: "/admin/pages", adminOnly: true },
-        { icon: Users, label: "Users", path: "/admin/users", adminOnly: true, badge: notifications.newUsers > 0 ? notifications.newUsers : undefined },
+        { icon: Users, label: "Users", path: "/admin/users", adminOnly: true, badge: getBadgeCount("newUsers", notifications.newUsers) },
         { icon: UserCog, label: "Authors/Admins", path: "/admin/authors", adminOnly: true },
         { icon: DollarSign, label: "Monetization", path: "/admin/monetization", adminOnly: true },
         { icon: Link2, label: "Redirects", path: "/admin/redirects", adminOnly: true },

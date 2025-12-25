@@ -77,6 +77,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_badge_reads: {
+        Row: {
+          badge_key: string
+          created_at: string
+          id: string
+          seen_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_key: string
+          created_at?: string
+          id?: string
+          seen_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_key?: string
+          created_at?: string
+          id?: string
+          seen_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           ad_code: string | null
