@@ -105,7 +105,7 @@ const AdminPostEditor = () => {
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
-  const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion } = usePostVersions(id);
+  const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionAsDraft, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion } = usePostVersions(id);
   const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
 
   // Check if moderator should see admin edit banner
@@ -323,10 +323,9 @@ const AdminPostEditor = () => {
           );
         } else if (formData.content !== previousContentRef.current) {
           // Save draft version if content changed but not publishing
-          await saveVersion(
+          await saveVersionAsDraft(
             formData.content,
-            editorType === "chat" ? "chat" : "rich-text",
-            `Draft saved by ${isAdmin ? "admin" : "moderator"}`
+            editorType === "chat" ? "chat" : "rich-text"
           );
         }
         previousContentRef.current = formData.content;
