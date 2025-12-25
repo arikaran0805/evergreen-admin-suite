@@ -166,7 +166,6 @@ const VersionHistoryPanel = ({
               <div className="space-y-3">
                 {versions.map((version, index) => {
                   const isInitialVersion = version.version_number === 0;
-                  const isDraft = !version.is_published && !isInitialVersion;
                   
                   return (
                     <div
@@ -200,77 +199,27 @@ const VersionHistoryPanel = ({
                             Initial Version
                           </Badge>
                         )}
-                        {isDraft && (
-                          <Badge variant="secondary">
-                            Draft
-                          </Badge>
-                        )}
                         {index === 0 && !version.is_published && (
                           <Badge variant="outline">Latest</Badge>
                         )}
                       </div>
                       
-                      {version.change_summary && (
-                        <p className="text-sm text-muted-foreground mb-2 italic">
-                          "{version.change_summary}"
-                        </p>
-                      )}
-                      
                       <div className="text-xs text-muted-foreground mb-3">
                         Edited by: {version.editor_profile?.full_name || version.editor_profile?.email || "Unknown"}
                       </div>
                       
-                      <div className="flex flex-wrap gap-2">
+                      {/* Preview link to full version page */}
+                      {id && (
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleCompareClick(version)}
-                          className="gap-1"
-                        >
-                          <GitCompare className="h-3 w-3" />
-                          Compare
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onPreview(version)}
-                          className="gap-1"
+                          onClick={() => navigate(`/admin/posts/${id}/versions`)}
+                          className="gap-1 text-primary hover:text-primary"
                         >
                           <Eye className="h-3 w-3" />
                           Preview
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRevertClick(version)}
-                          className="gap-1"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          Restore
-                        </Button>
-                        {id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/admin/posts/${id}/versions`)}
-                            className="gap-1"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Full View
-                          </Button>
-                        )}
-                        {isAdmin && !version.is_published && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handlePublishClick(version)}
-                            className="gap-1"
-                          >
-                            <Upload className="h-3 w-3" />
-                            Publish
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </div>
                   );
                 })}
