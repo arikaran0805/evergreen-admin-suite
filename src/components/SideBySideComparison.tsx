@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PostVersion } from "@/hooks/usePostVersions";
-import { computeWordDiff, DiffSegment } from "@/lib/diffUtils";
+import { computeWordDiff } from "@/lib/diffUtils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
 import { format } from "date-fns";
 import { User, Shield } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SideBySideComparisonProps {
   oldVersion: PostVersion;
@@ -213,6 +214,69 @@ const RichTextSideBySide = ({
   );
 };
 
+// Chat bubble styled like public post view
+const ChatBubble = ({
+  bubble,
+  showHighlight,
+  highlightClass,
+  isStrikethrough,
+}: {
+  bubble: { speaker: string; content: string };
+  showHighlight?: boolean;
+  highlightClass?: string;
+  isStrikethrough?: boolean;
+}) => {
+  const isMentor = bubble.speaker.toLowerCase() === "karan";
+  
+  return (
+    <div
+      className={cn(
+        "flex items-end gap-2.5",
+        isMentor ? "flex-row-reverse" : "flex-row"
+      )}
+    >
+      {/* Avatar */}
+      <div
+        className={cn(
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm",
+          "shadow-md",
+          isMentor
+            ? "bg-gradient-to-br from-blue-400 to-blue-600"
+            : "bg-gradient-to-br from-muted to-muted/80"
+        )}
+      >
+        {isMentor ? "👨‍💻" : "🤖"}
+      </div>
+
+      {/* Bubble */}
+      <div
+        className={cn(
+          "relative max-w-[85%] px-4 py-2.5 rounded-2xl shadow-sm",
+          isMentor
+            ? "bg-gradient-to-br from-[hsl(210,100%,52%)] to-[hsl(210,100%,45%)] text-white rounded-br-md"
+            : "bg-muted/80 text-foreground rounded-bl-md border border-border/30",
+          showHighlight && highlightClass
+        )}
+      >
+        {/* Speaker indicator */}
+        <div
+          className={cn(
+            "text-[10px] font-semibold mb-1 tracking-wide uppercase",
+            isMentor ? "text-blue-100/80" : "text-primary"
+          )}
+        >
+          {bubble.speaker}
+        </div>
+
+        {/* Content */}
+        <div className={cn("text-sm leading-relaxed", isStrikethrough && "line-through opacity-60")}>
+          {bubble.content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ChatSideBySide = ({
   oldVersion,
   newVersion,
@@ -245,80 +309,72 @@ const ChatSideBySide = ({
     }
   }
 
-  const getStatusStyles = (status: string, isOld: boolean) => {
-    if (!showHighlights) return "";
-    
-    switch (status) {
-      case "added":
-        return isOld ? "opacity-0" : "border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20";
-      case "removed":
-        return isOld ? "border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20" : "opacity-0";
-      case "modified":
-        return `border-l-4 border-amber-500 ${isOld ? "bg-red-50 dark:bg-red-900/10" : "bg-amber-50 dark:bg-amber-900/20"}`;
-      default:
-        return "";
-    }
-  };
-
   return (
     <div className="space-y-4">
       <HighlightToggle showHighlights={showHighlights} onToggle={onToggleHighlights} />
       
       <div className="grid grid-cols-2 gap-4">
-        <div className="border rounded-lg overflow-hidden">
+        {/* Old Version Panel */}
+        <div className="border rounded-2xl overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 shadow-lg">
           <VersionHeader version={oldVersion} label="Previous Version" />
           <ScrollArea className="h-[400px]">
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-4">
               {bubbleComparisons.map((comp, index) => {
                 if (!comp.oldBubble) {
                   return showHighlights ? (
-                    <div key={index} className="h-16 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center text-xs text-muted-foreground">
+                    <div key={index} className="h-14 border-2 border-dashed border-muted-foreground/30 rounded-xl flex items-center justify-center text-xs text-muted-foreground">
                       New message added
                     </div>
                   ) : null;
                 }
                 
+                const highlightClass = showHighlights && comp.status === "removed" 
+                  ? "ring-2 ring-red-400 dark:ring-red-600" 
+                  : showHighlights && comp.status === "modified"
+                  ? "ring-2 ring-amber-400 dark:ring-amber-600"
+                  : "";
+                
                 return (
-                  <div
+                  <ChatBubble
                     key={index}
-                    className={`p-3 rounded-lg transition-colors ${getStatusStyles(comp.status, true)}`}
-                  >
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {comp.oldBubble?.sender === "user" ? "👤 User" : "🤖 Assistant"}
-                    </span>
-                    <div className={`text-sm mt-1 ${comp.status === "removed" && showHighlights ? "line-through" : ""}`}>
-                      {comp.oldBubble?.content}
-                    </div>
-                  </div>
+                    bubble={comp.oldBubble}
+                    showHighlight={showHighlights}
+                    highlightClass={highlightClass}
+                    isStrikethrough={comp.status === "removed" && showHighlights}
+                  />
                 );
               })}
             </div>
           </ScrollArea>
         </div>
         
-        <div className="border rounded-lg overflow-hidden border-primary/50">
+        {/* New Version Panel */}
+        <div className="border border-primary/50 rounded-2xl overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 shadow-lg">
           <VersionHeader version={newVersion} label="Updated Version" />
           <ScrollArea className="h-[400px]">
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-4">
               {bubbleComparisons.map((comp, index) => {
                 if (!comp.newBubble) {
                   return showHighlights ? (
-                    <div key={index} className="h-16 border-2 border-dashed border-red-300 dark:border-red-700 rounded-lg flex items-center justify-center text-xs text-red-500">
+                    <div key={index} className="h-14 border-2 border-dashed border-red-300 dark:border-red-700 rounded-xl flex items-center justify-center text-xs text-red-500">
                       Message removed
                     </div>
                   ) : null;
                 }
                 
+                const highlightClass = showHighlights && comp.status === "added" 
+                  ? "ring-2 ring-green-400 dark:ring-green-600" 
+                  : showHighlights && comp.status === "modified"
+                  ? "ring-2 ring-amber-400 dark:ring-amber-600"
+                  : "";
+                
                 return (
-                  <div
+                  <ChatBubble
                     key={index}
-                    className={`p-3 rounded-lg transition-colors ${getStatusStyles(comp.status, false)}`}
-                  >
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {comp.newBubble?.sender === "user" ? "👤 User" : "🤖 Assistant"}
-                    </span>
-                    <div className="text-sm mt-1">{comp.newBubble?.content}</div>
-                  </div>
+                    bubble={comp.newBubble}
+                    showHighlight={showHighlights}
+                    highlightClass={highlightClass}
+                  />
                 );
               })}
             </div>
