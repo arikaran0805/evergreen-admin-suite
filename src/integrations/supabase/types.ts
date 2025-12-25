@@ -1201,6 +1201,7 @@ export type Database = {
           content: string
           created_at: string
           edited_by: string
+          editor_role: string | null
           editor_type: string | null
           id: string
           is_published: boolean | null
@@ -1212,6 +1213,7 @@ export type Database = {
           content: string
           created_at?: string
           edited_by: string
+          editor_role?: string | null
           editor_type?: string | null
           id?: string
           is_published?: boolean | null
@@ -1223,6 +1225,7 @@ export type Database = {
           content?: string
           created_at?: string
           edited_by?: string
+          editor_role?: string | null
           editor_type?: string | null
           id?: string
           is_published?: boolean | null

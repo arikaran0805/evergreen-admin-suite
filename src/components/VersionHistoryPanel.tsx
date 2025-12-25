@@ -20,8 +20,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
+import SideBySideComparison from "@/components/SideBySideComparison";
 
 interface VersionHistoryPanelProps {
   versions: PostVersion[];
@@ -46,6 +48,7 @@ const VersionHistoryPanel = ({
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
   const [compareVersion, setCompareVersion] = useState<PostVersion | null>(null);
+  const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
 
   const handlePublishClick = (version: PostVersion) => {
     setSelectedVersion(version);
@@ -65,6 +68,23 @@ const VersionHistoryPanel = ({
     const prevVersion = currentIndex < versions.length - 1 ? versions[currentIndex + 1] : null;
     setCompareVersion(prevVersion);
     setDiffDialogOpen(true);
+  };
+
+  const getRoleBadge = (role: string) => {
+    if (role === "admin") {
+      return (
+        <Badge className="bg-primary text-primary-foreground gap-1 text-xs">
+          <Shield className="h-3 w-3" />
+          Admin
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="gap-1 text-xs">
+        <User className="h-3 w-3" />
+        Moderator
+      </Badge>
+    );
   };
 
   return (
@@ -112,15 +132,16 @@ const VersionHistoryPanel = ({
                     key={version.id}
                     className={`p-4 border rounded-lg transition-colors hover:bg-muted/50 ${
                       version.is_published ? "border-primary bg-primary/5" : ""
-                    }`}
+                    } ${version.editor_role === "admin" ? "border-l-4 border-l-primary" : ""}`}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium">
                           Version {version.version_number}
                         </span>
+                        {getRoleBadge(version.editor_role)}
                         {version.is_published && (
-                          <Badge className="bg-primary text-primary-foreground">
+                          <Badge className="bg-green-600 text-white">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Published
                           </Badge>
@@ -135,8 +156,8 @@ const VersionHistoryPanel = ({
                     </div>
                     
                     {version.change_summary && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {version.change_summary}
+                      <p className="text-sm text-muted-foreground mb-2 italic">
+                        "{version.change_summary}"
                       </p>
                     )}
                     
@@ -152,7 +173,7 @@ const VersionHistoryPanel = ({
                         className="gap-1"
                       >
                         <GitCompare className="h-3 w-3" />
-                        Diff
+                        Compare
                       </Button>
                       <Button
                         variant="outline"
@@ -212,11 +233,17 @@ const VersionHistoryPanel = ({
       </Dialog>
 
       <Dialog open={diffDialogOpen} onOpenChange={setDiffDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <GitCompare className="h-5 w-5" />
               Version {selectedVersion?.version_number} Changes
+              {selectedVersion?.editor_role === "admin" && (
+                <Badge className="bg-primary text-primary-foreground gap-1 ml-2">
+                  <Shield className="h-3 w-3" />
+                  Admin Edit
+                </Badge>
+              )}
             </DialogTitle>
             <DialogDescription>
               {compareVersion 
@@ -226,44 +253,68 @@ const VersionHistoryPanel = ({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="mt-4">
-            <div className="flex items-center gap-4 mb-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-green-200 dark:bg-green-800/50" />
-                <span>Added</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-red-200 dark:bg-red-800/50" />
-                <span>Removed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-amber-200 dark:bg-amber-800/50" />
-                <span>Modified (chat)</span>
-              </div>
-            </div>
+          <div className="mt-2">
+            <Tabs value={diffViewMode} onValueChange={(v) => setDiffViewMode(v as "inline" | "side-by-side")}>
+              <TabsList className="grid w-full max-w-[300px] grid-cols-2">
+                <TabsTrigger value="side-by-side">Side by Side</TabsTrigger>
+                <TabsTrigger value="inline">Inline Diff</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="side-by-side" className="mt-4">
+                {selectedVersion && compareVersion ? (
+                  <SideBySideComparison
+                    oldVersion={compareVersion}
+                    newVersion={selectedVersion}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No previous version to compare
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="inline" className="mt-4">
+                <div className="flex items-center gap-4 mb-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-green-200 dark:bg-green-800/50" />
+                    <span>Added</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-red-200 dark:bg-red-800/50" />
+                    <span>Removed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-amber-200 dark:bg-amber-800/50" />
+                    <span>Modified</span>
+                  </div>
+                </div>
 
-            {selectedVersion && (
-              <VersionDiffViewer
-                currentVersion={selectedVersion}
-                compareVersion={compareVersion}
-                currentContent={currentContent}
-              />
-            )}
+                {selectedVersion && (
+                  <VersionDiffViewer
+                    currentVersion={selectedVersion}
+                    compareVersion={compareVersion}
+                    currentContent={currentContent}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDiffDialogOpen(false)}>
               Close
             </Button>
-            <Button onClick={() => {
-              if (selectedVersion) {
-                onRestore(selectedVersion);
-                setDiffDialogOpen(false);
-              }
-            }}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Restore This Version
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => {
+                if (selectedVersion) {
+                  onRestore(selectedVersion);
+                  setDiffDialogOpen(false);
+                }
+              }}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Restore This Version
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
