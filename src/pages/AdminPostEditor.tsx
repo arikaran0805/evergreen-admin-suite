@@ -748,6 +748,16 @@ const AdminPostEditor = () => {
                   value={formData.content}
                   onChange={(value) => setFormData({ ...formData, content: value })}
                   placeholder="Write your post content here..."
+                  onTextSelect={(selection) => {
+                    if (!id) return; // Only allow annotations on existing posts
+                    if (!isAdmin && !isModerator) return;
+                    setSelectedText({
+                      start: selection.start,
+                      end: selection.end,
+                      text: selection.text,
+                      type: selection.type,
+                    });
+                  }}
                 />
               ) : (
                 <ChatStyleEditor

@@ -37,6 +37,12 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onTextSelect?: (selection: {
+    start: number;
+    end: number;
+    text: string;
+    type: "paragraph" | "code";
+  }) => void;
 }
 
 interface CodeBlockOverlay {
@@ -46,7 +52,7 @@ interface CodeBlockOverlay {
   language: string;
 }
 
-const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) => {
+const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichTextEditorProps) => {
   const quillRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [codeBlocks, setCodeBlocks] = useState<CodeBlockOverlay[]>([]);
@@ -69,6 +75,41 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   const handleChange = useCallback((content: string) => {
     onChange(content);
   }, [onChange]);
+
+  // Handle text selection for annotations
+  const handleTextSelection = useCallback(() => {
+    if (!onTextSelect) return;
+    
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+
+    const text = selection.toString().trim();
+    if (!text || text.length < 2) return;
+
+    // Check if selection is inside the editor
+    const quillEditor = quillRef.current?.getEditor();
+    if (!quillEditor) return;
+
+    const editorElement = containerRef.current?.querySelector('.ql-editor');
+    if (!editorElement) return;
+
+    const range = selection.getRangeAt(0);
+    
+    // Make sure selection is within the editor
+    if (!editorElement.contains(range.commonAncestorContainer)) return;
+
+    // Determine if selection is in a code block
+    const codeBlockElement = range.commonAncestorContainer.parentElement?.closest('pre.ql-syntax');
+    const type: "paragraph" | "code" = codeBlockElement ? "code" : "paragraph";
+
+    onTextSelect({
+      start: range.startOffset,
+      end: range.endOffset,
+      text,
+      type,
+    });
+  }, [onTextSelect]);
+
   const modules = {
     toolbar: [
       [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -273,7 +314,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   };
 
   return (
-    <div className="rich-text-editor" ref={containerRef}>
+    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection}>
       <ReactQuill
         ref={quillRef}
         theme="snow"
