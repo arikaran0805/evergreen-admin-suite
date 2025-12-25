@@ -123,6 +123,11 @@ export const usePostVersions = (postId: string | undefined) => {
           .eq("post_id", postId);
       }
 
+      // Default change summary based on action
+      const defaultSummary = markAsPublished 
+        ? `Published as v${nextVersionNumber}` 
+        : `Draft saved (v${nextVersionNumber})`;
+
       const { data, error } = await supabase
         .from("post_versions")
         .insert({
@@ -132,7 +137,7 @@ export const usePostVersions = (postId: string | undefined) => {
           editor_type: editorType,
           edited_by: session.user.id,
           editor_role: editorRole,
-          change_summary: changeSummary,
+          change_summary: changeSummary || defaultSummary,
           is_published: markAsPublished,
         })
         .select()
@@ -151,6 +156,15 @@ export const usePostVersions = (postId: string | undefined) => {
       });
       return null;
     }
+  };
+
+  // Save version as draft (not published)
+  const saveVersionAsDraft = async (
+    content: string,
+    editorType: "rich-text" | "chat",
+    changeSummary?: string
+  ) => {
+    return saveVersion(content, editorType, changeSummary, false);
   };
 
   // Save version on publish (creates a new version and marks it as published)
@@ -280,6 +294,7 @@ export const usePostVersions = (postId: string | undefined) => {
     metadata,
     fetchVersions,
     saveVersion,
+    saveVersionAsDraft,
     saveVersionOnPublish,
     createInitialVersion,
     publishVersion,

@@ -164,86 +164,116 @@ const VersionHistoryPanel = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {versions.map((version, index) => (
-                  <div
-                    key={version.id}
-                    className={`p-4 border rounded-lg transition-colors hover:bg-muted/50 ${
-                      version.is_published ? "border-primary bg-primary/5" : ""
-                    } ${version.editor_role === "admin" ? "border-l-4 border-l-primary" : ""}`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium">
-                          Version {version.version_number}
+                {versions.map((version, index) => {
+                  const isInitialVersion = version.version_number === 0;
+                  const isDraft = !version.is_published && !isInitialVersion;
+                  
+                  return (
+                    <div
+                      key={version.id}
+                      className={`p-4 border rounded-lg transition-colors hover:bg-muted/50 ${
+                        version.is_published ? "border-primary bg-primary/5" : ""
+                      } ${version.editor_role === "admin" ? "border-l-4 border-l-primary" : ""}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-base">
+                            v{version.version_number}
+                          </span>
+                          {getRoleBadge(version.editor_role)}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(version.created_at), "MMM d, yyyy h:mm a")}
                         </span>
-                        {getRoleBadge(version.editor_role)}
+                      </div>
+                      
+                      {/* Status badges */}
+                      <div className="flex flex-wrap gap-1.5 mb-2">
                         {version.is_published && (
                           <Badge className="bg-green-600 text-white">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Published
                           </Badge>
                         )}
+                        {isInitialVersion && (
+                          <Badge variant="outline" className="border-blue-500 text-blue-600">
+                            Initial Version
+                          </Badge>
+                        )}
+                        {isDraft && (
+                          <Badge variant="secondary">
+                            Draft
+                          </Badge>
+                        )}
                         {index === 0 && !version.is_published && (
-                          <Badge variant="secondary">Latest</Badge>
+                          <Badge variant="outline">Latest</Badge>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(version.created_at), "MMM d, yyyy h:mm a")}
-                      </span>
-                    </div>
-                    
-                    {version.change_summary && (
-                      <p className="text-sm text-muted-foreground mb-2 italic">
-                        "{version.change_summary}"
-                      </p>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground mb-3">
-                      Edited by: {version.editor_profile?.full_name || version.editor_profile?.email || "Unknown"}
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCompareClick(version)}
-                        className="gap-1"
-                      >
-                        <GitCompare className="h-3 w-3" />
-                        Compare
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onPreview(version)}
-                        className="gap-1"
-                      >
-                        <Eye className="h-3 w-3" />
-                        Preview
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRevertClick(version)}
-                        className="gap-1"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        Restore
-                      </Button>
-                      {isAdmin && !version.is_published && (
+                      
+                      {version.change_summary && (
+                        <p className="text-sm text-muted-foreground mb-2 italic">
+                          "{version.change_summary}"
+                        </p>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground mb-3">
+                        Edited by: {version.editor_profile?.full_name || version.editor_profile?.email || "Unknown"}
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
                         <Button
-                          variant="default"
+                          variant="outline"
                           size="sm"
-                          onClick={() => handlePublishClick(version)}
+                          onClick={() => handleCompareClick(version)}
                           className="gap-1"
                         >
-                          <Upload className="h-3 w-3" />
-                          Publish
+                          <GitCompare className="h-3 w-3" />
+                          Compare
                         </Button>
-                      )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onPreview(version)}
+                          className="gap-1"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Preview
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRevertClick(version)}
+                          className="gap-1"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Restore
+                        </Button>
+                        {id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/posts/${id}/versions`)}
+                            className="gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Full View
+                          </Button>
+                        )}
+                        {isAdmin && !version.is_published && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handlePublishClick(version)}
+                            className="gap-1"
+                          >
+                            <Upload className="h-3 w-3" />
+                            Publish
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
