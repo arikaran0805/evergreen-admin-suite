@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminNotifications {
@@ -26,6 +26,24 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
     totalApprovals: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [notificationWindowDays, setNotificationWindowDays] = useState(7);
+
+  // Fetch notification window setting
+  const fetchNotificationWindowSetting = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("notification_window_days")
+        .limit(1)
+        .maybeSingle();
+      
+      if (data?.notification_window_days) {
+        setNotificationWindowDays(data.notification_window_days);
+      }
+    } catch (error) {
+      console.error("Error fetching notification window setting:", error);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -35,6 +53,9 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
       }
 
       try {
+        const windowMs = notificationWindowDays * 24 * 60 * 60 * 1000;
+        const windowDate = new Date(Date.now() - windowMs).toISOString();
+
         // Fetch all counts in parallel
         const [
           reportsResult,
@@ -50,9 +71,9 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
           supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
           supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending"),
           supabase.from("tags").select("*", { count: "exact", head: true }).eq("status", "pending"),
-          supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-          supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-          supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+          supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
+          supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
+          supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
           supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
         ]);
 
@@ -76,6 +97,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
       }
     };
 
+    fetchNotificationWindowSetting();
     fetchNotifications();
 
     if (!isAdmin) return;
@@ -95,13 +117,16 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, userId]);
+  }, [isAdmin, userId, notificationWindowDays, fetchNotificationWindowSetting]);
 
   const refetch = async () => {
     if (!isAdmin) return;
     
     setIsLoading(true);
     try {
+      const windowMs = notificationWindowDays * 24 * 60 * 60 * 1000;
+      const windowDate = new Date(Date.now() - windowMs).toISOString();
+
       const [
         reportsResult,
         postsResult,
@@ -116,9 +141,9 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
         supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("tags").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
+        supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
+        supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
         supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
       ]);
 

@@ -90,6 +90,10 @@ const AdminSettings = () => {
   const [schemaPhone, setSchemaPhone] = useState("");
   const [schemaAddress, setSchemaAddress] = useState("");
   
+  // Notification Settings
+  const [notificationWindowDays, setNotificationWindowDays] = useState(7);
+  const [savingNotification, setSavingNotification] = useState(false);
+  
   // Editor Settings
   
   
@@ -180,6 +184,8 @@ const AdminSettings = () => {
       setSchemaContactEmail((data as any).schema_contact_email || "");
       setSchemaPhone((data as any).schema_phone || "");
       setSchemaAddress((data as any).schema_address || "");
+      // Notification Settings
+      setNotificationWindowDays((data as any).notification_window_days || 7);
     }
   };
 
@@ -1168,6 +1174,60 @@ const AdminSettings = () => {
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     <span className="text-sm font-medium text-primary">Connected</span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="rounded-lg bg-muted p-4">
+                  <h3 className="font-semibold mb-2">Notification Settings</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Configure how long notifications appear in the admin panel
+                  </p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="notificationWindowDays">Notification Time Window</Label>
+                      <Select 
+                        value={notificationWindowDays.toString()} 
+                        onValueChange={(value) => setNotificationWindowDays(parseInt(value))}
+                      >
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Select days" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Last 24 hours</SelectItem>
+                          <SelectItem value="3">Last 3 days</SelectItem>
+                          <SelectItem value="7">Last 7 days</SelectItem>
+                          <SelectItem value="14">Last 14 days</SelectItem>
+                          <SelectItem value="30">Last 30 days</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Comments, media uploads, and new users within this window will show as notifications
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={async () => {
+                        if (!settingsId) return;
+                        setSavingNotification(true);
+                        try {
+                          const { error } = await supabase
+                            .from("site_settings")
+                            .update({ notification_window_days: notificationWindowDays })
+                            .eq("id", settingsId);
+                          if (error) throw error;
+                          toast({ title: "Notification settings saved" });
+                        } catch (error: any) {
+                          toast({ title: "Error saving", description: error.message, variant: "destructive" });
+                        } finally {
+                          setSavingNotification(false);
+                        }
+                      }}
+                      disabled={savingNotification}
+                      size="sm"
+                    >
+                      {savingNotification ? "Saving..." : "Save Notification Settings"}
+                    </Button>
                   </div>
                 </div>
 
