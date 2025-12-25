@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,6 +40,37 @@ export const usePostAnnotations = (postId: string | undefined) => {
   const [annotations, setAnnotations] = useState<PostAnnotation[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Fetch author profile helper
+  const fetchAuthorProfile = async (authorId: string) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", authorId)
+      .single();
+    return profile || undefined;
+  };
+
+  // Fetch replies for an annotation
+  const fetchRepliesForAnnotation = async (annotationId: string): Promise<AnnotationReply[]> => {
+    const { data: repliesData } = await supabase
+      .from("annotation_replies")
+      .select("*")
+      .eq("annotation_id", annotationId)
+      .order("created_at", { ascending: true });
+
+    if (!repliesData) return [];
+
+    const repliesWithProfiles = await Promise.all(
+      repliesData.map(async (reply) => ({
+        ...reply,
+        author_profile: await fetchAuthorProfile(reply.author_id),
+      }))
+    );
+
+    return repliesWithProfiles;
+  };
 
   const fetchAnnotations = useCallback(async () => {
     if (!postId) return;
@@ -54,45 +85,12 @@ export const usePostAnnotations = (postId: string | undefined) => {
 
       if (error) throw error;
 
-      // Fetch author profiles and replies for each annotation
       const annotationsWithProfilesAndReplies = await Promise.all(
-        (data || []).map(async (annotation) => {
-          // Fetch author profile
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", annotation.author_id)
-            .single();
-
-          // Fetch replies for this annotation
-          const { data: repliesData } = await supabase
-            .from("annotation_replies")
-            .select("*")
-            .eq("annotation_id", annotation.id)
-            .order("created_at", { ascending: true });
-
-          // Fetch author profiles for replies
-          const repliesWithProfiles = await Promise.all(
-            (repliesData || []).map(async (reply) => {
-              const { data: replyProfile } = await supabase
-                .from("profiles")
-                .select("full_name, email")
-                .eq("id", reply.author_id)
-                .single();
-
-              return {
-                ...reply,
-                author_profile: replyProfile || undefined,
-              } as AnnotationReply;
-            })
-          );
-
-          return {
-            ...annotation,
-            author_profile: profile || undefined,
-            replies: repliesWithProfiles,
-          } as PostAnnotation;
-        })
+        (data || []).map(async (annotation) => ({
+          ...annotation,
+          author_profile: await fetchAuthorProfile(annotation.author_id),
+          replies: await fetchRepliesForAnnotation(annotation.id),
+        } as PostAnnotation))
       );
 
       setAnnotations(annotationsWithProfilesAndReplies);
@@ -103,6 +101,114 @@ export const usePostAnnotations = (postId: string | undefined) => {
     }
   }, [postId]);
 
+  // Set up realtime subscription
+  useEffect(() => {
+    if (!postId) return;
+
+    // Initial fetch
+    fetchAnnotations();
+
+    // Create realtime channel for annotations
+    const channel = supabase
+      .channel(`annotations:${postId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'post_annotations',
+          filter: `post_id=eq.${postId}`,
+        },
+        async (payload) => {
+          const newAnnotation = payload.new as any;
+          const annotationWithProfile: PostAnnotation = {
+            ...newAnnotation,
+            author_profile: await fetchAuthorProfile(newAnnotation.author_id),
+            replies: [],
+          };
+          setAnnotations(prev => [...prev, annotationWithProfile]);
+          toast({
+            title: "New annotation",
+            description: "Someone added a new annotation",
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'post_annotations',
+          filter: `post_id=eq.${postId}`,
+        },
+        async (payload) => {
+          const updatedAnnotation = payload.new as any;
+          setAnnotations(prev => prev.map(a => 
+            a.id === updatedAnnotation.id 
+              ? { ...a, ...updatedAnnotation }
+              : a
+          ));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'post_annotations',
+        },
+        (payload) => {
+          const deletedId = (payload.old as any).id;
+          setAnnotations(prev => prev.filter(a => a.id !== deletedId));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'annotation_replies',
+        },
+        async (payload) => {
+          const newReply = payload.new as any;
+          const replyWithProfile: AnnotationReply = {
+            ...newReply,
+            author_profile: await fetchAuthorProfile(newReply.author_id),
+          };
+          setAnnotations(prev => prev.map(a => 
+            a.id === newReply.annotation_id
+              ? { ...a, replies: [...(a.replies || []), replyWithProfile] }
+              : a
+          ));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'annotation_replies',
+        },
+        (payload) => {
+          const deletedReply = payload.old as any;
+          setAnnotations(prev => prev.map(a => ({
+            ...a,
+            replies: a.replies?.filter(r => r.id !== deletedReply.id) || [],
+          })));
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [postId, toast]);
+
+  // Refetch when needed (manual refresh)
   useEffect(() => {
     fetchAnnotations();
   }, [fetchAnnotations]);
