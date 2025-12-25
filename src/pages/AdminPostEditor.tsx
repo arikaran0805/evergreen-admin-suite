@@ -20,7 +20,8 @@ import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import AnnotationPanel from "@/components/AnnotationPanel";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle } from "lucide-react";
+import VersionDiffViewer from "@/components/VersionDiffViewer";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +94,7 @@ const AdminPostEditor = () => {
   const [previewVersion, setPreviewVersion] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showAdminChangesDialog, setShowAdminChangesDialog] = useState(false);
+  const [showPublishPreviewDialog, setShowPublishPreviewDialog] = useState(false);
   const [dismissedAdminBanner, setDismissedAdminBanner] = useState(false);
   const previousContentRef = useRef<string>("");
 
@@ -523,6 +525,44 @@ const AdminPostEditor = () => {
     setShowPreviewDialog(true);
   };
 
+  // Get the currently published version for comparison
+  const publishedVersion = versions.find(v => v.is_published);
+  const hasContentChanges = formData.content !== originalContent && originalContent !== "";
+
+  // Create a mock version object for the current editor content
+  const currentEditorVersion = {
+    id: "current",
+    post_id: id || "",
+    version_number: versions.length > 0 ? Math.max(...versions.map(v => v.version_number)) + 1 : 1,
+    content: formData.content,
+    editor_type: editorType === "chat" ? "chat" : "rich-text",
+    edited_by: userId || "",
+    editor_role: isAdmin ? "admin" : "moderator",
+    created_at: new Date().toISOString(),
+    is_published: false,
+    change_summary: null,
+    editor_profile: undefined,
+  } as PostVersion;
+
+  // Handle publish with preview
+  const handlePublishWithPreview = () => {
+    if (hasContentChanges && publishedVersion) {
+      setShowPublishPreviewDialog(true);
+    } else {
+      // No changes to show, just publish directly
+      handleConfirmPublish();
+    }
+  };
+
+  const handleConfirmPublish = async () => {
+    setShowPublishPreviewDialog(false);
+    setFormData(prev => ({ ...prev, status: "published" }));
+    // Wait for state update then submit
+    setTimeout(() => {
+      handleSubmit(false);
+    }, 0);
+  };
+
   // Handle annotation creation
   const handleAddAnnotation = async (
     selectionStart: number,
@@ -712,14 +752,43 @@ const AdminPostEditor = () => {
             {/* Action Buttons */}
             <div className="space-y-2">
               {canPublishDirectly ? (
-                <Button
-                  onClick={() => handleSubmit(false)}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {id ? "Update" : "Publish"}
-                </Button>
+                <>
+                  {/* Show Publish Changes with preview if editing existing post with changes */}
+                  {id && hasContentChanges && formData.status === "published" ? (
+                    <Button
+                      onClick={handlePublishWithPreview}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Publish Changes
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleSubmit(false)}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {id ? "Update" : "Publish"}
+                    </Button>
+                  )}
+                  {/* Save as draft option when editing */}
+                  {id && hasContentChanges && (
+                    <Button
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, status: "draft" }));
+                        setTimeout(() => handleSubmit(false), 0);
+                      }}
+                      disabled={loading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save as Draft
+                    </Button>
+                  )}
+                </>
               ) : (
                 <>
                   <Button
@@ -920,6 +989,62 @@ const AdminPostEditor = () => {
               newVersion={metadata.lastAdminEdit}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish Changes Preview Dialog */}
+      <Dialog open={showPublishPreviewDialog} onOpenChange={setShowPublishPreviewDialog}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Review Changes Before Publishing
+            </DialogTitle>
+            <DialogDescription>
+              Review the differences between the current published version and your changes
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="side-by-side" className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="w-fit">
+              <TabsTrigger value="side-by-side">Side by Side</TabsTrigger>
+              <TabsTrigger value="inline">Inline Diff</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="side-by-side" className="flex-1 overflow-hidden mt-4">
+              {publishedVersion && (
+                <SideBySideComparison
+                  oldVersion={publishedVersion}
+                  newVersion={currentEditorVersion}
+                />
+              )}
+            </TabsContent>
+            
+            <TabsContent value="inline" className="flex-1 overflow-hidden mt-4">
+              {publishedVersion && (
+                <VersionDiffViewer
+                  currentVersion={currentEditorVersion}
+                  compareVersion={publishedVersion}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+          
+          <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowPublishPreviewDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPublish}
+              disabled={loading}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Confirm & Publish
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>
