@@ -428,8 +428,9 @@ const ChatStyleEditor = ({
     inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Allow Enter for new line. Use Ctrl/Cmd+Enter to send.
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleAddMessage();
     }
@@ -653,7 +654,7 @@ const ChatStyleEditor = ({
                 rows={3}
               />
               <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
-                Enter to send • Shift+Enter for new line
+                Ctrl/Cmd+Enter to send • Enter for new line
               </div>
               {/* Resize indicator */}
               <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground/30">
