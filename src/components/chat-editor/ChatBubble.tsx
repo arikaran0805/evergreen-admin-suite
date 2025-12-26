@@ -41,11 +41,13 @@ const ChatBubble = ({
     }
   }, [isEditing]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Allow Enter for new line while editing. Use Ctrl/Cmd+Enter to save.
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       onEdit(message.id, editContent);
       onEndEdit();
+      return;
     }
     if (e.key === "Escape") {
       setEditContent(message.content);
@@ -201,6 +203,12 @@ const ChatBubble = ({
               )}
               placeholder="Type your message..."
             />
+            <div className={cn(
+              "text-[10px] opacity-60",
+              isMentor ? "text-blue-100" : "text-muted-foreground"
+            )}>
+              Ctrl/Cmd+Enter to save • Enter for new line
+            </div>
             <div className="flex items-center gap-1 justify-end">
               <Button
                 variant="ghost"
