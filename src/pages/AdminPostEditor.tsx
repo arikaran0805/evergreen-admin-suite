@@ -21,7 +21,7 @@ import { AnnotationPanel } from "@/components/annotations";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -684,89 +689,103 @@ const AdminPostEditor = () => {
             </div>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title" className="text-base">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => {
-                  setFormData({ ...formData, title: e.target.value });
-                  if (!id) {
-                    setFormData(prev => ({ ...prev, slug: generateSlug(e.target.value) }));
-                  }
-                }}
-                placeholder="Enter post title..."
-                className="text-lg h-12"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="slug" className="text-base">Slug</Label>
-              <Input
-                id="slug"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                placeholder="post-url-slug"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="excerpt" className="text-base">Excerpt</Label>
-              <Textarea
-                id="excerpt"
-                value={formData.excerpt}
-                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                placeholder="Brief description of the post..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <Label htmlFor="content" className="text-base">Content</Label>
-                <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
-                  <TabsList className="h-9">
-                    <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
-                      <FileText className="w-3.5 h-3.5" />
-                      Rich Editor
-                    </TabsTrigger>
-                    <TabsTrigger value="chat" className="text-xs px-3 gap-1.5">
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      Chat Style
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+          <Collapsible defaultOpen={!id} className="space-y-2">
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors group">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Post Details</span>
+                {formData.title && (
+                  <Badge variant="secondary" className="text-xs">
+                    {formData.title.length > 30 ? formData.title.slice(0, 30) + "..." : formData.title}
+                  </Badge>
+                )}
               </div>
-              
-              {editorType === "rich" ? (
-                <RichTextEditor
-                  value={formData.content}
-                  onChange={(value) => setFormData({ ...formData, content: value })}
-                  placeholder="Write your post content here..."
-                  onTextSelect={(selection) => {
-                    if (!id) return; // Only allow annotations on existing posts
-                    if (!isAdmin && !isModerator) return;
-                    setSelectedText({
-                      start: selection.start,
-                      end: selection.end,
-                      text: selection.text,
-                      type: selection.type,
-                    });
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-2">
+              <div>
+                <Label htmlFor="title" className="text-base">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    if (!id) {
+                      setFormData(prev => ({ ...prev, slug: generateSlug(e.target.value) }));
+                    }
                   }}
+                  placeholder="Enter post title..."
+                  className="text-lg h-12"
                 />
-              ) : (
-                <ChatStyleEditor
-                  value={formData.content}
-                  onChange={(value) => setFormData({ ...formData, content: value })}
-                  courseType={
-                    categories.find(c => c.id === formData.category_id)?.name?.toLowerCase().replace(/\s+/g, '') || "python"
-                  }
-                  placeholder="Start a conversation..."
-                  codeTheme={formData.code_theme}
+              </div>
+
+              <div>
+                <Label htmlFor="slug" className="text-base">Slug</Label>
+                <Input
+                  id="slug"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  placeholder="post-url-slug"
                 />
-              )}
+              </div>
+
+              <div>
+                <Label htmlFor="excerpt" className="text-base">Excerpt</Label>
+                <Textarea
+                  id="excerpt"
+                  value={formData.excerpt}
+                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                  placeholder="Brief description of the post..."
+                  rows={2}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <Label htmlFor="content" className="text-base">Content</Label>
+              <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
+                <TabsList className="h-9">
+                  <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    Rich Editor
+                  </TabsTrigger>
+                  <TabsTrigger value="chat" className="text-xs px-3 gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Chat Style
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
+            
+            {editorType === "rich" ? (
+              <RichTextEditor
+                value={formData.content}
+                onChange={(value) => setFormData({ ...formData, content: value })}
+                placeholder="Write your post content here..."
+                onTextSelect={(selection) => {
+                  if (!id) return; // Only allow annotations on existing posts
+                  if (!isAdmin && !isModerator) return;
+                  setSelectedText({
+                    start: selection.start,
+                    end: selection.end,
+                    text: selection.text,
+                    type: selection.type,
+                  });
+                }}
+              />
+            ) : (
+              <ChatStyleEditor
+                value={formData.content}
+                onChange={(value) => setFormData({ ...formData, content: value })}
+                courseType={
+                  categories.find(c => c.id === formData.category_id)?.name?.toLowerCase().replace(/\s+/g, '') || "python"
+                }
+                placeholder="Start a conversation..."
+                codeTheme={formData.code_theme}
+              />
+            )}
           </div>
         </div>
 

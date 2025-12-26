@@ -95,7 +95,17 @@ export const extractChatSegments = (
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
     const nextStart = i + 1 < markers.length ? markers[i + 1].start : chatPortion.length;
-    const content = chatPortion.slice(cur.end, nextStart).trim();
+    // Get raw content between markers
+    let content = chatPortion.slice(cur.end, nextStart);
+    
+    // If there's a next marker, we need to be careful not to include the preceding newlines
+    // that belong to message separation (double newlines before next speaker)
+    if (i + 1 < markers.length) {
+      // Trim trailing whitespace but preserve internal newlines
+      content = content.replace(/\n{2,}$/, '');
+    }
+    
+    content = content.trim();
     if (content) segments.push({ speaker: cur.speaker, content });
   }
 
