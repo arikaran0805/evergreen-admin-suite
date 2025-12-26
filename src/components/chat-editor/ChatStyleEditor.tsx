@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -76,12 +76,24 @@ const parseContent = (content: string): ChatMessage[] => {
     .filter((m) => m.speaker.trim() && m.content.trim());
 };
 
+// Use a special marker to preserve newlines within messages during serialization
+const NEWLINE_MARKER = "<<<NEWLINE>>>";
+
 const serializeMessages = (messages: ChatMessage[], explanation: string): string => {
-  const chatPart = messages.map((m) => `${m.speaker}: ${m.content}`).join("\n\n");
+  // Join messages with double newline, but encode internal newlines first
+  const chatPart = messages.map((m) => {
+    // Replace internal newlines with marker to preserve them
+    const encodedContent = m.content.replace(/\n/g, NEWLINE_MARKER);
+    return `${m.speaker}: ${encodedContent}`;
+  }).join("\n\n");
+  
+  // Restore internal newlines
+  const decodedChatPart = chatPart.replace(new RegExp(NEWLINE_MARKER, "g"), "\n");
+  
   if (explanation.trim()) {
-    return `${chatPart}\n---\n${explanation.trim()}`;
+    return `${decodedChatPart}\n---\n${explanation.trim()}`;
   }
-  return chatPart;
+  return decodedChatPart;
 };
 
 interface Course {
@@ -222,6 +234,7 @@ const ChatStyleEditor = ({
   const [selectedCourse, setSelectedCourse] = useState(courseType);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [manualHeight, setManualHeight] = useState<number | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mentorName = "Karan";
@@ -312,21 +325,9 @@ const ChatStyleEditor = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const handleAddMessage = () => {
-    if (!newMessage.trim()) return;
+  // handleAddMessage is defined below with manual height reset logic
 
-    const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
-    const newMsg: ChatMessage = {
-      id: generateId(),
-      speaker,
-      content: newMessage.trim(),
-    };
 
-    setMessages((prev) => [...prev, newMsg]);
-    setNewMessage("");
-    setCurrentSpeaker((prev) => (prev === "mentor" ? "course" : "mentor"));
-    inputRef.current?.focus();
-  };
 
   const handleInsertCodeSnippet = (language: string = "python") => {
     const codeTemplate = `\`\`\`${language}\n# Your code here\n\n\`\`\``;
@@ -354,6 +355,22 @@ const ChatStyleEditor = ({
     insertAtCursor("`code`", "code");
   };
 
+  const handleInsertBulletList = () => {
+    insertAtCursor("• Item 1\n• Item 2\n• Item 3", "Item 1");
+  };
+
+  const handleInsertNumberedList = () => {
+    insertAtCursor("1. Item 1\n2. Item 2\n3. Item 3", "Item 1");
+  };
+
+  const handleInsertHeading = () => {
+    insertAtCursor("## Heading", "Heading");
+  };
+
+  const handleInsertBlockquote = () => {
+    insertAtCursor("> Quote text here", "Quote text here");
+  };
+
   const insertAtCursor = (text: string, selectText?: string) => {
     setNewMessage((prev) => prev + (prev ? "\n" : "") + text);
     inputRef.current?.focus();
@@ -373,13 +390,43 @@ const ChatStyleEditor = ({
     }, 0);
   };
 
-  // Auto-resize textarea on content change
+  // Auto-resize textarea on content change, but respect manual resize
   useEffect(() => {
-    if (inputRef.current) {
+    if (inputRef.current && manualHeight === null) {
       inputRef.current.style.height = "auto";
-      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 300)}px`;
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 400)}px`;
     }
-  }, [newMessage]);
+  }, [newMessage, manualHeight]);
+
+  // Track manual resizing
+  const handleTextareaMouseUp = useCallback(() => {
+    if (inputRef.current) {
+      const currentHeight = inputRef.current.offsetHeight;
+      const computedHeight = inputRef.current.scrollHeight;
+      // If heights differ significantly, user manually resized
+      if (Math.abs(currentHeight - computedHeight) > 20 || currentHeight > 80) {
+        setManualHeight(currentHeight);
+      }
+    }
+  }, []);
+
+  // Reset manual height when message is sent
+  const handleAddMessage = () => {
+    if (!newMessage.trim()) return;
+
+    const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
+    const newMsg: ChatMessage = {
+      id: generateId(),
+      speaker,
+      content: newMessage.trim(),
+    };
+
+    setMessages((prev) => [...prev, newMsg]);
+    setNewMessage("");
+    setManualHeight(null); // Reset height after sending
+    setCurrentSpeaker((prev) => (prev === "mentor" ? "course" : "mentor"));
+    inputRef.current?.focus();
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -502,7 +549,7 @@ const ChatStyleEditor = ({
         ref={chatContainerRef}
         className={cn(
           "p-6 overflow-y-auto bg-gradient-to-b from-background to-muted/20",
-          "min-h-[300px] max-h-[400px]"
+          "min-h-[450px] max-h-[600px]"
         )}
         style={{
           backgroundImage: `radial-gradient(circle at 50% 50%, hsl(var(--muted) / 0.3) 0%, transparent 70%)`,
@@ -592,16 +639,18 @@ const ChatStyleEditor = ({
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onMouseUp={handleTextareaMouseUp}
                 placeholder={`Type a message as ${
                   currentSpeaker === "mentor" ? mentorName : courseCharacter.name
                 }...`}
                 className={cn(
                   "w-full px-4 py-3 pr-8 rounded-2xl border border-border bg-background",
-                  "resize-y min-h-[48px] max-h-[400px] text-sm overflow-y-auto",
+                  "resize-y min-h-[80px] max-h-[400px] text-sm overflow-y-auto",
                   "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
                   "placeholder:text-muted-foreground/60 transition-colors duration-200"
                 )}
-                rows={2}
+                style={manualHeight ? { height: `${manualHeight}px` } : undefined}
+                rows={3}
               />
               <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
                 Enter to send • Shift+Enter for new line
@@ -665,6 +714,22 @@ const ChatStyleEditor = ({
                 <DropdownMenuItem onClick={handleInsertInlineCode} className="cursor-pointer">
                   <Terminal className="w-4 h-4 mr-2" />
                   Inline Code
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertBulletList} className="cursor-pointer">
+                  <List className="w-4 h-4 mr-2" />
+                  Bullet List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertNumberedList} className="cursor-pointer">
+                  <ListOrdered className="w-4 h-4 mr-2" />
+                  Numbered List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertHeading} className="cursor-pointer">
+                  <Heading2 className="w-4 h-4 mr-2" />
+                  Heading
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInsertBlockquote} className="cursor-pointer">
+                  <Quote className="w-4 h-4 mr-2" />
+                  Blockquote
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
