@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
+import { ChatMessage, CourseCharacter, MENTOR_CHARACTER, TAKEAWAY_ICONS } from "./types";
 import ChatBubble from "./ChatBubble";
+import TakeawayBlock from "./TakeawayBlock";
 import { cn } from "@/lib/utils";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -19,6 +20,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   DndContext,
@@ -63,16 +65,38 @@ interface ChatStyleEditorProps {
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+// Takeaway format: [TAKEAWAY:icon:title]: content
+const TAKEAWAY_REGEX = /^\[TAKEAWAY(?::([^:]*?))?(?::([^\]]*?))?\]:\s*/;
+
 const parseContent = (content: string): ChatMessage[] => {
   const segments = extractChatSegments(content, { allowSingle: true });
   if (segments.length === 0) return [];
 
   return segments
-    .map((s) => ({
-      id: generateId(),
-      speaker: s.speaker,
-      content: s.content,
-    }))
+    .map((s) => {
+      const takeawayMatch = s.content.match(TAKEAWAY_REGEX);
+      if (s.speaker === "TAKEAWAY" || takeawayMatch) {
+        const icon = takeawayMatch?.[1] || "🧠";
+        const title = takeawayMatch?.[2] || "One-Line Takeaway for Learners";
+        const actualContent = takeawayMatch 
+          ? s.content.replace(TAKEAWAY_REGEX, "").trim()
+          : s.content;
+        return {
+          id: generateId(),
+          speaker: "TAKEAWAY",
+          content: actualContent,
+          type: "takeaway" as const,
+          takeawayIcon: icon,
+          takeawayTitle: title,
+        };
+      }
+      return {
+        id: generateId(),
+        speaker: s.speaker,
+        content: s.content,
+        type: "message" as const,
+      };
+    })
     .filter((m) => m.speaker.trim() && m.content.trim());
 };
 
@@ -82,6 +106,13 @@ const NEWLINE_MARKER = "<<<NEWLINE>>>";
 const serializeMessages = (messages: ChatMessage[], explanation: string): string => {
   // Join messages with double newline, but encode internal newlines first
   const chatPart = messages.map((m) => {
+    // Handle takeaway blocks
+    if (m.type === "takeaway") {
+      const icon = m.takeawayIcon || "🧠";
+      const title = m.takeawayTitle || "One-Line Takeaway for Learners";
+      const encodedContent = m.content.replace(/\n/g, NEWLINE_MARKER);
+      return `TAKEAWAY: [TAKEAWAY:${icon}:${title}]: ${encodedContent}`;
+    }
     // Replace internal newlines with marker to preserve them
     const encodedContent = m.content.replace(/\n/g, NEWLINE_MARKER);
     return `${m.speaker}: ${encodedContent}`;
@@ -108,7 +139,7 @@ interface MessageItemProps {
   character: CourseCharacter;
   isMentor: boolean;
   isEditing: boolean;
-  onEdit: (id: string, content: string) => void;
+  onEdit: (id: string, content: string, title?: string, icon?: string) => void;
   onStartEdit: (id: string | null) => void;
   onEndEdit: () => void;
   onDelete: (id: string) => void;
@@ -151,13 +182,15 @@ const SortableMessageItem = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const isTakeaway = message.type === "takeaway";
+
   return (
     <div ref={setNodeRef} style={style} className="group relative">
       {isEditMode && (
         <div
           className={cn(
             "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10",
-            isMentor ? "left-2" : "right-2"
+            isTakeaway ? "left-2" : isMentor ? "left-2" : "right-2"
           )}
         >
           <Button
@@ -205,16 +238,26 @@ const SortableMessageItem = ({
           </Button>
         </div>
       )}
-      <ChatBubble
-        message={message}
-        character={character}
-        isMentor={isMentor}
-        isEditing={isEditing}
-        onEdit={onEdit}
-        onStartEdit={onStartEdit}
-        onEndEdit={onEndEdit}
-        codeTheme={codeTheme}
-      />
+      {isTakeaway ? (
+        <TakeawayBlock
+          message={message}
+          isEditing={isEditing}
+          onEdit={onEdit}
+          onStartEdit={onStartEdit}
+          onEndEdit={onEndEdit}
+        />
+      ) : (
+        <ChatBubble
+          message={message}
+          character={character}
+          isMentor={isMentor}
+          isEditing={isEditing}
+          onEdit={onEdit}
+          onStartEdit={onStartEdit}
+          onEndEdit={onEndEdit}
+          codeTheme={codeTheme}
+        />
+      )}
     </div>
   );
 };
@@ -419,6 +462,7 @@ const ChatStyleEditor = ({
       id: generateId(),
       speaker,
       content: newMessage.trim(),
+      type: "message",
     };
 
     setMessages((prev) => [...prev, newMsg]);
@@ -426,6 +470,19 @@ const ChatStyleEditor = ({
     setManualHeight(null); // Reset height after sending
     setCurrentSpeaker((prev) => (prev === "mentor" ? "course" : "mentor"));
     inputRef.current?.focus();
+  };
+
+  const handleAddTakeaway = () => {
+    const newTakeaway: ChatMessage = {
+      id: generateId(),
+      speaker: "TAKEAWAY",
+      content: "Enter your takeaway content here...",
+      type: "takeaway",
+      takeawayTitle: "One-Line Takeaway for Learners",
+      takeawayIcon: "🧠",
+    };
+    setMessages((prev) => [...prev, newTakeaway]);
+    setEditingId(newTakeaway.id); // Start editing immediately
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -436,9 +493,22 @@ const ChatStyleEditor = ({
     }
   };
 
-  const handleEditMessage = (id: string, content: string) => {
+  const handleEditMessage = (id: string, content: string, title?: string, icon?: string) => {
     setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, content } : m))
+      prev.map((m) => {
+        if (m.id === id) {
+          if (m.type === "takeaway") {
+            return { 
+              ...m, 
+              content,
+              takeawayTitle: title ?? m.takeawayTitle,
+              takeawayIcon: icon ?? m.takeawayIcon,
+            };
+          }
+          return { ...m, content };
+        }
+        return m;
+      })
     );
   };
 
@@ -696,6 +766,12 @@ const ChatStyleEditor = ({
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleAddTakeaway} className="cursor-pointer">
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                  Takeaway Block
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleInsertImage} className="cursor-pointer">
                   <Image className="w-4 h-4 mr-2" />
                   Image

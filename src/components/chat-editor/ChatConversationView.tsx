@@ -20,15 +20,37 @@ interface Course {
   icon: string | null;
 }
 
+// Takeaway format: [TAKEAWAY:icon:title]: content
+const TAKEAWAY_REGEX = /^\[TAKEAWAY(?::([^:]*?))?(?::([^\]]*?))?\]:\s*/;
+
 const parseConversation = (content: string): ChatMessage[] => {
   const segments = extractChatSegments(content);
   if (segments.length === 0) return [];
 
-  return segments.map((s) => ({
-    id: Math.random().toString(36).substr(2, 9),
-    speaker: s.speaker,
-    content: s.content,
-  }));
+  return segments.map((s) => {
+    const takeawayMatch = s.content.match(TAKEAWAY_REGEX);
+    if (s.speaker === "TAKEAWAY" || takeawayMatch) {
+      const icon = takeawayMatch?.[1] || "🧠";
+      const title = takeawayMatch?.[2] || "One-Line Takeaway for Learners";
+      const actualContent = takeawayMatch 
+        ? s.content.replace(TAKEAWAY_REGEX, "").trim()
+        : s.content;
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        speaker: "TAKEAWAY",
+        content: actualContent,
+        type: "takeaway" as const,
+        takeawayIcon: icon,
+        takeawayTitle: title,
+      };
+    }
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      speaker: s.speaker,
+      content: s.content,
+      type: "message" as const,
+    };
+  });
 };
 
 // Helper to extract code blocks from HTML and replace with placeholders
@@ -265,6 +287,37 @@ const ChatConversationView = ({
         {/* Messages */}
         <div className="p-6 space-y-4">
           {messages.map((message, index) => {
+            // Render takeaway blocks
+            if (message.type === "takeaway") {
+              const icon = message.takeawayIcon || "🧠";
+              const title = message.takeawayTitle || "One-Line Takeaway for Learners";
+              return (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "my-4 rounded-xl overflow-hidden animate-in fade-in-0 slide-in-from-bottom-2",
+                    "border-t border-b border-border/50",
+                    "bg-gradient-to-r from-muted/20 to-muted/10"
+                  )}
+                  style={{ animationDelay: `${index * 100}ms`, animationFillMode: "backwards" }}
+                >
+                  {/* Header */}
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
+                    <span className="text-xl">{icon}</span>
+                    <span className="font-semibold text-sm text-foreground">{title}</span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="px-4 py-3 pl-6 relative">
+                    <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-primary/40 rounded-full" />
+                    <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             const character = getCharacterForSpeaker(message.speaker);
             const isMentorBubble = isMentor(message.speaker);
 
