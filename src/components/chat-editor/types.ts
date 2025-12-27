@@ -1,8 +1,13 @@
+export type MessageType = "message" | "takeaway";
+
 export interface ChatMessage {
   id: string;
   speaker: string;
   content: string;
   timestamp?: Date;
+  type?: MessageType;
+  takeawayTitle?: string;
+  takeawayIcon?: string;
 }
 
 export interface CourseCharacter {
@@ -28,3 +33,14 @@ export const MENTOR_CHARACTER: CourseCharacter = {
   color: "white",
   bgColor: "hsl(210, 100%, 52%)", // iMessage blue
 };
+
+export const TAKEAWAY_ICONS = [
+  { value: "🧠", label: "Brain" },
+  { value: "💡", label: "Lightbulb" },
+  { value: "⭐", label: "Star" },
+  { value: "🎯", label: "Target" },
+  { value: "📌", label: "Pin" },
+  { value: "✅", label: "Check" },
+  { value: "🔑", label: "Key" },
+  { value: "💎", label: "Gem" },
+];
