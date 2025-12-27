@@ -65,9 +65,11 @@ const findChatMarkers = (text: string): Marker[] => {
   const markers: Marker[] = [];
   for (const m of text.matchAll(SPEAKER_TOKEN_RE)) {
     const idx = m.index ?? 0;
+
+    // Only treat as a marker at the start of a line (or start of text).
+    // This avoids matching speaker-like tokens mid-sentence.
     const prev = idx > 0 ? text[idx - 1] : "";
-    // Only treat as a marker at the start or after whitespace/newline.
-    if (idx !== 0 && prev && !/\s/.test(prev)) continue;
+    if (idx !== 0 && prev !== "\n") continue;
 
     const speaker = (m[1] || "").trim();
     if (!speaker || !/[A-Za-z]/.test(speaker)) continue;
@@ -87,7 +89,40 @@ export const extractChatSegments = (
   // If mixed content, only parse the chat portion (before ---)
   const chatPortion = text.split(MIXED_CONTENT_SEPARATOR)[0];
 
-  const markers = findChatMarkers(chatPortion);
+  const rawMarkers = findChatMarkers(chatPortion);
+  if (rawMarkers.length === 0) return [];
+
+  // Heuristic to prevent false splits when message content contains lines like:
+  // "Note: ..." / "Takeaway: ..." / "What went wrong: ...".
+  // We keep repeating speakers (count >= 2) and ensure at least 2 speakers overall.
+  const speakerKey = (s: string) => s.trim().toLowerCase();
+  const counts = new Map<string, number>();
+  const firstSeen = new Map<string, number>();
+
+  rawMarkers.forEach((m, idx) => {
+    const key = speakerKey(m.speaker);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+    if (!firstSeen.has(key)) firstSeen.set(key, idx);
+  });
+
+  const requiredSpeakers = options?.allowSingle ? 1 : 2;
+  const allowed = new Set<string>();
+
+  // Keep speakers that repeat.
+  for (const [key, count] of counts.entries()) {
+    if (count >= 2) allowed.add(key);
+  }
+
+  // Ensure at least N speakers based on first appearance (handles short conversations).
+  const speakersByAppearance = [...counts.keys()].sort(
+    (a, b) => (firstSeen.get(a) ?? 0) - (firstSeen.get(b) ?? 0)
+  );
+  for (const key of speakersByAppearance) {
+    if (allowed.size >= requiredSpeakers) break;
+    allowed.add(key);
+  }
+
+  const markers = rawMarkers.filter((m) => allowed.has(speakerKey(m.speaker)));
   if (markers.length === 0) return [];
   if (!options?.allowSingle && markers.length < 2) return [];
 
@@ -97,14 +132,14 @@ export const extractChatSegments = (
     const nextStart = i + 1 < markers.length ? markers[i + 1].start : chatPortion.length;
     // Get raw content between markers
     let content = chatPortion.slice(cur.end, nextStart);
-    
+
     // If there's a next marker, we need to be careful not to include the preceding newlines
     // that belong to message separation (double newlines before next speaker)
     if (i + 1 < markers.length) {
       // Trim trailing whitespace but preserve internal newlines
-      content = content.replace(/\n{2,}$/, '');
+      content = content.replace(/\n{2,}$/, "");
     }
-    
+
     content = content.trim();
     if (content) segments.push({ speaker: cur.speaker, content });
   }
