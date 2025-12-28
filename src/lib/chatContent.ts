@@ -59,7 +59,7 @@ type Marker = { speaker: string; start: number; end: number };
 // Separator for mixed content (chat + explanation)
 const MIXED_CONTENT_SEPARATOR = /\n---\n/;
 
-const SPEAKER_TOKEN_RE = /([^:\r\n]{1,60}):\s*/g;
+const SPEAKER_TOKEN_RE = /([^:\r\n]{1,60}):[ \t]*(?=[^\s\r\n])/g;
 
 const findChatMarkers = (text: string): Marker[] => {
   const markers: Marker[] = [];
