@@ -167,11 +167,14 @@ const ChatBubble = ({
         {renderCourseIcon(character.emoji, 18)}
       </div>
 
-      {/* Bubble */}
+      {/* Bubble - expand to full width when editing */}
       <div
         className={cn(
-          "relative max-w-[70%] min-w-[60px] px-4 py-2.5 rounded-2xl shadow-sm",
+          "relative px-4 py-2.5 rounded-2xl shadow-sm",
           "transition-all duration-200",
+          isEditing 
+            ? "flex-1 max-w-full" 
+            : "max-w-[70%] min-w-[60px]",
           isMentor
             ? "bg-[hsl(210,100%,52%)] text-white rounded-br-md"
             : "bg-muted text-foreground rounded-bl-md",
@@ -198,16 +201,18 @@ const ChatBubble = ({
               onChange={(e) => setEditContent(e.target.value)}
               onKeyDown={handleKeyDown}
               className={cn(
-                "w-full min-h-[80px] bg-transparent resize-y outline-none text-sm leading-relaxed border rounded-lg p-2",
-                isMentor ? "text-white placeholder:text-blue-200 border-blue-300/30" : "text-foreground border-border"
+                "w-full min-h-[100px] min-w-[200px] bg-transparent resize outline-none text-sm leading-relaxed border rounded-lg p-2",
+                "overflow-auto",
+                isMentor ? "text-white placeholder:text-blue-200 border-blue-300/30 bg-blue-600/20" : "text-foreground border-border bg-background/50"
               )}
+              style={{ maxWidth: '100%', maxHeight: '500px' }}
               placeholder="Type your message..."
             />
             <div className={cn(
-              "text-[10px] opacity-60",
+              "text-[10px] opacity-60 flex items-center justify-between",
               isMentor ? "text-blue-100" : "text-muted-foreground"
             )}>
-              Enter to save • Shift+Enter for new line
+              <span>Enter to save • Shift+Enter for new line • Drag corner to resize</span>
             </div>
             <div className="flex items-center gap-1 justify-end">
               <Button
