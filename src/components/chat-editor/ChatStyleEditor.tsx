@@ -134,6 +134,46 @@ interface Course {
   icon: string | null;
 }
 
+interface InsertBetweenButtonProps {
+  onInsertMessage: () => void;
+  onInsertTakeaway: () => void;
+  courseCharacterName: string;
+  mentorName: string;
+}
+
+const InsertBetweenButton = ({
+  onInsertMessage,
+  onInsertTakeaway,
+  courseCharacterName,
+  mentorName,
+}: InsertBetweenButtonProps) => {
+  return (
+    <div className="flex justify-center py-1 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity group/insert">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 rounded-full p-0 bg-muted/50 hover:bg-primary/10 border border-transparent hover:border-primary/30"
+          >
+            <Plus className="w-3 h-3 text-muted-foreground group-hover/insert:text-primary" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-48 bg-popover border border-border shadow-lg z-50">
+          <DropdownMenuItem onClick={onInsertMessage} className="cursor-pointer">
+            <MessageCircle className="w-4 h-4 mr-2" />
+            <span>Message</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onInsertTakeaway} className="cursor-pointer">
+            <Lightbulb className="w-4 h-4 mr-2" />
+            <span>Takeaway Block</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
+
 interface MessageItemProps {
   message: ChatMessage;
   character: CourseCharacter;
@@ -485,6 +525,42 @@ const ChatStyleEditor = ({
     setEditingId(newTakeaway.id); // Start editing immediately
   };
 
+  // Insert message at a specific position (after given index)
+  const handleInsertMessageAt = (afterIndex: number) => {
+    const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
+    const newMsg: ChatMessage = {
+      id: generateId(),
+      speaker,
+      content: "New message...",
+      type: "message",
+    };
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated.splice(afterIndex + 1, 0, newMsg);
+      return updated;
+    });
+    setEditingId(newMsg.id);
+    setCurrentSpeaker((prev) => (prev === "mentor" ? "course" : "mentor"));
+  };
+
+  // Insert takeaway at a specific position (after given index)
+  const handleInsertTakeawayAt = (afterIndex: number) => {
+    const newTakeaway: ChatMessage = {
+      id: generateId(),
+      speaker: "TAKEAWAY",
+      content: "Enter your takeaway content here...",
+      type: "takeaway",
+      takeawayTitle: "One-Line Takeaway for Learners",
+      takeawayIcon: "🧠",
+    };
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated.splice(afterIndex + 1, 0, newTakeaway);
+      return updated;
+    });
+    setEditingId(newTakeaway.id);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter sends. Shift+Enter inserts a newline.
     if (e.key === "Enter" && !e.shiftKey) {
@@ -644,25 +720,35 @@ const ChatStyleEditor = ({
               items={messages.map((m) => m.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-1">
+              <div className="space-y-0">
                 {messages.map((message, index) => (
-                  <SortableMessageItem
-                    key={message.id}
-                    message={message}
-                    character={getCharacterForSpeaker(message.speaker)}
-                    isMentor={isMentor(message.speaker)}
-                    isEditing={editingId === message.id}
-                    onEdit={handleEditMessage}
-                    onStartEdit={setEditingId}
-                    onEndEdit={() => setEditingId(null)}
-                    onDelete={handleDeleteMessage}
-                    onMoveUp={() => handleMoveMessage(message.id, "up")}
-                    onMoveDown={() => handleMoveMessage(message.id, "down")}
-                    isEditMode={mode === "edit"}
-                    isFirst={index === 0}
-                    isLast={index === messages.length - 1}
-                    codeTheme={codeTheme}
-                  />
+                  <div key={message.id}>
+                    <SortableMessageItem
+                      message={message}
+                      character={getCharacterForSpeaker(message.speaker)}
+                      isMentor={isMentor(message.speaker)}
+                      isEditing={editingId === message.id}
+                      onEdit={handleEditMessage}
+                      onStartEdit={setEditingId}
+                      onEndEdit={() => setEditingId(null)}
+                      onDelete={handleDeleteMessage}
+                      onMoveUp={() => handleMoveMessage(message.id, "up")}
+                      onMoveDown={() => handleMoveMessage(message.id, "down")}
+                      isEditMode={mode === "edit"}
+                      isFirst={index === 0}
+                      isLast={index === messages.length - 1}
+                      codeTheme={codeTheme}
+                    />
+                    {/* Insert between button - show after every bubble in edit mode */}
+                    {mode === "edit" && (
+                      <InsertBetweenButton
+                        onInsertMessage={() => handleInsertMessageAt(index)}
+                        onInsertTakeaway={() => handleInsertTakeawayAt(index)}
+                        courseCharacterName={courseCharacter.name}
+                        mentorName={mentorName}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
             </SortableContext>
