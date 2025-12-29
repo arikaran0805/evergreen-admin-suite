@@ -185,6 +185,8 @@ interface MessageItemProps {
   onDelete: (id: string) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onConvertToTakeaway: (id: string) => void;
+  onConvertToMessage: (id: string) => void;
   isEditMode: boolean;
   isFirst: boolean;
   isLast: boolean;
@@ -202,6 +204,8 @@ const SortableMessageItem = ({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onConvertToTakeaway,
+  onConvertToMessage,
   isEditMode,
   isFirst,
   isLast,
@@ -268,6 +272,27 @@ const SortableMessageItem = ({
           >
             <Pencil className="w-3 h-3" />
           </Button>
+          {isTakeaway ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => onConvertToMessage(message.id)}
+              title="Convert to message"
+            >
+              <MessageCircle className="w-3 h-3" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => onConvertToTakeaway(message.id)}
+              title="Convert to takeaway"
+            >
+              <Lightbulb className="w-3 h-3" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -592,6 +617,43 @@ const ChatStyleEditor = ({
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
+  // Convert a regular message to takeaway
+  const handleConvertToTakeaway = (id: string) => {
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id === id && m.type !== "takeaway") {
+          return {
+            ...m,
+            speaker: "TAKEAWAY",
+            type: "takeaway" as const,
+            takeawayTitle: "Key Takeaway",
+            takeawayIcon: "🧠",
+          };
+        }
+        return m;
+      })
+    );
+  };
+
+  // Convert a takeaway back to a regular message
+  const handleConvertToMessage = (id: string) => {
+    const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id === id && m.type === "takeaway") {
+          return {
+            ...m,
+            speaker,
+            type: "message" as const,
+            takeawayTitle: undefined,
+            takeawayIcon: undefined,
+          };
+        }
+        return m;
+      })
+    );
+  };
+
   const handleMoveMessage = (id: string, direction: "up" | "down") => {
     setMessages((prev) => {
       const index = prev.findIndex((m) => m.id === id);
@@ -734,6 +796,8 @@ const ChatStyleEditor = ({
                       onDelete={handleDeleteMessage}
                       onMoveUp={() => handleMoveMessage(message.id, "up")}
                       onMoveDown={() => handleMoveMessage(message.id, "down")}
+                      onConvertToTakeaway={handleConvertToTakeaway}
+                      onConvertToMessage={handleConvertToMessage}
                       isEditMode={mode === "edit"}
                       isFirst={index === 0}
                       isLast={index === messages.length - 1}
