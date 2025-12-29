@@ -41,7 +41,49 @@ const ChatBubble = ({
     }
   }, [isEditing]);
 
+  // Helper to wrap selected text with formatting
+  const wrapSelection = (prefix: string, suffix: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = editContent.slice(start, end);
+    const before = editContent.slice(0, start);
+    const after = editContent.slice(end);
+    
+    const newContent = before + prefix + selectedText + suffix + after;
+    setEditContent(newContent);
+    
+    // Restore cursor position after the wrapped text
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + prefix.length + selectedText.length + suffix.length;
+      textarea.setSelectionRange(
+        selectedText ? newCursorPos : start + prefix.length,
+        selectedText ? newCursorPos : start + prefix.length
+      );
+    }, 0);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Formatting shortcuts
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      wrapSelection('**', '**');
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+      e.preventDefault();
+      wrapSelection('*', '*');
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      wrapSelection('`', '`');
+      return;
+    }
+    
     // Enter saves. Shift+Enter inserts a newline.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -212,7 +254,7 @@ const ChatBubble = ({
               "text-[10px] opacity-60 flex items-center justify-between",
               isMentor ? "text-blue-100" : "text-muted-foreground"
             )}>
-              <span>Enter to save • Shift+Enter for new line • Drag corner to resize</span>
+              <span>Enter to save • Ctrl+B bold • Ctrl+I italic • Ctrl+K code</span>
             </div>
             <div className="flex items-center gap-1 justify-end">
               <Button
