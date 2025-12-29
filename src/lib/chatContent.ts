@@ -122,7 +122,22 @@ export const extractChatSegments = (
     allowed.add(key);
   }
 
-  const markers = rawMarkers.filter((m) => allowed.has(speakerKey(m.speaker)));
+  let markers = rawMarkers.filter((m) => allowed.has(speakerKey(m.speaker)));
+
+  // Always include explicit TAKEAWAY blocks (even when allowSingle=true).
+  // To avoid false splits (e.g., a user typing "Takeaway:"), we only keep it when
+  // the content after the marker starts with our serialized "[TAKEAWAY..." format.
+  rawMarkers.forEach((m, idx) => {
+    if (speakerKey(m.speaker) !== "takeaway") return;
+    const nextStart = idx + 1 < rawMarkers.length ? rawMarkers[idx + 1].start : chatPortion.length;
+    const afterMarker = chatPortion.slice(m.end, nextStart).trimStart();
+    if (!afterMarker.startsWith("[TAKEAWAY")) return;
+
+    if (!markers.some((x) => x.start === m.start)) markers.push(m);
+  });
+
+  markers = markers.sort((a, b) => a.start - b.start);
+
   if (markers.length === 0) return [];
   if (!options?.allowSingle && markers.length < 2) return [];
 
