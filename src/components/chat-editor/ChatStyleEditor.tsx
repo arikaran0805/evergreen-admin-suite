@@ -229,12 +229,31 @@ const SortableMessageItem = ({
   const isTakeaway = message.type === "takeaway";
 
   return (
-    <div ref={setNodeRef} style={style} className="group relative">
-      {isEditMode && (
+    <div ref={setNodeRef} style={style} className="group relative pb-8">
+      {isTakeaway ? (
+        <TakeawayBlock
+          message={message}
+          isEditing={isEditing}
+          onEdit={onEdit}
+          onStartEdit={onStartEdit}
+          onEndEdit={onEndEdit}
+        />
+      ) : (
+        <ChatBubble
+          message={message}
+          character={character}
+          isMentor={isMentor}
+          isEditing={isEditing}
+          onEdit={onEdit}
+          onStartEdit={onStartEdit}
+          onEndEdit={onEndEdit}
+          codeTheme={codeTheme}
+        />
+      )}
+      {isEditMode && !isEditing && (
         <div
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10",
-            isTakeaway ? "left-2" : isMentor ? "left-2" : "right-2"
+            "absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-background/95 backdrop-blur-sm border rounded-lg px-2 py-1 shadow-sm"
           )}
         >
           <Button
@@ -302,26 +321,6 @@ const SortableMessageItem = ({
             <Trash2 className="w-3 h-3" />
           </Button>
         </div>
-      )}
-      {isTakeaway ? (
-        <TakeawayBlock
-          message={message}
-          isEditing={isEditing}
-          onEdit={onEdit}
-          onStartEdit={onStartEdit}
-          onEndEdit={onEndEdit}
-        />
-      ) : (
-        <ChatBubble
-          message={message}
-          character={character}
-          isMentor={isMentor}
-          isEditing={isEditing}
-          onEdit={onEdit}
-          onStartEdit={onStartEdit}
-          onEndEdit={onEndEdit}
-          codeTheme={codeTheme}
-        />
       )}
     </div>
   );
