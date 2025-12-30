@@ -21,7 +21,7 @@ import { AnnotationPanel } from "@/components/annotations";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, PanelRightClose, PanelRight } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, Settings2 } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -790,24 +790,24 @@ const AdminPostEditor = () => {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className={`${rightSidebarOpen ? 'w-80' : 'w-12'} transition-all duration-300 space-y-4`}>
-          {rightSidebarOpen ? (
-          <Card className="p-4 space-y-4 sticky top-6">
-            {/* Collapse button */}
-            <div className="flex justify-end -mt-2 -mr-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setRightSidebarOpen(false)}
-                className="h-8 w-8"
-                title="Collapse sidebar"
-              >
-                <PanelRightClose className="h-4 w-4" />
-              </Button>
-            </div>
+        {/* Right Sidebar with Vertical Tab Toggle */}
+        <div className="flex-shrink-0 flex">
+          {/* Vertical Tab Toggle - Always visible */}
+          <button
+            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer sticky top-6 h-fit"
+          >
+            <ChevronLeft className={`h-4 w-4 text-muted-foreground transition-transform ${rightSidebarOpen ? '' : 'rotate-180'}`} />
+            <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
+              Settings
+            </span>
+          </button>
+
+          {/* Sidebar Content */}
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 sticky top-6 h-fit ${rightSidebarOpen ? 'w-80 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
+            <div className={`space-y-4 ${!rightSidebarOpen ? 'hidden' : ''}`}>
             {/* Action Buttons */}
-            <div className="space-y-2 -mt-2">
+            <div className="space-y-2">
               {canPublishDirectly ? (
                 <>
                   {/* Show Publish Changes with preview if editing existing post with changes */}
@@ -1012,20 +1012,8 @@ const AdminPostEditor = () => {
                 ))}
               </div>
             </div>
-          </Card>
-          ) : (
-            <div className="sticky top-6">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setRightSidebarOpen(true)}
-                className="h-10 w-10"
-                title="Open sidebar"
-              >
-                <PanelRight className="h-5 w-5" />
-              </Button>
             </div>
-          )}
+          </Card>
         </div>
       </div>
 
