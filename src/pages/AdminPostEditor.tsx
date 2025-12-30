@@ -21,7 +21,7 @@ import { AnnotationPanel } from "@/components/annotations";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, PanelRightClose, PanelRight } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +107,7 @@ const AdminPostEditor = () => {
   const [showAdminChangesDialog, setShowAdminChangesDialog] = useState(false);
   const [showPublishPreviewDialog, setShowPublishPreviewDialog] = useState(false);
   const [dismissedAdminBanner, setDismissedAdminBanner] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
@@ -601,14 +602,14 @@ const AdminPostEditor = () => {
 
   if (roleLoading || loading) {
     return (
-      <AdminLayout>
+      <AdminLayout defaultSidebarCollapsed>
         <AdminEditorSkeleton type="post" />
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout defaultSidebarCollapsed>
       <div className="flex gap-6 h-full">
         {/* Main Content Area */}
         <div className="flex-1 space-y-6">
@@ -790,10 +791,23 @@ const AdminPostEditor = () => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-80 space-y-4">
+        <div className={`${rightSidebarOpen ? 'w-80' : 'w-12'} transition-all duration-300 space-y-4`}>
+          {rightSidebarOpen ? (
           <Card className="p-4 space-y-4 sticky top-6">
+            {/* Collapse button */}
+            <div className="flex justify-end -mt-2 -mr-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setRightSidebarOpen(false)}
+                className="h-8 w-8"
+                title="Collapse sidebar"
+              >
+                <PanelRightClose className="h-4 w-4" />
+              </Button>
+            </div>
             {/* Action Buttons */}
-            <div className="space-y-2">
+            <div className="space-y-2 -mt-2">
               {canPublishDirectly ? (
                 <>
                   {/* Show Publish Changes with preview if editing existing post with changes */}
@@ -999,6 +1013,19 @@ const AdminPostEditor = () => {
               </div>
             </div>
           </Card>
+          ) : (
+            <div className="sticky top-6">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setRightSidebarOpen(true)}
+                className="h-10 w-10"
+                title="Open sidebar"
+              >
+                <PanelRight className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
