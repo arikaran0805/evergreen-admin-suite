@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import RichTextEditor from "@/components/RichTextEditor";
 import { ChatStyleEditor } from "@/components/chat-editor";
-import { CanvasEditor } from "@/components/canvas-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -81,7 +80,7 @@ const AdminPostEditor = () => {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [editorType, setEditorType] = useState<"rich" | "chat" | "canvas">("canvas");
+  const [editorType, setEditorType] = useState<"rich" | "chat">("rich");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -747,12 +746,8 @@ const AdminPostEditor = () => {
           <div className="mt-4">
             <div className="flex items-center justify-between mb-3">
               <Label htmlFor="content" className="text-base">Content</Label>
-              <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat" | "canvas")}>
+              <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
                 <TabsList className="h-9">
-                  <TabsTrigger value="canvas" className="text-xs px-3 gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    Canvas
-                  </TabsTrigger>
                   <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
                     Rich Editor
@@ -765,16 +760,7 @@ const AdminPostEditor = () => {
               </Tabs>
             </div>
             
-            {editorType === "canvas" ? (
-              <CanvasEditor
-                value={formData.content}
-                onChange={(value) => setFormData({ ...formData, content: value })}
-                courseType={
-                  categories.find(c => c.id === formData.category_id)?.name?.toLowerCase().replace(/\s+/g, '') || "python"
-                }
-                codeTheme={formData.code_theme}
-              />
-            ) : editorType === "rich" ? (
+            {editorType === "rich" ? (
               <RichTextEditor
                 value={formData.content}
                 onChange={(value) => setFormData({ ...formData, content: value })}
