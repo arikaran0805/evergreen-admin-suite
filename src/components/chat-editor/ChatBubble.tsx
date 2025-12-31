@@ -55,14 +55,53 @@ const ChatBubble = ({
     const newContent = before + prefix + selectedText + suffix + after;
     setEditContent(newContent);
     
-    // Restore cursor position after the wrapped text
+    // Keep selection on the wrapped text (including formatting markers)
     setTimeout(() => {
       textarea.focus();
-      const newCursorPos = start + prefix.length + selectedText.length + suffix.length;
-      textarea.setSelectionRange(
-        selectedText ? newCursorPos : start + prefix.length,
-        selectedText ? newCursorPos : start + prefix.length
-      );
+      if (selectedText) {
+        // Select the entire wrapped portion including markers for visibility
+        textarea.setSelectionRange(start, start + prefix.length + selectedText.length + suffix.length);
+      } else {
+        // No selection, place cursor inside the markers
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+      }
+    }, 0);
+  };
+
+  // Helper to insert text at each line (for lists)
+  const insertAtLineStart = (linePrefix: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = editContent.slice(start, end);
+    const before = editContent.slice(0, start);
+    const after = editContent.slice(end);
+    
+    let newContent: string;
+    if (selectedText) {
+      // Apply prefix to each line of selection
+      const lines = selectedText.split('\n');
+      const prefixedLines = lines.map((line, i) => {
+        if (linePrefix === '• ') {
+          return `• ${line}`;
+        } else {
+          return `${i + 1}. ${line}`;
+        }
+      });
+      newContent = before + prefixedLines.join('\n') + after;
+    } else {
+      // Insert a new list item
+      newContent = before + linePrefix + after;
+    }
+    
+    setEditContent(newContent);
+    
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + linePrefix.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
   };
 
@@ -78,9 +117,21 @@ const ChatBubble = ({
       wrapSelection('*', '*');
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    if ((e.ctrlKey || e.metaKey) && e.key === '`') {
       e.preventDefault();
       wrapSelection('`', '`');
+      return;
+    }
+    // Bullet list: Ctrl+Shift+U
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'U') {
+      e.preventDefault();
+      insertAtLineStart('• ');
+      return;
+    }
+    // Numbered list: Ctrl+Shift+O
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'O') {
+      e.preventDefault();
+      insertAtLineStart('1. ');
       return;
     }
     
@@ -251,10 +302,10 @@ const ChatBubble = ({
               placeholder="Type your message..."
             />
             <div className={cn(
-              "text-[10px] opacity-60 flex items-center justify-between",
+              "text-[10px] opacity-60 flex items-center justify-between flex-wrap gap-1",
               isMentor ? "text-blue-100" : "text-muted-foreground"
             )}>
-              <span>Enter to save • Ctrl+B bold • Ctrl+I italic • Ctrl+K code</span>
+              <span>Enter save • Ctrl+B bold • Ctrl+I italic • Ctrl+` code • Ctrl+Shift+U bullets • Ctrl+Shift+O numbered</span>
             </div>
             <div className="flex items-center gap-1 justify-end">
               <Button

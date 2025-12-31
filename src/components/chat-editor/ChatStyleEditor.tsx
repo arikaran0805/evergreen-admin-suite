@@ -229,31 +229,37 @@ const SortableMessageItem = ({
   const isTakeaway = message.type === "takeaway";
 
   return (
-    <div ref={setNodeRef} style={style} className="group relative pb-8">
-      {isTakeaway ? (
-        <TakeawayBlock
-          message={message}
-          isEditing={isEditing}
-          onEdit={onEdit}
-          onStartEdit={onStartEdit}
-          onEndEdit={onEndEdit}
-        />
-      ) : (
-        <ChatBubble
-          message={message}
-          character={character}
-          isMentor={isMentor}
-          isEditing={isEditing}
-          onEdit={onEdit}
-          onStartEdit={onStartEdit}
-          onEndEdit={onEndEdit}
-          codeTheme={codeTheme}
-        />
-      )}
+    <div ref={setNodeRef} style={style} className="group relative flex items-start gap-2 mb-4">
+      {/* Main bubble content */}
+      <div className="flex-1 min-w-0">
+        {isTakeaway ? (
+          <TakeawayBlock
+            message={message}
+            isEditing={isEditing}
+            onEdit={onEdit}
+            onStartEdit={onStartEdit}
+            onEndEdit={onEndEdit}
+          />
+        ) : (
+          <ChatBubble
+            message={message}
+            character={character}
+            isMentor={isMentor}
+            isEditing={isEditing}
+            onEdit={onEdit}
+            onStartEdit={onStartEdit}
+            onEndEdit={onEndEdit}
+            codeTheme={codeTheme}
+          />
+        )}
+      </div>
+
+      {/* Action buttons - always on the right of each bubble */}
       {isEditMode && !isEditing && (
         <div
           className={cn(
-            "absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-background/95 backdrop-blur-sm border rounded-lg px-2 py-1 shadow-sm"
+            "flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-background/95 backdrop-blur-sm border rounded-lg px-1 py-1 shadow-sm flex-shrink-0",
+            isTakeaway ? "mt-8" : "mt-6"
           )}
         >
           <Button
