@@ -51,13 +51,49 @@ const TakeawayBlock = ({
     const newContent = before + prefix + selectedText + suffix + after;
     setEditContent(newContent);
     
+    // Keep selection on the wrapped text for visibility
     setTimeout(() => {
       textarea.focus();
-      const newCursorPos = start + prefix.length + selectedText.length + suffix.length;
-      textarea.setSelectionRange(
-        selectedText ? newCursorPos : start + prefix.length,
-        selectedText ? newCursorPos : start + prefix.length
-      );
+      if (selectedText) {
+        textarea.setSelectionRange(start, start + prefix.length + selectedText.length + suffix.length);
+      } else {
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+      }
+    }, 0);
+  };
+
+  // Helper to insert text at each line (for lists)
+  const insertAtLineStart = (linePrefix: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = editContent.slice(start, end);
+    const before = editContent.slice(0, start);
+    const after = editContent.slice(end);
+    
+    let newContent: string;
+    if (selectedText) {
+      const lines = selectedText.split('\n');
+      const prefixedLines = lines.map((line, i) => {
+        if (linePrefix === '• ') {
+          return `• ${line}`;
+        } else {
+          return `${i + 1}. ${line}`;
+        }
+      });
+      newContent = before + prefixedLines.join('\n') + after;
+    } else {
+      newContent = before + linePrefix + after;
+    }
+    
+    setEditContent(newContent);
+    
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + linePrefix.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
   };
 
@@ -73,9 +109,21 @@ const TakeawayBlock = ({
       wrapSelection('*', '*');
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    if ((e.ctrlKey || e.metaKey) && e.key === '`') {
       e.preventDefault();
       wrapSelection('`', '`');
+      return;
+    }
+    // Bullet list: Ctrl+Shift+U
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'U') {
+      e.preventDefault();
+      insertAtLineStart('• ');
+      return;
+    }
+    // Numbered list: Ctrl+Shift+O
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'O') {
+      e.preventDefault();
+      insertAtLineStart('1. ');
       return;
     }
 
@@ -158,8 +206,8 @@ const TakeawayBlock = ({
 
             {/* Help text and actions */}
             <div className="flex items-center justify-between">
-              <div className="text-[11px] text-amber-700/70 dark:text-amber-300/70">
-                Ctrl+Enter to save • Ctrl+B bold • Ctrl+I italic • Ctrl+K code
+              <div className="text-[11px] text-amber-700/70 dark:text-amber-300/70 flex flex-wrap gap-1">
+                <span>Ctrl+Enter save • Ctrl+B bold • Ctrl+` code • Ctrl+Shift+U bullets</span>
               </div>
               <div className="flex items-center gap-2">
                 <Button 
