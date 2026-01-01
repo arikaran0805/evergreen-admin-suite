@@ -490,47 +490,118 @@ const ChatStyleEditor = ({
   };
 
   const handleInsertBold = () => {
-    insertAtCursor("**bold text**", "bold text");
+    wrapOrInsertFormatting("**", "**", "bold text");
   };
 
   const handleInsertItalic = () => {
-    insertAtCursor("*italic text*", "italic text");
+    wrapOrInsertFormatting("*", "*", "italic text");
   };
 
   const handleInsertInlineCode = () => {
-    insertAtCursor("`code`", "code");
+    wrapOrInsertFormatting("`", "`", "code");
   };
 
   const handleInsertBulletList = () => {
-    insertAtCursor("• Item 1\n• Item 2\n• Item 3", "Item 1");
+    insertLinePrefix("• ");
   };
 
   const handleInsertNumberedList = () => {
-    insertAtCursor("1. Item 1\n2. Item 2\n3. Item 3", "Item 1");
+    insertLinePrefix("1. ");
   };
 
   const handleInsertHeading = () => {
-    insertAtCursor("## Heading", "Heading");
+    insertLinePrefix("## ");
   };
 
   const handleInsertBlockquote = () => {
-    insertAtCursor("> Quote text here", "Quote text here");
+    insertLinePrefix("> ");
+  };
+
+  // Helper to wrap selected text or insert with placeholder
+  const wrapOrInsertFormatting = (prefix: string, suffix: string, placeholder: string) => {
+    const textarea = inputRef.current;
+    if (!textarea) {
+      insertAtCursor(`${prefix}${placeholder}${suffix}`, placeholder);
+      return;
+    }
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    
+    if (start !== end) {
+      // Has selection - wrap selected text
+      const selectedText = value.substring(start, end);
+      const newText = value.substring(0, start) + prefix + selectedText + suffix + value.substring(end);
+      setNewMessage(newText);
+      textarea.focus();
+      setTimeout(() => {
+        textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+      }, 0);
+    } else {
+      // No selection - insert with placeholder
+      const newText = value.substring(0, start) + prefix + placeholder + suffix + value.substring(end);
+      setNewMessage(newText);
+      textarea.focus();
+      setTimeout(() => {
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length + placeholder.length);
+      }, 0);
+    }
+  };
+
+  // Helper to add prefix to current line or selected lines
+  const insertLinePrefix = (prefix: string) => {
+    const textarea = inputRef.current;
+    if (!textarea) {
+      insertAtCursor(`${prefix}Item 1\n${prefix}Item 2\n${prefix}Item 3`, "Item 1");
+      return;
+    }
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    
+    if (start !== end) {
+      // Has selection - add prefix to each selected line
+      const selectedText = value.substring(start, end);
+      const lines = selectedText.split('\n');
+      const prefixedLines = lines.map(line => prefix + line).join('\n');
+      const newText = value.substring(0, start) + prefixedLines + value.substring(end);
+      setNewMessage(newText);
+      textarea.focus();
+      setTimeout(() => {
+        textarea.setSelectionRange(start, start + prefixedLines.length);
+      }, 0);
+    } else {
+      // No selection - insert sample list
+      const sampleList = prefix === "1. " 
+        ? "1. Item 1\n2. Item 2\n3. Item 3"
+        : `${prefix}Item 1\n${prefix}Item 2\n${prefix}Item 3`;
+      insertAtCursor(sampleList, "Item 1");
+    }
   };
 
   const insertAtCursor = (text: string, selectText?: string) => {
-    setNewMessage((prev) => prev + (prev ? "\n" : "") + text);
-    inputRef.current?.focus();
-    // Auto-resize textarea
+    const textarea = inputRef.current;
+    if (!textarea) {
+      setNewMessage((prev) => prev + (prev ? "\n" : "") + text);
+      return;
+    }
+    
+    const start = textarea.selectionStart;
+    const value = textarea.value;
+    const newText = value.substring(0, start) + (value && start > 0 ? "\n" : "") + text + value.substring(start);
+    setNewMessage(newText);
+    textarea.focus();
+    
     setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.style.height = "auto";
-        inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 300)}px`;
-        
-        if (selectText) {
-          const cursorPos = inputRef.current.value.lastIndexOf(selectText);
-          if (cursorPos !== -1) {
-            inputRef.current.setSelectionRange(cursorPos, cursorPos + selectText.length);
-          }
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`;
+      
+      if (selectText) {
+        const cursorPos = newText.lastIndexOf(selectText);
+        if (cursorPos !== -1) {
+          textarea.setSelectionRange(cursorPos, cursorPos + selectText.length);
         }
       }
     }, 0);
