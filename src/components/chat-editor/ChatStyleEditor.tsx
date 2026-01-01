@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
 import {
   DndContext,
@@ -39,6 +40,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+// Helper to detect OS for keyboard shortcut display
+const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const modKey = isMac ? '⌘' : 'Ctrl';
 
 const CODE_LANGUAGES = [
   { value: "python", label: "Python" },
@@ -344,6 +349,10 @@ const ChatStyleEditor = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [currentSpeaker, setCurrentSpeaker] = useState<"mentor" | "course">("course");
+  
+  // Undo/Redo state
+  const [undoStack, setUndoStack] = useState<ChatMessage[][]>([]);
+  const [redoStack, setRedoStack] = useState<ChatMessage[][]>([]);
   const [selectedCourse, setSelectedCourse] = useState(courseType);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [courses, setCourses] = useState<Course[]>([]);
@@ -438,6 +447,30 @@ const ChatStyleEditor = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Helper to save current state to undo stack
+  const saveToUndoStack = useCallback(() => {
+    setUndoStack(prev => [...prev.slice(-19), messages]);
+    setRedoStack([]);
+  }, [messages]);
+
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const previousState = undoStack[undoStack.length - 1];
+    setRedoStack(prev => [...prev, messages]);
+    setUndoStack(prev => prev.slice(0, -1));
+    setMessages(previousState);
+  }, [undoStack, messages]);
+
+  // Redo handler  
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const nextState = redoStack[redoStack.length - 1];
+    setUndoStack(prev => [...prev, messages]);
+    setRedoStack(prev => prev.slice(0, -1));
+    setMessages(nextState);
+  }, [redoStack, messages]);
+
   // handleAddMessage is defined below with manual height reset logic
 
 
@@ -524,9 +557,10 @@ const ChatStyleEditor = ({
   }, []);
 
   // Reset manual height when message is sent
-  const handleAddMessage = () => {
+  const handleAddMessage = useCallback(() => {
     if (!newMessage.trim()) return;
 
+    saveToUndoStack();
     const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
     const newMsg: ChatMessage = {
       id: generateId(),
@@ -540,9 +574,10 @@ const ChatStyleEditor = ({
     setManualHeight(null); // Reset height after sending
     setCurrentSpeaker((prev) => (prev === "mentor" ? "course" : "mentor"));
     inputRef.current?.focus();
-  };
+  }, [newMessage, currentSpeaker, courseCharacter.name, saveToUndoStack]);
 
-  const handleAddTakeaway = () => {
+  const handleAddTakeawayWithUndo = useCallback(() => {
+    saveToUndoStack();
     const newTakeaway: ChatMessage = {
       id: generateId(),
       speaker: "TAKEAWAY",
@@ -553,10 +588,115 @@ const ChatStyleEditor = ({
     };
     setMessages((prev) => [...prev, newTakeaway]);
     setEditingId(newTakeaway.id); // Start editing immediately
-  };
+  }, [saveToUndoStack]);
+
+  // Global keyboard shortcuts for the editor
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isModKey = isMac ? e.metaKey : e.ctrlKey;
+      
+      // Only handle shortcuts when not editing a bubble
+      if (editingId) return;
+      
+      // Undo: Ctrl/Cmd + Z
+      if (isModKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      
+      // Redo: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
+      if (isModKey && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+      
+      // Takeaway: Ctrl/Cmd + Shift + T
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        handleAddTakeawayWithUndo();
+        return;
+      }
+      
+      // Code block (Python): Ctrl/Cmd + Shift + C
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        handleInsertCodeSnippet('python');
+        return;
+      }
+      
+      // Image: Ctrl/Cmd + Shift + I
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        handleInsertImage();
+        return;
+      }
+      
+      // Link: Ctrl/Cmd + K
+      if (isModKey && e.key.toLowerCase() === 'k' && !e.shiftKey) {
+        e.preventDefault();
+        handleInsertLink();
+        return;
+      }
+      
+      // Bold: Ctrl/Cmd + B
+      if (isModKey && e.key.toLowerCase() === 'b' && !e.shiftKey) {
+        e.preventDefault();
+        handleInsertBold();
+        return;
+      }
+      
+      // Italic: Ctrl/Cmd + I (without shift)
+      if (isModKey && e.key.toLowerCase() === 'i' && !e.shiftKey) {
+        e.preventDefault();
+        handleInsertItalic();
+        return;
+      }
+      
+      // Inline Code: Ctrl/Cmd + `
+      if (isModKey && e.key === '`') {
+        e.preventDefault();
+        handleInsertInlineCode();
+        return;
+      }
+      
+      // Bullet List: Ctrl/Cmd + Shift + U
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 'u') {
+        e.preventDefault();
+        handleInsertBulletList();
+        return;
+      }
+      
+      // Numbered List: Ctrl/Cmd + Shift + O
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        handleInsertNumberedList();
+        return;
+      }
+      
+      // Heading: Ctrl/Cmd + Shift + H
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        handleInsertHeading();
+        return;
+      }
+      
+      // Quote: Ctrl/Cmd + Shift + Q
+      if (isModKey && e.shiftKey && e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        handleInsertBlockquote();
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [editingId, handleUndo, handleRedo, handleAddTakeawayWithUndo]);
 
   // Insert message at a specific position (after given index)
   const handleInsertMessageAt = (afterIndex: number) => {
+    saveToUndoStack();
     const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
     const newMsg: ChatMessage = {
       id: generateId(),
@@ -575,6 +715,7 @@ const ChatStyleEditor = ({
 
   // Insert takeaway at a specific position (after given index)
   const handleInsertTakeawayAt = (afterIndex: number) => {
+    saveToUndoStack();
     const newTakeaway: ChatMessage = {
       id: generateId(),
       speaker: "TAKEAWAY",
@@ -600,6 +741,7 @@ const ChatStyleEditor = ({
   };
 
   const handleEditMessage = (id: string, content: string, title?: string, icon?: string) => {
+    saveToUndoStack();
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id === id) {
@@ -619,6 +761,7 @@ const ChatStyleEditor = ({
   };
 
   const handleDeleteMessage = (id: string) => {
+    saveToUndoStack();
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
@@ -901,67 +1044,99 @@ const ChatStyleEditor = ({
                   <Plus className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 bg-popover border border-border shadow-lg z-50">
+              <DropdownMenuContent align="end" className="w-56 bg-popover border border-border shadow-lg z-50">
+                {/* Undo/Redo */}
+                <DropdownMenuItem 
+                  onClick={handleUndo} 
+                  disabled={undoStack.length === 0}
+                  className="cursor-pointer"
+                >
+                  <Undo2 className="w-4 h-4 mr-2" />
+                  Undo
+                  <DropdownMenuShortcut>{modKey}+Z</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleRedo} 
+                  disabled={redoStack.length === 0}
+                  className="cursor-pointer"
+                >
+                  <Redo2 className="w-4 h-4 mr-2" />
+                  Redo
+                  <DropdownMenuShortcut>{modKey}+⇧+Z</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className="cursor-pointer">
                     <Code className="w-4 h-4 mr-2" />
                     Code Block
+                    <DropdownMenuShortcut>{modKey}+⇧+C</DropdownMenuShortcut>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent className="bg-popover border border-border shadow-lg z-50">
-                      {CODE_LANGUAGES.map((lang) => (
+                      {CODE_LANGUAGES.map((lang, index) => (
                         <DropdownMenuItem
                           key={lang.value}
                           onClick={() => handleInsertCodeSnippet(lang.value)}
                           className="cursor-pointer"
                         >
                           {lang.label}
+                          {index === 0 && <DropdownMenuShortcut>{modKey}+⇧+C</DropdownMenuShortcut>}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleAddTakeaway} className="cursor-pointer">
+                <DropdownMenuItem onClick={handleAddTakeawayWithUndo} className="cursor-pointer">
                   <Lightbulb className="w-4 h-4 mr-2" />
                   Takeaway Block
+                  <DropdownMenuShortcut>{modKey}+⇧+T</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleInsertImage} className="cursor-pointer">
                   <Image className="w-4 h-4 mr-2" />
                   Image
+                  <DropdownMenuShortcut>{modKey}+⇧+I</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertLink} className="cursor-pointer">
                   <Link className="w-4 h-4 mr-2" />
                   Link
+                  <DropdownMenuShortcut>{modKey}+K</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertBold} className="cursor-pointer">
                   <Bold className="w-4 h-4 mr-2" />
                   Bold Text
+                  <DropdownMenuShortcut>{modKey}+B</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertItalic} className="cursor-pointer">
                   <Italic className="w-4 h-4 mr-2" />
                   Italic Text
+                  <DropdownMenuShortcut>{modKey}+I</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertInlineCode} className="cursor-pointer">
                   <Terminal className="w-4 h-4 mr-2" />
                   Inline Code
+                  <DropdownMenuShortcut>{modKey}+`</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertBulletList} className="cursor-pointer">
                   <List className="w-4 h-4 mr-2" />
                   Bullet List
+                  <DropdownMenuShortcut>{modKey}+⇧+U</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertNumberedList} className="cursor-pointer">
                   <ListOrdered className="w-4 h-4 mr-2" />
                   Numbered List
+                  <DropdownMenuShortcut>{modKey}+⇧+O</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertHeading} className="cursor-pointer">
                   <Heading2 className="w-4 h-4 mr-2" />
                   Heading
+                  <DropdownMenuShortcut>{modKey}+⇧+H</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleInsertBlockquote} className="cursor-pointer">
                   <Quote className="w-4 h-4 mr-2" />
                   Blockquote
+                  <DropdownMenuShortcut>{modKey}+⇧+Q</DropdownMenuShortcut>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
