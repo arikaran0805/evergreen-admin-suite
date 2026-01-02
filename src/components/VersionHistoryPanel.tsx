@@ -133,9 +133,16 @@ const VersionHistoryPanel = ({
           {showBookmarkIcon && (
             <Bookmark className="h-4 w-4 text-foreground flex-shrink-0" fill="currentColor" />
           )}
-          <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
-            {version.change_summary || `Version ${version.version_number}`}
-          </span>
+          <div className="flex flex-col min-w-0">
+            <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
+              {version.change_summary || `Version ${version.version_number}`}
+            </span>
+            {version.versioning_note_type && (
+              <span className="text-xs text-muted-foreground capitalize">
+                {version.versioning_note_type.replace(/_/g, " ")}
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="flex items-center gap-2 flex-shrink-0">
