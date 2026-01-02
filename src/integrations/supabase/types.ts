@@ -1206,7 +1206,10 @@ export type Database = {
           id: string
           is_published: boolean | null
           post_id: string
+          status: string
           version_number: number
+          versioning_note_locked: boolean
+          versioning_note_type: string | null
         }
         Insert: {
           change_summary?: string | null
@@ -1218,7 +1221,10 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           post_id: string
+          status?: string
           version_number?: number
+          versioning_note_locked?: boolean
+          versioning_note_type?: string | null
         }
         Update: {
           change_summary?: string | null
@@ -1230,7 +1236,10 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           post_id?: string
+          status?: string
           version_number?: number
+          versioning_note_locked?: boolean
+          versioning_note_type?: string | null
         }
         Relationships: [
           {
