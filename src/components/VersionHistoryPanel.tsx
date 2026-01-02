@@ -171,7 +171,7 @@ const VersionHistoryPanel = ({
                     <div
                       key={version.id}
                       className={`p-4 border rounded-lg transition-colors hover:bg-muted/50 ${
-                        version.is_published ? "border-primary bg-primary/5" : ""
+                        version.status === "published" ? "border-primary bg-primary/5" : ""
                       } ${version.editor_role === "admin" ? "border-l-4 border-l-primary" : ""}`}
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -188,10 +188,15 @@ const VersionHistoryPanel = ({
                       
                       {/* Status badges */}
                       <div className="flex flex-wrap gap-1.5 mb-2">
-                        {version.is_published && (
+                        {version.status === "published" && (
                           <Badge className="bg-green-600 text-white">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Published
+                          </Badge>
+                        )}
+                        {version.status === "archived" && (
+                          <Badge variant="outline" className="border-muted-foreground text-muted-foreground">
+                            Archived
                           </Badge>
                         )}
                         {isInitialVersion && (
@@ -199,8 +204,8 @@ const VersionHistoryPanel = ({
                             Initial Version
                           </Badge>
                         )}
-                        {index === 0 && !version.is_published && (
-                          <Badge variant="outline">Latest</Badge>
+                        {index === 0 && version.status === "draft" && (
+                          <Badge variant="outline">Latest Draft</Badge>
                         )}
                       </div>
                       
@@ -297,7 +302,7 @@ const VersionHistoryPanel = ({
                           {v.editor_role === "admin" && (
                             <Shield className="h-3 w-3 text-primary" />
                           )}
-                          {v.is_published && (
+                          {v.status === "published" && (
                             <CheckCircle className="h-3 w-3 text-green-500" />
                           )}
                           <span className="text-muted-foreground text-xs">
@@ -327,7 +332,7 @@ const VersionHistoryPanel = ({
                   <SelectValue placeholder="Select version" />
                 </SelectTrigger>
                 <SelectContent>
-                  {versions
+                {versions
                     .filter(v => v.id !== compareVersion?.id)
                     .map(v => (
                       <SelectItem key={v.id} value={v.id}>
@@ -336,7 +341,7 @@ const VersionHistoryPanel = ({
                           {v.editor_role === "admin" && (
                             <Shield className="h-3 w-3 text-primary" />
                           )}
-                          {v.is_published && (
+                          {v.status === "published" && (
                             <CheckCircle className="h-3 w-3 text-green-500" />
                           )}
                           <span className="text-muted-foreground text-xs">
@@ -450,8 +455,11 @@ const VersionHistoryPanel = ({
                         Moderator
                       </Badge>
                     )}
-                    {selectedVersion.is_published && (
+                    {selectedVersion.status === "published" && (
                       <Badge className="bg-green-600 text-white text-xs">Published</Badge>
+                    )}
+                    {selectedVersion.status === "archived" && (
+                      <Badge variant="outline" className="text-xs">Archived</Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">

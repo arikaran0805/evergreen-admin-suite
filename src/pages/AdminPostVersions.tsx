@@ -221,7 +221,7 @@ const AdminPostVersions = () => {
                     key={version.id}
                     className={`p-4 cursor-pointer transition-all hover:shadow-md ${
                       selectedVersion?.id === version.id ? "ring-2 ring-primary" : ""
-                    } ${version.is_published ? "border-green-500/50 bg-green-50/50 dark:bg-green-900/10" : ""}`}
+                    } ${version.status === "published" ? "border-green-500/50 bg-green-50/50 dark:bg-green-900/10" : ""}`}
                     onClick={() => setSelectedVersion(version)}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -229,10 +229,15 @@ const AdminPostVersions = () => {
                         <span className="font-semibold text-lg">v{version.version_number}</span>
                         {getRoleBadge(version.editor_role)}
                       </div>
-                      {version.is_published && (
+                      {version.status === "published" && (
                         <Badge className="bg-green-600 text-white">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Live
+                        </Badge>
+                      )}
+                      {version.status === "archived" && (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Archived
                         </Badge>
                       )}
                     </div>
@@ -274,7 +279,7 @@ const AdminPostVersions = () => {
                         <RotateCcw className="h-3 w-3" />
                         Restore
                       </Button>
-                      {isAdmin && !version.is_published && (
+                      {isAdmin && version.status !== "published" && (
                         <Button
                           variant="default"
                           size="sm"
@@ -323,7 +328,7 @@ const AdminPostVersions = () => {
                           <div className="flex items-center gap-2">
                             <span>v{v.version_number}</span>
                             {v.editor_role === "admin" && <Shield className="h-3 w-3 text-primary" />}
-                            {v.is_published && <CheckCircle className="h-3 w-3 text-green-500" />}
+                            {v.status === "published" && <CheckCircle className="h-3 w-3 text-green-500" />}
                           </div>
                         </SelectItem>
                       ))}
@@ -355,7 +360,7 @@ const AdminPostVersions = () => {
                           <div className="flex items-center gap-2">
                             <span>v{v.version_number}</span>
                             {v.editor_role === "admin" && <Shield className="h-3 w-3 text-primary" />}
-                            {v.is_published && <CheckCircle className="h-3 w-3 text-green-500" />}
+                            {v.status === "published" && <CheckCircle className="h-3 w-3 text-green-500" />}
                           </div>
                         </SelectItem>
                       ))}
@@ -405,10 +410,15 @@ const AdminPostVersions = () => {
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-lg">v{selectedVersion.version_number}</span>
                     {getRoleBadge(selectedVersion.editor_role)}
-                    {selectedVersion.is_published && (
+                    {selectedVersion.status === "published" && (
                       <Badge className="bg-green-600 text-white">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Published
+                      </Badge>
+                    )}
+                    {selectedVersion.status === "archived" && (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        Archived
                       </Badge>
                     )}
                   </div>
@@ -421,7 +431,7 @@ const AdminPostVersions = () => {
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Restore
                     </Button>
-                    {isAdmin && !selectedVersion.is_published && (
+                    {isAdmin && selectedVersion.status !== "published" && (
                       <Button
                         size="sm"
                         onClick={() => setPublishDialogOpen(true)}

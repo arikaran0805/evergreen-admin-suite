@@ -539,7 +539,7 @@ const AdminPostEditor = () => {
   };
 
   // Get the currently published version for comparison
-  const publishedVersion = versions.find(v => v.is_published);
+  const publishedVersion = versions.find(v => v.status === "published");
   const hasContentChanges = formData.content !== originalContent && originalContent !== "";
 
   // Create a mock version object for the current editor content
@@ -552,8 +552,10 @@ const AdminPostEditor = () => {
     edited_by: userId || "",
     editor_role: isAdmin ? "admin" : "moderator",
     created_at: new Date().toISOString(),
-    is_published: false,
+    status: "draft",
     change_summary: null,
+    versioning_note_type: null,
+    versioning_note_locked: false,
     editor_profile: undefined,
   } as PostVersion;
 
