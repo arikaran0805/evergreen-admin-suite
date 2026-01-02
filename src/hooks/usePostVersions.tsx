@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 
+export type VersionStatus = "draft" | "published" | "archived";
+
 export interface PostVersion {
   id: string;
   post_id: string;
@@ -12,8 +14,10 @@ export interface PostVersion {
   edited_by: string;
   editor_role: "admin" | "moderator";
   created_at: string;
-  is_published: boolean;
+  status: VersionStatus;
   change_summary: string | null;
+  versioning_note_type: string | null;
+  versioning_note_locked: boolean;
   editor_profile?: {
     full_name: string | null;
     email: string;
@@ -115,18 +119,22 @@ export const usePostVersions = (postId: string | undefined) => {
       // Determine editor role
       const editorRole = isAdmin ? "admin" : "moderator";
 
-      // If marking as published, unmark other versions first
+      // If marking as published, archive other published versions first
       if (markAsPublished) {
         await supabase
           .from("post_versions")
-          .update({ is_published: false })
-          .eq("post_id", postId);
+          .update({ status: "archived" })
+          .eq("post_id", postId)
+          .eq("status", "published");
       }
 
       // Default change summary based on action
       const defaultSummary = markAsPublished 
         ? `Published as v${nextVersionNumber}` 
         : `Draft saved (v${nextVersionNumber})`;
+
+      // Determine status
+      const status: VersionStatus = markAsPublished ? "published" : "draft";
 
       const { data, error } = await supabase
         .from("post_versions")
@@ -138,7 +146,7 @@ export const usePostVersions = (postId: string | undefined) => {
           edited_by: session.user.id,
           editor_role: editorRole,
           change_summary: changeSummary || defaultSummary,
-          is_published: markAsPublished,
+          status,
         })
         .select()
         .single();
@@ -206,7 +214,7 @@ export const usePostVersions = (postId: string | undefined) => {
           edited_by: session.user.id,
           editor_role: editorRole,
           change_summary: "Initial version (v0)",
-          is_published: false,
+          status: "draft",
         })
         .select()
         .single();
@@ -235,20 +243,20 @@ export const usePostVersions = (postId: string | undefined) => {
 
       if (postError) throw postError;
 
+      // Archive any currently published versions
+      await supabase
+        .from("post_versions")
+        .update({ status: "archived" })
+        .eq("post_id", postId)
+        .eq("status", "published");
+
       // Mark this version as published
       const { error: versionError } = await supabase
         .from("post_versions")
-        .update({ is_published: true })
+        .update({ status: "published" })
         .eq("id", versionId);
 
       if (versionError) throw versionError;
-
-      // Unmark other versions
-      await supabase
-        .from("post_versions")
-        .update({ is_published: false })
-        .eq("post_id", postId)
-        .neq("id", versionId);
 
       toast({
         title: "Published",
