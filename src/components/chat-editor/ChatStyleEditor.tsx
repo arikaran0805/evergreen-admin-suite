@@ -369,7 +369,7 @@ const ChatStyleEditor = ({
   const [explanation, setExplanation] = useState<string>(() => extractExplanation(value) || "");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [currentSpeaker, setCurrentSpeaker] = useState<"mentor" | "course">("course");
+  const [currentSpeaker, setCurrentSpeaker] = useState<"mentor" | "course">("mentor");
   
   // Undo/Redo state
   const [undoStack, setUndoStack] = useState<ChatMessage[][]>([]);
@@ -378,9 +378,13 @@ const ChatStyleEditor = ({
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [courses, setCourses] = useState<Course[]>([]);
   const [manualHeight, setManualHeight] = useState<number | null>(null);
+  const [mentorIcon, setMentorIcon] = useState("👨‍💻");
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mentorName = "Karan";
+
+  // Icon options for character selection
+  const CHARACTER_ICONS = ["👨‍💻", "👩‍💻", "🧑‍💻", "👨‍🏫", "👩‍🏫", "🧑‍🏫", "🎓", "📚", "💡", "🤖", "🧠", "⭐"];
 
   // Fetch courses from database
   useEffect(() => {
@@ -458,15 +462,8 @@ const ChatStyleEditor = ({
     }
   }, [value]);
 
-  const scrollToBottom = useCallback(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+  // Don't auto-scroll - let user stay where they are
+  // Removed scrollToBottom on messages change
 
   // Helper to save current state to undo stack
   const saveToUndoStack = useCallback(() => {
@@ -1019,7 +1016,10 @@ const ChatStyleEditor = ({
 
   const getCharacterForSpeaker = useCallback((speaker: string): CourseCharacter => {
     if (speaker.toLowerCase() === mentorName.toLowerCase()) {
-      return MENTOR_CHARACTER;
+      return {
+        ...MENTOR_CHARACTER,
+        emoji: mentorIcon,
+      };
     }
     // Find matching course by name
     const matchingCourse = courses.find(
@@ -1034,7 +1034,7 @@ const ChatStyleEditor = ({
       };
     }
     return courseCharacter;
-  }, [courses, courseCharacter]);
+  }, [courses, courseCharacter, mentorIcon]);
 
   const isMentor = (speaker: string) =>
     speaker.toLowerCase() === mentorName.toLowerCase();
@@ -1149,32 +1149,86 @@ const ChatStyleEditor = ({
       {/* Input area (only in edit mode) */}
       {mode === "edit" && (
         <div className="border-t border-border bg-muted/30 p-4">
-          {/* Speaker toggle */}
-          <div className="flex items-center gap-2 mb-3">
+          {/* Speaker toggle with icon pickers */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span className="text-xs text-muted-foreground">Speaking as:</span>
-            <div className="flex rounded-full bg-muted p-0.5">
-              <button
-                onClick={() => setCurrentSpeaker("course")}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
-                  currentSpeaker === "course"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {renderCourseIcon(courseCharacter.emoji, 14)} {courseCharacter.name}
-              </button>
-              <button
-                onClick={() => setCurrentSpeaker("mentor")}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium transition-all",
-                  currentSpeaker === "mentor"
-                    ? "bg-[hsl(210,100%,52%)] shadow-sm text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                👨‍💻 {mentorName}
-              </button>
+            <div className="flex items-center gap-1">
+              {/* Course character toggle */}
+              <div className="flex items-center rounded-full bg-muted p-0.5">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                        currentSpeaker === "course"
+                          ? "bg-slate-200 dark:bg-slate-700 shadow-sm"
+                          : "hover:bg-muted-foreground/10"
+                      )}
+                    >
+                      {renderCourseIcon(courseCharacter.emoji, 16)}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-popover border border-border shadow-lg z-50">
+                    <div className="p-2 text-xs text-muted-foreground mb-1">Course icon is set in course settings</div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button
+                  onClick={() => setCurrentSpeaker("course")}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                    currentSpeaker === "course"
+                      ? "bg-slate-200 dark:bg-slate-700 shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {courseCharacter.name}
+                </button>
+              </div>
+
+              {/* Mentor toggle */}
+              <div className="flex items-center rounded-full bg-muted p-0.5">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                        currentSpeaker === "mentor"
+                          ? "bg-emerald-500 shadow-sm"
+                          : "hover:bg-muted-foreground/10"
+                      )}
+                    >
+                      <span className="text-sm">{mentorIcon}</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-popover border border-border shadow-lg z-50">
+                    <div className="grid grid-cols-4 gap-1 p-2">
+                      {CHARACTER_ICONS.map((icon) => (
+                        <DropdownMenuItem
+                          key={icon}
+                          onClick={() => setMentorIcon(icon)}
+                          className={cn(
+                            "cursor-pointer justify-center text-xl p-2 rounded-lg",
+                            mentorIcon === icon && "bg-emerald-100 dark:bg-emerald-900/50"
+                          )}
+                        >
+                          {icon}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button
+                  onClick={() => setCurrentSpeaker("mentor")}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                    currentSpeaker === "mentor"
+                      ? "bg-emerald-500 shadow-sm text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {mentorName}
+                </button>
+              </div>
             </div>
           </div>
 
