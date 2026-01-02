@@ -30,7 +30,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight, ExternalLink, Bookmark } from "lucide-react";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight, ExternalLink, Bookmark, Pencil } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { VersioningNoteType } from "@/components/VersioningNoteDialog";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
@@ -43,7 +46,15 @@ interface VersionHistoryPanelProps {
   onRestore: (version: PostVersion) => void;
   onPublish: (version: PostVersion) => void;
   onPreview: (version: PostVersion) => void;
+  onUpdateNote?: (versionId: string, noteType: string | null, summary: string | null) => Promise<boolean>;
 }
+
+const VERSIONING_OPTIONS: { type: VersioningNoteType; label: string }[] = [
+  { type: "typo_fix", label: "Typo Fix" },
+  { type: "formatting", label: "Formatting" },
+  { type: "content_update", label: "Content Update" },
+  { type: "major_revision", label: "Major Revision" },
+];
 
 const VersionHistoryPanel = ({
   versions,
@@ -53,6 +64,7 @@ const VersionHistoryPanel = ({
   onRestore,
   onPublish,
   onPreview,
+  onUpdateNote,
 }: VersionHistoryPanelProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -60,6 +72,10 @@ const VersionHistoryPanel = ({
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+  const [editNoteDialogOpen, setEditNoteDialogOpen] = useState(false);
+  const [editNoteType, setEditNoteType] = useState<string | null>(null);
+  const [editNoteSummary, setEditNoteSummary] = useState("");
+  const [editNoteLoading, setEditNoteLoading] = useState(false);
   const [compareVersion, setCompareVersion] = useState<PostVersion | null>(null);
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
   const [hoveredVersionId, setHoveredVersionId] = useState<string | null>(null);
@@ -96,6 +112,28 @@ const VersionHistoryPanel = ({
     if (selectedVersion) {
       onRestore(selectedVersion);
       setRevertDialogOpen(false);
+    }
+  };
+
+  const handleEditNoteClick = (version: PostVersion) => {
+    setSelectedVersion(version);
+    setEditNoteType(version.versioning_note_type || null);
+    setEditNoteSummary(version.change_summary || "");
+    setEditNoteDialogOpen(true);
+  };
+
+  const handleConfirmEditNote = async () => {
+    if (selectedVersion && onUpdateNote) {
+      setEditNoteLoading(true);
+      const success = await onUpdateNote(
+        selectedVersion.id,
+        editNoteType,
+        editNoteSummary || null
+      );
+      setEditNoteLoading(false);
+      if (success) {
+        setEditNoteDialogOpen(false);
+      }
     }
   };
 
@@ -162,6 +200,19 @@ const VersionHistoryPanel = ({
                   fill={versionIsBookmarked ? "currentColor" : "none"}
                 />
               </Button>
+              {!version.versioning_note_locked && onUpdateNote && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditNoteClick(version);
+                  }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -603,6 +654,62 @@ const VersionHistoryPanel = ({
             <Button onClick={handleConfirmRevert} className="gap-2">
               <RotateCcw className="h-4 w-4" />
               Restore This Version
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Edit Note Dialog */}
+      <Dialog open={editNoteDialogOpen} onOpenChange={setEditNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Version Note</DialogTitle>
+            <DialogDescription>
+              Update the note type and summary for this version.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Note Type</Label>
+              <Select
+                value={editNoteType || ""}
+                onValueChange={(value) => setEditNoteType(value || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {VERSIONING_OPTIONS.map((option) => (
+                    <SelectItem key={option.type} value={option.type}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-change-summary">Change Summary</Label>
+              <Textarea
+                id="edit-change-summary"
+                value={editNoteSummary}
+                onChange={(e) => setEditNoteSummary(e.target.value)}
+                placeholder="Describe what changed..."
+                className="h-20 resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setEditNoteDialogOpen(false)}
+              disabled={editNoteLoading}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmEditNote} disabled={editNoteLoading}>
+              {editNoteLoading ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

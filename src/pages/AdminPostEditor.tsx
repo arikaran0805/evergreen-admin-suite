@@ -114,7 +114,7 @@ const AdminPostEditor = () => {
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
-  const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionAsDraft, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion } = usePostVersions(id);
+  const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionAsDraft, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion, updateVersionNote } = usePostVersions(id);
   const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
 
   // Check if moderator should see admin edit banner
@@ -647,6 +647,7 @@ const AdminPostEditor = () => {
                   onRestore={handleRestoreVersion}
                   onPublish={handlePublishVersion}
                   onPreview={handlePreviewVersion}
+                  onUpdateNote={updateVersionNote}
                 />
                 <AnnotationPanel
                   annotations={annotations}

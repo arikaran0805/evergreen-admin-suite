@@ -284,6 +284,52 @@ export const usePostVersions = (postId: string | undefined) => {
     return version.content;
   };
 
+  // Update versioning note for a specific version
+  const updateVersionNote = async (
+    versionId: string,
+    versioningNoteType: string | null,
+    changeSummary: string | null
+  ) => {
+    try {
+      // Check if the note is locked
+      const version = versions.find(v => v.id === versionId);
+      if (version?.versioning_note_locked) {
+        toast({
+          title: "Cannot edit",
+          description: "This version's note is locked (published versions cannot be edited)",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from("post_versions")
+        .update({
+          versioning_note_type: versioningNoteType,
+          change_summary: changeSummary,
+        })
+        .eq("id", versionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Note updated",
+        description: "Version note has been updated",
+      });
+
+      await fetchVersions();
+      return true;
+    } catch (error: any) {
+      console.error("Error updating version note:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update version note",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   // Get versions with admin changes after a specific version
   const getAdminChangesAfterVersion = (versionNumber: number): PostVersion[] => {
     return versions.filter(
@@ -310,6 +356,7 @@ export const usePostVersions = (postId: string | undefined) => {
     createInitialVersion,
     publishVersion,
     restoreVersion,
+    updateVersionNote,
     getAdminChangesAfterVersion,
     wasEditedByAdmin,
   };
