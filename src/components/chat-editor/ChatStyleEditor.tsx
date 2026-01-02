@@ -878,6 +878,7 @@ const ChatStyleEditor = ({
   }, [editingId, handleUndo, handleRedo, handleAddTakeawayWithUndo]);
 
   // Insert message at a specific position (after given index)
+  // Pass afterIndex = -1 to insert at the very top (before first message)
   const handleInsertMessageAt = (afterIndex: number) => {
     saveToUndoStack();
     const speaker = currentSpeaker === "mentor" ? mentorName : courseCharacter.name;
@@ -889,7 +890,8 @@ const ChatStyleEditor = ({
     };
     setMessages((prev) => {
       const updated = [...prev];
-      updated.splice(afterIndex + 1, 0, newMsg);
+      const insertIndex = Math.max(0, Math.min(updated.length, afterIndex + 1));
+      updated.splice(insertIndex, 0, newMsg);
       return updated;
     });
     setEditingId(newMsg.id);
@@ -897,6 +899,7 @@ const ChatStyleEditor = ({
   };
 
   // Insert takeaway at a specific position (after given index)
+  // Pass afterIndex = -1 to insert at the very top (before first item)
   const handleInsertTakeawayAt = (afterIndex: number) => {
     saveToUndoStack();
     const newTakeaway: ChatMessage = {
@@ -909,7 +912,8 @@ const ChatStyleEditor = ({
     };
     setMessages((prev) => {
       const updated = [...prev];
-      updated.splice(afterIndex + 1, 0, newTakeaway);
+      const insertIndex = Math.max(0, Math.min(updated.length, afterIndex + 1));
+      updated.splice(insertIndex, 0, newTakeaway);
       return updated;
     });
     setEditingId(newTakeaway.id);
@@ -1110,6 +1114,16 @@ const ChatStyleEditor = ({
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-0">
+                {/* Insert at top (before first message) */}
+                {mode === "edit" && messages.length > 0 && (
+                  <InsertBetweenButton
+                    onInsertMessage={() => handleInsertMessageAt(-1)}
+                    onInsertTakeaway={() => handleInsertTakeawayAt(-1)}
+                    courseCharacterName={courseCharacter.name}
+                    mentorName={mentorName}
+                  />
+                )}
+
                 {messages.map((message, index) => (
                   <div key={message.id}>
                     <SortableMessageItem
