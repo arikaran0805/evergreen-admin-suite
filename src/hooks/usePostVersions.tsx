@@ -103,7 +103,8 @@ export const usePostVersions = (postId: string | undefined) => {
     content: string,
     editorType: "rich-text" | "chat",
     changeSummary?: string,
-    markAsPublished: boolean = false
+    markAsPublished: boolean = false,
+    versioningNoteType?: string
   ) => {
     if (!postId) return null;
 
@@ -147,6 +148,7 @@ export const usePostVersions = (postId: string | undefined) => {
           editor_role: editorRole,
           change_summary: changeSummary || defaultSummary,
           status,
+          versioning_note_type: versioningNoteType || null,
         })
         .select()
         .single();
@@ -170,9 +172,10 @@ export const usePostVersions = (postId: string | undefined) => {
   const saveVersionAsDraft = async (
     content: string,
     editorType: "rich-text" | "chat",
-    changeSummary?: string
+    changeSummary?: string,
+    versioningNoteType?: string
   ) => {
-    return saveVersion(content, editorType, changeSummary, false);
+    return saveVersion(content, editorType, changeSummary, false, versioningNoteType);
   };
 
   // Save version on publish (creates a new version and marks it as published)

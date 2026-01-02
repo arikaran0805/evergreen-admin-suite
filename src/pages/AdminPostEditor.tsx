@@ -21,6 +21,7 @@ import { AnnotationPanel } from "@/components/annotations";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
+import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
 import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, Settings2 } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
@@ -106,8 +107,10 @@ const AdminPostEditor = () => {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showAdminChangesDialog, setShowAdminChangesDialog] = useState(false);
   const [showPublishPreviewDialog, setShowPublishPreviewDialog] = useState(false);
+  const [showVersioningNoteDialog, setShowVersioningNoteDialog] = useState(false);
   const [dismissedAdminBanner, setDismissedAdminBanner] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [savingDraft, setSavingDraft] = useState(false);
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
@@ -835,22 +838,7 @@ const AdminPostEditor = () => {
                   {/* Save as draft option when editing */}
                   {id && hasContentChanges && (
                     <Button
-                      onClick={async () => {
-                        // Important: saving a draft should NOT publish or change the live post.
-                        // We only create a new draft version entry.
-                        const saved = await saveVersionAsDraft(
-                          formData.content,
-                          editorType === "chat" ? "chat" : "rich-text"
-                        );
-
-                        if (saved) {
-                          previousContentRef.current = formData.content;
-                          toast({
-                            title: "Draft saved",
-                            description: "Saved as a private draft version (not live).",
-                          });
-                        }
-                      }}
+                      onClick={() => setShowVersioningNoteDialog(true)}
                       disabled={loading}
                       variant="outline"
                       className="w-full"
@@ -1119,6 +1107,35 @@ const AdminPostEditor = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Versioning Note Dialog */}
+      <VersioningNoteDialog
+        open={showVersioningNoteDialog}
+        onOpenChange={setShowVersioningNoteDialog}
+        loading={savingDraft}
+        onSave={async (noteType: VersioningNoteType, changeSummary: string) => {
+          setSavingDraft(true);
+          try {
+            const saved = await saveVersionAsDraft(
+              formData.content,
+              editorType === "chat" ? "chat" : "rich-text",
+              changeSummary,
+              noteType
+            );
+
+            if (saved) {
+              previousContentRef.current = formData.content;
+              setShowVersioningNoteDialog(false);
+              toast({
+                title: "Draft saved",
+                description: "Saved as a private draft version (not live).",
+              });
+            }
+          } finally {
+            setSavingDraft(false);
+          }
+        }}
+      />
     </AdminLayout>
   );
 };
