@@ -48,24 +48,26 @@ const ChatBubble = ({
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = editContent.slice(start, end);
-    const before = editContent.slice(0, start);
-    const after = editContent.slice(end);
+    const currentValue = textarea.value; // Use DOM value directly
+    const selectedText = currentValue.slice(start, end);
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(end);
     
     const newContent = before + prefix + selectedText + suffix + after;
+    
+    // Update DOM directly first for immediate effect
+    textarea.value = newContent;
     setEditContent(newContent);
     
-    // Keep selection on the wrapped text (including formatting markers)
-    setTimeout(() => {
-      textarea.focus();
-      if (selectedText) {
-        // Select the entire wrapped portion including markers for visibility
-        textarea.setSelectionRange(start, start + prefix.length + selectedText.length + suffix.length);
-      } else {
-        // No selection, place cursor inside the markers
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
-      }
-    }, 0);
+    // Set cursor position immediately
+    const newCursorPos = selectedText 
+      ? start + prefix.length + selectedText.length + suffix.length
+      : start + prefix.length;
+    textarea.setSelectionRange(
+      selectedText ? start : newCursorPos, 
+      newCursorPos
+    );
+    textarea.focus();
   };
 
   // Helper to insert text at each line (for lists)
