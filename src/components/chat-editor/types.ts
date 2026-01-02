@@ -30,8 +30,8 @@ export const COURSE_CHARACTERS: Record<string, CourseCharacter> = {
 export const MENTOR_CHARACTER: CourseCharacter = {
   name: "Karan",
   emoji: "👨‍💻",
-  color: "white",
-  bgColor: "hsl(210, 100%, 52%)", // iMessage blue
+  color: "hsl(var(--foreground))",
+  bgColor: "hsl(142, 76%, 36%)", // Green for Karan
 };
 
 export const TAKEAWAY_ICONS = [

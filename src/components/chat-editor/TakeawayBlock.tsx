@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, TAKEAWAY_ICONS } from "./types";
 import { cn } from "@/lib/utils";
-import { Check, X, Pencil, Lightbulb, Sparkles } from "lucide-react";
+import { Check, X, Pencil, Lightbulb, Sparkles, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, ChevronDown, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,7 +9,23 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+
+const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const modKey = isMac ? '⌘' : 'Ctrl';
+
+const CODE_LANGUAGES = [
+  { value: "python", label: "Python" },
+  { value: "sql", label: "SQL" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
+];
 
 interface TakeawayBlockProps {
   message: ChatMessage;
@@ -44,22 +60,24 @@ const TakeawayBlock = ({
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = editContent.slice(start, end);
-    const before = editContent.slice(0, start);
-    const after = editContent.slice(end);
+    const currentValue = textarea.value;
+    const selectedText = currentValue.slice(start, end);
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(end);
     
     const newContent = before + prefix + selectedText + suffix + after;
+    
+    textarea.value = newContent;
     setEditContent(newContent);
     
-    // Keep selection on the wrapped text for visibility
-    setTimeout(() => {
-      textarea.focus();
-      if (selectedText) {
-        textarea.setSelectionRange(start, start + prefix.length + selectedText.length + suffix.length);
-      } else {
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
-      }
-    }, 0);
+    const newCursorPos = selectedText 
+      ? start + prefix.length + selectedText.length + suffix.length
+      : start + prefix.length;
+    textarea.setSelectionRange(
+      selectedText ? start : newCursorPos, 
+      newCursorPos
+    );
+    textarea.focus();
   };
 
   // Helper to insert text at each line (for lists)
@@ -69,65 +87,130 @@ const TakeawayBlock = ({
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = editContent.slice(start, end);
-    const before = editContent.slice(0, start);
-    const after = editContent.slice(end);
+    const currentValue = textarea.value;
+    const selectedText = currentValue.slice(start, end);
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(end);
     
     let newContent: string;
     if (selectedText) {
       const lines = selectedText.split('\n');
       const prefixedLines = lines.map((line, i) => {
-        if (linePrefix === '• ') {
-          return `• ${line}`;
-        } else {
-          return `${i + 1}. ${line}`;
-        }
+        if (linePrefix === '• ') return `• ${line}`;
+        if (linePrefix === '## ') return `## ${line}`;
+        if (linePrefix === '> ') return `> ${line}`;
+        return `${i + 1}. ${line}`;
       });
       newContent = before + prefixedLines.join('\n') + after;
     } else {
       newContent = before + linePrefix + after;
     }
     
+    textarea.value = newContent;
     setEditContent(newContent);
     
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + linePrefix.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
+    const newCursorPos = start + linePrefix.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    textarea.focus();
+  };
+
+  const insertCodeBlock = (language: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const currentValue = textarea.value;
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(start);
+    
+    const codeBlock = `\`\`\`${language}\n# Your code here\n\n\`\`\``;
+    const newContent = before + (before && !before.endsWith('\n') ? '\n' : '') + codeBlock + after;
+    
+    textarea.value = newContent;
+    setEditContent(newContent);
+    textarea.focus();
+  };
+
+  const insertLink = () => {
+    wrapSelection('[', '](https://example.com)');
+  };
+
+  const insertImage = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const currentValue = textarea.value;
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(start);
+    
+    const imageMarkdown = '![Image description](https://example.com/image.png)';
+    const newContent = before + imageMarkdown + after;
+    
+    textarea.value = newContent;
+    setEditContent(newContent);
+    textarea.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Formatting shortcuts
-    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    const isModKey = isMac ? e.metaKey : e.ctrlKey;
+    
+    // Bold: Ctrl/Cmd + B
+    if (isModKey && e.key.toLowerCase() === 'b' && !e.shiftKey) {
       e.preventDefault();
       wrapSelection('**', '**');
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+    // Italic: Ctrl/Cmd + I
+    if (isModKey && e.key.toLowerCase() === 'i' && !e.shiftKey) {
       e.preventDefault();
       wrapSelection('*', '*');
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+    // Inline Code: Ctrl/Cmd + `
+    if (isModKey && e.key === '`') {
       e.preventDefault();
       wrapSelection('`', '`');
       return;
     }
     // Bullet list: Ctrl+Shift+U
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'U') {
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'u') {
       e.preventDefault();
       insertAtLineStart('• ');
       return;
     }
     // Numbered list: Ctrl+Shift+O
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'O') {
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'o') {
       e.preventDefault();
       insertAtLineStart('1. ');
       return;
     }
+    // Heading: Ctrl+Shift+H
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'h') {
+      e.preventDefault();
+      insertAtLineStart('## ');
+      return;
+    }
+    // Quote: Ctrl+Shift+Q
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'q') {
+      e.preventDefault();
+      insertAtLineStart('> ');
+      return;
+    }
+    // Link: Ctrl+K
+    if (isModKey && e.key.toLowerCase() === 'k' && !e.shiftKey) {
+      e.preventDefault();
+      insertLink();
+      return;
+    }
+    // Code block: Ctrl+Shift+C
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      insertCodeBlock('python');
+      return;
+    }
 
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (e.key === "Enter" && isModKey) {
       e.preventDefault();
       handleSave();
       return;
@@ -204,11 +287,85 @@ const TakeawayBlock = ({
               placeholder="Enter your key takeaway..."
             />
 
-            {/* Help text and actions */}
-            <div className="flex items-center justify-between">
-              <div className="text-[11px] text-amber-700/70 dark:text-amber-300/70 flex flex-wrap gap-1">
-                <span>Ctrl+Enter save • Ctrl+B bold • Ctrl+` code • Ctrl+Shift+U bullets</span>
-              </div>
+            {/* Formatting dropdown and actions */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1 border-amber-300/50 hover:bg-amber-100/50 dark:hover:bg-amber-800/30"
+                  >
+                    <Bold className="w-3 h-3" />
+                    Format
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 bg-popover border border-border shadow-lg z-50">
+                  <DropdownMenuItem onClick={() => wrapSelection('**', '**')} className="cursor-pointer">
+                    <Bold className="w-4 h-4 mr-2" />
+                    Bold
+                    <DropdownMenuShortcut>{modKey}+B</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => wrapSelection('*', '*')} className="cursor-pointer">
+                    <Italic className="w-4 h-4 mr-2" />
+                    Italic
+                    <DropdownMenuShortcut>{modKey}+I</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => wrapSelection('`', '`')} className="cursor-pointer">
+                    <Terminal className="w-4 h-4 mr-2" />
+                    Inline Code
+                    <DropdownMenuShortcut>{modKey}+`</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => insertAtLineStart('• ')} className="cursor-pointer">
+                    <List className="w-4 h-4 mr-2" />
+                    Bullet List
+                    <DropdownMenuShortcut>{modKey}+⇧+U</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => insertAtLineStart('1. ')} className="cursor-pointer">
+                    <ListOrdered className="w-4 h-4 mr-2" />
+                    Numbered List
+                    <DropdownMenuShortcut>{modKey}+⇧+O</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => insertAtLineStart('## ')} className="cursor-pointer">
+                    <Heading2 className="w-4 h-4 mr-2" />
+                    Heading
+                    <DropdownMenuShortcut>{modKey}+⇧+H</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => insertAtLineStart('> ')} className="cursor-pointer">
+                    <Quote className="w-4 h-4 mr-2" />
+                    Blockquote
+                    <DropdownMenuShortcut>{modKey}+⇧+Q</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={insertLink} className="cursor-pointer">
+                    <Link className="w-4 h-4 mr-2" />
+                    Link
+                    <DropdownMenuShortcut>{modKey}+K</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="cursor-pointer">
+                      <Code className="w-4 h-4 mr-2" />
+                      Code Block
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent className="bg-popover border border-border shadow-lg z-50">
+                        {CODE_LANGUAGES.map((lang) => (
+                          <DropdownMenuItem
+                            key={lang.value}
+                            onClick={() => insertCodeBlock(lang.value)}
+                            className="cursor-pointer"
+                          >
+                            {lang.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="flex items-center gap-2">
                 <Button 
                   variant="ghost" 
