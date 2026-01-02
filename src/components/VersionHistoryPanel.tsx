@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { PostVersion } from "@/hooks/usePostVersions";
@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight, ExternalLink } from "lucide-react";
+import { History, RotateCcw, Upload, Eye, CheckCircle, GitCompare, Shield, User, AlertTriangle, ArrowLeftRight, ExternalLink, Bookmark } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
@@ -61,6 +61,14 @@ const VersionHistoryPanel = ({
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
   const [compareVersion, setCompareVersion] = useState<PostVersion | null>(null);
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
+  const [hoveredVersionId, setHoveredVersionId] = useState<string | null>(null);
+
+  // Group versions by status
+  const groupedVersions = useMemo(() => {
+    const published = versions.filter(v => v.status === "published");
+    const unpublished = versions.filter(v => v.status === "draft" || v.status === "archived");
+    return { published, unpublished };
+  }, [versions]);
 
   const handlePublishClick = (version: PostVersion) => {
     setSelectedVersion(version);
@@ -94,20 +102,70 @@ const VersionHistoryPanel = ({
     setDiffDialogOpen(true);
   };
 
-  const getRoleBadge = (role: string) => {
-    if (role === "admin") {
-      return (
-        <Badge className="bg-primary text-primary-foreground gap-1 text-xs">
-          <Shield className="h-3 w-3" />
-          Admin
-        </Badge>
-      );
-    }
+  const formatVersionDate = (dateString: string) => {
+    return format(new Date(dateString), "MMM d, yyyy, h:mm a");
+  };
+
+  const VersionListItem = ({ version, isSelected }: { version: PostVersion; isSelected?: boolean }) => {
+    const isHovered = hoveredVersionId === version.id;
+    const isPublished = version.status === "published";
+    
     return (
-      <Badge variant="outline" className="gap-1 text-xs">
-        <User className="h-3 w-3" />
-        Moderator
-      </Badge>
+      <div
+        className={`group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+          isSelected 
+            ? "bg-primary/10" 
+            : "hover:bg-muted/50"
+        }`}
+        onMouseEnter={() => setHoveredVersionId(version.id)}
+        onMouseLeave={() => setHoveredVersionId(null)}
+        onClick={() => {
+          setSelectedVersion(version);
+          handleCompareClick(version);
+        }}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {isPublished && (
+            <Bookmark className="h-4 w-4 text-foreground flex-shrink-0" fill="currentColor" />
+          )}
+          <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
+            {version.change_summary || `Version ${version.version_number}`}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isHovered ? (
+            <div className="flex items-center gap-1 bg-muted rounded-md px-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Bookmark functionality could be added here
+                }}
+              >
+                <Bookmark className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRevertClick(version);
+                }}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {formatVersionDate(version.created_at)}
+            </span>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -125,115 +183,83 @@ const VersionHistoryPanel = ({
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-[400px] sm:w-[540px]">
-          <SheetHeader>
+        <SheetContent className="w-[400px] sm:w-[480px] p-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b">
             <SheetTitle className="flex items-center justify-between">
-              Version History
+              History
               {id && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/admin/posts/${id}/versions`)}
-                  className="gap-1"
+                  className="gap-1 text-muted-foreground hover:text-foreground"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  Full View
                 </Button>
               )}
             </SheetTitle>
-            <SheetDescription>
-              View and manage all saved versions of this post
-            </SheetDescription>
           </SheetHeader>
           
-          <ScrollArea className="h-[calc(100vh-150px)] mt-4 pr-4">
-            {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-4 border rounded-lg animate-pulse">
-                    <div className="h-4 bg-muted rounded w-1/3 mb-2" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
-                  </div>
-                ))}
-              </div>
-            ) : versions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No versions saved yet</p>
-                <p className="text-sm">Versions are saved automatically when you edit</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {versions.map((version, index) => {
-                  const isInitialVersion = version.version_number === 0;
-                  
-                  return (
-                    <div
-                      key={version.id}
-                      className={`p-4 border rounded-lg transition-colors hover:bg-muted/50 ${
-                        version.status === "published" ? "border-primary bg-primary/5" : ""
-                      } ${version.editor_role === "admin" ? "border-l-4 border-l-primary" : ""}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-base">
-                            v{version.version_number}
-                          </span>
-                          {getRoleBadge(version.editor_role)}
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(version.created_at), "MMM d, yyyy h:mm a")}
-                        </span>
-                      </div>
-                      
-                      {/* Status badges */}
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {version.status === "published" && (
-                          <Badge className="bg-green-600 text-white">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Published
-                          </Badge>
-                        )}
-                        {version.status === "archived" && (
-                          <Badge variant="outline" className="border-muted-foreground text-muted-foreground">
-                            Archived
-                          </Badge>
-                        )}
-                        {isInitialVersion && (
-                          <Badge variant="outline" className="border-blue-500 text-blue-600">
-                            Initial Version
-                          </Badge>
-                        )}
-                        {index === 0 && version.status === "draft" && (
-                          <Badge variant="outline">Latest Draft</Badge>
-                        )}
-                      </div>
-                      
-                      <div className="text-xs text-muted-foreground mb-3">
-                        Edited by: {version.editor_profile?.full_name || version.editor_profile?.email || "Unknown"}
-                      </div>
-                      
-                      {/* Preview link to full version page */}
-                      {id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/admin/posts/${id}/versions`)}
-                          className="gap-1 text-primary hover:text-primary"
-                        >
-                          <Eye className="h-3 w-3" />
-                          Preview
-                        </Button>
-                      )}
+          <ScrollArea className="h-[calc(100vh-100px)]">
+            <div className="px-4 py-4">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="px-3 py-2.5 animate-pulse">
+                      <div className="h-4 bg-muted rounded w-2/3 mb-1" />
+                      <div className="h-3 bg-muted rounded w-1/4" />
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : versions.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">No versions saved yet</p>
+                  <p className="text-sm mt-1">Versions are saved when you edit</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Published Section */}
+                  {groupedVersions.published.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 px-3">
+                        Published
+                      </h3>
+                      <div className="space-y-0.5">
+                        {groupedVersions.published.map((version) => (
+                          <VersionListItem 
+                            key={version.id} 
+                            version={version}
+                            isSelected={selectedVersion?.id === version.id}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Unpublished Section */}
+                  {groupedVersions.unpublished.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 px-3">
+                        Unpublished
+                      </h3>
+                      <div className="space-y-0.5">
+                        {groupedVersions.unpublished.map((version) => (
+                          <VersionListItem 
+                            key={version.id} 
+                            version={version}
+                            isSelected={selectedVersion?.id === version.id}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </ScrollArea>
         </SheetContent>
       </Sheet>
-
       <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
         <DialogContent>
           <DialogHeader>
