@@ -1195,6 +1195,35 @@ export type Database = {
           },
         ]
       }
+      post_version_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          version_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          version_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_version_bookmarks_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "post_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_versions: {
         Row: {
           change_summary: string | null

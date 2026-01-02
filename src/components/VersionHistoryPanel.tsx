@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { PostVersion } from "@/hooks/usePostVersions";
+import { useVersionBookmarks } from "@/hooks/useVersionBookmarks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,12 +64,16 @@ const VersionHistoryPanel = ({
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
   const [hoveredVersionId, setHoveredVersionId] = useState<string | null>(null);
 
-  // Group versions by status
+  // Version bookmarks
+  const { isBookmarked, toggleBookmark } = useVersionBookmarks(id);
+
+  // Group versions by status and bookmarks
   const groupedVersions = useMemo(() => {
-    const published = versions.filter(v => v.status === "published");
-    const unpublished = versions.filter(v => v.status === "draft" || v.status === "archived");
-    return { published, unpublished };
-  }, [versions]);
+    const bookmarked = versions.filter(v => isBookmarked(v.id));
+    const published = versions.filter(v => v.status === "published" && !isBookmarked(v.id));
+    const unpublished = versions.filter(v => (v.status === "draft" || v.status === "archived") && !isBookmarked(v.id));
+    return { bookmarked, published, unpublished };
+  }, [versions, isBookmarked]);
 
   const handlePublishClick = (version: PostVersion) => {
     setSelectedVersion(version);
@@ -106,9 +111,9 @@ const VersionHistoryPanel = ({
     return format(new Date(dateString), "MMM d, yyyy, h:mm a");
   };
 
-  const VersionListItem = ({ version, isSelected }: { version: PostVersion; isSelected?: boolean }) => {
+  const VersionListItem = ({ version, isSelected, showBookmarkIcon = false }: { version: PostVersion; isSelected?: boolean; showBookmarkIcon?: boolean }) => {
     const isHovered = hoveredVersionId === version.id;
-    const isPublished = version.status === "published";
+    const versionIsBookmarked = isBookmarked(version.id);
     
     return (
       <div
@@ -125,7 +130,7 @@ const VersionHistoryPanel = ({
         }}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {isPublished && (
+          {showBookmarkIcon && (
             <Bookmark className="h-4 w-4 text-foreground flex-shrink-0" fill="currentColor" />
           )}
           <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
@@ -142,10 +147,13 @@ const VersionHistoryPanel = ({
                 className="h-7 w-7"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Bookmark functionality could be added here
+                  toggleBookmark(version.id);
                 }}
               >
-                <Bookmark className="h-3.5 w-3.5" />
+                <Bookmark 
+                  className={`h-3.5 w-3.5 ${versionIsBookmarked ? "text-primary" : ""}`} 
+                  fill={versionIsBookmarked ? "currentColor" : "none"}
+                />
               </Button>
               <Button
                 variant="ghost"
@@ -219,6 +227,25 @@ const VersionHistoryPanel = ({
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Bookmarked Section */}
+                  {groupedVersions.bookmarked.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 px-3">
+                        Bookmarked
+                      </h3>
+                      <div className="space-y-0.5">
+                        {groupedVersions.bookmarked.map((version) => (
+                          <VersionListItem 
+                            key={version.id} 
+                            version={version}
+                            isSelected={selectedVersion?.id === version.id}
+                            showBookmarkIcon={true}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Published Section */}
                   {groupedVersions.published.length > 0 && (
                     <div>
