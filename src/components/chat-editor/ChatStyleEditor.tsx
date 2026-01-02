@@ -658,6 +658,7 @@ const ChatStyleEditor = ({
       type: "message",
     };
 
+    // Append new message at end (bottom of chat) - builds conversation top to bottom
     setMessages((prev) => [...prev, newMsg]);
     setNewMessage("");
     setManualHeight(null); // Reset height after sending
