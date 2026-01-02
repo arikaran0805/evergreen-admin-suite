@@ -233,11 +233,86 @@ const SortableMessageItem = ({
 
   const isTakeaway = message.type === "takeaway";
 
-  return (
-    <div ref={setNodeRef} style={style} className="group relative flex items-start gap-2 mb-4">
-      {/* Main bubble content */}
-      <div className="flex-1 min-w-0">
-        {isTakeaway ? (
+  // Action buttons component
+  const ActionButtons = () => (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-background/95 backdrop-blur-sm border rounded-lg px-1 py-1 shadow-sm flex-shrink-0",
+        isTakeaway ? "mt-8" : "mt-6"
+      )}
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-3 h-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6"
+        onClick={onMoveUp}
+        disabled={isFirst}
+      >
+        <ArrowUp className="w-3 h-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6"
+        onClick={onMoveDown}
+        disabled={isLast}
+      >
+        <ArrowDown className="w-3 h-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6"
+        onClick={() => onStartEdit(message.id)}
+      >
+        <Pencil className="w-3 h-3" />
+      </Button>
+      {isTakeaway ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => onConvertToMessage(message.id)}
+          title="Convert to message"
+        >
+          <MessageCircle className="w-3 h-3" />
+        </Button>
+      ) : (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => onConvertToTakeaway(message.id)}
+          title="Convert to takeaway"
+        >
+          <Lightbulb className="w-3 h-3" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 text-destructive hover:text-destructive"
+        onClick={() => onDelete(message.id)}
+      >
+        <Trash2 className="w-3 h-3" />
+      </Button>
+    </div>
+  );
+
+  // For takeaway blocks, always show action buttons on the right
+  if (isTakeaway) {
+    return (
+      <div ref={setNodeRef} style={style} className="group relative flex items-start gap-2 mb-4">
+        <div className="flex-1 min-w-0">
           <TakeawayBlock
             message={message}
             isEditing={isEditing}
@@ -245,94 +320,40 @@ const SortableMessageItem = ({
             onStartEdit={onStartEdit}
             onEndEdit={onEndEdit}
           />
-        ) : (
-          <ChatBubble
-            message={message}
-            character={character}
-            isMentor={isMentor}
-            isEditing={isEditing}
-            onEdit={onEdit}
-            onStartEdit={onStartEdit}
-            onEndEdit={onEndEdit}
-            codeTheme={codeTheme}
-          />
-        )}
-      </div>
-
-      {/* Action buttons - always on the right of each bubble */}
-      {isEditMode && !isEditing && (
-        <div
-          className={cn(
-            "flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-background/95 backdrop-blur-sm border rounded-lg px-1 py-1 shadow-sm flex-shrink-0",
-            isTakeaway ? "mt-8" : "mt-6"
-          )}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 cursor-grab active:cursor-grabbing"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="w-3 h-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={onMoveUp}
-            disabled={isFirst}
-          >
-            <ArrowUp className="w-3 h-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={onMoveDown}
-            disabled={isLast}
-          >
-            <ArrowDown className="w-3 h-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => onStartEdit(message.id)}
-          >
-            <Pencil className="w-3 h-3" />
-          </Button>
-          {isTakeaway ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={() => onConvertToMessage(message.id)}
-              title="Convert to message"
-            >
-              <MessageCircle className="w-3 h-3" />
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={() => onConvertToTakeaway(message.id)}
-              title="Convert to takeaway"
-            >
-              <Lightbulb className="w-3 h-3" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={() => onDelete(message.id)}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
         </div>
+        {isEditMode && !isEditing && <ActionButtons />}
+      </div>
+    );
+  }
+
+  // For regular messages, position action buttons based on bubble side
+  // Mentor bubbles are on the right (flex-row-reverse), so buttons go on left
+  // Course bubbles are on the left, so buttons go on right
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={cn(
+        "group relative flex items-start gap-2 mb-4",
+        isMentor ? "flex-row-reverse" : "flex-row"
       )}
+    >
+      {/* Action buttons - position based on bubble side */}
+      {isEditMode && !isEditing && <ActionButtons />}
+      
+      {/* Main bubble content */}
+      <div className="flex-1 min-w-0">
+        <ChatBubble
+          message={message}
+          character={character}
+          isMentor={isMentor}
+          isEditing={isEditing}
+          onEdit={onEdit}
+          onStartEdit={onStartEdit}
+          onEndEdit={onEndEdit}
+          codeTheme={codeTheme}
+        />
+      </div>
     </div>
   );
 };
@@ -661,13 +682,103 @@ const ChatStyleEditor = ({
     setEditingId(newTakeaway.id); // Start editing immediately
   }, [saveToUndoStack]);
 
-  // Global keyboard shortcuts for the editor
+  // Handle formatting shortcuts on main textarea
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const isModKey = isMac ? e.metaKey : e.ctrlKey;
+    
+    // Enter sends. Shift+Enter inserts a newline.
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleAddMessage();
+      return;
+    }
+    
+    // Bold: Ctrl/Cmd + B
+    if (isModKey && e.key.toLowerCase() === 'b' && !e.shiftKey) {
+      e.preventDefault();
+      handleInsertBold();
+      return;
+    }
+    
+    // Italic: Ctrl/Cmd + I (without shift)
+    if (isModKey && e.key.toLowerCase() === 'i' && !e.shiftKey) {
+      e.preventDefault();
+      handleInsertItalic();
+      return;
+    }
+    
+    // Inline Code: Ctrl/Cmd + `
+    if (isModKey && e.key === '`') {
+      e.preventDefault();
+      handleInsertInlineCode();
+      return;
+    }
+    
+    // Bullet List: Ctrl/Cmd + Shift + U
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'u') {
+      e.preventDefault();
+      handleInsertBulletList();
+      return;
+    }
+    
+    // Numbered List: Ctrl/Cmd + Shift + O
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'o') {
+      e.preventDefault();
+      handleInsertNumberedList();
+      return;
+    }
+    
+    // Heading: Ctrl/Cmd + Shift + H
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'h') {
+      e.preventDefault();
+      handleInsertHeading();
+      return;
+    }
+    
+    // Quote: Ctrl/Cmd + Shift + Q
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'q') {
+      e.preventDefault();
+      handleInsertBlockquote();
+      return;
+    }
+    
+    // Link: Ctrl/Cmd + K
+    if (isModKey && e.key.toLowerCase() === 'k' && !e.shiftKey) {
+      e.preventDefault();
+      handleInsertLink();
+      return;
+    }
+    
+    // Code block (Python): Ctrl/Cmd + Shift + C
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      handleInsertCodeSnippet('python');
+      return;
+    }
+    
+    // Takeaway: Ctrl/Cmd + Shift + T
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 't') {
+      e.preventDefault();
+      handleAddTakeawayWithUndo();
+      return;
+    }
+    
+    // Image: Ctrl/Cmd + Shift + I
+    if (isModKey && e.shiftKey && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      handleInsertImage();
+      return;
+    }
+  };
+
+  // Global keyboard shortcuts for the editor (when not in textarea)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const isModKey = isMac ? e.metaKey : e.ctrlKey;
       
-      // Only handle shortcuts when not editing a bubble
+      // Skip if editing a bubble or if focus is on main textarea (handled by onKeyDown)
       if (editingId) return;
+      if (document.activeElement === inputRef.current) return;
       
       // Undo: Ctrl/Cmd + Z
       if (isModKey && e.key === 'z' && !e.shiftKey) {
@@ -711,16 +822,18 @@ const ChatStyleEditor = ({
         return;
       }
       
-      // Bold: Ctrl/Cmd + B
+      // Bold: Ctrl/Cmd + B (focus textarea first)
       if (isModKey && e.key.toLowerCase() === 'b' && !e.shiftKey) {
         e.preventDefault();
+        inputRef.current?.focus();
         handleInsertBold();
         return;
       }
       
-      // Italic: Ctrl/Cmd + I (without shift)
+      // Italic: Ctrl/Cmd + I (without shift) (focus textarea first)
       if (isModKey && e.key.toLowerCase() === 'i' && !e.shiftKey) {
         e.preventDefault();
+        inputRef.current?.focus();
         handleInsertItalic();
         return;
       }
@@ -728,6 +841,7 @@ const ChatStyleEditor = ({
       // Inline Code: Ctrl/Cmd + `
       if (isModKey && e.key === '`') {
         e.preventDefault();
+        inputRef.current?.focus();
         handleInsertInlineCode();
         return;
       }
@@ -803,13 +917,6 @@ const ChatStyleEditor = ({
     setEditingId(newTakeaway.id);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter sends. Shift+Enter inserts a newline.
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleAddMessage();
-    }
-  };
 
   const handleEditMessage = (id: string, content: string, title?: string, icon?: string) => {
     saveToUndoStack();
@@ -1078,7 +1185,7 @@ const ChatStyleEditor = ({
                 ref={inputRef}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={handleInputKeyDown}
                 onMouseUp={handleTextareaMouseUp}
                 placeholder={`Type a message as ${
                   currentSpeaker === "mentor" ? mentorName : courseCharacter.name
@@ -1093,7 +1200,7 @@ const ChatStyleEditor = ({
                 rows={3}
               />
               <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
-                Enter to send • Shift+Enter for new line
+                Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
               </div>
               {/* Resize indicator */}
               <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground/30">
