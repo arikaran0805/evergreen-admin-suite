@@ -836,7 +836,7 @@ const AdminPostEditor = () => {
                     </Button>
                   )}
                   {/* Save as draft option when editing */}
-                  {id && hasContentChanges && (
+                  {id && (
                     <Button
                       onClick={() => setShowVersioningNoteDialog(true)}
                       disabled={loading}
