@@ -35,6 +35,9 @@ import {
   GitBranch,
   Table,
   Code,
+  Network,
+  Hash,
+  Repeat,
 } from "lucide-react";
 import { FreeformTool, FREEFORM_COLORS, HIGHLIGHTER_COLORS, STROKE_WIDTHS, SHAPE_TEMPLATES, TemplateId } from "./types";
 
@@ -65,6 +68,9 @@ const templateIcons: Record<string, React.ElementType> = {
   'git-branch': GitBranch,
   'table': Table,
   'code': Code,
+  'network': Network,
+  'hash': Hash,
+  'repeat': Repeat,
 };
 
 const ToolButton = ({
