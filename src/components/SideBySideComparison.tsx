@@ -197,14 +197,14 @@ const RichTextSideBySide = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="border rounded-lg overflow-hidden">
           <VersionHeader version={oldVersion} label="Previous Version" />
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[600px]">
             <div className="p-4">{renderOldContent()}</div>
           </ScrollArea>
         </div>
         
         <div className="border rounded-lg overflow-hidden border-primary/50">
           <VersionHeader version={newVersion} label="Updated Version" />
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[600px]">
             <div className="p-4">{renderNewContent()}</div>
           </ScrollArea>
         </div>
