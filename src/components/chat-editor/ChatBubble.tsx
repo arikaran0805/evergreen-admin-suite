@@ -5,6 +5,7 @@ import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link,
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -536,40 +537,43 @@ const ChatBubble = ({
             
             {/* Editor / Preview based on view mode */}
             {viewMode === 'split' ? (
-              <div className="flex gap-2 w-full">
+              <ResizablePanelGroup direction="horizontal" className="min-h-[150px] rounded-lg border border-border/50">
                 {/* Editor panel */}
-                <div className="flex-1 min-w-0">
+                <ResizablePanel defaultSize={50} minSize={25}>
                   <textarea
                     ref={textareaRef}
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     onKeyDown={handleKeyDown}
                     className={cn(
-                      "w-full min-h-[150px] bg-transparent resize-none outline-none text-sm leading-relaxed border rounded-lg p-2",
+                      "w-full h-full min-h-[150px] bg-transparent resize-none outline-none text-sm leading-relaxed p-2",
                       "overflow-auto",
                       isMentor 
-                        ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/30" 
-                        : "text-slate-900 dark:text-slate-100 border-slate-300/50 dark:border-slate-600/50 bg-white/50 dark:bg-slate-900/30"
+                        ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/30" 
+                        : "text-slate-900 dark:text-slate-100 bg-white/50 dark:bg-slate-900/30"
                     )}
                     style={{ maxHeight: '400px' }}
                     placeholder="Type your message..."
                   />
-                </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
                 {/* Preview panel */}
-                <div 
-                  className={cn(
-                    "flex-1 min-w-0 min-h-[150px] text-sm leading-relaxed border rounded-lg p-3 overflow-auto",
-                    isMentor 
-                      ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-900/20" 
-                      : "border-slate-300/50 dark:border-slate-600/50 bg-white/30 dark:bg-slate-900/20"
-                  )}
-                  style={{ maxHeight: '400px' }}
-                >
-                  {editContent ? renderContent(editContent) : (
-                    <span className="text-muted-foreground italic">Preview...</span>
-                  )}
-                </div>
-              </div>
+                <ResizablePanel defaultSize={50} minSize={25}>
+                  <div 
+                    className={cn(
+                      "w-full h-full min-h-[150px] text-sm leading-relaxed p-3 overflow-auto",
+                      isMentor 
+                        ? "bg-emerald-50/30 dark:bg-emerald-900/20" 
+                        : "bg-white/30 dark:bg-slate-900/20"
+                    )}
+                    style={{ maxHeight: '400px' }}
+                  >
+                    {editContent ? renderContent(editContent) : (
+                      <span className="text-muted-foreground italic">Preview...</span>
+                    )}
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
             ) : viewMode === 'preview' ? (
               <div 
                 className={cn(
