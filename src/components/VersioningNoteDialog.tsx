@@ -79,10 +79,7 @@ export function VersioningNoteDialog({
       : option?.defaultSummary || "";
     
     onSave(selectedType, summary);
-    
-    // Reset state
-    setSelectedType(null);
-    setCustomSummary("");
+    // Don't reset state here - let the parent close the dialog after save completes
   };
 
   const handleCancel = () => {
