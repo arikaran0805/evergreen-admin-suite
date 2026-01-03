@@ -6,6 +6,7 @@ import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { getChatColors } from "./chatColors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -471,7 +472,7 @@ const ChatBubble = ({
         className={cn(
           "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg",
           "shadow-sm transition-transform duration-200 group-hover:scale-110",
-          isMentor ? "bg-gradient-to-br from-emerald-400 to-emerald-600" : "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700"
+          getChatColors(isMentor).avatar
         )}
       >
         {renderCourseIcon(character.emoji, 18)}
@@ -485,9 +486,9 @@ const ChatBubble = ({
           isEditing 
             ? "flex-1 max-w-full" 
             : "max-w-[70%] min-w-[60px]",
-          isMentor
-            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100 rounded-br-md"
-            : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md",
+          getChatColors(isMentor).bubble,
+          getChatColors(isMentor).text,
+          isMentor ? "rounded-br-md" : "rounded-bl-md",
           isDragging && "ring-2 ring-primary/50"
         )}
       >
@@ -496,7 +497,7 @@ const ChatBubble = ({
         <div
           className={cn(
             "text-[10px] font-medium mb-1 opacity-70 flex items-center gap-1",
-            isMentor ? "text-emerald-700 dark:text-emerald-300" : "text-slate-600 dark:text-slate-400"
+            getChatColors(isMentor).speaker
           )}
         >
           {character.name} {renderCourseIcon(character.emoji, 12)}
@@ -513,10 +514,9 @@ const ChatBubble = ({
                 onClick={() => handleViewModeChange('edit')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
-                  viewMode === 'edit' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
-                  isMentor 
-                    ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                  viewMode === 'edit' && getChatColors(isMentor).buttonActive,
+                  getChatColors(isMentor).speaker,
+                  getChatColors(isMentor).buttonHover
                 )}
               >
                 <EyeOff className="w-3 h-3" />
@@ -528,10 +528,9 @@ const ChatBubble = ({
                 onClick={() => handleViewModeChange('split')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
-                  viewMode === 'split' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
-                  isMentor 
-                    ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                  viewMode === 'split' && getChatColors(isMentor).buttonActive,
+                  getChatColors(isMentor).speaker,
+                  getChatColors(isMentor).buttonHover
                 )}
               >
                 <Columns className="w-3 h-3" />
@@ -543,10 +542,9 @@ const ChatBubble = ({
                 onClick={() => handleViewModeChange('preview')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
-                  viewMode === 'preview' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
-                  isMentor 
-                    ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                  viewMode === 'preview' && getChatColors(isMentor).buttonActive,
+                  getChatColors(isMentor).speaker,
+                  getChatColors(isMentor).buttonHover
                 )}
               >
                 <Eye className="w-3 h-3" />
