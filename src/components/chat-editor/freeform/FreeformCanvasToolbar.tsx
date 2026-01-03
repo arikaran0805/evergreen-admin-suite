@@ -28,8 +28,15 @@ import {
   Download,
   ZoomIn,
   ZoomOut,
+  Shapes,
+  Box,
+  Tag,
+  Layers,
+  GitBranch,
+  Table,
+  Code,
 } from "lucide-react";
-import { FreeformTool, FREEFORM_COLORS, HIGHLIGHTER_COLORS, STROKE_WIDTHS } from "./types";
+import { FreeformTool, FREEFORM_COLORS, HIGHLIGHTER_COLORS, STROKE_WIDTHS, SHAPE_TEMPLATES, TemplateId } from "./types";
 
 interface FreeformCanvasToolbarProps {
   activeTool: FreeformTool;
@@ -44,10 +51,21 @@ interface FreeformCanvasToolbarProps {
   onExport: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  onInsertTemplate: (templateId: TemplateId) => void;
   canUndo: boolean;
   canRedo: boolean;
   zoom: number;
 }
+
+const templateIcons: Record<string, React.ElementType> = {
+  'box': Box,
+  'tag': Tag,
+  'arrow-right': ArrowRight,
+  'layers': Layers,
+  'git-branch': GitBranch,
+  'table': Table,
+  'code': Code,
+};
 
 const ToolButton = ({
   tool,
@@ -97,6 +115,7 @@ export const FreeformCanvasToolbar = ({
   onExport,
   onZoomIn,
   onZoomOut,
+  onInsertTemplate,
   canUndo,
   canRedo,
   zoom,
@@ -104,8 +123,14 @@ export const FreeformCanvasToolbar = ({
   const isHighlighter = activeTool === 'highlighter';
   const colors = isHighlighter ? HIGHLIGHTER_COLORS : FREEFORM_COLORS;
 
+  const groupedTemplates = {
+    memory: SHAPE_TEMPLATES.filter(t => t.category === 'memory'),
+    'data-structures': SHAPE_TEMPLATES.filter(t => t.category === 'data-structures'),
+    flow: SHAPE_TEMPLATES.filter(t => t.category === 'flow'),
+  };
+
   return (
-    <div className="flex items-center gap-1 p-2 bg-background/95 backdrop-blur-sm border-b border-border rounded-t-xl">
+    <div className="flex items-center gap-1 p-2 bg-background/95 backdrop-blur-sm border-b border-border rounded-t-xl flex-wrap">
       {/* Selection & Drawing Tools */}
       <div className="flex items-center gap-0.5 pr-2 border-r border-border/50">
         <ToolButton tool="select" activeTool={activeTool} onToolChange={onToolChange} icon={MousePointer2} label="Select" />
@@ -120,6 +145,85 @@ export const FreeformCanvasToolbar = ({
         <ToolButton tool="circle" activeTool={activeTool} onToolChange={onToolChange} icon={Circle} label="Circle" />
         <ToolButton tool="arrow" activeTool={activeTool} onToolChange={onToolChange} icon={ArrowRight} label="Arrow" />
         <ToolButton tool="line" activeTool={activeTool} onToolChange={onToolChange} icon={Minus} label="Line" />
+      </div>
+
+      {/* Templates */}
+      <div className="px-2 border-r border-border/50">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg gap-1.5">
+              <Shapes className="h-4 w-4" />
+              <span className="text-xs">Templates</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-3 bg-popover border shadow-lg z-50" align="start">
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Memory</h4>
+                <div className="grid gap-1">
+                  {groupedTemplates.memory.map((template) => {
+                    const Icon = templateIcons[template.icon] || Box;
+                    return (
+                      <button
+                        key={template.id}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-muted transition-colors text-left w-full"
+                        onClick={() => onInsertTemplate(template.id)}
+                      >
+                        <Icon className="h-4 w-4 text-primary shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium leading-tight">{template.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Data Structures</h4>
+                <div className="grid gap-1">
+                  {groupedTemplates['data-structures'].map((template) => {
+                    const Icon = templateIcons[template.icon] || Box;
+                    return (
+                      <button
+                        key={template.id}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-muted transition-colors text-left w-full"
+                        onClick={() => onInsertTemplate(template.id)}
+                      >
+                        <Icon className="h-4 w-4 text-green-600 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium leading-tight">{template.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Flow</h4>
+                <div className="grid gap-1">
+                  {groupedTemplates.flow.map((template) => {
+                    const Icon = templateIcons[template.icon] || Box;
+                    return (
+                      <button
+                        key={template.id}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-muted transition-colors text-left w-full"
+                        onClick={() => onInsertTemplate(template.id)}
+                      >
+                        <Icon className="h-4 w-4 text-amber-600 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium leading-tight">{template.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Text & Eraser */}
