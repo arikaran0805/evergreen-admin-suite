@@ -86,8 +86,10 @@ const VersionHistoryPanel = ({
   // Group versions by status and bookmarks
   const groupedVersions = useMemo(() => {
     const bookmarked = versions.filter(v => isBookmarked(v.id));
-    const published = versions.filter(v => v.status === "published" && !isBookmarked(v.id));
-    const unpublished = versions.filter(v => (v.status === "draft" || v.status === "archived") && !isBookmarked(v.id));
+    // Currently live version (is_published === true)
+    const published = versions.filter(v => v.is_published === true && !isBookmarked(v.id));
+    // All other versions that are not bookmarked and not the live version
+    const unpublished = versions.filter(v => !v.is_published && !isBookmarked(v.id));
     return { bookmarked, published, unpublished };
   }, [versions, isBookmarked]);
 
