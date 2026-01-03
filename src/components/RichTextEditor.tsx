@@ -318,12 +318,13 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
       <ReactQuill
         ref={quillRef}
         theme="snow"
-        defaultValue={value}
+        value={value}
         onChange={handleChange}
         modules={modules}
         formats={formats}
         placeholder={placeholder || "Write your content here..."}
         className="bg-background"
+        preserveWhitespace
       />
       
       {/* Code block action buttons overlay */}
