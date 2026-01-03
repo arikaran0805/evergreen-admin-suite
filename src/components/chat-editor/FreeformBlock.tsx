@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
-import { FreeformCanvas, FreeformCanvasViewer, FreeformCanvasData } from "./freeform";
+import { useState, useCallback, lazy, Suspense } from "react";
+import { FreeformCanvasData } from "./freeform/types";
 import { ChatMessage } from "./types";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, GripVertical, ArrowUp, ArrowDown, Maximize2, Minimize2 } from "lucide-react";
+import { Pencil, Trash2, GripVertical, ArrowUp, ArrowDown, Maximize2, Minimize2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -10,6 +10,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// Lazy load the heavy canvas components to avoid loading fabric.js until needed
+const FreeformCanvas = lazy(() => import("./freeform/FreeformCanvas").then(m => ({ default: m.FreeformCanvas })));
+const FreeformCanvasViewer = lazy(() => import("./freeform/FreeformCanvasViewer").then(m => ({ default: m.FreeformCanvasViewer })));
+
+// Loading fallback for canvas components
+const CanvasLoadingFallback = ({ className }: { className?: string }) => (
+  <div className={cn("flex items-center justify-center rounded-xl border border-border bg-muted/30", className)}>
+    <div className="text-center text-muted-foreground">
+      <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin opacity-50" />
+      <p className="text-sm">Loading canvas...</p>
+    </div>
+  </div>
+);
 
 interface FreeformBlockProps {
   message: ChatMessage;
@@ -108,12 +122,14 @@ export const FreeformBlock = ({
       <div className="group relative flex items-start gap-2 mb-4">
         <div className="flex-1 min-w-0">
           <div className="relative">
-            <FreeformCanvas
-              initialData={message.freeformData}
-              onSave={handleSave}
-              readOnly={false}
-              className="min-h-[400px]"
-            />
+            <Suspense fallback={<CanvasLoadingFallback className="min-h-[400px]" />}>
+              <FreeformCanvas
+                initialData={message.freeformData}
+                onSave={handleSave}
+                readOnly={false}
+                className="min-h-[400px]"
+              />
+            </Suspense>
             <div className="flex justify-end gap-2 mt-2">
               <Button
                 variant="outline"
@@ -135,13 +151,15 @@ export const FreeformBlock = ({
       <div className="group relative flex items-start gap-2 mb-4">
         <div className="flex-1 min-w-0">
           {message.freeformData ? (
-            <FreeformCanvasViewer
-              data={message.freeformData}
-              className={cn(
-                "min-h-[200px] max-h-[400px]",
-                !isEditMode && "cursor-pointer hover:shadow-lg transition-shadow"
-              )}
-            />
+            <Suspense fallback={<CanvasLoadingFallback className="min-h-[200px] max-h-[400px]" />}>
+              <FreeformCanvasViewer
+                data={message.freeformData}
+                className={cn(
+                  "min-h-[200px] max-h-[400px]",
+                  !isEditMode && "cursor-pointer hover:shadow-lg transition-shadow"
+                )}
+              />
+            </Suspense>
           ) : (
             <div 
               className="flex items-center justify-center min-h-[200px] rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -174,19 +192,21 @@ export const FreeformBlock = ({
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 p-4 pt-2 overflow-auto">
-            {isEditMode ? (
-              <FreeformCanvas
-                initialData={message.freeformData}
-                onSave={handleSave}
-                readOnly={false}
-                className="h-[calc(95vh-100px)]"
-              />
-            ) : message.freeformData ? (
-              <FreeformCanvasViewer
-                data={message.freeformData}
-                className="h-[calc(95vh-100px)]"
-              />
-            ) : null}
+            <Suspense fallback={<CanvasLoadingFallback className="h-[calc(95vh-100px)]" />}>
+              {isEditMode ? (
+                <FreeformCanvas
+                  initialData={message.freeformData}
+                  onSave={handleSave}
+                  readOnly={false}
+                  className="h-[calc(95vh-100px)]"
+                />
+              ) : message.freeformData ? (
+                <FreeformCanvasViewer
+                  data={message.freeformData}
+                  className="h-[calc(95vh-100px)]"
+                />
+              ) : null}
+            </Suspense>
           </div>
         </DialogContent>
       </Dialog>
