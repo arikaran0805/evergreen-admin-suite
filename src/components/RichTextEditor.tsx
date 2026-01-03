@@ -261,14 +261,15 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     }
   }, []);
 
-  // Attach keyboard shortcuts
+  // Attach keyboard shortcuts to the Quill editor specifically
   useEffect(() => {
-    const editor = containerRef.current;
-    if (!editor) return;
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
 
-    editor.addEventListener('keydown', handleKeyboardShortcuts as any);
+    const editorRoot = quill.root;
+    editorRoot.addEventListener('keydown', handleKeyboardShortcuts as any);
     return () => {
-      editor.removeEventListener('keydown', handleKeyboardShortcuts as any);
+      editorRoot.removeEventListener('keydown', handleKeyboardShortcuts as any);
     };
   }, [handleKeyboardShortcuts]);
 
@@ -563,6 +564,28 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onFocus={handleEditorFocus}>
       {/* View mode toggle and keyboard shortcuts */}
       <div className="flex items-center justify-between mb-2 px-1">
+        {/* Keyboard shortcuts popover - left side */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground">
+              <Keyboard className="w-3 h-3" />
+              Shortcuts
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3 bg-popover border border-border shadow-lg z-50" align="start">
+            <div className="space-y-1">
+              <h4 className="font-medium text-sm mb-2">Keyboard Shortcuts</h4>
+              {KEYBOARD_SHORTCUTS.map((shortcut) => (
+                <div key={shortcut.action} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{shortcut.action}</span>
+                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">{shortcut.keys}</kbd>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        {/* View mode toggle - right side */}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -601,27 +624,6 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
             Preview
           </Button>
         </div>
-        
-        {/* Keyboard shortcuts popover */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground">
-              <Keyboard className="w-3 h-3" />
-              Shortcuts
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-3 bg-popover border border-border shadow-lg z-50" align="end">
-            <div className="space-y-1">
-              <h4 className="font-medium text-sm mb-2">Keyboard Shortcuts</h4>
-              {KEYBOARD_SHORTCUTS.map((shortcut) => (
-                <div key={shortcut.action} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{shortcut.action}</span>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">{shortcut.keys}</kbd>
-                </div>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
       </div>
       
       {/* Editor / Preview based on view mode */}
