@@ -957,11 +957,15 @@ const ChatStyleEditor = ({
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const isModKey = isMac ? e.metaKey : e.ctrlKey;
-      
+
+      // If focus is inside the rich text editor (Quill/contenteditable), let it handle its own shortcuts.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.('.ql-editor') || target?.isContentEditable) return;
+
       // Skip if editing a bubble or if focus is on main textarea (handled by onKeyDown)
       if (editingId) return;
       if (document.activeElement === inputRef.current) return;
-      
+
       // Undo: Ctrl/Cmd + Z
       if (isModKey && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();

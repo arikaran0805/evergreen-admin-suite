@@ -88,6 +88,7 @@ interface CodeBlockOverlay {
 const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichTextEditorProps) => {
   const quillRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const shortcutListenerRootRef = useRef<HTMLElement | null>(null);
   const [codeBlocks, setCodeBlocks] = useState<CodeBlockOverlay[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [runningIndex, setRunningIndex] = useState<number | null>(null);
@@ -341,13 +342,38 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
 
   // Attach keyboard shortcuts to the Quill editor specifically
   useEffect(() => {
-    const quill = quillRef.current?.getEditor();
-    if (!quill) return;
+    let cancelled = false;
 
-    const editorRoot = quill.root;
-    editorRoot.addEventListener('keydown', handleKeyboardShortcuts as any);
+    const tryAttach = () => {
+      if (cancelled) return;
+
+      const quill = quillRef.current?.getEditor();
+      const editorRoot = quill?.root as HTMLElement | undefined;
+
+      if (!editorRoot) {
+        requestAnimationFrame(tryAttach);
+        return;
+      }
+
+      // Ensure we don't leak listeners if Quill recreates the root
+      if (shortcutListenerRootRef.current && shortcutListenerRootRef.current !== editorRoot) {
+        shortcutListenerRootRef.current.removeEventListener('keydown', handleKeyboardShortcuts as any);
+      }
+
+      if (shortcutListenerRootRef.current !== editorRoot) {
+        editorRoot.addEventListener('keydown', handleKeyboardShortcuts as any);
+        shortcutListenerRootRef.current = editorRoot;
+      }
+    };
+
+    tryAttach();
+
     return () => {
-      editorRoot.removeEventListener('keydown', handleKeyboardShortcuts as any);
+      cancelled = true;
+      if (shortcutListenerRootRef.current) {
+        shortcutListenerRootRef.current.removeEventListener('keydown', handleKeyboardShortcuts as any);
+        shortcutListenerRootRef.current = null;
+      }
     };
   }, [handleKeyboardShortcuts]);
 
