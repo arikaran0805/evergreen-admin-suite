@@ -470,7 +470,29 @@ const AdminPostVersions = () => {
           {/* Preview View */}
           <TabsContent value="preview" className="mt-6">
             {selectedVersion ? (
-              <Card className="p-6">
+              <Card className={`p-6 transition-all duration-300 ${isFullscreen ? "fixed inset-0 z-50 rounded-none overflow-auto" : ""}`}>
+                {/* Fullscreen Toggle */}
+                <div className="flex justify-end mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className="gap-2"
+                  >
+                    {isFullscreen ? (
+                      <>
+                        <Minimize2 className="h-4 w-4" />
+                        Exit Fullscreen
+                      </>
+                    ) : (
+                      <>
+                        <Maximize2 className="h-4 w-4" />
+                        Fullscreen
+                      </>
+                    )}
+                  </Button>
+                </div>
+
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-lg">v{selectedVersion.version_number}</span>
@@ -518,39 +540,41 @@ const AdminPostVersions = () => {
                   </p>
                 </div>
                 
-                <div className="border rounded-lg p-6 bg-background">
-                  {/* Render full post content - chat + rich text */}
-                  {(() => {
-                    const content = selectedVersion.content;
-                    const isChat = isChatTranscript(content);
-                    
-                    if (isChat) {
-                      // Split content at --- separator for chat vs explanation
-                      const parts = content.split(/\n---\n/);
-                      const chatContent = parts[0];
-                      const richTextContent = parts.length > 1 ? parts.slice(1).join("\n---\n") : null;
+                <ScrollArea className={isFullscreen ? "h-[calc(100vh-220px)]" : ""}>
+                  <div className="border rounded-lg p-6 bg-background">
+                    {/* Render full post content - chat + rich text */}
+                    {(() => {
+                      const content = selectedVersion.content;
+                      const isChat = isChatTranscript(content);
                       
-                      return (
-                        <div className="space-y-8">
-                          {chatContent && (
-                            <div>
-                              <h3 className="text-sm font-medium text-muted-foreground mb-4">Chat Content</h3>
-                              <ChatConversationView content={chatContent} />
-                            </div>
-                          )}
-                          {richTextContent && (
-                            <div>
-                              <h3 className="text-sm font-medium text-muted-foreground mb-4">Explanation</h3>
-                              <ContentRenderer htmlContent={richTextContent} />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-                    
-                    return <ContentRenderer htmlContent={content} />;
-                  })()}
-                </div>
+                      if (isChat) {
+                        // Split content at --- separator for chat vs explanation
+                        const parts = content.split(/\n---\n/);
+                        const chatContent = parts[0];
+                        const richTextContent = parts.length > 1 ? parts.slice(1).join("\n---\n") : null;
+                        
+                        return (
+                          <div className="space-y-8">
+                            {chatContent && (
+                              <div>
+                                <h3 className="text-sm font-medium text-muted-foreground mb-4">Chat Content</h3>
+                                <ChatConversationView content={chatContent} />
+                              </div>
+                            )}
+                            {richTextContent && (
+                              <div>
+                                <h3 className="text-sm font-medium text-muted-foreground mb-4">Explanation</h3>
+                                <ContentRenderer htmlContent={richTextContent} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      
+                      return <ContentRenderer htmlContent={content} />;
+                    })()}
+                  </div>
+                </ScrollArea>
               </Card>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
