@@ -32,6 +32,10 @@ const CODE_LANGUAGES = [
   { value: "css", label: "CSS" },
   { value: "json", label: "JSON" },
   { value: "bash", label: "Bash/Shell" },
+  { value: "r", label: "R" },
+  { value: "java", label: "Java" },
+  { value: "csharp", label: "C#" },
+  { value: "cpp", label: "C++" },
 ];
 
 interface ChatBubbleProps {
