@@ -865,20 +865,24 @@ const AdminPostEditor = () => {
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
-        <div className="flex-shrink-0 flex">
-          {/* Vertical Tab Toggle - Always visible */}
+        <div className="flex-shrink-0 flex relative">
+          {/* Vertical Tab Toggle - Styled like reference image */}
           <button
             onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer sticky top-6 h-fit"
+            className="absolute left-0 top-8 -translate-x-full flex items-center gap-1.5 bg-background border border-r-0 rounded-l-lg py-3 px-1.5 hover:bg-muted/50 transition-colors cursor-pointer shadow-sm z-10"
+            style={{ writingMode: 'vertical-lr' }}
           >
-            <ChevronLeft className={`h-4 w-4 text-muted-foreground transition-transform ${rightSidebarOpen ? '' : 'rotate-180'}`} />
-            <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
-              Settings
-            </span>
+            <ChevronLeft className={`h-4 w-4 text-primary transition-transform ${rightSidebarOpen ? '' : 'rotate-180'}`} />
+            <div className="flex items-center gap-1.5 rotate-180">
+              <Settings2 className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground select-none">
+                Settings
+              </span>
+            </div>
           </button>
 
           {/* Sidebar Content */}
-          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 sticky top-6 h-fit ${rightSidebarOpen ? 'w-80 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 sticky top-6 h-fit shadow-lg border-primary/20 ${rightSidebarOpen ? 'w-80 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
             <div className={`space-y-4 ${!rightSidebarOpen ? 'hidden' : ''}`}>
             {/* Action Buttons */}
             <div className="space-y-2">
