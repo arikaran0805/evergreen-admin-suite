@@ -404,45 +404,50 @@ const RichTextDiffView = ({
   return (
     <div>
       <HighlightToggle showHighlights={showHighlights} onToggle={onToggleHighlights} />
-      <ScrollArea className="h-[400px]">
-        <div className="prose dark:prose-invert max-w-none p-4">
-          {segments.map((segment, index) => {
-            if (!showHighlights) {
-              if (segment.type === "removed") return null;
-              return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
-            }
-            
-            switch (segment.type) {
-              case "added":
-                return (
-                  <span
-                    key={index}
-                    className="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100 px-0.5 rounded"
-                    title="Added"
-                    dangerouslySetInnerHTML={{ __html: segment.text }}
-                  />
-                );
-              case "removed":
-                return (
-                  <span
-                    key={index}
-                    className="bg-red-200 dark:bg-red-800/50 line-through px-0.5 rounded text-red-700 dark:text-red-300"
-                    title="Removed"
-                    dangerouslySetInnerHTML={{ __html: segment.text }}
-                  />
-                );
-              default:
-                return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
-            }
-          })}
-
-          {segments.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              No content to display
-            </div>
-          )}
+      <div className="border rounded-2xl overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 shadow-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30">
+          <span className="text-sm font-medium">Inline Diff View</span>
         </div>
-      </ScrollArea>
+        <ScrollArea className="h-[600px]">
+          <div className="prose dark:prose-invert max-w-none p-4">
+            {segments.map((segment, index) => {
+              if (!showHighlights) {
+                if (segment.type === "removed") return null;
+                return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
+              }
+              
+              switch (segment.type) {
+                case "added":
+                  return (
+                    <span
+                      key={index}
+                      className="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100 px-0.5 rounded"
+                      title="Added"
+                      dangerouslySetInnerHTML={{ __html: segment.text }}
+                    />
+                  );
+                case "removed":
+                  return (
+                    <span
+                      key={index}
+                      className="bg-red-200 dark:bg-red-800/50 line-through px-0.5 rounded text-red-700 dark:text-red-300"
+                      title="Removed"
+                      dangerouslySetInnerHTML={{ __html: segment.text }}
+                    />
+                  );
+                default:
+                  return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
+              }
+            })}
+
+            {segments.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No content to display
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 };
