@@ -1446,8 +1446,11 @@ const ChatStyleEditor = ({
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
               {composerViewMode === 'split' ? (
-                <ResizablePanelGroup direction="horizontal" className="rounded-2xl border border-border bg-background min-h-[120px]">
-                  <ResizablePanel defaultSize={50} minSize={30}>
+                <ResizablePanelGroup 
+                  direction="horizontal" 
+                  className="rounded-2xl border border-border bg-background min-h-[120px]"
+                >
+                  <ResizablePanel defaultSize={50} minSize={20} maxSize={80}>
                     <textarea
                       ref={inputRef}
                       value={newMessage}
@@ -1465,8 +1468,8 @@ const ChatStyleEditor = ({
                       )}
                     />
                   </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={50} minSize={30}>
+                  <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
+                  <ResizablePanel defaultSize={50} minSize={20} maxSize={80}>
                     <div className="h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none min-h-[120px] bg-muted/20">
                       {newMessage ? (
                         <ComposerPreview content={newMessage} codeTheme={codeTheme} />
