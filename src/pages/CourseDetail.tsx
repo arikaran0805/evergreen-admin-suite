@@ -56,6 +56,7 @@ interface Post {
   featured_image: string | null;
   published_at: string | null;
   updated_at: string;
+  status: string;
   content?: string;
   parent_id: string | null;
   lesson_order: number | null;
@@ -434,17 +435,40 @@ const CourseDetail = () => {
     try {
       const { data, error } = await supabase
         .from("posts")
-        .select(`
+        .select(
+          `
           *,
           profiles:author_id (full_name, avatar_url)
-        `)
+        `
+        )
         .eq("id", post.id)
         .single();
 
       if (error) throw error;
-      setSelectedPost(data);
+
+      // For draft content, admins/moderators often work via versions without syncing to posts.content.
+      // In preview mode (or when viewing a non-published lesson with preview access), prefer the latest version content.
+      const shouldUseLatestVersion = (isPreviewMode && canPreview) || (canPreview && post.status !== "published");
+
+      let hydratedPost: any = data;
+
+      if (shouldUseLatestVersion) {
+        const { data: latestVersion, error: versionError } = await supabase
+          .from("post_versions")
+          .select("content, version_number, status")
+          .eq("post_id", post.id)
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!versionError && latestVersion?.content) {
+          hydratedPost = { ...hydratedPost, content: latestVersion.content };
+        }
+      }
+
+      setSelectedPost(hydratedPost);
       await fetchLikeData(post.id);
-      
+
       // Mark lesson as viewed for progress tracking
       if (user) {
         markLessonViewed(post.id);
