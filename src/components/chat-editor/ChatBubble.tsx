@@ -59,8 +59,17 @@ const ChatBubble = ({
   codeTheme,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('edit');
+  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>(() => {
+    const saved = localStorage.getItem('chatBubbleViewMode');
+    return (saved === 'edit' || saved === 'preview' || saved === 'split') ? saved : 'edit';
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Persist view mode preference
+  const handleViewModeChange = (mode: 'edit' | 'preview' | 'split') => {
+    setViewMode(mode);
+    localStorage.setItem('chatBubbleViewMode', mode);
+  };
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -491,7 +500,7 @@ const ChatBubble = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode('edit')}
+                onClick={() => handleViewModeChange('edit')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
                   viewMode === 'edit' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
@@ -506,7 +515,7 @@ const ChatBubble = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode('split')}
+                onClick={() => handleViewModeChange('split')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
                   viewMode === 'split' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
@@ -521,7 +530,7 @@ const ChatBubble = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode('preview')}
+                onClick={() => handleViewModeChange('preview')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
                   viewMode === 'preview' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
