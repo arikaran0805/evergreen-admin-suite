@@ -1465,40 +1465,59 @@ const ChatStyleEditor = ({
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
               {composerViewMode === 'split' ? (
-                <ResizablePanelGroup 
-                  direction="horizontal" 
-                  className="rounded-2xl border border-border bg-background min-h-[120px]"
-                  onLayout={handleSplitPanelResize}
-                >
-                  <ResizablePanel defaultSize={splitPanelSizes[0]} minSize={20} maxSize={80}>
-                    <textarea
-                      ref={inputRef}
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={handleInputKeyDown}
-                      onMouseUp={handleTextareaMouseUp}
-                      placeholder={`Type a message as ${
-                        currentSpeaker === "mentor" ? mentorName : courseCharacter.name
-                      }...`}
-                      className={cn(
-                        "w-full h-full px-4 py-3 text-sm font-mono bg-transparent",
-                        "resize-none min-h-[120px]",
-                        "focus:outline-none",
-                        "placeholder:text-muted-foreground/60"
-                      )}
-                    />
-                  </ResizablePanel>
-                  <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
-                  <ResizablePanel defaultSize={splitPanelSizes[1]} minSize={20} maxSize={80}>
-                    <div className="h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none min-h-[120px] bg-muted/20">
-                      {newMessage ? (
-                        <ComposerPreview content={newMessage} codeTheme={codeTheme} />
-                      ) : (
-                        <span className="text-muted-foreground/60 italic">Preview will appear here...</span>
-                      )}
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
+                <div className="relative">
+                  <ResizablePanelGroup 
+                    direction="horizontal" 
+                    className={cn(
+                      "rounded-2xl border border-border bg-background transition-all duration-200",
+                      isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
+                    )}
+                    onLayout={handleSplitPanelResize}
+                  >
+                    <ResizablePanel defaultSize={splitPanelSizes[0]} minSize={20} maxSize={80}>
+                      <textarea
+                        ref={inputRef}
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                        onMouseUp={handleTextareaMouseUp}
+                        placeholder={`Type a message as ${
+                          currentSpeaker === "mentor" ? mentorName : courseCharacter.name
+                        }...`}
+                        className={cn(
+                          "w-full h-full px-4 py-3 pr-10 text-sm font-mono bg-transparent",
+                          "resize-none",
+                          "focus:outline-none",
+                          "placeholder:text-muted-foreground/60",
+                          isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
+                        )}
+                      />
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
+                    <ResizablePanel defaultSize={splitPanelSizes[1]} minSize={20} maxSize={80}>
+                      <div className={cn(
+                        "h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/20",
+                        isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
+                      )}>
+                        {newMessage ? (
+                          <ComposerPreview content={newMessage} codeTheme={codeTheme} />
+                        ) : (
+                          <span className="text-muted-foreground/60 italic">Preview will appear here...</span>
+                        )}
+                      </div>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                  {/* Expand/collapse button for split mode */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsComposerExpanded(!isComposerExpanded)}
+                    className="absolute top-2 right-2 h-6 w-6 opacity-60 hover:opacity-100 text-muted-foreground z-10"
+                    title={isComposerExpanded ? "Collapse" : "Expand"}
+                  >
+                    {isComposerExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  </Button>
+                </div>
               ) : composerViewMode === 'preview' ? (
                 <div 
                   className="w-full px-4 py-3 rounded-2xl border border-border bg-background min-h-[120px] text-sm prose prose-sm dark:prose-invert max-w-none cursor-pointer hover:bg-muted/20 transition-colors"
