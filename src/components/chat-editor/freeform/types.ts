@@ -54,7 +54,10 @@ export type TemplateId =
   | 'stack-frame'
   | 'linked-node'
   | 'array-cells'
-  | 'function-box';
+  | 'function-box'
+  | 'binary-tree-node'
+  | 'hash-table'
+  | 'loop-iteration';
 
 export interface ShapeTemplate {
   id: TemplateId;
@@ -108,10 +111,31 @@ export const SHAPE_TEMPLATES: ShapeTemplate[] = [
     category: 'data-structures',
   },
   {
+    id: 'binary-tree-node',
+    name: 'Binary Tree Node',
+    description: 'Tree node with left/right children',
+    icon: 'network',
+    category: 'data-structures',
+  },
+  {
+    id: 'hash-table',
+    name: 'Hash Table',
+    description: 'Key-value bucket structure',
+    icon: 'hash',
+    category: 'data-structures',
+  },
+  {
     id: 'function-box',
     name: 'Function Box',
     description: 'Function with input/output',
     icon: 'code',
+    category: 'flow',
+  },
+  {
+    id: 'loop-iteration',
+    name: 'Loop Iteration',
+    description: 'Visual loop with counter',
+    icon: 'repeat',
     category: 'flow',
   },
 ];

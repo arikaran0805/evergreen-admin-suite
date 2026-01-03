@@ -706,6 +706,222 @@ export const FreeformCanvas = ({
         fabricCanvas.add(funcBox, funcLabel, inputArrow, inputHead1, inputHead2, inputLabel, outputArrow, outputHead1, outputHead2, outputLabel);
         break;
       }
+      case 'binary-tree-node': {
+        // Root node
+        const rootNode = new Circle({
+          left: centerX - 25,
+          top: centerY - 80,
+          radius: 25,
+          fill: '#fef3c7',
+          stroke: '#f59e0b',
+          strokeWidth: 2,
+        });
+        const rootValue = new Textbox('50', {
+          left: centerX - 15,
+          top: centerY - 70,
+          fontSize: 16,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#92400e',
+          width: 30,
+          textAlign: 'center',
+        });
+        // Left child
+        const leftNode = new Circle({
+          left: centerX - 85,
+          top: centerY,
+          radius: 22,
+          fill: '#dbeafe',
+          stroke: '#3b82f6',
+          strokeWidth: 2,
+        });
+        const leftValue = new Textbox('25', {
+          left: centerX - 77,
+          top: centerY + 8,
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#1e40af',
+          width: 26,
+          textAlign: 'center',
+        });
+        // Right child
+        const rightNode = new Circle({
+          left: centerX + 40,
+          top: centerY,
+          radius: 22,
+          fill: '#dbeafe',
+          stroke: '#3b82f6',
+          strokeWidth: 2,
+        });
+        const rightValue = new Textbox('75', {
+          left: centerX + 48,
+          top: centerY + 8,
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#1e40af',
+          width: 26,
+          textAlign: 'center',
+        });
+        // Left edge
+        const leftEdge = new Line([centerX - 15, centerY - 55, centerX - 55, centerY + 5], {
+          stroke: '#94a3b8',
+          strokeWidth: 2,
+        });
+        // Right edge
+        const rightEdge = new Line([centerX + 15, centerY - 55, centerX + 55, centerY + 5], {
+          stroke: '#94a3b8',
+          strokeWidth: 2,
+        });
+        fabricCanvas.add(leftEdge, rightEdge, rootNode, rootValue, leftNode, leftValue, rightNode, rightValue);
+        break;
+      }
+      case 'hash-table': {
+        const bucketWidth = 120;
+        const bucketHeight = 32;
+        const startY = centerY - 60;
+        const buckets = [
+          { index: 0, key: '"apple"', value: '5' },
+          { index: 1, key: null, value: null },
+          { index: 2, key: '"banana"', value: '3' },
+          { index: 3, key: '"cherry"', value: '8' },
+        ];
+        buckets.forEach((bucket, i) => {
+          // Index box
+          const indexBox = new Rect({
+            left: centerX - 90,
+            top: startY + i * (bucketHeight + 4),
+            width: 30,
+            height: bucketHeight,
+            fill: '#e0e7ff',
+            stroke: '#6366f1',
+            strokeWidth: 1.5,
+          });
+          const indexText = new Textbox(`[${bucket.index}]`, {
+            left: centerX - 85,
+            top: startY + i * (bucketHeight + 4) + 8,
+            fontSize: 12,
+            fontFamily: 'ui-monospace, monospace',
+            fill: '#4338ca',
+            width: 24,
+            textAlign: 'center',
+          });
+          // Bucket box
+          const bucketBox = new Rect({
+            left: centerX - 60,
+            top: startY + i * (bucketHeight + 4),
+            width: bucketWidth,
+            height: bucketHeight,
+            fill: bucket.key ? '#f0fdf4' : '#f8fafc',
+            stroke: bucket.key ? '#22c55e' : '#cbd5e1',
+            strokeWidth: 1.5,
+          });
+          fabricCanvas.add(indexBox, indexText, bucketBox);
+          if (bucket.key) {
+            const keyText = new Textbox(`${bucket.key}: ${bucket.value}`, {
+              left: centerX - 50,
+              top: startY + i * (bucketHeight + 4) + 8,
+              fontSize: 12,
+              fontFamily: 'ui-monospace, monospace',
+              fill: '#166534',
+              width: 100,
+            });
+            fabricCanvas.add(keyText);
+          } else {
+            const emptyText = new Textbox('empty', {
+              left: centerX - 35,
+              top: startY + i * (bucketHeight + 4) + 8,
+              fontSize: 11,
+              fontFamily: 'ui-monospace, monospace',
+              fill: '#94a3b8',
+              width: 50,
+              fontStyle: 'italic',
+            });
+            fabricCanvas.add(emptyText);
+          }
+        });
+        // Title
+        const hashTitle = new Textbox('Hash Table', {
+          left: centerX - 50,
+          top: startY - 28,
+          fontSize: 13,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#4338ca',
+          width: 100,
+          textAlign: 'center',
+          fontWeight: 'bold',
+        });
+        fabricCanvas.add(hashTitle);
+        break;
+      }
+      case 'loop-iteration': {
+        const loopWidth = 180;
+        const loopHeight = 100;
+        // Loop container
+        const loopBox = new Rect({
+          left: centerX - loopWidth / 2,
+          top: centerY - loopHeight / 2,
+          width: loopWidth,
+          height: loopHeight,
+          fill: '#fef3c7',
+          stroke: '#f59e0b',
+          strokeWidth: 2,
+          rx: 12,
+          ry: 12,
+        });
+        // Loop label
+        const loopLabel = new Textbox('for i in range(3):', {
+          left: centerX - loopWidth / 2 + 10,
+          top: centerY - loopHeight / 2 + 8,
+          fontSize: 12,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#92400e',
+          width: loopWidth - 20,
+        });
+        // Iteration boxes
+        const iterations = [0, 1, 2];
+        iterations.forEach((iter, idx) => {
+          const iterBox = new Rect({
+            left: centerX - 70 + idx * 50,
+            top: centerY - 5,
+            width: 40,
+            height: 36,
+            fill: idx === 1 ? '#22c55e' : '#ffffff',
+            stroke: idx === 1 ? '#16a34a' : '#d1d5db',
+            strokeWidth: idx === 1 ? 2 : 1,
+            rx: 6,
+            ry: 6,
+          });
+          const iterText = new Textbox(`i=${iter}`, {
+            left: centerX - 65 + idx * 50,
+            top: centerY + 5,
+            fontSize: 12,
+            fontFamily: 'ui-monospace, monospace',
+            fill: idx === 1 ? '#ffffff' : '#6b7280',
+            width: 36,
+            textAlign: 'center',
+          });
+          fabricCanvas.add(iterBox, iterText);
+        });
+        // Current arrow
+        const currentArrow = new Textbox('▲', {
+          left: centerX - 20,
+          top: centerY + 35,
+          fontSize: 16,
+          fill: '#22c55e',
+          width: 20,
+          textAlign: 'center',
+        });
+        const currentLabel = new Textbox('current', {
+          left: centerX - 30,
+          top: centerY + 52,
+          fontSize: 10,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#16a34a',
+          width: 40,
+          textAlign: 'center',
+        });
+        fabricCanvas.add(loopBox, loopLabel, currentArrow, currentLabel);
+        break;
+      }
     }
 
     fabricCanvas.renderAll();
