@@ -5,7 +5,7 @@ import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
-import { CHAT_COLORS, getChatColors } from "./chatColors";
+import { getChatColors, getDynamicStyles, DynamicChatColors } from "./chatColors";
 
 interface ChatConversationViewProps {
   content: string;
@@ -98,6 +98,7 @@ const ChatConversationView = ({
   codeTheme,
 }: ChatConversationViewProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [dynamicColors, setDynamicColors] = useState<DynamicChatColors | null>(null);
   const messages = useMemo(() => parseConversation(content), [content]);
   const explanation = useMemo(() => extractExplanation(content), [content]);
 
@@ -106,19 +107,46 @@ const ChatConversationView = ({
     return extractCodeBlocksFromHtml(explanation);
   }, [explanation]);
 
-  // Fetch courses from database
+  // Fetch courses and dynamic colors from database
   useEffect(() => {
-    const fetchCourses = async () => {
-      const { data, error } = await supabase
-        .from("courses")
-        .select("id, name, slug, icon")
-        .order("name");
+    const fetchData = async () => {
+      const [coursesResult, settingsResult] = await Promise.all([
+        supabase.from("courses").select("id, name, slug, icon").order("name"),
+        supabase.from("site_settings").select(`
+          mentor_bubble_bg,
+          mentor_bubble_text,
+          mentor_avatar_gradient_from,
+          mentor_avatar_gradient_to,
+          course_bubble_bg,
+          course_bubble_text,
+          course_avatar_gradient_from,
+          course_avatar_gradient_to
+        `).limit(1).maybeSingle()
+      ]);
       
-      if (!error && data) {
-        setCourses(data);
+      if (!coursesResult.error && coursesResult.data) {
+        setCourses(coursesResult.data);
+      }
+      
+      if (!settingsResult.error && settingsResult.data) {
+        const data = settingsResult.data as any;
+        setDynamicColors({
+          mentor: {
+            bubbleBg: data.mentor_bubble_bg || "#d4f5e6",
+            bubbleText: data.mentor_bubble_text || "#064e3b",
+            avatarGradientFrom: data.mentor_avatar_gradient_from || "#34d399",
+            avatarGradientTo: data.mentor_avatar_gradient_to || "#059669",
+          },
+          course: {
+            bubbleBg: data.course_bubble_bg || "#f1f5f9",
+            bubbleText: data.course_bubble_text || "#0f172a",
+            avatarGradientFrom: data.course_avatar_gradient_from || "#e2e8f0",
+            avatarGradientTo: data.course_avatar_gradient_to || "#cbd5e1",
+          },
+        });
       }
     };
-    fetchCourses();
+    fetchData();
   }, []);
 
   // Get course character from fetched courses
@@ -416,6 +444,8 @@ const ChatConversationView = ({
             const character = getCharacterForSpeaker(message.speaker);
             const isMentorBubble = isMentor(message.speaker);
 
+            const dynamicStyle = getDynamicStyles(dynamicColors, isMentorBubble);
+
             return (
               <div
                 key={message.id}
@@ -430,8 +460,9 @@ const ChatConversationView = ({
                   className={cn(
                     "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg",
                     "shadow-lg transition-transform duration-300 hover:scale-110",
-                    getChatColors(isMentorBubble).avatar
+                    !dynamicStyle && getChatColors(isMentorBubble).avatar
                   )}
+                  style={dynamicStyle?.avatarStyle}
                 >
                   {isMentorBubble ? (
                     <span className="text-sm">👨‍🎓</span>
@@ -445,19 +476,21 @@ const ChatConversationView = ({
                   className={cn(
                     "relative max-w-[75%] px-5 py-3 rounded-2xl",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
-                    getChatColors(isMentorBubble).bubble,
-                    getChatColors(isMentorBubble).text,
+                    !dynamicStyle && getChatColors(isMentorBubble).bubble,
+                    !dynamicStyle && getChatColors(isMentorBubble).text,
                     isMentorBubble
                       ? "rounded-br-md"
                       : "rounded-bl-md border border-border/30"
                   )}
+                  style={dynamicStyle ? { ...dynamicStyle.bubbleStyle, ...dynamicStyle.textStyle } : undefined}
                 >
                   {/* Subtle speaker indicator */}
                   <div
                     className={cn(
                       "text-[10px] font-semibold mb-1.5 tracking-wide uppercase",
-                      getChatColors(isMentorBubble).speaker
+                      !dynamicStyle && getChatColors(isMentorBubble).speaker
                     )}
+                    style={dynamicStyle?.textStyle}
                   >
                     {character.name}
                   </div>

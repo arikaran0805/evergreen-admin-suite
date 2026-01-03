@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp, MessageCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 
@@ -94,7 +94,16 @@ const AdminSettings = () => {
   const [notificationWindowDays, setNotificationWindowDays] = useState(7);
   const [savingNotification, setSavingNotification] = useState(false);
   
-  // Editor Settings
+  // Chat Bubble Color Settings
+  const [mentorBubbleBg, setMentorBubbleBg] = useState("#d4f5e6");
+  const [mentorBubbleText, setMentorBubbleText] = useState("#064e3b");
+  const [mentorAvatarFrom, setMentorAvatarFrom] = useState("#34d399");
+  const [mentorAvatarTo, setMentorAvatarTo] = useState("#059669");
+  const [courseBubbleBg, setCourseBubbleBg] = useState("#f1f5f9");
+  const [courseBubbleText, setCourseBubbleText] = useState("#0f172a");
+  const [courseAvatarFrom, setCourseAvatarFrom] = useState("#e2e8f0");
+  const [courseAvatarTo, setCourseAvatarTo] = useState("#cbd5e1");
+  const [savingChat, setSavingChat] = useState(false);
   
   
   const { toast } = useToast();
@@ -186,6 +195,15 @@ const AdminSettings = () => {
       setSchemaAddress((data as any).schema_address || "");
       // Notification Settings
       setNotificationWindowDays((data as any).notification_window_days || 7);
+      // Chat Bubble Color Settings
+      setMentorBubbleBg((data as any).mentor_bubble_bg || "#d4f5e6");
+      setMentorBubbleText((data as any).mentor_bubble_text || "#064e3b");
+      setMentorAvatarFrom((data as any).mentor_avatar_gradient_from || "#34d399");
+      setMentorAvatarTo((data as any).mentor_avatar_gradient_to || "#059669");
+      setCourseBubbleBg((data as any).course_bubble_bg || "#f1f5f9");
+      setCourseBubbleText((data as any).course_bubble_text || "#0f172a");
+      setCourseAvatarFrom((data as any).course_avatar_gradient_from || "#e2e8f0");
+      setCourseAvatarTo((data as any).course_avatar_gradient_to || "#cbd5e1");
     }
   };
 
@@ -430,6 +448,41 @@ const AdminSettings = () => {
     }
   };
 
+  const handleSaveChatColors = async () => {
+    setSavingChat(true);
+    try {
+      if (!settingsId) {
+        toast({ title: "Error", description: "Settings not found", variant: "destructive" });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from("site_settings")
+        .update({
+          mentor_bubble_bg: mentorBubbleBg,
+          mentor_bubble_text: mentorBubbleText,
+          mentor_avatar_gradient_from: mentorAvatarFrom,
+          mentor_avatar_gradient_to: mentorAvatarTo,
+          course_bubble_bg: courseBubbleBg,
+          course_bubble_text: courseBubbleText,
+          course_avatar_gradient_from: courseAvatarFrom,
+          course_avatar_gradient_to: courseAvatarTo,
+        })
+        .eq("id", settingsId);
+
+      if (error) throw error;
+      toast({ title: "Chat bubble colors saved successfully" });
+    } catch (error: any) {
+      toast({
+        title: "Error saving chat colors",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSavingChat(false);
+    }
+  };
+
   if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
 
   return (
@@ -445,7 +498,7 @@ const AdminSettings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-[840px]">
+          <TabsList className="grid w-full grid-cols-7 lg:w-[980px]">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               General
@@ -453,6 +506,10 @@ const AdminSettings = () => {
             <TabsTrigger value="social" className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Social
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Chat
             </TabsTrigger>
             <TabsTrigger value="seo" className="flex items-center gap-2">
               <Search className="h-4 w-4" />
@@ -823,7 +880,224 @@ const AdminSettings = () => {
             </Card>
           </TabsContent>
 
-          {/* SEO Settings */}
+          {/* Chat Bubble Color Settings */}
+          <TabsContent value="chat" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  Chat Bubble Colors
+                </CardTitle>
+                <CardDescription>
+                  Customize the colors for mentor and course chat bubbles in lessons
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Mentor (Karan) Colors */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Mentor Bubble (Karan)</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="mentorBubbleBg">Bubble Background</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="mentorBubbleBg"
+                          type="color"
+                          value={mentorBubbleBg}
+                          onChange={(e) => setMentorBubbleBg(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={mentorBubbleBg}
+                          onChange={(e) => setMentorBubbleBg(e.target.value)}
+                          placeholder="#d4f5e6"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mentorBubbleText">Bubble Text</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="mentorBubbleText"
+                          type="color"
+                          value={mentorBubbleText}
+                          onChange={(e) => setMentorBubbleText(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={mentorBubbleText}
+                          onChange={(e) => setMentorBubbleText(e.target.value)}
+                          placeholder="#064e3b"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mentorAvatarFrom">Avatar Gradient Start</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="mentorAvatarFrom"
+                          type="color"
+                          value={mentorAvatarFrom}
+                          onChange={(e) => setMentorAvatarFrom(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={mentorAvatarFrom}
+                          onChange={(e) => setMentorAvatarFrom(e.target.value)}
+                          placeholder="#34d399"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mentorAvatarTo">Avatar Gradient End</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="mentorAvatarTo"
+                          type="color"
+                          value={mentorAvatarTo}
+                          onChange={(e) => setMentorAvatarTo(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={mentorAvatarTo}
+                          onChange={(e) => setMentorAvatarTo(e.target.value)}
+                          placeholder="#059669"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Mentor Preview */}
+                  <div className="p-4 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
+                        style={{ background: `linear-gradient(135deg, ${mentorAvatarFrom}, ${mentorAvatarTo})` }}
+                      >
+                        K
+                      </div>
+                      <div
+                        className="px-4 py-3 rounded-2xl max-w-xs"
+                        style={{ backgroundColor: mentorBubbleBg, color: mentorBubbleText }}
+                      >
+                        <p className="font-medium mb-1">Karan</p>
+                        <p>Hey! This is a sample mentor message to preview your color choices.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Course Colors */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Course Bubble</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="courseBubbleBg">Bubble Background</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="courseBubbleBg"
+                          type="color"
+                          value={courseBubbleBg}
+                          onChange={(e) => setCourseBubbleBg(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={courseBubbleBg}
+                          onChange={(e) => setCourseBubbleBg(e.target.value)}
+                          placeholder="#f1f5f9"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="courseBubbleText">Bubble Text</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="courseBubbleText"
+                          type="color"
+                          value={courseBubbleText}
+                          onChange={(e) => setCourseBubbleText(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={courseBubbleText}
+                          onChange={(e) => setCourseBubbleText(e.target.value)}
+                          placeholder="#0f172a"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="courseAvatarFrom">Avatar Gradient Start</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="courseAvatarFrom"
+                          type="color"
+                          value={courseAvatarFrom}
+                          onChange={(e) => setCourseAvatarFrom(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={courseAvatarFrom}
+                          onChange={(e) => setCourseAvatarFrom(e.target.value)}
+                          placeholder="#e2e8f0"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="courseAvatarTo">Avatar Gradient End</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="courseAvatarTo"
+                          type="color"
+                          value={courseAvatarTo}
+                          onChange={(e) => setCourseAvatarTo(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={courseAvatarTo}
+                          onChange={(e) => setCourseAvatarTo(e.target.value)}
+                          placeholder="#cbd5e1"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Course Preview */}
+                  <div className="p-4 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
+                        style={{ background: `linear-gradient(135deg, ${courseAvatarFrom}, ${courseAvatarTo})` }}
+                      >
+                        🐍
+                      </div>
+                      <div
+                        className="px-4 py-3 rounded-2xl max-w-xs"
+                        style={{ backgroundColor: courseBubbleBg, color: courseBubbleText }}
+                      >
+                        <p className="font-medium mb-1">Python</p>
+                        <p>This is how a course bubble will look with your color settings!</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button onClick={handleSaveChatColors} disabled={savingChat} className="bg-primary w-full">
+                  {savingChat ? "Saving..." : "Save Chat Bubble Colors"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="seo" className="space-y-6">
             <Card>
               <CardHeader>

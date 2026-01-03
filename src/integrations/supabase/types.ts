@@ -1490,6 +1490,10 @@ export type Database = {
           announcement_start_date: string | null
           announcement_text_color: string | null
           code_theme: string | null
+          course_avatar_gradient_from: string | null
+          course_avatar_gradient_to: string | null
+          course_bubble_bg: string | null
+          course_bubble_text: string | null
           created_at: string
           facebook_url: string | null
           github_url: string | null
@@ -1502,6 +1506,10 @@ export type Database = {
           instagram_url: string | null
           linkedin_url: string | null
           logo_url: string | null
+          mentor_avatar_gradient_from: string | null
+          mentor_avatar_gradient_to: string | null
+          mentor_bubble_bg: string | null
+          mentor_bubble_text: string | null
           meta_description: string | null
           meta_keywords: string | null
           meta_title: string | null
@@ -1534,6 +1542,10 @@ export type Database = {
           announcement_start_date?: string | null
           announcement_text_color?: string | null
           code_theme?: string | null
+          course_avatar_gradient_from?: string | null
+          course_avatar_gradient_to?: string | null
+          course_bubble_bg?: string | null
+          course_bubble_text?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
@@ -1546,6 +1558,10 @@ export type Database = {
           instagram_url?: string | null
           linkedin_url?: string | null
           logo_url?: string | null
+          mentor_avatar_gradient_from?: string | null
+          mentor_avatar_gradient_to?: string | null
+          mentor_bubble_bg?: string | null
+          mentor_bubble_text?: string | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
@@ -1578,6 +1594,10 @@ export type Database = {
           announcement_start_date?: string | null
           announcement_text_color?: string | null
           code_theme?: string | null
+          course_avatar_gradient_from?: string | null
+          course_avatar_gradient_to?: string | null
+          course_bubble_bg?: string | null
+          course_bubble_text?: string | null
           created_at?: string
           facebook_url?: string | null
           github_url?: string | null
@@ -1590,6 +1610,10 @@ export type Database = {
           instagram_url?: string | null
           linkedin_url?: string | null
           logo_url?: string | null
+          mentor_avatar_gradient_from?: string | null
+          mentor_avatar_gradient_to?: string | null
+          mentor_bubble_bg?: string | null
+          mentor_bubble_text?: string | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null

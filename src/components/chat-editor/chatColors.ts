@@ -1,6 +1,7 @@
 // Shared color configuration for chat bubbles
 // These colors are used in both ChatBubble (editor) and ChatConversationView (reader)
 
+// Default static colors (used as fallback in editor and for static Tailwind classes)
 export const CHAT_COLORS = {
   mentor: {
     // Bubble background
@@ -40,6 +41,34 @@ export const CHAT_COLORS = {
   },
 } as const;
 
-// Helper to get colors based on whether it's a mentor bubble
+// Helper to get static colors based on whether it's a mentor bubble
 export const getChatColors = (isMentor: boolean) => 
   isMentor ? CHAT_COLORS.mentor : CHAT_COLORS.course;
+
+// Dynamic color settings interface (from database)
+export interface DynamicChatColors {
+  mentor: {
+    bubbleBg: string;
+    bubbleText: string;
+    avatarGradientFrom: string;
+    avatarGradientTo: string;
+  };
+  course: {
+    bubbleBg: string;
+    bubbleText: string;
+    avatarGradientFrom: string;
+    avatarGradientTo: string;
+  };
+}
+
+// Helper to generate inline styles from dynamic colors
+export const getDynamicStyles = (colors: DynamicChatColors | null, isMentor: boolean) => {
+  if (!colors) return null;
+  
+  const c = isMentor ? colors.mentor : colors.course;
+  return {
+    bubbleStyle: { backgroundColor: c.bubbleBg },
+    textStyle: { color: c.bubbleText },
+    avatarStyle: { background: `linear-gradient(135deg, ${c.avatarGradientFrom}, ${c.avatarGradientTo})` },
+  };
+};
