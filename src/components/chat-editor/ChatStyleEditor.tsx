@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns, Maximize2, Minimize2 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import CodeBlock from "./CodeBlock";
 import { supabase } from "@/integrations/supabase/client";
@@ -514,6 +514,7 @@ const ChatStyleEditor = ({
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [courses, setCourses] = useState<Course[]>([]);
   const [manualHeight, setManualHeight] = useState<number | null>(null);
+  const [isComposerExpanded, setIsComposerExpanded] = useState(false);
   const [mentorIcon, setMentorIcon] = useState("👨‍💻");
   const [composerViewMode, setComposerViewMode] = useState<'edit' | 'split' | 'preview'>(() => {
     if (typeof window !== 'undefined') {
@@ -1512,30 +1513,39 @@ const ChatStyleEditor = ({
                 </div>
               ) : (
                 <>
-                  <textarea
-                    ref={inputRef}
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleInputKeyDown}
-                    onMouseUp={handleTextareaMouseUp}
-                    placeholder={`Type a message as ${
-                      currentSpeaker === "mentor" ? mentorName : courseCharacter.name
-                    }...`}
-                    className={cn(
-                      "w-full px-4 py-3 pr-8 rounded-2xl border border-border bg-background",
-                      "resize-y min-h-[80px] max-h-[400px] text-sm overflow-y-auto",
-                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
-                      "placeholder:text-muted-foreground/60 transition-colors duration-200"
-                    )}
-                    style={manualHeight ? { height: `${manualHeight}px` } : undefined}
-                    rows={3}
-                  />
+                  <div className="relative">
+                    <textarea
+                      ref={inputRef}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleInputKeyDown}
+                      onMouseUp={handleTextareaMouseUp}
+                      placeholder={`Type a message as ${
+                        currentSpeaker === "mentor" ? mentorName : courseCharacter.name
+                      }...`}
+                      className={cn(
+                        "w-full px-4 py-3 pr-10 rounded-2xl border border-border bg-background",
+                        "resize-y text-sm overflow-y-auto transition-all duration-200",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                        "placeholder:text-muted-foreground/60",
+                        isComposerExpanded ? "min-h-[200px] max-h-[600px]" : "min-h-[80px] max-h-[400px]"
+                      )}
+                      style={manualHeight ? { height: `${manualHeight}px` } : undefined}
+                      rows={isComposerExpanded ? 8 : 3}
+                    />
+                    {/* Expand/collapse button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsComposerExpanded(!isComposerExpanded)}
+                      className="absolute top-2 right-2 h-6 w-6 opacity-60 hover:opacity-100 text-muted-foreground"
+                      title={isComposerExpanded ? "Collapse" : "Expand"}
+                    >
+                      {isComposerExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
                   <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
                     Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
-                  </div>
-                  {/* Resize indicator */}
-                  <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground/30">
-                    <GripVertical className="w-4 h-4 rotate-45" />
                   </div>
                 </>
               )}

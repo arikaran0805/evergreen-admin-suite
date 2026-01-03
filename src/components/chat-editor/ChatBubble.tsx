@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff, Columns, PanelLeft } from "lucide-react";
+import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff, Columns, PanelLeft, Maximize2, Minimize2 } from "lucide-react";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,7 @@ const ChatBubble = ({
   const [editContent, setEditContent] = useState(message.content);
   const [viewModeState, setViewModeState] = useState<'edit' | 'preview' | 'split'>('edit');
   const [isViewModeInitialized, setIsViewModeInitialized] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load view mode from localStorage only once on mount
@@ -606,21 +607,38 @@ const ChatBubble = ({
                 )}
               </div>
             ) : (
-              <textarea
-                ref={textareaRef}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className={cn(
-                  "w-full min-h-[100px] min-w-[200px] bg-transparent resize outline-none text-sm leading-relaxed border rounded-lg p-2",
-                  "overflow-auto",
-                  isMentor 
-                    ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/30" 
-                    : "text-slate-900 dark:text-slate-100 border-slate-300/50 dark:border-slate-600/50 bg-white/50 dark:bg-slate-900/30"
-                )}
-                style={{ maxWidth: '100%', maxHeight: '500px' }}
-                placeholder="Type your message..."
-              />
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className={cn(
+                    "w-full min-w-[200px] bg-transparent resize outline-none text-sm leading-relaxed border rounded-lg p-2 pr-8",
+                    "overflow-auto transition-all duration-200",
+                    isExpanded ? "min-h-[300px]" : "min-h-[100px]",
+                    isMentor 
+                      ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/30" 
+                      : "text-slate-900 dark:text-slate-100 border-slate-300/50 dark:border-slate-600/50 bg-white/50 dark:bg-slate-900/30"
+                  )}
+                  style={{ maxWidth: '100%', maxHeight: isExpanded ? '600px' : '500px' }}
+                  placeholder="Type your message..."
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className={cn(
+                    "absolute top-1 right-1 h-6 w-6 opacity-60 hover:opacity-100",
+                    isMentor 
+                      ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
+                      : "text-slate-600 dark:text-slate-400"
+                  )}
+                  title={isExpanded ? "Collapse" : "Expand"}
+                >
+                  {isExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+                </Button>
+              </div>
             )}
             {/* Formatting dropdown */}
             <div className="flex items-center gap-2 flex-wrap">
