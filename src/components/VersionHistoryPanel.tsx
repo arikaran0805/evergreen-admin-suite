@@ -373,6 +373,18 @@ const VersionHistoryPanel = ({
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Currently Editing Indicator */}
+                  {selectedVersion && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Pencil className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-primary">
+                          Currently editing v{selectedVersion.version_number}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Bookmarked Section */}
                   {groupedVersions.bookmarked.length > 0 && (
                     <div>
