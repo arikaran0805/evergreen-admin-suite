@@ -179,10 +179,13 @@ const VersionHistoryPanel = ({
           {showBookmarkIcon && (
             <Bookmark className="h-4 w-4 text-foreground flex-shrink-0" fill="currentColor" />
           )}
+          <Badge variant="outline" className="h-5 text-[10px] px-1.5 flex-shrink-0 font-mono">
+            v{version.version_number}
+          </Badge>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
-                {version.change_summary || `Version ${version.version_number}`}
+                {version.change_summary || version.versioning_note_type?.replace(/_/g, " ") || "No notes"}
               </span>
               {isCurrentlyPublished && (
                 <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-green-600 hover:bg-green-600 text-white flex-shrink-0">
@@ -191,7 +194,7 @@ const VersionHistoryPanel = ({
                 </Badge>
               )}
             </div>
-            {version.versioning_note_type && (
+            {version.versioning_note_type && version.change_summary && (
               <span className="text-xs text-muted-foreground capitalize">
                 {version.versioning_note_type.replace(/_/g, " ")}
               </span>
