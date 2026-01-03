@@ -519,6 +519,9 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     setTakeawayItems("");
   };
 
+  // Stable placeholder to prevent re-renders
+  const stablePlaceholder = useMemo(() => placeholder || "Write your content here...", [placeholder]);
+
   return (
     <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onFocus={handleEditorFocus}>
       <ReactQuill
@@ -528,7 +531,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
         onChange={handleChange}
         modules={modules}
         formats={formats}
-        placeholder={placeholder || "Write your content here..."}
+        placeholder={stablePlaceholder}
         className="bg-background"
         preserveWhitespace
       />
