@@ -78,20 +78,54 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   const [takeawayTitle, setTakeawayTitle] = useState("");
   const [takeawayItems, setTakeawayItems] = useState("");
   
-  // Track if highlighting is needed - only on blur or explicit request
-  const [needsHighlighting, setNeedsHighlighting] = useState(false);
-  const isEditing = useRef(false);
-  
   // Stable onChange handler
-  const handleChange = useCallback((content: string) => {
-    isEditing.current = true;
-    onChange(content);
-  }, [onChange]);
+  const handleChange = useCallback(
+    (content: string) => {
+      onChange(content);
+    },
+    [onChange]
+  );
+
+  /**
+   * IMPORTANT: Quill code blocks must remain plain text nodes.
+   * Injecting Prism token spans into `pre.ql-syntax` breaks cursor placement / selection.
+   * We normalize older content that may have been tokenized.
+   */
+  const hasNormalizedOnce = useRef(false);
+
+  const normalizeCodeBlocksIfNeeded = useCallback(() => {
+    if (!containerRef.current) return;
+
+    const editorRoot = containerRef.current.querySelector('.ql-editor');
+    if (!editorRoot) return;
+
+    const pres = editorRoot.querySelectorAll<HTMLPreElement>('pre.ql-syntax');
+    let changed = false;
+
+    pres.forEach((pre) => {
+      if (pre.querySelector('.token')) {
+        const text = pre.textContent ?? '';
+        pre.innerHTML = '';
+        pre.textContent = text;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      const quill = quillRef.current?.getEditor();
+      quill?.update('silent');
+    }
+  }, []);
+
+  const handleEditorFocus = useCallback(() => {
+    normalizeCodeBlocksIfNeeded();
+    updateCodeBlockPositions();
+  }, [normalizeCodeBlocksIfNeeded, updateCodeBlockPositions]);
 
   // Handle text selection for annotations
   const handleTextSelection = useCallback(() => {
     if (!onTextSelect) return;
-    
+
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
 
@@ -105,7 +139,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     if (!editorElement) return;
 
     const range = selection.getRangeAt(0);
-    
+
     if (!editorElement.contains(range.commonAncestorContainer)) return;
 
     const codeBlockElement = range.commonAncestorContainer.parentElement?.closest('pre.ql-syntax');
@@ -123,14 +157,14 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
-    
+
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const modKey = isMac ? e.metaKey : e.ctrlKey;
-    
+
     if (!modKey) return;
-    
+
     const format = quill.getFormat();
-    
+
     switch (e.key.toLowerCase()) {
       case 'b':
         e.preventDefault();
@@ -197,66 +231,69 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   useEffect(() => {
     const editor = containerRef.current;
     if (!editor) return;
-    
+
     editor.addEventListener('keydown', handleKeyboardShortcuts as any);
     return () => {
       editor.removeEventListener('keydown', handleKeyboardShortcuts as any);
     };
   }, [handleKeyboardShortcuts]);
 
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, 4, 5, 6, false] }],
-        [{ font: [] }],
-        [{ size: ["small", false, "large", "huge"] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ color: [] }, { background: [] }],
-        [{ script: "sub" }, { script: "super" }],
-        [{ list: "ordered" }, { list: "bullet" }],
-        [{ indent: "-1" }, { indent: "+1" }],
-        [{ align: [] }],
-        ["blockquote", "code-block"],
-        ["link", "image", "video"],
-        ["clean"],
-        ["takeaway"], // Custom button
-      ],
-      handlers: {
-        takeaway: function() {
-          // This will be handled by the parent component
-        }
-      }
-    },
-    clipboard: {
-      matchVisual: false,
-    },
-    keyboard: {
-      bindings: {
-        // Quill has its own bold/italic, we just extend
-      }
-    }
-  }), []);
+  const modules = useMemo(
+    () => ({
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, 4, 5, 6, false] }],
+          [{ font: [] }],
+          [{ size: ['small', false, 'large', 'huge'] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ color: [] }, { background: [] }],
+          [{ script: 'sub' }, { script: 'super' }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ indent: '-1' }, { indent: '+1' }],
+          [{ align: [] }],
+          ['blockquote', 'code-block'],
+          ['link', 'image', 'video'],
+          ['clean'],
+          ['takeaway'], // Custom button
+        ],
+        handlers: {
+          takeaway: function () {
+            // This will be handled by the parent component
+          },
+        },
+      },
+      clipboard: {
+        matchVisual: false,
+      },
+      keyboard: {
+        bindings: {
+          // Quill has its own bold/italic, we just extend
+        },
+      },
+    }),
+    []
+  );
 
   const formats = [
-    "header",
-    "font",
-    "size",
-    "bold",
-    "italic",
-    "underline",
-    "strike",
-    "color",
-    "background",
-    "script",
-    "list",
-    "bullet",
-    "indent",
-    "align",
-    "blockquote",
-    "code-block",
-    "link",
-    "image",
-    "video",
+    'header',
+    'font',
+    'size',
+    'bold',
+    'italic',
+    'underline',
+    'strike',
+    'color',
+    'background',
+    'script',
+    'list',
+    'bullet',
+    'indent',
+    'align',
+    'blockquote',
+    'code-block',
+    'link',
+    'image',
+    'video',
   ];
 
   // Detect language from code content
@@ -278,90 +315,52 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   // Find and track code blocks - only update positions, not content
   const updateCodeBlockPositions = useCallback(() => {
     if (!containerRef.current) return;
-    
+
     const preElements = containerRef.current.querySelectorAll<HTMLPreElement>('.ql-editor pre.ql-syntax');
     const containerRect = containerRef.current.getBoundingClientRect();
-    
+
     const blocks: CodeBlockOverlay[] = [];
     preElements.forEach((pre, idx) => {
       const rect = pre.getBoundingClientRect();
-      const code = pre.textContent || "";
+      const code = pre.textContent || '';
       const language = languageOverrides[idx] || detectLanguage(code);
-      
+
       blocks.push({
         element: pre,
-        rect: new DOMRect(
-          rect.left - containerRect.left,
-          rect.top - containerRect.top,
-          rect.width,
-          rect.height
-        ),
+        rect: new DOMRect(rect.left - containerRect.left, rect.top - containerRect.top, rect.width, rect.height),
         code,
         language,
       });
     });
-    
+
     setCodeBlocks(blocks);
   }, [languageOverrides]);
 
-  // Apply syntax highlighting - only on blur or explicit request
-  const applySyntaxHighlighting = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    const preElements = containerRef.current.querySelectorAll<HTMLPreElement>('.ql-editor pre.ql-syntax');
-    
-    preElements.forEach((pre, idx) => {
-      const code = pre.textContent || "";
-      const language = languageOverrides[idx] || detectLanguage(code);
-      
-      // Only highlight if content doesn't already have tokens
-      if (!pre.querySelector('.token')) {
-        const highlighted = Prism.highlight(code, Prism.languages[language] || Prism.languages.plaintext, language);
-        pre.innerHTML = highlighted;
-        pre.classList.add(`language-${language}`);
-      }
-    });
-    
-    updateCodeBlockPositions();
-  }, [languageOverrides, updateCodeBlockPositions]);
-
-  // Handle blur - apply highlighting when user leaves editor
-  const handleBlur = useCallback(() => {
-    isEditing.current = false;
-    setNeedsHighlighting(true);
-  }, []);
-
-  // Apply highlighting when needed (after blur)
-  useEffect(() => {
-    if (needsHighlighting) {
-      const timeout = setTimeout(() => {
-        applySyntaxHighlighting();
-        setNeedsHighlighting(false);
-      }, 100);
-      return () => clearTimeout(timeout);
-    }
-  }, [needsHighlighting, applySyntaxHighlighting]);
-
   // Update positions only (not content) on value change
   useEffect(() => {
-    const timeout = setTimeout(updateCodeBlockPositions, 50);
-    return () => clearTimeout(timeout);
+    const timeout = window.setTimeout(updateCodeBlockPositions, 50);
+    return () => window.clearTimeout(timeout);
   }, [value, updateCodeBlockPositions]);
 
-  // Initial highlighting on mount
+  // One-time normalization in case previous version injected Prism tokens
   useEffect(() => {
-    const timeout = setTimeout(applySyntaxHighlighting, 200);
-    return () => clearTimeout(timeout);
-  }, []);
+    if (hasNormalizedOnce.current) return;
+    const timeout = window.setTimeout(() => {
+      normalizeCodeBlocksIfNeeded();
+      updateCodeBlockPositions();
+      hasNormalizedOnce.current = true;
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [normalizeCodeBlocksIfNeeded, updateCodeBlockPositions]);
 
   // Update positions on scroll/resize
   useEffect(() => {
     const handleUpdate = () => updateCodeBlockPositions();
-    window.addEventListener("resize", handleUpdate);
-    window.addEventListener("scroll", handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+    window.addEventListener('scroll', handleUpdate, true);
     return () => {
-      window.removeEventListener("resize", handleUpdate);
-      window.removeEventListener("scroll", handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleUpdate, true);
     };
   }, [updateCodeBlockPositions]);
 
