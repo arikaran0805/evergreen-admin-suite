@@ -86,12 +86,19 @@ const VersionHistoryPanel = ({
   // Group versions by status and bookmarks
   const groupedVersions = useMemo(() => {
     const bookmarked = versions.filter(v => isBookmarked(v.id));
-    // Currently live version (is_published === true)
-    const published = versions.filter(v => v.is_published === true && !isBookmarked(v.id));
+    // Currently live version (status === 'published')
+    const published = versions.filter(v => v.status === 'published' && !isBookmarked(v.id));
     // All other versions that are not bookmarked and not the live version
-    const unpublished = versions.filter(v => !v.is_published && !isBookmarked(v.id));
+    const unpublished = versions.filter(v => v.status !== 'published' && !isBookmarked(v.id));
     return { bookmarked, published, unpublished };
   }, [versions, isBookmarked]);
+
+  // Set most recent version as selected by default when versions load
+  useMemo(() => {
+    if (versions.length > 0 && !selectedVersion) {
+      setSelectedVersion(versions[0]); // versions are sorted by version_number desc
+    }
+  }, [versions]);
 
   const handlePublishClick = (version: PostVersion) => {
     setSelectedVersion(version);
@@ -151,9 +158,9 @@ const VersionHistoryPanel = ({
     return format(new Date(dateString), "MMM d, yyyy, h:mm a");
   };
 
-  // Find the currently published version (is_published === true)
+  // Find the currently published version (status === 'published')
   const currentlyPublishedVersion = useMemo(() => {
-    return versions.find(v => v.is_published === true);
+    return versions.find(v => v.status === 'published');
   }, [versions]);
 
   const VersionListItem = ({ version, isSelected, showBookmarkIcon = false }: { version: PostVersion; isSelected?: boolean; showBookmarkIcon?: boolean }) => {
@@ -172,7 +179,7 @@ const VersionHistoryPanel = ({
         onMouseLeave={() => setHoveredVersionId(null)}
         onClick={() => {
           setSelectedVersion(version);
-          handleCompareClick(version);
+          onRestore(version); // Load this version into the editor
         }}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -238,8 +245,21 @@ const VersionHistoryPanel = ({
                 className="h-7 w-7"
                 onClick={(e) => {
                   e.stopPropagation();
+                  handleCompareClick(version);
+                }}
+                title="Compare versions"
+              >
+                <GitCompare className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleRevertClick(version);
                 }}
+                title="Revert to this version"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
