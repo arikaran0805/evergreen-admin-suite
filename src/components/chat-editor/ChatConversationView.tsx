@@ -27,7 +27,7 @@ const parseConversation = (content: string): ChatMessage[] => {
   const segments = extractChatSegments(content);
   if (segments.length === 0) return [];
 
-  return segments.map((s) => {
+  return segments.map((s, index) => {
     const takeawayMatch = s.content.match(TAKEAWAY_REGEX);
     if (s.speaker === "TAKEAWAY" || takeawayMatch) {
       const icon = takeawayMatch?.[1] || "🧠";
@@ -36,7 +36,7 @@ const parseConversation = (content: string): ChatMessage[] => {
         ? s.content.replace(TAKEAWAY_REGEX, "").trim()
         : s.content;
       return {
-        id: Math.random().toString(36).substr(2, 9),
+        id: `takeaway-${index}`,
         speaker: "TAKEAWAY",
         content: actualContent,
         type: "takeaway" as const,
@@ -45,7 +45,7 @@ const parseConversation = (content: string): ChatMessage[] => {
       };
     }
     return {
-      id: Math.random().toString(36).substr(2, 9),
+      id: `msg-${index}-${s.speaker}`,
       speaker: s.speaker,
       content: s.content,
       type: "message" as const,
