@@ -279,25 +279,32 @@ const AdminPostEditor = () => {
         }
 
         setOriginalAuthorId(data.author_id);
-        setFormData({
+
+        // Avoid overwriting content if the editor already synced the latest version.
+        // This prevents the editor from briefly showing the DB content and then swapping.
+        setFormData((prev) => ({
+          ...prev,
           title: data.title || "",
           slug: data.slug || "",
           excerpt: data.excerpt || "",
-          content: data.content || "",
+          content: prev.content ? prev.content : (data.content || ""),
           featured_image: data.featured_image || "",
           category_id: data.category_id || "",
           status: (data.status as any) || "draft",
           lesson_order: data.lesson_order || 0,
           parent_id: data.parent_id || "none",
           code_theme: data.code_theme || "",
-        });
-        
+        }));
+
         // Store original post content (used to infer the live/published version in history)
         setPostDbContent(data.content || "");
 
-        // Store original content for change detection
-        setOriginalContent(data.content || "");
-        previousContentRef.current = data.content || "";
+        // Store original content for change detection (don't override if versions already set it)
+        setOriginalContent((prev) => prev || (data.content || ""));
+        if (!previousContentRef.current) {
+          previousContentRef.current = data.content || "";
+        }
+
         if (data.content && isChatTranscript(data.content)) {
           setEditorType("chat");
         }
@@ -647,7 +654,12 @@ const AdminPostEditor = () => {
   // Check if content has admin edits (different from original)
   const hasAdminEdits = isAdmin && id && formData.content !== originalContent && originalContent !== "";
 
-  if (roleLoading || loading) {
+  const editorInitLoading =
+    roleLoading ||
+    loading ||
+    (id ? versionsLoading || (versions.length > 0 && !didSyncLatestVersion) : false);
+
+  if (editorInitLoading) {
     return (
       <AdminLayout defaultSidebarCollapsed>
         <AdminEditorSkeleton type="post" />
