@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff } from "lucide-react";
+import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff, Columns, PanelLeft } from "lucide-react";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,7 @@ const ChatBubble = ({
   codeTheme,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
-  const [showPreview, setShowPreview] = useState(false);
+  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('edit');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -485,35 +485,92 @@ const ChatBubble = ({
         {/* Content */}
         {isEditing ? (
           <div className="space-y-2">
-            {/* Preview toggle button */}
-            <div className="flex items-center justify-end mb-1">
+            {/* View mode toggle buttons */}
+            <div className="flex items-center justify-end gap-1 mb-1">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowPreview(!showPreview)}
+                onClick={() => setViewMode('edit')}
                 className={cn(
                   "h-6 px-2 text-xs gap-1",
+                  viewMode === 'edit' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
                   isMentor 
                     ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
                 )}
               >
-                {showPreview ? (
-                  <>
-                    <EyeOff className="w-3 h-3" />
-                    Edit
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3 h-3" />
-                    Preview
-                  </>
+                <EyeOff className="w-3 h-3" />
+                Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  "h-6 px-2 text-xs gap-1",
+                  viewMode === 'split' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
+                  isMentor 
+                    ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
                 )}
+              >
+                <Columns className="w-3 h-3" />
+                Split
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('preview')}
+                className={cn(
+                  "h-6 px-2 text-xs gap-1",
+                  viewMode === 'preview' && (isMentor ? "bg-emerald-200/50 dark:bg-emerald-800/50" : "bg-slate-200/50 dark:bg-slate-700/50"),
+                  isMentor 
+                    ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                )}
+              >
+                <Eye className="w-3 h-3" />
+                Preview
               </Button>
             </div>
             
-            {/* Textarea or Preview */}
-            {showPreview ? (
+            {/* Editor / Preview based on view mode */}
+            {viewMode === 'split' ? (
+              <div className="flex gap-2 w-full">
+                {/* Editor panel */}
+                <div className="flex-1 min-w-0">
+                  <textarea
+                    ref={textareaRef}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className={cn(
+                      "w-full min-h-[150px] bg-transparent resize-none outline-none text-sm leading-relaxed border rounded-lg p-2",
+                      "overflow-auto",
+                      isMentor 
+                        ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/30" 
+                        : "text-slate-900 dark:text-slate-100 border-slate-300/50 dark:border-slate-600/50 bg-white/50 dark:bg-slate-900/30"
+                    )}
+                    style={{ maxHeight: '400px' }}
+                    placeholder="Type your message..."
+                  />
+                </div>
+                {/* Preview panel */}
+                <div 
+                  className={cn(
+                    "flex-1 min-w-0 min-h-[150px] text-sm leading-relaxed border rounded-lg p-3 overflow-auto",
+                    isMentor 
+                      ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-900/20" 
+                      : "border-slate-300/50 dark:border-slate-600/50 bg-white/30 dark:bg-slate-900/20"
+                  )}
+                  style={{ maxHeight: '400px' }}
+                >
+                  {editContent ? renderContent(editContent) : (
+                    <span className="text-muted-foreground italic">Preview...</span>
+                  )}
+                </div>
+              </div>
+            ) : viewMode === 'preview' ? (
               <div 
                 className={cn(
                   "w-full min-h-[100px] text-sm leading-relaxed border rounded-lg p-3 overflow-auto",
