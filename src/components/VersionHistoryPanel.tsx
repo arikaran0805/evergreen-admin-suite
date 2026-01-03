@@ -149,9 +149,15 @@ const VersionHistoryPanel = ({
     return format(new Date(dateString), "MMM d, yyyy, h:mm a");
   };
 
+  // Find the currently published version (is_published === true)
+  const currentlyPublishedVersion = useMemo(() => {
+    return versions.find(v => v.is_published === true);
+  }, [versions]);
+
   const VersionListItem = ({ version, isSelected, showBookmarkIcon = false }: { version: PostVersion; isSelected?: boolean; showBookmarkIcon?: boolean }) => {
     const isHovered = hoveredVersionId === version.id;
     const versionIsBookmarked = isBookmarked(version.id);
+    const isCurrentlyPublished = currentlyPublishedVersion?.id === version.id;
     
     return (
       <div
@@ -172,9 +178,17 @@ const VersionHistoryPanel = ({
             <Bookmark className="h-4 w-4 text-foreground flex-shrink-0" fill="currentColor" />
           )}
           <div className="flex flex-col min-w-0">
-            <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
-              {version.change_summary || `Version ${version.version_number}`}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
+                {version.change_summary || `Version ${version.version_number}`}
+              </span>
+              {isCurrentlyPublished && (
+                <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-green-600 hover:bg-green-600 text-white flex-shrink-0">
+                  <CheckCircle className="h-3 w-3 mr-0.5" />
+                  Live
+                </Badge>
+              )}
+            </div>
             {version.versioning_note_type && (
               <span className="text-xs text-muted-foreground capitalize">
                 {version.versioning_note_type.replace(/_/g, " ")}
