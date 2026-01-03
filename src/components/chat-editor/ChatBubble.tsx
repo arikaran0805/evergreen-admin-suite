@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown } from "lucide-react";
+import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,7 @@ const ChatBubble = ({
   codeTheme,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
+  const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -484,21 +485,65 @@ const ChatBubble = ({
         {/* Content */}
         {isEditing ? (
           <div className="space-y-2">
-            <textarea
-              ref={textareaRef}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className={cn(
-                "w-full min-h-[100px] min-w-[200px] bg-transparent resize outline-none text-sm leading-relaxed border rounded-lg p-2",
-                "overflow-auto",
-                isMentor 
-                  ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/30" 
-                  : "text-slate-900 dark:text-slate-100 border-slate-300/50 dark:border-slate-600/50 bg-white/50 dark:bg-slate-900/30"
-              )}
-              style={{ maxWidth: '100%', maxHeight: '500px' }}
-              placeholder="Type your message..."
-            />
+            {/* Preview toggle button */}
+            <div className="flex items-center justify-end mb-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPreview(!showPreview)}
+                className={cn(
+                  "h-6 px-2 text-xs gap-1",
+                  isMentor 
+                    ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                )}
+              >
+                {showPreview ? (
+                  <>
+                    <EyeOff className="w-3 h-3" />
+                    Edit
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3 h-3" />
+                    Preview
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {/* Textarea or Preview */}
+            {showPreview ? (
+              <div 
+                className={cn(
+                  "w-full min-h-[100px] text-sm leading-relaxed border rounded-lg p-3 overflow-auto",
+                  isMentor 
+                    ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-900/20" 
+                    : "border-slate-300/50 dark:border-slate-600/50 bg-white/30 dark:bg-slate-900/20"
+                )}
+                style={{ maxHeight: '500px' }}
+              >
+                {editContent ? renderContent(editContent) : (
+                  <span className="text-muted-foreground italic">Nothing to preview...</span>
+                )}
+              </div>
+            ) : (
+              <textarea
+                ref={textareaRef}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className={cn(
+                  "w-full min-h-[100px] min-w-[200px] bg-transparent resize outline-none text-sm leading-relaxed border rounded-lg p-2",
+                  "overflow-auto",
+                  isMentor 
+                    ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/30" 
+                    : "text-slate-900 dark:text-slate-100 border-slate-300/50 dark:border-slate-600/50 bg-white/50 dark:bg-slate-900/30"
+                )}
+                style={{ maxWidth: '100%', maxHeight: '500px' }}
+                placeholder="Type your message..."
+              />
+            )}
             {/* Formatting dropdown */}
             <div className="flex items-center gap-2 flex-wrap">
               <DropdownMenu>
