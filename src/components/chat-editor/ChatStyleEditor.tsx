@@ -1524,11 +1524,24 @@ const ChatStyleEditor = ({
                     </ResizablePanel>
                   </ResizablePanelGroup>
 
-                  {/* Bottom bar with shortcuts */}
-                  <div className="absolute bottom-2 left-4 z-50">
+                  {/* Bottom bar with shortcuts and expand button */}
+                  <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between z-50">
                     <div className="text-[10px] text-muted-foreground/50">
                       Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsComposerExpanded((v) => !v)}
+                      className="h-6 w-6 opacity-60 hover:opacity-100 text-muted-foreground"
+                      title={isComposerExpanded ? "Collapse" : "Expand"}
+                    >
+                      {isComposerExpanded ? (
+                        <Minimize2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               ) : composerViewMode === 'preview' ? (
