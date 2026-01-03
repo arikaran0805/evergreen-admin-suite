@@ -448,7 +448,7 @@ const CourseDetail = () => {
 
       // For draft content, admins/moderators often work via versions without syncing to posts.content.
       // In preview mode (or when viewing a non-published lesson with preview access), prefer the latest version content.
-      const shouldUseLatestVersion = (isPreviewMode && canPreview) || (canPreview && post.status !== "published");
+      const shouldUseLatestVersion = canPreview;
 
       let hydratedPost: any = data;
 
@@ -462,6 +462,7 @@ const CourseDetail = () => {
           .maybeSingle();
 
         if (!versionError && latestVersion?.content) {
+          console.debug(`[CourseDetail] Using latest version (v${latestVersion.version_number}) content for post ${post.id}`);
           hydratedPost = { ...hydratedPost, content: latestVersion.content };
         }
       }
