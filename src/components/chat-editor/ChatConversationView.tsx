@@ -162,6 +162,142 @@ const ChatConversationView = ({
 
   const isMentor = (speaker: string) => speaker.toLowerCase() === "karan";
 
+  // Parse inline markdown formatting (bold, italic, inline code)
+  const parseInlineMarkdown = (text: string, baseKey: string, isMentorBubble: boolean): React.ReactNode[] => {
+    const segments: React.ReactNode[] = [];
+    
+    // Combined regex for all inline formatting
+    // Order matters: bold first, then italic
+    const markdownRegex = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+)`)/g;
+    
+    let lastIdx = 0;
+    let match;
+    
+    while ((match = markdownRegex.exec(text)) !== null) {
+      // Add text before match
+      if (match.index > lastIdx) {
+        segments.push(
+          <span key={`${baseKey}-text-${lastIdx}`} className="whitespace-pre-wrap">
+            {text.slice(lastIdx, match.index)}
+          </span>
+        );
+      }
+      
+      if (match[1]) {
+        // Bold: **text**
+        segments.push(
+          <strong key={`${baseKey}-bold-${match.index}`} className="font-bold">
+            {match[2]}
+          </strong>
+        );
+      } else if (match[3]) {
+        // Italic: *text*
+        segments.push(
+          <em key={`${baseKey}-italic-${match.index}`} className="italic">
+            {match[4]}
+          </em>
+        );
+      } else if (match[5]) {
+        // Inline code: `code`
+        segments.push(
+          <code
+            key={`${baseKey}-code-${match.index}`}
+            className={cn(
+              "px-1.5 py-0.5 rounded text-xs font-mono",
+              isMentorBubble
+                ? "bg-emerald-500/30 text-emerald-100"
+                : "bg-muted-foreground/20 text-foreground"
+            )}
+          >
+            {match[6]}
+          </code>
+        );
+      }
+      
+      lastIdx = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIdx < text.length) {
+      segments.push(
+        <span key={`${baseKey}-text-end`} className="whitespace-pre-wrap">
+          {text.slice(lastIdx)}
+        </span>
+      );
+    }
+    
+    return segments.length > 0 ? segments : [<span key={baseKey} className="whitespace-pre-wrap">{text}</span>];
+  };
+
+  // Parse line-level markdown (headings, lists, blockquotes)
+  const parseLineMarkdown = (text: string, baseKey: string, isMentorBubble: boolean): React.ReactNode[] => {
+    const lines = text.split('\n');
+    const result: React.ReactNode[] = [];
+    
+    lines.forEach((line, lineIdx) => {
+      const lineKey = `${baseKey}-line-${lineIdx}`;
+      
+      // Heading: ## text
+      if (line.match(/^##\s+(.+)$/)) {
+        const headingContent = line.replace(/^##\s+/, '');
+        result.push(
+          <h2 key={lineKey} className="text-base font-bold mt-2 mb-1">
+            {parseInlineMarkdown(headingContent, lineKey, isMentorBubble)}
+          </h2>
+        );
+      }
+      // Blockquote: > text
+      else if (line.match(/^>\s+(.+)$/)) {
+        const quoteContent = line.replace(/^>\s+/, '');
+        result.push(
+          <blockquote key={lineKey} className={cn(
+            "border-l-2 pl-3 my-1 italic",
+            isMentorBubble ? "border-emerald-300" : "border-muted-foreground/50"
+          )}>
+            {parseInlineMarkdown(quoteContent, lineKey, isMentorBubble)}
+          </blockquote>
+        );
+      }
+      // Bullet list: • text or - text
+      else if (line.match(/^[•\-]\s+(.+)$/)) {
+        const listContent = line.replace(/^[•\-]\s+/, '');
+        result.push(
+          <div key={lineKey} className="flex items-start gap-2 ml-1">
+            <span className="text-sm">•</span>
+            <span>{parseInlineMarkdown(listContent, lineKey, isMentorBubble)}</span>
+          </div>
+        );
+      }
+      // Numbered list: 1. text
+      else if (line.match(/^(\d+)\.\s+(.+)$/)) {
+        const match = line.match(/^(\d+)\.\s+(.+)$/);
+        if (match) {
+          result.push(
+            <div key={lineKey} className="flex items-start gap-2 ml-1">
+              <span className="text-sm min-w-[1rem]">{match[1]}.</span>
+              <span>{parseInlineMarkdown(match[2], lineKey, isMentorBubble)}</span>
+            </div>
+          );
+        }
+      }
+      // Regular text with inline formatting
+      else if (line.trim()) {
+        result.push(
+          <span key={lineKey}>
+            {parseInlineMarkdown(line, lineKey, isMentorBubble)}
+            {lineIdx < lines.length - 1 && <br />}
+          </span>
+        );
+      }
+      // Empty line
+      else if (lineIdx < lines.length - 1) {
+        result.push(<br key={lineKey} />);
+      }
+    });
+    
+    return result;
+  };
+
   // Render code blocks and inline code within messages
   const renderContent = (text: string, isMentorBubble: boolean) => {
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
@@ -185,48 +321,6 @@ const ChatConversationView = ({
       parts.push({ type: "text", content: text });
     }
 
-    // Render inline code within text parts
-    const renderTextWithInlineCode = (textContent: string, key: number) => {
-      const inlineCodeRegex = /`([^`]+)`/g;
-      const segments: React.ReactNode[] = [];
-      let lastIdx = 0;
-      let inlineMatch;
-
-      while ((inlineMatch = inlineCodeRegex.exec(textContent)) !== null) {
-        if (inlineMatch.index > lastIdx) {
-          segments.push(
-            <span key={`${key}-text-${lastIdx}`} className="whitespace-pre-wrap">
-              {textContent.slice(lastIdx, inlineMatch.index)}
-            </span>
-          );
-        }
-        segments.push(
-          <code
-            key={`${key}-code-${inlineMatch.index}`}
-            className={cn(
-              "px-1.5 py-0.5 rounded text-xs font-mono",
-              isMentorBubble
-                ? "bg-blue-500/30 text-blue-100"
-                : "bg-muted-foreground/20 text-foreground"
-            )}
-          >
-            {inlineMatch[1]}
-          </code>
-        );
-        lastIdx = inlineMatch.index + inlineMatch[0].length;
-      }
-
-      if (lastIdx < textContent.length) {
-        segments.push(
-          <span key={`${key}-text-end`} className="whitespace-pre-wrap">
-            {textContent.slice(lastIdx)}
-          </span>
-        );
-      }
-
-      return segments.length > 0 ? segments : <span className="whitespace-pre-wrap">{textContent}</span>;
-    };
-
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
@@ -240,7 +334,7 @@ const ChatConversationView = ({
           />
         );
       }
-      return <span key={idx}>{renderTextWithInlineCode(part.content, idx)}</span>;
+      return <span key={idx}>{parseLineMarkdown(part.content, `part-${idx}`, isMentorBubble)}</span>;
     });
   };
 
@@ -262,8 +356,8 @@ const ChatConversationView = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-3">
             <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
-                👨‍💻
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
+                👨‍🎓
               </div>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
                 {renderCourseIcon(courseCharacter.emoji, 16)}
@@ -336,11 +430,15 @@ const ChatConversationView = ({
                     "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg",
                     "shadow-lg transition-transform duration-300 hover:scale-110",
                     isMentorBubble
-                      ? "bg-gradient-to-br from-blue-400 to-blue-600"
+                      ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
                       : "bg-gradient-to-br from-muted to-muted/80"
                   )}
                 >
-                  {renderCourseIcon(character.emoji, 18)}
+                  {isMentorBubble ? (
+                    <span className="text-white text-sm">👨‍🎓</span>
+                  ) : (
+                    renderCourseIcon(character.emoji, 18)
+                  )}
                 </div>
 
                 {/* Bubble */}
@@ -349,7 +447,7 @@ const ChatConversationView = ({
                     "relative max-w-[75%] px-5 py-3 rounded-2xl",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
                     isMentorBubble
-                      ? "bg-gradient-to-br from-[hsl(210,100%,52%)] to-[hsl(210,100%,45%)] text-white rounded-br-md"
+                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-br-md"
                       : "bg-muted/80 text-foreground rounded-bl-md border border-border/30"
                   )}
                 >
@@ -357,7 +455,7 @@ const ChatConversationView = ({
                   <div
                     className={cn(
                       "text-[10px] font-semibold mb-1.5 tracking-wide uppercase",
-                      isMentorBubble ? "text-blue-100/80" : "text-muted-foreground/70"
+                      isMentorBubble ? "text-emerald-100/80" : "text-muted-foreground/70"
                     )}
                   >
                     {character.name}
