@@ -117,10 +117,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     }
   }, []);
 
-  const handleEditorFocus = useCallback(() => {
-    normalizeCodeBlocksIfNeeded();
-    updateCodeBlockPositions();
-  }, [normalizeCodeBlocksIfNeeded, updateCodeBlockPositions]);
+  // Note: handleEditorFocus is defined after updateCodeBlockPositions to avoid hoisting issues
 
   // Handle text selection for annotations
   const handleTextSelection = useCallback(() => {
@@ -336,6 +333,12 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     setCodeBlocks(blocks);
   }, [languageOverrides]);
 
+  // Handler for editor focus - defined after updateCodeBlockPositions
+  const handleEditorFocus = useCallback(() => {
+    normalizeCodeBlocksIfNeeded();
+    updateCodeBlockPositions();
+  }, [normalizeCodeBlocksIfNeeded, updateCodeBlockPositions]);
+
   // Update positions only (not content) on value change
   useEffect(() => {
     const timeout = window.setTimeout(updateCodeBlockPositions, 50);
@@ -456,7 +459,8 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
       }, 50);
     }
     setEditingIndex(null);
-    applySyntaxHighlighting();
+    // Update code block positions after edit
+    setTimeout(updateCodeBlockPositions, 100);
   };
 
   const handleCancelEdit = () => {
@@ -472,14 +476,11 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     });
   };
 
+  // Language change - just update the override, don't mutate DOM with Prism tokens
   const handleLanguageChange = (index: number, language: string) => {
     setLanguageOverrides(prev => ({ ...prev, [index]: language }));
-    const block = codeBlocks[index];
-    if (block?.element) {
-      const highlighted = Prism.highlight(block.code, Prism.languages[language] || Prism.languages.plaintext, language);
-      block.element.innerHTML = highlighted;
-      block.element.className = `ql-syntax language-${language}`;
-    }
+    // Update positions to reflect new language label
+    setTimeout(updateCodeBlockPositions, 50);
   };
 
   const getLanguageLabel = (langValue: string) => {
@@ -519,7 +520,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   };
 
   return (
-    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onBlur={handleBlur}>
+    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onFocus={handleEditorFocus}>
       <ReactQuill
         ref={quillRef}
         theme="snow"
