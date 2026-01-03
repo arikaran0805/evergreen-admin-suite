@@ -5,10 +5,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
+import { isChatTranscript, extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { format } from "date-fns";
 import { User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 interface SideBySideComparisonProps {
   oldVersion: PostVersion;
@@ -323,6 +324,13 @@ const ChatSideBySide = ({
 }: SideBySideProps) => {
   const oldBubbles = extractChatSegments(oldVersion.content, { allowSingle: true });
   const newBubbles = extractChatSegments(newVersion.content, { allowSingle: true });
+  
+  // Extract explanation portions (rich text after ---)
+  const oldExplanation = extractExplanation(oldVersion.content);
+  const newExplanation = extractExplanation(newVersion.content);
+  const explanationDiff = oldExplanation || newExplanation 
+    ? computeWordDiff(oldExplanation || "", newExplanation || "")
+    : null;
 
   // Compare bubbles
   const maxLen = Math.max(oldBubbles.length, newBubbles.length);
@@ -347,6 +355,71 @@ const ChatSideBySide = ({
     }
   }
 
+  // Render explanation section with diff highlighting
+  const renderOldExplanation = () => {
+    if (!oldExplanation && !newExplanation) return null;
+    
+    return (
+      <>
+        <Separator className="my-4" />
+        <div className="p-4 bg-muted/20 rounded-lg">
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">Explanation</h4>
+          <div className="prose dark:prose-invert max-w-none text-sm">
+            {!showHighlights || !explanationDiff ? (
+              <div dangerouslySetInnerHTML={{ __html: oldExplanation || "" }} />
+            ) : (
+              explanationDiff.map((segment, index) => {
+                if (segment.type === "added") return null;
+                if (segment.type === "removed") {
+                  return (
+                    <span
+                      key={index}
+                      className="bg-red-200 dark:bg-red-800/50 line-through text-red-700 dark:text-red-300 px-0.5 rounded"
+                      dangerouslySetInnerHTML={{ __html: segment.text }}
+                    />
+                  );
+                }
+                return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
+              })
+            )}
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderNewExplanation = () => {
+    if (!oldExplanation && !newExplanation) return null;
+    
+    return (
+      <>
+        <Separator className="my-4" />
+        <div className="p-4 bg-muted/20 rounded-lg">
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">Explanation</h4>
+          <div className="prose dark:prose-invert max-w-none text-sm">
+            {!showHighlights || !explanationDiff ? (
+              <div dangerouslySetInnerHTML={{ __html: newExplanation || "" }} />
+            ) : (
+              explanationDiff.map((segment, index) => {
+                if (segment.type === "removed") return null;
+                if (segment.type === "added") {
+                  return (
+                    <span
+                      key={index}
+                      className="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 px-0.5 rounded"
+                      dangerouslySetInnerHTML={{ __html: segment.text }}
+                    />
+                  );
+                }
+                return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
+              })
+            )}
+          </div>
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <HighlightToggle showHighlights={showHighlights} onToggle={onToggleHighlights} />
@@ -355,7 +428,7 @@ const ChatSideBySide = ({
         {/* Old Version Panel */}
         <div className="border rounded-2xl overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 shadow-lg">
           <VersionHeader version={oldVersion} label="Previous Version" />
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[600px]">
             <div className="p-4 space-y-4">
               {bubbleComparisons.map((comp, index) => {
                 if (!comp.oldBubble) {
@@ -388,6 +461,8 @@ const ChatSideBySide = ({
                   />
                 );
               })}
+              
+              {renderOldExplanation()}
             </div>
           </ScrollArea>
         </div>
@@ -395,7 +470,7 @@ const ChatSideBySide = ({
         {/* New Version Panel */}
         <div className="border border-primary/50 rounded-2xl overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 shadow-lg">
           <VersionHeader version={newVersion} label="Updated Version" />
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[600px]">
             <div className="p-4 space-y-4">
               {bubbleComparisons.map((comp, index) => {
                 if (!comp.newBubble) {
@@ -427,6 +502,8 @@ const ChatSideBySide = ({
                   />
                 );
               })}
+              
+              {renderNewExplanation()}
             </div>
           </ScrollArea>
         </div>
