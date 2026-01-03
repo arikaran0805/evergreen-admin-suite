@@ -1421,7 +1421,7 @@ const ChatStyleEditor = ({
             </div>
 
             {/* View mode toggle */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap justify-end">
               <Button
                 variant="ghost"
                 size="sm"
@@ -1530,7 +1530,7 @@ const ChatStyleEditor = ({
                     variant="outline"
                     size="icon"
                     onClick={() => setIsComposerExpanded((v) => !v)}
-                    className="absolute top-2 right-2 h-7 w-7 bg-background/80 backdrop-blur border-border z-20"
+                    className="absolute top-2 right-2 h-7 w-7 bg-popover/90 backdrop-blur border-border shadow-md z-50"
                     title={isComposerExpanded ? "Collapse" : "Expand"}
                   >
                     {isComposerExpanded ? (
