@@ -170,11 +170,11 @@ const VersionHistoryPanel = ({
   };
 
   const handleCompareClick = (version: PostVersion) => {
-    setSelectedVersion(version);
-    const currentIndex = versions.findIndex(v => v.id === version.id);
-    const prevVersion = currentIndex < versions.length - 1 ? versions[currentIndex + 1] : null;
-    setCompareVersion(prevVersion);
-    setDiffDialogOpen(true);
+    // Navigate to full version control page with compare tab active
+    if (id) {
+      navigate(`/admin/posts/${id}/versions?tab=compare&version=${version.id}`);
+      setHistoryOpen(false);
+    }
   };
 
   const formatVersionDate = (dateString: string) => {
