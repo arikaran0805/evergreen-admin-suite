@@ -11,7 +11,7 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-markup";
-import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb, Eye, EyeOff, Columns, Keyboard } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb, Eye, EyeOff, Columns, Keyboard, Bold, Italic, Underline, Strikethrough, Code, Link, Highlighter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -109,6 +109,14 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   const [takeawayTitle, setTakeawayTitle] = useState("");
   const [takeawayItems, setTakeawayItems] = useState("");
   
+  // Floating toolbar state
+  const [floatingToolbar, setFloatingToolbar] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    formats: Record<string, any>;
+  }>({ visible: false, x: 0, y: 0, formats: {} });
+  
   // Handle view mode change with persistence
   const handleViewModeChange = (mode: 'edit' | 'preview' | 'split') => {
     setViewMode(mode);
@@ -156,8 +164,43 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
 
   // Note: handleEditorFocus is defined after updateCodeBlockPositions to avoid hoisting issues
 
+  // Update floating toolbar position and visibility
+  const updateFloatingToolbar = useCallback(() => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) {
+      setFloatingToolbar(prev => ({ ...prev, visible: false }));
+      return;
+    }
+
+    const selection = quill.getSelection();
+    if (!selection || selection.length === 0) {
+      setFloatingToolbar(prev => ({ ...prev, visible: false }));
+      return;
+    }
+
+    const formats = quill.getFormat(selection);
+    const bounds = quill.getBounds(selection.index, selection.length);
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    
+    if (bounds && containerRect) {
+      // Position above the selection
+      const x = bounds.left + bounds.width / 2;
+      const y = bounds.top - 45;
+      
+      setFloatingToolbar({
+        visible: true,
+        x,
+        y,
+        formats,
+      });
+    }
+  }, []);
+
   // Handle text selection for annotations
   const handleTextSelection = useCallback(() => {
+    // Update floating toolbar
+    updateFloatingToolbar();
+    
     if (!onTextSelect) return;
 
     const selection = window.getSelection();
@@ -185,7 +228,42 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
       text,
       type,
     });
-  }, [onTextSelect]);
+  }, [onTextSelect, updateFloatingToolbar]);
+
+  // Apply format from floating toolbar
+  const applyFormat = useCallback((format: string, value?: any) => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+    
+    const currentFormat = quill.getFormat();
+    quill.format(format, value !== undefined ? value : !currentFormat[format]);
+    
+    // Update toolbar state after formatting
+    setTimeout(updateFloatingToolbar, 10);
+  }, [updateFloatingToolbar]);
+
+  // Hide floating toolbar on click outside or escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.floating-toolbar') && !target.closest('.ql-editor')) {
+        setFloatingToolbar(prev => ({ ...prev, visible: false }));
+      }
+    };
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setFloatingToolbar(prev => ({ ...prev, visible: false }));
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Keyboard shortcuts handler
   const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
@@ -326,6 +404,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     'align',
     'blockquote',
     'code-block',
+    'code', // Inline code
     'link',
     'image',
     'video',
@@ -625,6 +704,91 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
           </Button>
         </div>
       </div>
+      
+      {/* Floating toolbar on text selection */}
+      {floatingToolbar.visible && (viewMode === 'edit' || viewMode === 'split') && (
+        <div 
+          className="floating-toolbar absolute z-[100] flex items-center gap-0.5 px-1.5 py-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-150"
+          style={{
+            left: `${floatingToolbar.x}px`,
+            top: `${floatingToolbar.y}px`,
+            transform: 'translateX(-50%)',
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.bold && "bg-primary/20 text-primary")}
+            onClick={() => applyFormat('bold')}
+            title="Bold"
+          >
+            <Bold className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.italic && "bg-primary/20 text-primary")}
+            onClick={() => applyFormat('italic')}
+            title="Italic"
+          >
+            <Italic className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.underline && "bg-primary/20 text-primary")}
+            onClick={() => applyFormat('underline')}
+            title="Underline"
+          >
+            <Underline className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.strike && "bg-primary/20 text-primary")}
+            onClick={() => applyFormat('strike')}
+            title="Strikethrough"
+          >
+            <Strikethrough className="w-3.5 h-3.5" />
+          </Button>
+          <div className="w-px h-5 bg-border mx-0.5" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.code && "bg-primary/20 text-primary")}
+            onClick={() => applyFormat('code')}
+            title="Inline Code"
+          >
+            <Code className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.background && "bg-primary/20 text-primary")}
+            onClick={() => applyFormat('background', floatingToolbar.formats.background ? false : '#ffff00')}
+            title="Highlight"
+          >
+            <Highlighter className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 w-7 p-0", floatingToolbar.formats.link && "bg-primary/20 text-primary")}
+            onClick={() => {
+              if (floatingToolbar.formats.link) {
+                applyFormat('link', false);
+              } else {
+                const url = prompt('Enter URL:');
+                if (url) applyFormat('link', url);
+              }
+            }}
+            title="Link"
+          >
+            <Link className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )}
       
       {/* Editor / Preview based on view mode */}
       {viewMode === 'split' ? (
