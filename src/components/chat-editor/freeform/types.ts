@@ -46,3 +46,72 @@ export const STROKE_WIDTHS = [
   { name: 'Bold', value: 6 },
   { name: 'Heavy', value: 10 },
 ];
+
+export type TemplateId = 
+  | 'memory-box'
+  | 'variable-label'
+  | 'pointer-arrow'
+  | 'stack-frame'
+  | 'linked-node'
+  | 'array-cells'
+  | 'function-box';
+
+export interface ShapeTemplate {
+  id: TemplateId;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'memory' | 'data-structures' | 'flow';
+}
+
+export const SHAPE_TEMPLATES: ShapeTemplate[] = [
+  {
+    id: 'memory-box',
+    name: 'Memory Box',
+    description: 'RAM slot / memory location',
+    icon: 'box',
+    category: 'memory',
+  },
+  {
+    id: 'variable-label',
+    name: 'Variable Label',
+    description: 'Variable name with value',
+    icon: 'tag',
+    category: 'memory',
+  },
+  {
+    id: 'pointer-arrow',
+    name: 'Pointer Arrow',
+    description: 'Points to memory address',
+    icon: 'arrow-right',
+    category: 'memory',
+  },
+  {
+    id: 'stack-frame',
+    name: 'Stack Frame',
+    description: 'Function call stack frame',
+    icon: 'layers',
+    category: 'memory',
+  },
+  {
+    id: 'linked-node',
+    name: 'Linked Node',
+    description: 'Node for linked lists',
+    icon: 'git-branch',
+    category: 'data-structures',
+  },
+  {
+    id: 'array-cells',
+    name: 'Array Cells',
+    description: 'Array with indexed cells',
+    icon: 'table',
+    category: 'data-structures',
+  },
+  {
+    id: 'function-box',
+    name: 'Function Box',
+    description: 'Function with input/output',
+    icon: 'code',
+    category: 'flow',
+  },
+];

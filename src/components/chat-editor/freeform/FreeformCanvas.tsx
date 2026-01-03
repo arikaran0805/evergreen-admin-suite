@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Canvas as FabricCanvas, Circle, Rect, Line, Textbox, PencilBrush, FabricObject } from "fabric";
+import { Canvas as FabricCanvas, Circle, Rect, Line, Textbox, PencilBrush, FabricObject, Group } from "fabric";
 import { FreeformCanvasToolbar } from "./FreeformCanvasToolbar";
-import { FreeformTool, FreeformCanvasData, FREEFORM_COLORS, HIGHLIGHTER_COLORS } from "./types";
+import { FreeformTool, FreeformCanvasData, FREEFORM_COLORS, HIGHLIGHTER_COLORS, TemplateId } from "./types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -422,6 +422,299 @@ export const FreeformCanvas = ({
     }
   }, [activeColor]);
 
+  const handleInsertTemplate = useCallback((templateId: TemplateId) => {
+    if (!fabricCanvas) return;
+
+    const centerX = (fabricCanvas.width || 800) / 2 / zoom;
+    const centerY = (fabricCanvas.height || 400) / 2 / zoom;
+
+    switch (templateId) {
+      case 'memory-box': {
+        const box = new Rect({
+          left: centerX - 60,
+          top: centerY - 40,
+          width: 120,
+          height: 80,
+          fill: '#f0f9ff',
+          stroke: '#3b82f6',
+          strokeWidth: 2,
+          rx: 8,
+          ry: 8,
+        });
+        const label = new Textbox('0x7fff', {
+          left: centerX - 55,
+          top: centerY - 35,
+          fontSize: 10,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#64748b',
+          width: 50,
+        });
+        const value = new Textbox('42', {
+          left: centerX - 20,
+          top: centerY - 10,
+          fontSize: 24,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#1e293b',
+          width: 80,
+          textAlign: 'center',
+        });
+        fabricCanvas.add(box, label, value);
+        break;
+      }
+      case 'variable-label': {
+        const labelBg = new Rect({
+          left: centerX - 50,
+          top: centerY - 18,
+          width: 100,
+          height: 36,
+          fill: '#fef3c7',
+          stroke: '#f59e0b',
+          strokeWidth: 2,
+          rx: 6,
+          ry: 6,
+        });
+        const varText = new Textbox('x = 10', {
+          left: centerX - 40,
+          top: centerY - 10,
+          fontSize: 18,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#92400e',
+          width: 80,
+          textAlign: 'center',
+        });
+        fabricCanvas.add(labelBg, varText);
+        break;
+      }
+      case 'pointer-arrow': {
+        const arrowLine = new Line([centerX - 80, centerY, centerX + 60, centerY], {
+          stroke: '#6366f1',
+          strokeWidth: 3,
+        });
+        const arrowHead1 = new Line([centerX + 60, centerY, centerX + 45, centerY - 12], {
+          stroke: '#6366f1',
+          strokeWidth: 3,
+        });
+        const arrowHead2 = new Line([centerX + 60, centerY, centerX + 45, centerY + 12], {
+          stroke: '#6366f1',
+          strokeWidth: 3,
+        });
+        const pointerLabel = new Textbox('ptr', {
+          left: centerX - 100,
+          top: centerY - 25,
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#4f46e5',
+          width: 40,
+        });
+        fabricCanvas.add(arrowLine, arrowHead1, arrowHead2, pointerLabel);
+        break;
+      }
+      case 'stack-frame': {
+        const frame = new Rect({
+          left: centerX - 80,
+          top: centerY - 60,
+          width: 160,
+          height: 120,
+          fill: '#f5f3ff',
+          stroke: '#8b5cf6',
+          strokeWidth: 2,
+          rx: 4,
+          ry: 4,
+        });
+        const header = new Rect({
+          left: centerX - 80,
+          top: centerY - 60,
+          width: 160,
+          height: 28,
+          fill: '#8b5cf6',
+          rx: 4,
+          ry: 4,
+        });
+        const funcName = new Textbox('main()', {
+          left: centerX - 70,
+          top: centerY - 55,
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#ffffff',
+          width: 140,
+        });
+        const var1 = new Textbox('int x = 5', {
+          left: centerX - 70,
+          top: centerY - 20,
+          fontSize: 12,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#4c1d95',
+          width: 140,
+        });
+        const var2 = new Textbox('int y = 10', {
+          left: centerX - 70,
+          top: centerY + 5,
+          fontSize: 12,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#4c1d95',
+          width: 140,
+        });
+        fabricCanvas.add(frame, header, funcName, var1, var2);
+        break;
+      }
+      case 'linked-node': {
+        const nodeBox = new Rect({
+          left: centerX - 60,
+          top: centerY - 25,
+          width: 80,
+          height: 50,
+          fill: '#ecfdf5',
+          stroke: '#10b981',
+          strokeWidth: 2,
+          rx: 4,
+          ry: 4,
+        });
+        const ptrBox = new Rect({
+          left: centerX + 20,
+          top: centerY - 25,
+          width: 40,
+          height: 50,
+          fill: '#d1fae5',
+          stroke: '#10b981',
+          strokeWidth: 2,
+          rx: 4,
+          ry: 4,
+        });
+        const nodeValue = new Textbox('42', {
+          left: centerX - 50,
+          top: centerY - 12,
+          fontSize: 20,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#065f46',
+          width: 60,
+          textAlign: 'center',
+        });
+        const ptrArrow = new Line([centerX + 60, centerY, centerX + 100, centerY], {
+          stroke: '#10b981',
+          strokeWidth: 2,
+        });
+        const ptrHead1 = new Line([centerX + 100, centerY, centerX + 88, centerY - 8], {
+          stroke: '#10b981',
+          strokeWidth: 2,
+        });
+        const ptrHead2 = new Line([centerX + 100, centerY, centerX + 88, centerY + 8], {
+          stroke: '#10b981',
+          strokeWidth: 2,
+        });
+        fabricCanvas.add(nodeBox, ptrBox, nodeValue, ptrArrow, ptrHead1, ptrHead2);
+        break;
+      }
+      case 'array-cells': {
+        const cellWidth = 50;
+        const cellHeight = 40;
+        const startX = centerX - (cellWidth * 2);
+        for (let i = 0; i < 4; i++) {
+          const cell = new Rect({
+            left: startX + i * cellWidth,
+            top: centerY - cellHeight / 2,
+            width: cellWidth,
+            height: cellHeight,
+            fill: i === 0 ? '#dbeafe' : '#f8fafc',
+            stroke: '#3b82f6',
+            strokeWidth: 2,
+          });
+          const cellValue = new Textbox(String([10, 20, 30, 40][i]), {
+            left: startX + i * cellWidth + 10,
+            top: centerY - 10,
+            fontSize: 16,
+            fontFamily: 'ui-monospace, monospace',
+            fill: '#1e40af',
+            width: 30,
+            textAlign: 'center',
+          });
+          const cellIndex = new Textbox(`[${i}]`, {
+            left: startX + i * cellWidth + 12,
+            top: centerY + cellHeight / 2 + 5,
+            fontSize: 11,
+            fontFamily: 'ui-monospace, monospace',
+            fill: '#64748b',
+            width: 26,
+            textAlign: 'center',
+          });
+          fabricCanvas.add(cell, cellValue, cellIndex);
+        }
+        break;
+      }
+      case 'function-box': {
+        const funcBox = new Rect({
+          left: centerX - 70,
+          top: centerY - 40,
+          width: 140,
+          height: 80,
+          fill: '#fffbeb',
+          stroke: '#f59e0b',
+          strokeWidth: 2,
+          rx: 8,
+          ry: 8,
+        });
+        const funcLabel = new Textbox('function()', {
+          left: centerX - 60,
+          top: centerY - 30,
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#b45309',
+          width: 120,
+          textAlign: 'center',
+        });
+        // Input arrow
+        const inputArrow = new Line([centerX - 120, centerY, centerX - 70, centerY], {
+          stroke: '#22c55e',
+          strokeWidth: 2,
+        });
+        const inputHead1 = new Line([centerX - 70, centerY, centerX - 82, centerY - 8], {
+          stroke: '#22c55e',
+          strokeWidth: 2,
+        });
+        const inputHead2 = new Line([centerX - 70, centerY, centerX - 82, centerY + 8], {
+          stroke: '#22c55e',
+          strokeWidth: 2,
+        });
+        const inputLabel = new Textbox('input', {
+          left: centerX - 140,
+          top: centerY - 25,
+          fontSize: 11,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#16a34a',
+          width: 40,
+        });
+        // Output arrow
+        const outputArrow = new Line([centerX + 70, centerY, centerX + 120, centerY], {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+        });
+        const outputHead1 = new Line([centerX + 120, centerY, centerX + 108, centerY - 8], {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+        });
+        const outputHead2 = new Line([centerX + 120, centerY, centerX + 108, centerY + 8], {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+        });
+        const outputLabel = new Textbox('output', {
+          left: centerX + 105,
+          top: centerY - 25,
+          fontSize: 11,
+          fontFamily: 'ui-monospace, monospace',
+          fill: '#dc2626',
+          width: 45,
+        });
+        fabricCanvas.add(funcBox, funcLabel, inputArrow, inputHead1, inputHead2, inputLabel, outputArrow, outputHead1, outputHead2, outputLabel);
+        break;
+      }
+    }
+
+    fabricCanvas.renderAll();
+    saveState();
+    triggerAutoSave();
+    setActiveTool('select');
+    toast.success('Template added');
+  }, [fabricCanvas, zoom, saveState, triggerAutoSave]);
+
   return (
     <div
       className={cn(
@@ -443,6 +736,7 @@ export const FreeformCanvas = ({
           onExport={handleExport}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
+          onInsertTemplate={handleInsertTemplate}
           canUndo={undoStack.length > 1}
           canRedo={redoStack.length > 0}
           zoom={zoom}
