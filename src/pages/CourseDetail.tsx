@@ -87,7 +87,9 @@ const commentSchema = z.object({
 });
 
 const CourseDetail = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams<{ slug: string }>();
+  // Guard against any accidental query-string leakage into the route param.
+  const slug = decodeURIComponent((params.slug ?? "").split("?")[0]).trim();
   const [searchParams] = useSearchParams();
   const lessonSlug = searchParams.get("lesson");
   const isPreviewMode = searchParams.get("preview") === "true";
@@ -185,14 +187,14 @@ const CourseDetail = () => {
 
   // Set preview access based on user role and fetch data
   useEffect(() => {
-    if (!roleLoading) {
-      const hasPreviewAccess = isAdmin || isModerator;
-      setCanPreview(hasPreviewAccess);
-      fetchCourseAndLessons();
-      fetchRecentCourses();
-      fetchSiteSettings();
-      fetchFooterCategories();
-    }
+    if (roleLoading || !slug) return;
+
+    const hasPreviewAccess = isAdmin || isModerator;
+    setCanPreview(hasPreviewAccess);
+    fetchCourseAndLessons();
+    fetchRecentCourses();
+    fetchSiteSettings();
+    fetchFooterCategories();
   }, [slug, roleLoading, isAdmin, isModerator]);
 
   // Auto-select lesson from URL query param (supports browser back/forward)
