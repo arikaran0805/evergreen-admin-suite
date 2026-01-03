@@ -356,7 +356,7 @@ const ChatConversationView = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-3">
             <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
                 👨‍🎓
               </div>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
@@ -430,12 +430,12 @@ const ChatConversationView = ({
                     "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg",
                     "shadow-lg transition-transform duration-300 hover:scale-110",
                     isMentorBubble
-                      ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
+                      ? "bg-gradient-to-br from-amber-400 to-orange-500"
                       : "bg-gradient-to-br from-muted to-muted/80"
                   )}
                 >
                   {isMentorBubble ? (
-                    <span className="text-white text-sm">👨‍🎓</span>
+                    <span className="text-sm">👨‍🎓</span>
                   ) : (
                     renderCourseIcon(character.emoji, 18)
                   )}
@@ -447,7 +447,7 @@ const ChatConversationView = ({
                     "relative max-w-[75%] px-5 py-3 rounded-2xl",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
                     isMentorBubble
-                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-br-md"
+                      ? "bg-[#d4f5e6] text-foreground rounded-br-md"
                       : "bg-muted/80 text-foreground rounded-bl-md border border-border/30"
                   )}
                 >
@@ -455,7 +455,7 @@ const ChatConversationView = ({
                   <div
                     className={cn(
                       "text-[10px] font-semibold mb-1.5 tracking-wide uppercase",
-                      isMentorBubble ? "text-emerald-100/80" : "text-muted-foreground/70"
+                      isMentorBubble ? "text-emerald-700/80" : "text-muted-foreground/70"
                     )}
                   >
                     {character.name}
