@@ -95,10 +95,12 @@ const AdminPostEditor = () => {
     code_theme: "" as string,
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
+  const [postDbContent, setPostDbContent] = useState<string>("");
   const [originalContent, setOriginalContent] = useState<string>("");
-  const [selectedText, setSelectedText] = useState<{ 
-    start: number; 
-    end: number; 
+  const [didSyncLatestVersion, setDidSyncLatestVersion] = useState(false);
+  const [selectedText, setSelectedText] = useState<{
+    start: number;
+    end: number;
     text: string;
     type?: "paragraph" | "code" | "conversation";
     bubbleIndex?: number;
@@ -135,29 +137,46 @@ const AdminPostEditor = () => {
     if (!roleLoading && (isAdmin || isModerator)) {
       const loadData = async () => {
         // Fetch all data in parallel
-        const promises = [
-          fetchCategories(),
-          fetchMainLessons(),
-          fetchTags(),
-        ];
-        
+        const promises = [fetchCategories(), fetchMainLessons(), fetchTags()];
+
         if (id) {
           promises.push(fetchPost(id));
           promises.push(fetchPostTags(id));
         }
-        
+
         await Promise.all(promises);
-        
+
         // Only set loading to false after all data is loaded (for new posts)
         if (!id) {
           setLoading(false);
         }
       };
-      
+
       loadData();
     }
   }, [id, isAdmin, isModerator, roleLoading]);
 
+  // Reset version sync when navigating between posts
+  useEffect(() => {
+    setDidSyncLatestVersion(false);
+  }, [id]);
+
+  // By default, load the most recently edited version into the editor
+  useEffect(() => {
+    if (!id || versionsLoading || didSyncLatestVersion) return;
+    if (versions.length === 0) return;
+
+    const latest = versions[0];
+    setFormData((prev) => ({ ...prev, content: latest.content }));
+    setOriginalContent(latest.content);
+    previousContentRef.current = latest.content;
+
+    if (latest.content && isChatTranscript(latest.content)) {
+      setEditorType("chat");
+    }
+
+    setDidSyncLatestVersion(true);
+  }, [id, versionsLoading, versions, didSyncLatestVersion]);
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
@@ -254,11 +273,12 @@ const AdminPostEditor = () => {
           code_theme: data.code_theme || "",
         });
         
+        // Store original post content (used to infer the live/published version in history)
+        setPostDbContent(data.content || "");
+
         // Store original content for change detection
         setOriginalContent(data.content || "");
         previousContentRef.current = data.content || "";
-        
-        // Auto-switch to chat editor if content is a chat transcript
         if (data.content && isChatTranscript(data.content)) {
           setEditorType("chat");
         }
@@ -644,6 +664,7 @@ const AdminPostEditor = () => {
                   loading={versionsLoading}
                   isAdmin={isAdmin}
                   currentContent={formData.content}
+                  liveContent={postDbContent}
                   onRestore={handleRestoreVersion}
                   onPublish={handlePublishVersion}
                   onPreview={handlePreviewVersion}

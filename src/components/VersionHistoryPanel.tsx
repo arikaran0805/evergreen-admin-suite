@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { PostVersion } from "@/hooks/usePostVersions";
@@ -43,6 +43,7 @@ interface VersionHistoryPanelProps {
   loading: boolean;
   isAdmin: boolean;
   currentContent?: string;
+  liveContent?: string;
   onRestore: (version: PostVersion) => void;
   onPublish: (version: PostVersion) => void;
   onPreview: (version: PostVersion) => void;
@@ -61,6 +62,7 @@ const VersionHistoryPanel = ({
   loading,
   isAdmin,
   currentContent,
+  liveContent,
   onRestore,
   onPublish,
   onPreview,
@@ -83,22 +85,43 @@ const VersionHistoryPanel = ({
   // Version bookmarks
   const { isBookmarked, toggleBookmark } = useVersionBookmarks(id);
 
+  // Determine which version(s) are currently published/live
+  const publishedVersionIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    versions.forEach((v) => {
+      if (v.status === "published" || v.is_published === true) ids.add(v.id);
+    });
+
+    // Fallback: if nothing is marked published but we know the live post content,
+    // infer the live version by matching content.
+    if (ids.size === 0 && liveContent) {
+      const inferred = versions.find((v) => v.content === liveContent);
+      if (inferred) ids.add(inferred.id);
+    }
+
+    return ids;
+  }, [versions, liveContent]);
+
   // Group versions by status and bookmarks
   const groupedVersions = useMemo(() => {
-    const bookmarked = versions.filter(v => isBookmarked(v.id));
-    // Currently live version (status === 'published')
-    const published = versions.filter(v => v.status === 'published' && !isBookmarked(v.id));
-    // All other versions that are not bookmarked and not the live version
-    const unpublished = versions.filter(v => v.status !== 'published' && !isBookmarked(v.id));
+    const bookmarked = versions.filter((v) => isBookmarked(v.id));
+    const published = versions.filter(
+      (v) => publishedVersionIds.has(v.id) && !isBookmarked(v.id)
+    );
+    const unpublished = versions.filter(
+      (v) => !publishedVersionIds.has(v.id) && !isBookmarked(v.id)
+    );
+
     return { bookmarked, published, unpublished };
-  }, [versions, isBookmarked]);
+  }, [versions, isBookmarked, publishedVersionIds]);
 
   // Set most recent version as selected by default when versions load
-  useMemo(() => {
+  useEffect(() => {
     if (versions.length > 0 && !selectedVersion) {
       setSelectedVersion(versions[0]); // versions are sorted by version_number desc
     }
-  }, [versions]);
+  }, [versions, selectedVersion]);
 
   const handlePublishClick = (version: PostVersion) => {
     setSelectedVersion(version);
@@ -158,10 +181,10 @@ const VersionHistoryPanel = ({
     return format(new Date(dateString), "MMM d, yyyy, h:mm a");
   };
 
-  // Find the currently published version (status === 'published')
+  // Find the currently published/live version
   const currentlyPublishedVersion = useMemo(() => {
-    return versions.find(v => v.status === 'published');
-  }, [versions]);
+    return versions.find((v) => publishedVersionIds.has(v.id)) || null;
+  }, [versions, publishedVersionIds]);
 
   const VersionListItem = ({ version, isSelected, showBookmarkIcon = false }: { version: PostVersion; isSelected?: boolean; showBookmarkIcon?: boolean }) => {
     const isHovered = hoveredVersionId === version.id;
@@ -170,10 +193,8 @@ const VersionHistoryPanel = ({
     
     return (
       <div
-        className={`group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-          isSelected 
-            ? "bg-primary/10" 
-            : "hover:bg-muted/50"
+        className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+          isSelected ? "bg-primary/10" : "hover:bg-muted/50"
         }`}
         onMouseEnter={() => setHoveredVersionId(version.id)}
         onMouseLeave={() => setHoveredVersionId(null)}
@@ -182,34 +203,60 @@ const VersionHistoryPanel = ({
           onRestore(version); // Load this version into the editor
         }}
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
           {showBookmarkIcon && (
-            <Bookmark className="h-4 w-4 text-foreground flex-shrink-0" fill="currentColor" />
+            <Bookmark
+              className="h-4 w-4 text-foreground flex-shrink-0"
+              fill="currentColor"
+            />
           )}
-          <Badge variant="outline" className="h-5 text-[10px] px-1.5 flex-shrink-0 font-mono">
+          <Badge
+            variant="outline"
+            className="h-5 text-[10px] px-1.5 flex-shrink-0 font-mono"
+          >
             v{version.version_number}
           </Badge>
           <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-2">
-              <span className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground"}`}>
-                {version.change_summary || version.versioning_note_type?.replace(/_/g, " ") || "No notes"}
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className={`text-sm truncate ${
+                  isSelected ? "text-primary font-medium" : "text-foreground"
+                }`}
+              >
+                {version.change_summary ||
+                  version.versioning_note_type?.replace(/_/g, " ") ||
+                  "No notes"}
               </span>
               {isCurrentlyPublished && (
-                <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-green-600 hover:bg-green-600 text-white flex-shrink-0">
-                  <CheckCircle className="h-3 w-3 mr-0.5" />
+                <Badge
+                  variant="secondary"
+                  className="h-5 text-[10px] px-1.5 gap-1 flex-shrink-0"
+                >
+                  <CheckCircle className="h-3 w-3" />
                   Live
                 </Badge>
               )}
             </div>
-            {version.versioning_note_type && version.change_summary && (
-              <span className="text-xs text-muted-foreground capitalize">
-                {version.versioning_note_type.replace(/_/g, " ")}
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {version.versioning_note_type && version.change_summary && (
+                <span className="capitalize">
+                  {version.versioning_note_type.replace(/_/g, " ")}
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                {version.editor_role === "admin" ? (
+                  <Shield className="h-3 w-3" />
+                ) : (
+                  <User className="h-3 w-3" />
+                )}
+                <span className="capitalize">{version.editor_role}</span>
               </span>
-            )}
+            </div>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2 flex-shrink-0">
+
+        <div className="flex items-center gap-2 flex-shrink-0 min-w-[10.5rem] justify-end">
           {isHovered ? (
             <div className="flex items-center gap-1 bg-muted rounded-md px-1">
               <Button
@@ -221,8 +268,10 @@ const VersionHistoryPanel = ({
                   toggleBookmark(version.id);
                 }}
               >
-                <Bookmark 
-                  className={`h-3.5 w-3.5 ${versionIsBookmarked ? "text-primary" : ""}`} 
+                <Bookmark
+                  className={`h-3.5 w-3.5 ${
+                    versionIsBookmarked ? "text-primary" : ""
+                  }`}
                   fill={versionIsBookmarked ? "currentColor" : "none"}
                 />
               </Button>
@@ -265,7 +314,7 @@ const VersionHistoryPanel = ({
               </Button>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
+            <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums text-right">
               {formatVersionDate(version.created_at)}
             </span>
           )}
@@ -344,22 +393,26 @@ const VersionHistoryPanel = ({
                   )}
 
                   {/* Published Section */}
-                  {groupedVersions.published.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground mb-2 px-3">
-                        Published
-                      </h3>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-2 px-3">
+                      Published
+                    </h3>
+                    {groupedVersions.published.length > 0 ? (
                       <div className="space-y-0.5">
                         {groupedVersions.published.map((version) => (
-                          <VersionListItem 
-                            key={version.id} 
+                          <VersionListItem
+                            key={version.id}
                             version={version}
                             isSelected={selectedVersion?.id === version.id}
                           />
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        No published version yet
+                      </div>
+                    )}
+                  </div>
 
                   {/* Unpublished Section */}
                   {groupedVersions.unpublished.length > 0 && (
