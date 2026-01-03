@@ -11,7 +11,7 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-markup";
-import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb, Eye, EyeOff, Columns, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const modKey = isMac ? '⌘' : 'Ctrl';
 
 const SUPPORTED_LANGUAGES = [
   { value: 'python', label: 'Python' },
@@ -41,6 +50,20 @@ const SUPPORTED_LANGUAGES = [
   { value: 'bash', label: 'Bash' },
   { value: 'css', label: 'CSS' },
   { value: 'markup', label: 'HTML' },
+];
+
+const KEYBOARD_SHORTCUTS = [
+  { keys: `${modKey}+B`, action: 'Bold' },
+  { keys: `${modKey}+I`, action: 'Italic' },
+  { keys: `${modKey}+U`, action: 'Underline' },
+  { keys: `${modKey}+⇧+S`, action: 'Strikethrough' },
+  { keys: `${modKey}+\``, action: 'Code Block' },
+  { keys: `${modKey}+⇧+Q`, action: 'Blockquote' },
+  { keys: `${modKey}+⇧+L`, action: 'Bullet List' },
+  { keys: `${modKey}+⇧+O`, action: 'Numbered List' },
+  { keys: `${modKey}+⇧+1`, action: 'Heading 1' },
+  { keys: `${modKey}+⇧+2`, action: 'Heading 2' },
+  { keys: `${modKey}+⇧+3`, action: 'Heading 3' },
 ];
 
 interface RichTextEditorProps {
@@ -73,10 +96,24 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   const [editedCode, setEditedCode] = useState("");
   const [languageOverrides, setLanguageOverrides] = useState<Record<number, string>>({});
   
+  // View mode state (edit, preview, split)
+  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>(() => {
+    const saved = localStorage.getItem('richTextEditorViewMode');
+    return (saved === 'edit' || saved === 'preview' || saved === 'split') ? saved : 'edit';
+  });
+  const [splitViewHeight, setSplitViewHeight] = useState(300);
+  const splitViewDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  
   // Takeaway dialog state
   const [showTakeawayDialog, setShowTakeawayDialog] = useState(false);
   const [takeawayTitle, setTakeawayTitle] = useState("");
   const [takeawayItems, setTakeawayItems] = useState("");
+  
+  // Handle view mode change with persistence
+  const handleViewModeChange = (mode: 'edit' | 'preview' | 'split') => {
+    setViewMode(mode);
+    localStorage.setItem('richTextEditorViewMode', mode);
+  };
   
   // Stable onChange handler
   const handleChange = useCallback(
@@ -524,17 +561,156 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
 
   return (
     <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onFocus={handleEditorFocus}>
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        value={value}
-        onChange={handleChange}
-        modules={modules}
-        formats={formats}
-        placeholder={stablePlaceholder}
-        className="bg-background"
-        preserveWhitespace
-      />
+      {/* View mode toggle and keyboard shortcuts */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewModeChange('edit')}
+            className={cn(
+              "h-7 px-2 text-xs gap-1",
+              viewMode === 'edit' && "bg-primary/10 text-primary"
+            )}
+          >
+            <EyeOff className="w-3 h-3" />
+            Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewModeChange('split')}
+            className={cn(
+              "h-7 px-2 text-xs gap-1",
+              viewMode === 'split' && "bg-primary/10 text-primary"
+            )}
+          >
+            <Columns className="w-3 h-3" />
+            Split
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewModeChange('preview')}
+            className={cn(
+              "h-7 px-2 text-xs gap-1",
+              viewMode === 'preview' && "bg-primary/10 text-primary"
+            )}
+          >
+            <Eye className="w-3 h-3" />
+            Preview
+          </Button>
+        </div>
+        
+        {/* Keyboard shortcuts popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground">
+              <Keyboard className="w-3 h-3" />
+              Shortcuts
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3 bg-popover border border-border shadow-lg z-50" align="end">
+            <div className="space-y-1">
+              <h4 className="font-medium text-sm mb-2">Keyboard Shortcuts</h4>
+              {KEYBOARD_SHORTCUTS.map((shortcut) => (
+                <div key={shortcut.action} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{shortcut.action}</span>
+                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">{shortcut.keys}</kbd>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+      
+      {/* Editor / Preview based on view mode */}
+      {viewMode === 'split' ? (
+        <div className="relative">
+          <ResizablePanelGroup 
+            direction="horizontal" 
+            className="rounded-lg border border-border"
+            style={{ height: `${splitViewHeight}px` }}
+          >
+            {/* Editor panel */}
+            <ResizablePanel defaultSize={50} minSize={25}>
+              <div className="h-full overflow-auto">
+                <ReactQuill
+                  ref={quillRef}
+                  theme="snow"
+                  value={value}
+                  onChange={handleChange}
+                  modules={modules}
+                  formats={formats}
+                  placeholder={stablePlaceholder}
+                  className="bg-background h-full split-view-editor"
+                  preserveWhitespace
+                />
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            {/* Preview panel */}
+            <ResizablePanel defaultSize={50} minSize={25}>
+              <div 
+                className="w-full h-full text-sm leading-relaxed p-4 overflow-auto bg-muted/30 prose prose-sm dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: value || '<p class="text-muted-foreground italic">Preview...</p>' }}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+          {/* Draggable resize handle at bottom right corner */}
+          <div
+            className="absolute bottom-0 right-0 cursor-nwse-resize opacity-40 hover:opacity-70 transition-opacity z-50 p-1.5 select-none"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              splitViewDragRef.current = { startY: e.clientY, startHeight: splitViewHeight };
+              
+              const handleMouseMove = (moveEvent: MouseEvent) => {
+                if (!splitViewDragRef.current) return;
+                const deltaY = moveEvent.clientY - splitViewDragRef.current.startY;
+                const newHeight = Math.max(200, Math.min(800, splitViewDragRef.current.startHeight + deltaY));
+                setSplitViewHeight(newHeight);
+              };
+              
+              const handleMouseUp = () => {
+                splitViewDragRef.current = null;
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+              
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+            title="Drag to resize"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" className="text-muted-foreground">
+              <path
+                d="M10 2L2 10M10 6L6 10"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+        </div>
+      ) : viewMode === 'preview' ? (
+        <div 
+          className="w-full min-h-[300px] text-sm leading-relaxed border rounded-lg p-4 overflow-auto bg-muted/30 prose prose-sm dark:prose-invert max-w-none"
+          style={{ maxHeight: '600px' }}
+          dangerouslySetInnerHTML={{ __html: value || '<p class="text-muted-foreground italic">Nothing to preview...</p>' }}
+        />
+      ) : (
+        <ReactQuill
+          ref={quillRef}
+          theme="snow"
+          value={value}
+          onChange={handleChange}
+          modules={modules}
+          formats={formats}
+          placeholder={stablePlaceholder}
+          className="bg-background"
+          preserveWhitespace
+        />
+      )}
       
       {/* Takeaway Dialog */}
       <Dialog open={showTakeawayDialog} onOpenChange={setShowTakeawayDialog}>
@@ -919,6 +1095,22 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
           padding: 1rem;
           margin: 1rem 0;
           border-left: 4px solid hsl(45 93% 47%);
+        }
+        
+        /* Split view editor styling */
+        .rich-text-editor .split-view-editor .ql-toolbar {
+          border-radius: 0;
+          border: none;
+          border-bottom: 1px solid hsl(var(--border));
+        }
+        
+        .rich-text-editor .split-view-editor .ql-container {
+          border: none;
+          min-height: auto;
+        }
+        
+        .rich-text-editor .split-view-editor .ql-editor {
+          min-height: 200px;
         }
       `}</style>
     </div>
