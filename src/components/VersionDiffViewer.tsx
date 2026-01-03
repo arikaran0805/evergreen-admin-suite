@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
+import { isChatTranscript, extractChatSegments, extractExplanation } from "@/lib/chatContent";
+import { Separator } from "@/components/ui/separator";
 
 interface VersionDiffViewerProps {
   currentVersion: PostVersion;
@@ -29,6 +30,13 @@ const VersionDiffViewer = ({
       : "";
     const newContent = currentVersion.content;
 
+    // Extract explanation portions for mixed content
+    const oldExplanation = hasCompareVersion ? extractExplanation(oldContent) : null;
+    const newExplanation = extractExplanation(newContent);
+    const explanationDiff = (oldExplanation || newExplanation)
+      ? computeWordDiff(oldExplanation || "", newExplanation || "")
+      : null;
+
     // If no old content, show all as "added"
     if (!oldContent) {
       if (isChatTranscript(newContent)) {
@@ -36,23 +44,43 @@ const VersionDiffViewer = ({
         return { 
           type: "chat" as const, 
           data: bubbles.map(bubble => ({ bubble, status: "added" as const })),
-          isFirstVersion: true
+          isFirstVersion: true,
+          explanationDiff,
+          oldExplanation,
+          newExplanation
         };
       }
       return { 
         type: "rich" as const, 
         data: [{ type: "added" as const, text: newContent }],
-        isFirstVersion: true
+        isFirstVersion: true,
+        explanationDiff: null,
+        oldExplanation: null,
+        newExplanation: null
       };
     }
 
     // Check if it's chat content
     if (isChatTranscript(newContent)) {
-      return { type: "chat" as const, data: compareChatBubbles(oldContent, newContent), isFirstVersion: false };
+      return { 
+        type: "chat" as const, 
+        data: compareChatBubbles(oldContent, newContent), 
+        isFirstVersion: false,
+        explanationDiff,
+        oldExplanation,
+        newExplanation
+      };
     }
 
     // Rich text diff
-    return { type: "rich" as const, data: computeWordDiff(oldContent, newContent), isFirstVersion: false };
+    return { 
+      type: "rich" as const, 
+      data: computeWordDiff(oldContent, newContent), 
+      isFirstVersion: false,
+      explanationDiff: null,
+      oldExplanation: null,
+      newExplanation: null
+    };
   }, [currentVersion, compareVersion, currentContent]);
 
   if (diff.type === "chat") {
@@ -62,6 +90,9 @@ const VersionDiffViewer = ({
         isFirstVersion={diff.isFirstVersion}
         showHighlights={showHighlights}
         onToggleHighlights={showHighlightToggle ? setShowHighlights : undefined}
+        explanationDiff={diff.explanationDiff}
+        oldExplanation={diff.oldExplanation}
+        newExplanation={diff.newExplanation}
       />
     );
   }
@@ -267,6 +298,9 @@ const ChatDiffView = ({
   isFirstVersion,
   showHighlights,
   onToggleHighlights,
+  explanationDiff,
+  oldExplanation,
+  newExplanation,
 }: {
   bubbles: Array<{
     bubble: any;
@@ -276,7 +310,12 @@ const ChatDiffView = ({
   isFirstVersion?: boolean;
   showHighlights: boolean;
   onToggleHighlights?: (value: boolean) => void;
+  explanationDiff?: DiffSegment[] | null;
+  oldExplanation?: string | null;
+  newExplanation?: string | null;
 }) => {
+  const hasExplanation = oldExplanation || newExplanation;
+
   return (
     <div>
       <HighlightToggle showHighlights={showHighlights} onToggle={onToggleHighlights} />
@@ -289,7 +328,7 @@ const ChatDiffView = ({
             <span className="text-sm font-medium">Inline Diff View</span>
           </div>
         </div>
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[600px]">
           <div className="p-4 space-y-4">
             {bubbles.map((item, index) => (
               <InlineChatBubble
@@ -305,6 +344,43 @@ const ChatDiffView = ({
               <div className="text-center text-muted-foreground py-8">
                 No differences to display
               </div>
+            )}
+
+            {/* Explanation section (rich text after ---) */}
+            {hasExplanation && (
+              <>
+                <Separator className="my-4" />
+                <div className="p-4 bg-muted/20 rounded-lg">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">Explanation</h4>
+                  <div className="prose dark:prose-invert max-w-none text-sm">
+                    {!showHighlights || !explanationDiff ? (
+                      <div dangerouslySetInnerHTML={{ __html: newExplanation || oldExplanation || "" }} />
+                    ) : (
+                      explanationDiff.map((segment, index) => {
+                        if (segment.type === "removed") {
+                          return (
+                            <span
+                              key={index}
+                              className="bg-red-200 dark:bg-red-800/50 line-through text-red-700 dark:text-red-300 px-0.5 rounded"
+                              dangerouslySetInnerHTML={{ __html: segment.text }}
+                            />
+                          );
+                        }
+                        if (segment.type === "added") {
+                          return (
+                            <span
+                              key={index}
+                              className="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 px-0.5 rounded"
+                              dangerouslySetInnerHTML={{ __html: segment.text }}
+                            />
+                          );
+                        }
+                        return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </ScrollArea>
