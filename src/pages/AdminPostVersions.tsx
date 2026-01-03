@@ -89,6 +89,18 @@ const AdminPostVersions = () => {
     }
   }, [searchParams, versions]);
 
+  // Handle Escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
   useEffect(() => {
     if (!roleLoading && !isAdmin && !isModerator) {
       toast({
