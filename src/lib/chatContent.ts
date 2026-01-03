@@ -132,7 +132,7 @@ export const extractChatSegments = (
 
   let markers = rawMarkers.filter((m) => allowed.has(speakerKey(m.speaker)));
 
-  // Always include explicit TAKEAWAY blocks (even when allowSingle=true).
+  // Always include explicit TAKEAWAY blocks.
   // To avoid false splits (e.g., a user typing "Takeaway:"), we only keep it when
   // the content after the marker starts with our serialized "[TAKEAWAY..." format.
   rawMarkers.forEach((m, idx) => {
@@ -144,10 +144,28 @@ export const extractChatSegments = (
     if (!markers.some((x) => x.start === m.start)) markers.push(m);
   });
 
+  // Always include explicit FREEFORM blocks.
+  // Same rationale as TAKEAWAY: keep only when it matches our serialized "[FREEFORM_CANVAS]" format.
+  rawMarkers.forEach((m, idx) => {
+    if (speakerKey(m.speaker) !== "freeform") return;
+    const nextStart = idx + 1 < rawMarkers.length ? rawMarkers[idx + 1].start : chatPortion.length;
+    const afterMarker = chatPortion.slice(m.end, nextStart).trimStart();
+    if (!afterMarker.startsWith("[FREEFORM_CANVAS]")) return;
+
+    if (!markers.some((x) => x.start === m.start)) markers.push(m);
+  });
+
   markers = markers.sort((a, b) => a.start - b.start);
 
   if (markers.length === 0) return [];
-  if (!options?.allowSingle && markers.length < 2) return [];
+
+  // If there's only a single marker, only accept it when it’s an explicit structured block.
+  const hasExplicitBlocks = markers.some((m) => {
+    const key = speakerKey(m.speaker);
+    return key === "takeaway" || key === "freeform";
+  });
+
+  if (!options?.allowSingle && markers.length < 2 && !hasExplicitBlocks) return [];
 
   const segments: ChatSegment[] = [];
   for (let i = 0; i < markers.length; i++) {
@@ -174,6 +192,10 @@ export const isChatTranscript = (input: string): boolean => {
   const text = normalizeChatInput(input);
   if (!text.trim()) return false;
   const chatPortion = text.split(MIXED_CONTENT_SEPARATOR)[0];
+
+  // Treat explicit structured blocks as chat even if there aren't 2+ speakers.
+  if (chatPortion.includes("[FREEFORM_CANVAS]") || chatPortion.includes("[TAKEAWAY")) return true;
+
   return findChatMarkers(chatPortion).length >= 2;
 };
 
