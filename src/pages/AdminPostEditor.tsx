@@ -23,7 +23,7 @@ import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, Settings2 } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, Settings2, Loader2, Check } from "lucide-react";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -122,7 +122,7 @@ const AdminPostEditor = () => {
 
   // Auto-save draft hook - saves content to localStorage with debounce
   const draftKey = id ? `post_${id}` : `new_post_${formData.slug || 'untitled'}`;
-  const { loadDraft, clearDraft } = useAutoSaveDraft(draftKey, formData.content, true);
+  const { loadDraft, clearDraft, status: autoSaveStatus } = useAutoSaveDraft(draftKey, formData.content, true);
 
   // Load draft on mount for new posts or if content is empty
   useEffect(() => {
@@ -687,6 +687,19 @@ const AdminPostEditor = () => {
               </h1>
               {formData.status && formData.status !== "draft" && (
                 <ContentStatusBadge status={formData.status as ContentStatus} />
+              )}
+              {/* Autosave Status Indicator */}
+              {autoSaveStatus === 'saving' && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Saving…</span>
+                </div>
+              )}
+              {autoSaveStatus === 'saved' && (
+                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Saved</span>
+                </div>
               )}
             </div>
             
