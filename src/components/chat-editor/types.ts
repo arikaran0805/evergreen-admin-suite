@@ -1,4 +1,6 @@
-export type MessageType = "message" | "takeaway";
+import { FreeformCanvasData } from './freeform/types';
+
+export type MessageType = "message" | "takeaway" | "freeform";
 
 export interface ChatMessage {
   id: string;
@@ -8,6 +10,7 @@ export interface ChatMessage {
   type?: MessageType;
   takeawayTitle?: string;
   takeawayIcon?: string;
+  freeformData?: FreeformCanvasData;
 }
 
 export interface CourseCharacter {

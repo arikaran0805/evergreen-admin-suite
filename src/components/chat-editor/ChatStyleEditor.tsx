@@ -2,13 +2,15 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER, TAKEAWAY_ICONS } from "./types";
 import ChatBubble from "./ChatBubble";
 import TakeawayBlock from "./TakeawayBlock";
+import { FreeformBlock } from "./FreeformBlock";
+import { FreeformCanvasData } from "./freeform";
 import { cn } from "@/lib/utils";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns, Maximize2, Minimize2 } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns, Maximize2, Minimize2, PenTool } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import CodeBlock from "./CodeBlock";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +76,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Takeaway format: [TAKEAWAY:icon:title]: content
 const TAKEAWAY_REGEX = /^\[TAKEAWAY(?::([^:]*?))?(?::([^\]]*?))?\]:\s*/;
+const FREEFORM_REGEX = /^\[FREEFORM_CANVAS\]:(.*)$/;
 
 const parseContent = (content: string): ChatMessage[] => {
   const segments = extractChatSegments(content, { allowSingle: true });
@@ -81,6 +84,26 @@ const parseContent = (content: string): ChatMessage[] => {
 
   return segments
     .map((s, index) => {
+      // Handle freeform canvas blocks
+      const freeformMatch = s.content.match(FREEFORM_REGEX);
+      if (s.speaker === "FREEFORM" || freeformMatch) {
+        let freeformData;
+        try {
+          const jsonStr = freeformMatch?.[1] || s.content;
+          freeformData = JSON.parse(jsonStr);
+        } catch {
+          freeformData = undefined;
+        }
+        return {
+          id: `freeform-${index}`,
+          speaker: "FREEFORM",
+          content: freeformMatch?.[1] || s.content,
+          type: "freeform" as const,
+          freeformData,
+        };
+      }
+
+      // Handle takeaway blocks
       const takeawayMatch = s.content.match(TAKEAWAY_REGEX);
       if (s.speaker === "TAKEAWAY" || takeawayMatch) {
         const icon = takeawayMatch?.[1] || "🧠";
@@ -107,7 +130,7 @@ const parseContent = (content: string): ChatMessage[] => {
         type: "message" as const,
       };
     })
-    .filter((m) => m.speaker.trim() && m.content.trim());
+    .filter((m) => m.speaker.trim() && (m.content.trim() || m.type === "freeform"));
 };
 
 // Use a special marker to preserve newlines within messages during serialization
@@ -116,6 +139,11 @@ const NEWLINE_MARKER = "<<<NEWLINE>>>";
 const serializeMessages = (messages: ChatMessage[], explanation: string): string => {
   // Join messages with double newline, but encode internal newlines first
   const chatPart = messages.map((m) => {
+    // Handle freeform canvas blocks
+    if (m.type === "freeform") {
+      const freeformJson = m.freeformData ? JSON.stringify(m.freeformData) : "{}";
+      return `FREEFORM: [FREEFORM_CANVAS]:${freeformJson}`;
+    }
     // Handle takeaway blocks
     if (m.type === "takeaway") {
       const icon = m.takeawayIcon || "🧠";
@@ -147,6 +175,7 @@ interface Course {
 interface InsertBetweenButtonProps {
   onInsertMessage: () => void;
   onInsertTakeaway: () => void;
+  onInsertFreeform: () => void;
   courseCharacterName: string;
   mentorName: string;
 }
@@ -154,6 +183,7 @@ interface InsertBetweenButtonProps {
 const InsertBetweenButton = ({
   onInsertMessage,
   onInsertTakeaway,
+  onInsertFreeform,
   courseCharacterName,
   mentorName,
 }: InsertBetweenButtonProps) => {
@@ -169,7 +199,7 @@ const InsertBetweenButton = ({
             <Plus className="w-3 h-3 text-muted-foreground group-hover/insert:text-primary" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-48 bg-popover border border-border shadow-lg z-50">
+        <DropdownMenuContent align="center" className="w-56 bg-popover border border-border shadow-lg z-50">
           <DropdownMenuItem onClick={onInsertMessage} className="cursor-pointer">
             <MessageCircle className="w-4 h-4 mr-2" />
             <span>Message</span>
@@ -177,6 +207,11 @@ const InsertBetweenButton = ({
           <DropdownMenuItem onClick={onInsertTakeaway} className="cursor-pointer">
             <Lightbulb className="w-4 h-4 mr-2" />
             <span>Takeaway Block</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onInsertFreeform} className="cursor-pointer">
+            <PenTool className="w-4 h-4 mr-2" />
+            <span>Freeform Canvas</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -189,7 +224,7 @@ interface MessageItemProps {
   character: CourseCharacter;
   isMentor: boolean;
   isEditing: boolean;
-  onEdit: (id: string, content: string, title?: string, icon?: string) => void;
+  onEdit: (id: string, content: string, title?: string, icon?: string, freeformData?: FreeformCanvasData) => void;
   onStartEdit: (id: string | null) => void;
   onEndEdit: () => void;
   onDelete: (id: string) => void;
@@ -237,6 +272,7 @@ const SortableMessageItem = ({
   };
 
   const isTakeaway = message.type === "takeaway";
+  const isFreeform = message.type === "freeform";
 
   // Action buttons component
   const ActionButtons = () => (
@@ -312,6 +348,28 @@ const SortableMessageItem = ({
       </Button>
     </div>
   );
+
+  // For freeform canvas blocks
+  if (isFreeform) {
+    return (
+      <div ref={setNodeRef} style={style}>
+        <FreeformBlock
+          message={message}
+          isEditing={isEditing}
+          isEditMode={isEditMode}
+          onEdit={(id, content, freeformData) => onEdit(id, content, undefined, undefined, freeformData)}
+          onStartEdit={onStartEdit}
+          onEndEdit={onEndEdit}
+          onDelete={onDelete}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          isFirst={isFirst}
+          isLast={isLast}
+          dragHandleProps={{ ...attributes, ...listeners }}
+        />
+      </div>
+    );
+  }
 
   // For takeaway blocks, always show action buttons on the right
   if (isTakeaway) {
@@ -1107,12 +1165,38 @@ const ChatStyleEditor = ({
     setEditingId(newTakeaway.id);
   };
 
+  // Insert freeform canvas at a specific position
+  const handleInsertFreeformAt = (afterIndex: number) => {
+    saveToUndoStack();
+    const newFreeform: ChatMessage = {
+      id: generateId(),
+      speaker: "FREEFORM",
+      content: "",
+      type: "freeform",
+      freeformData: undefined,
+    };
+    setMessages((prev) => {
+      const updated = [...prev];
+      const insertIndex = Math.max(0, Math.min(updated.length, afterIndex + 1));
+      updated.splice(insertIndex, 0, newFreeform);
+      return updated;
+    });
+    setEditingId(newFreeform.id);
+  };
 
-  const handleEditMessage = (id: string, content: string, title?: string, icon?: string) => {
+
+  const handleEditMessage = (id: string, content: string, title?: string, icon?: string, freeformData?: FreeformCanvasData) => {
     saveToUndoStack();
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id === id) {
+          if (m.type === "freeform") {
+            return { 
+              ...m, 
+              content,
+              freeformData,
+            };
+          }
           if (m.type === "takeaway") {
             return { 
               ...m, 
@@ -1307,6 +1391,7 @@ const ChatStyleEditor = ({
                   <InsertBetweenButton
                     onInsertMessage={() => handleInsertMessageAt(-1)}
                     onInsertTakeaway={() => handleInsertTakeawayAt(-1)}
+                    onInsertFreeform={() => handleInsertFreeformAt(-1)}
                     courseCharacterName={courseCharacter.name}
                     mentorName={mentorName}
                   />
@@ -1337,6 +1422,7 @@ const ChatStyleEditor = ({
                       <InsertBetweenButton
                         onInsertMessage={() => handleInsertMessageAt(index)}
                         onInsertTakeaway={() => handleInsertTakeawayAt(index)}
+                        onInsertFreeform={() => handleInsertFreeformAt(index)}
                         courseCharacterName={courseCharacter.name}
                         mentorName={mentorName}
                       />
