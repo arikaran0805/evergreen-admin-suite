@@ -1525,20 +1525,25 @@ const ChatStyleEditor = ({
                     </ResizablePanel>
                   </ResizablePanelGroup>
 
-                  {/* Expand/collapse button for split mode (in-canvas) */}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsComposerExpanded((v) => !v)}
-                    className="absolute top-2 right-2 h-7 w-7 bg-popover/90 backdrop-blur border-border shadow-md z-50"
-                    title={isComposerExpanded ? "Collapse" : "Expand"}
-                  >
-                    {isComposerExpanded ? (
-                      <Minimize2 className="w-3.5 h-3.5" />
-                    ) : (
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    )}
-                  </Button>
+                  {/* Bottom bar with shortcuts and expand button - matching Edit mode */}
+                  <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between z-50">
+                    <div className="text-[10px] text-muted-foreground/50">
+                      Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsComposerExpanded((v) => !v)}
+                      className="h-6 w-6 opacity-60 hover:opacity-100 text-muted-foreground"
+                      title={isComposerExpanded ? "Collapse" : "Expand"}
+                    >
+                      {isComposerExpanded ? (
+                        <Minimize2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               ) : composerViewMode === 'preview' ? (
                 <div 
