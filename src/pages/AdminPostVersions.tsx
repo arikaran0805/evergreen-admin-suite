@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -42,10 +42,13 @@ import {
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import ContentRenderer from "@/components/ContentRenderer";
+import { ChatConversationView } from "@/components/chat-editor";
+import { isChatTranscript, extractExplanation } from "@/lib/chatContent";
 
 const AdminPostVersions = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
   const [post, setPost] = useState<{ title: string; content: string } | null>(null);
@@ -57,6 +60,29 @@ const AdminPostVersions = () => {
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
 
   const { versions, loading: versionsLoading, publishVersion, restoreVersion } = usePostVersions(id);
+
+  // Handle URL parameters for tab and version selection
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const versionId = searchParams.get("version");
+    
+    if (tab === "compare") {
+      setViewMode("compare");
+    } else if (tab === "preview") {
+      setViewMode("preview");
+    }
+    
+    if (versionId && versions.length > 0) {
+      const targetVersion = versions.find(v => v.id === versionId);
+      if (targetVersion) {
+        setSelectedVersion(targetVersion);
+        // For compare mode, auto-select previous version
+        const currentIndex = versions.findIndex(v => v.id === versionId);
+        const prevVersion = currentIndex < versions.length - 1 ? versions[currentIndex + 1] : null;
+        setCompareVersion(prevVersion);
+      }
+    }
+  }, [searchParams, versions]);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin && !isModerator) {
@@ -454,7 +480,37 @@ const AdminPostVersions = () => {
                 </div>
                 
                 <div className="border rounded-lg p-6 bg-background">
-                  <ContentRenderer htmlContent={selectedVersion.content} />
+                  {/* Render full post content - chat + rich text */}
+                  {(() => {
+                    const content = selectedVersion.content;
+                    const isChat = isChatTranscript(content);
+                    
+                    if (isChat) {
+                      // Split content at --- separator for chat vs explanation
+                      const parts = content.split(/\n---\n/);
+                      const chatContent = parts[0];
+                      const richTextContent = parts.length > 1 ? parts.slice(1).join("\n---\n") : null;
+                      
+                      return (
+                        <div className="space-y-8">
+                          {chatContent && (
+                            <div>
+                              <h3 className="text-sm font-medium text-muted-foreground mb-4">Chat Content</h3>
+                              <ChatConversationView content={chatContent} />
+                            </div>
+                          )}
+                          {richTextContent && (
+                            <div>
+                              <h3 className="text-sm font-medium text-muted-foreground mb-4">Explanation</h3>
+                              <ContentRenderer htmlContent={richTextContent} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    return <ContentRenderer htmlContent={content} />;
+                  })()}
                 </div>
               </Card>
             ) : (
