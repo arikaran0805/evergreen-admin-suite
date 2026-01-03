@@ -136,8 +136,11 @@ const VersionHistoryPanel = ({
   };
 
   const handleRevertClick = (version: PostVersion) => {
-    setSelectedVersion(version);
-    setRevertDialogOpen(true);
+    // Navigate to full version control page with preview tab active
+    if (id) {
+      navigate(`/admin/posts/${id}/versions?tab=preview&version=${version.id}`);
+      setHistoryOpen(false);
+    }
   };
 
   const handleConfirmRevert = () => {
