@@ -522,6 +522,18 @@ const ChatStyleEditor = ({
     }
     return 'edit';
   });
+  const [splitPanelSizes, setSplitPanelSizes] = useState<number[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chatEditorSplitPanelSizes');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 2) return parsed;
+        } catch {}
+      }
+    }
+    return [50, 50];
+  });
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mentorName = "Karan";
@@ -530,6 +542,12 @@ const ChatStyleEditor = ({
   const handleComposerViewModeChange = (newMode: 'edit' | 'split' | 'preview') => {
     setComposerViewMode(newMode);
     localStorage.setItem('chatEditorComposerViewMode', newMode);
+  };
+
+  // Handle split panel resize
+  const handleSplitPanelResize = (sizes: number[]) => {
+    setSplitPanelSizes(sizes);
+    localStorage.setItem('chatEditorSplitPanelSizes', JSON.stringify(sizes));
   };
 
   // Icon options for character selection
@@ -1449,8 +1467,9 @@ const ChatStyleEditor = ({
                 <ResizablePanelGroup 
                   direction="horizontal" 
                   className="rounded-2xl border border-border bg-background min-h-[120px]"
+                  onLayout={handleSplitPanelResize}
                 >
-                  <ResizablePanel defaultSize={50} minSize={20} maxSize={80}>
+                  <ResizablePanel defaultSize={splitPanelSizes[0]} minSize={20} maxSize={80}>
                     <textarea
                       ref={inputRef}
                       value={newMessage}
@@ -1469,7 +1488,7 @@ const ChatStyleEditor = ({
                     />
                   </ResizablePanel>
                   <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
-                  <ResizablePanel defaultSize={50} minSize={20} maxSize={80}>
+                  <ResizablePanel defaultSize={splitPanelSizes[1]} minSize={20} maxSize={80}>
                     <div className="h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none min-h-[120px] bg-muted/20">
                       {newMessage ? (
                         <ComposerPreview content={newMessage} codeTheme={codeTheme} />
