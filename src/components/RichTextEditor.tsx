@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import Prism from "prismjs";
@@ -11,7 +11,7 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-markup";
-import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown } from "lucide-react";
+import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const SUPPORTED_LANGUAGES = [
   { value: 'python', label: 'Python' },
@@ -63,16 +73,18 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
   const [editedCode, setEditedCode] = useState("");
   const [languageOverrides, setLanguageOverrides] = useState<Record<number, string>>({});
   
-  // Use ref to track value to prevent cursor jumping
-  const valueRef = useRef(value);
+  // Takeaway dialog state
+  const [showTakeawayDialog, setShowTakeawayDialog] = useState(false);
+  const [takeawayTitle, setTakeawayTitle] = useState("");
+  const [takeawayItems, setTakeawayItems] = useState("");
   
-  // Only update internal value ref, not trigger re-render
-  useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
+  // Track if highlighting is needed - only on blur or explicit request
+  const [needsHighlighting, setNeedsHighlighting] = useState(false);
+  const isEditing = useRef(false);
   
-  // Memoized onChange handler to prevent re-renders
+  // Stable onChange handler
   const handleChange = useCallback((content: string) => {
+    isEditing.current = true;
     onChange(content);
   }, [onChange]);
 
@@ -86,7 +98,6 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     const text = selection.toString().trim();
     if (!text || text.length < 2) return;
 
-    // Check if selection is inside the editor
     const quillEditor = quillRef.current?.getEditor();
     if (!quillEditor) return;
 
@@ -95,10 +106,8 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
 
     const range = selection.getRangeAt(0);
     
-    // Make sure selection is within the editor
     if (!editorElement.contains(range.commonAncestorContainer)) return;
 
-    // Determine if selection is in a code block
     const codeBlockElement = range.commonAncestorContainer.parentElement?.closest('pre.ql-syntax');
     const type: "paragraph" | "code" = codeBlockElement ? "code" : "paragraph";
 
@@ -110,25 +119,123 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     });
   }, [onTextSelect]);
 
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-      [{ font: [] }],
-      [{ size: ["small", false, "large", "huge"] }],
-      ["bold", "italic", "underline", "strike"],
-      [{ color: [] }, { background: [] }],
-      [{ script: "sub" }, { script: "super" }],
-      [{ list: "ordered" }, { list: "bullet" }],
-      [{ indent: "-1" }, { indent: "+1" }],
-      [{ align: [] }],
-      ["blockquote", "code-block"],
-      ["link", "image", "video"],
-      ["clean"],
-    ],
+  // Keyboard shortcuts handler
+  const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+    
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const modKey = isMac ? e.metaKey : e.ctrlKey;
+    
+    if (!modKey) return;
+    
+    const format = quill.getFormat();
+    
+    switch (e.key.toLowerCase()) {
+      case 'b':
+        e.preventDefault();
+        quill.format('bold', !format.bold);
+        break;
+      case 'i':
+        e.preventDefault();
+        quill.format('italic', !format.italic);
+        break;
+      case 'u':
+        e.preventDefault();
+        quill.format('underline', !format.underline);
+        break;
+      case 's':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('strike', !format.strike);
+        }
+        break;
+      case '`':
+        e.preventDefault();
+        quill.format('code-block', !format['code-block']);
+        break;
+      case 'q':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('blockquote', !format.blockquote);
+        }
+        break;
+      case '1':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('header', format.header === 1 ? false : 1);
+        }
+        break;
+      case '2':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('header', format.header === 2 ? false : 2);
+        }
+        break;
+      case '3':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('header', format.header === 3 ? false : 3);
+        }
+        break;
+      case 'l':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('list', format.list === 'bullet' ? false : 'bullet');
+        }
+        break;
+      case 'o':
+        if (e.shiftKey) {
+          e.preventDefault();
+          quill.format('list', format.list === 'ordered' ? false : 'ordered');
+        }
+        break;
+    }
+  }, []);
+
+  // Attach keyboard shortcuts
+  useEffect(() => {
+    const editor = containerRef.current;
+    if (!editor) return;
+    
+    editor.addEventListener('keydown', handleKeyboardShortcuts as any);
+    return () => {
+      editor.removeEventListener('keydown', handleKeyboardShortcuts as any);
+    };
+  }, [handleKeyboardShortcuts]);
+
+  const modules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+        [{ font: [] }],
+        [{ size: ["small", false, "large", "huge"] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ color: [] }, { background: [] }],
+        [{ script: "sub" }, { script: "super" }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        [{ indent: "-1" }, { indent: "+1" }],
+        [{ align: [] }],
+        ["blockquote", "code-block"],
+        ["link", "image", "video"],
+        ["clean"],
+        ["takeaway"], // Custom button
+      ],
+      handlers: {
+        takeaway: function() {
+          // This will be handled by the parent component
+        }
+      }
+    },
     clipboard: {
       matchVisual: false,
     },
-  };
+    keyboard: {
+      bindings: {
+        // Quill has its own bold/italic, we just extend
+      }
+    }
+  }), []);
 
   const formats = [
     "header",
@@ -165,11 +272,11 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     } else if (code.match(/<[a-z][\s\S]*>/i)) {
       return 'markup';
     }
-    return 'python'; // Default
+    return 'python';
   };
 
-  // Find and track code blocks
-  const updateCodeBlocks = useCallback(() => {
+  // Find and track code blocks - only update positions, not content
+  const updateCodeBlockPositions = useCallback(() => {
     if (!containerRef.current) return;
     
     const preElements = containerRef.current.querySelectorAll<HTMLPreElement>('.ql-editor pre.ql-syntax');
@@ -179,7 +286,6 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     preElements.forEach((pre, idx) => {
       const rect = pre.getBoundingClientRect();
       const code = pre.textContent || "";
-      // Use override if set, otherwise detect
       const language = languageOverrides[idx] || detectLanguage(code);
       
       blocks.push({
@@ -193,32 +299,103 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
         code,
         language,
       });
-
-      // Apply syntax highlighting with current language
-      const highlighted = Prism.highlight(code, Prism.languages[language] || Prism.languages.plaintext, language);
-      pre.innerHTML = highlighted;
-      pre.classList.add(`language-${language}`);
     });
     
     setCodeBlocks(blocks);
   }, [languageOverrides]);
 
-  // Update code blocks on content change
+  // Apply syntax highlighting - only on blur or explicit request
+  const applySyntaxHighlighting = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const preElements = containerRef.current.querySelectorAll<HTMLPreElement>('.ql-editor pre.ql-syntax');
+    
+    preElements.forEach((pre, idx) => {
+      const code = pre.textContent || "";
+      const language = languageOverrides[idx] || detectLanguage(code);
+      
+      // Only highlight if content doesn't already have tokens
+      if (!pre.querySelector('.token')) {
+        const highlighted = Prism.highlight(code, Prism.languages[language] || Prism.languages.plaintext, language);
+        pre.innerHTML = highlighted;
+        pre.classList.add(`language-${language}`);
+      }
+    });
+    
+    updateCodeBlockPositions();
+  }, [languageOverrides, updateCodeBlockPositions]);
+
+  // Handle blur - apply highlighting when user leaves editor
+  const handleBlur = useCallback(() => {
+    isEditing.current = false;
+    setNeedsHighlighting(true);
+  }, []);
+
+  // Apply highlighting when needed (after blur)
   useEffect(() => {
-    const timeout = setTimeout(updateCodeBlocks, 100);
+    if (needsHighlighting) {
+      const timeout = setTimeout(() => {
+        applySyntaxHighlighting();
+        setNeedsHighlighting(false);
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [needsHighlighting, applySyntaxHighlighting]);
+
+  // Update positions only (not content) on value change
+  useEffect(() => {
+    const timeout = setTimeout(updateCodeBlockPositions, 50);
     return () => clearTimeout(timeout);
-  }, [value, updateCodeBlocks]);
+  }, [value, updateCodeBlockPositions]);
+
+  // Initial highlighting on mount
+  useEffect(() => {
+    const timeout = setTimeout(applySyntaxHighlighting, 200);
+    return () => clearTimeout(timeout);
+  }, []);
 
   // Update positions on scroll/resize
   useEffect(() => {
-    const handleUpdate = () => updateCodeBlocks();
+    const handleUpdate = () => updateCodeBlockPositions();
     window.addEventListener("resize", handleUpdate);
     window.addEventListener("scroll", handleUpdate, true);
     return () => {
       window.removeEventListener("resize", handleUpdate);
       window.removeEventListener("scroll", handleUpdate, true);
     };
-  }, [updateCodeBlocks]);
+  }, [updateCodeBlockPositions]);
+
+  // Setup takeaway toolbar button
+  useEffect(() => {
+    const toolbar = containerRef.current?.querySelector('.ql-toolbar');
+    if (!toolbar) return;
+    
+    // Check if takeaway button already exists
+    let takeawayBtn = toolbar.querySelector('.ql-takeaway') as HTMLButtonElement;
+    if (!takeawayBtn) {
+      // Find the clean button and add takeaway before it or at the end
+      const toolbarGroups = toolbar.querySelectorAll('.ql-formats');
+      const lastGroup = toolbarGroups[toolbarGroups.length - 1];
+      
+      if (lastGroup) {
+        takeawayBtn = document.createElement('button');
+        takeawayBtn.type = 'button';
+        takeawayBtn.className = 'ql-takeaway';
+        takeawayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        takeawayBtn.title = 'Insert Takeaway Block';
+        lastGroup.appendChild(takeawayBtn);
+      }
+    }
+    
+    const handleTakeawayClick = () => {
+      setShowTakeawayDialog(true);
+    };
+    
+    takeawayBtn?.addEventListener('click', handleTakeawayClick);
+    return () => {
+      takeawayBtn?.removeEventListener('click', handleTakeawayClick);
+    };
+  }, []);
 
   const handleCopy = async (index: number) => {
     const code = codeBlocks[index]?.code;
@@ -268,12 +445,10 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     const pre = codeBlocks[index]?.element;
     if (pre) {
       pre.textContent = editedCode;
-      // Trigger Quill to pick up the change
       const quill = quillRef.current?.getEditor();
       if (quill) {
         quill.update();
       }
-      // Force re-read of content
       setTimeout(() => {
         const editor = quillRef.current?.getEditor();
         if (editor) {
@@ -282,7 +457,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
       }, 50);
     }
     setEditingIndex(null);
-    updateCodeBlocks();
+    applySyntaxHighlighting();
   };
 
   const handleCancelEdit = () => {
@@ -300,7 +475,6 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
 
   const handleLanguageChange = (index: number, language: string) => {
     setLanguageOverrides(prev => ({ ...prev, [index]: language }));
-    // Re-apply highlighting immediately
     const block = codeBlocks[index];
     if (block?.element) {
       const highlighted = Prism.highlight(block.code, Prism.languages[language] || Prism.languages.plaintext, language);
@@ -313,8 +487,40 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
     return SUPPORTED_LANGUAGES.find(l => l.value === langValue)?.label || langValue;
   };
 
+  // Insert takeaway block
+  const handleInsertTakeaway = () => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+    
+    const items = takeawayItems
+      .split('\n')
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+      .map(item => `<li>${item}</li>`)
+      .join('');
+    
+    const takeawayHtml = `
+      <div class="takeaway-block" style="background: linear-gradient(135deg, hsl(48 96% 89%), hsl(45 93% 83%)); border-radius: 12px; padding: 1rem; margin: 1rem 0; border-left: 4px solid hsl(45 93% 47%);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-weight: 600; color: hsl(45 80% 30%);">
+          <span>💡</span>
+          <span>${takeawayTitle || 'Key Takeaway'}</span>
+        </div>
+        <ul style="margin: 0; padding-left: 1.5rem; color: hsl(45 60% 25%);">
+          ${items}
+        </ul>
+      </div>
+    `;
+    
+    const range = quill.getSelection(true);
+    quill.clipboard.dangerouslyPasteHTML(range.index, takeawayHtml);
+    
+    setShowTakeawayDialog(false);
+    setTakeawayTitle("");
+    setTakeawayItems("");
+  };
+
   return (
-    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection}>
+    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onBlur={handleBlur}>
       <ReactQuill
         ref={quillRef}
         theme="snow"
@@ -326,6 +532,47 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
         className="bg-background"
         preserveWhitespace
       />
+      
+      {/* Takeaway Dialog */}
+      <Dialog open={showTakeawayDialog} onOpenChange={setShowTakeawayDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-yellow-500" />
+              Insert Takeaway Block
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="takeaway-title">Title (optional)</Label>
+              <Input
+                id="takeaway-title"
+                placeholder="Key Takeaway"
+                value={takeawayTitle}
+                onChange={(e) => setTakeawayTitle(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="takeaway-items">Items (one per line)</Label>
+              <Textarea
+                id="takeaway-items"
+                placeholder="Enter each takeaway point on a new line..."
+                value={takeawayItems}
+                onChange={(e) => setTakeawayItems(e.target.value)}
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTakeawayDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInsertTakeaway} disabled={!takeawayItems.trim()}>
+              Insert
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Code block action buttons overlay */}
       {codeBlocks.map((block, index) => (
@@ -500,6 +747,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
           border-top-right-radius: var(--radius);
           background: hsl(var(--muted));
           border-color: hsl(var(--border));
+          flex-wrap: wrap;
         }
         
         .rich-text-editor .ql-container {
@@ -563,6 +811,21 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
         .rich-text-editor .ql-toolbar .ql-picker-item:hover .ql-fill,
         .rich-text-editor .ql-toolbar .ql-picker-item.ql-selected .ql-fill {
           fill: hsl(var(--primary));
+        }
+        
+        /* Takeaway button styling */
+        .rich-text-editor .ql-toolbar .ql-takeaway {
+          width: 28px;
+          height: 24px;
+          padding: 3px 5px;
+        }
+        
+        .rich-text-editor .ql-toolbar .ql-takeaway:hover {
+          color: hsl(45 93% 47%);
+        }
+        
+        .rich-text-editor .ql-toolbar .ql-takeaway svg {
+          stroke: currentColor;
         }
         
         /* Code block styling */
@@ -644,6 +907,15 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
           border-radius: 3px;
           font-family: 'Courier New', Courier, monospace;
           font-size: 0.9em;
+        }
+        
+        /* Takeaway block styling */
+        .rich-text-editor .ql-editor .takeaway-block {
+          background: linear-gradient(135deg, hsl(48 96% 89%), hsl(45 93% 83%));
+          border-radius: 12px;
+          padding: 1rem;
+          margin: 1rem 0;
+          border-left: 4px solid hsl(45 93% 47%);
         }
       `}</style>
     </div>
