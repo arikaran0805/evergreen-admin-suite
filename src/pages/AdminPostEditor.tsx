@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
+import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import AdminLayout from "@/components/AdminLayout";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
@@ -118,6 +119,24 @@ const AdminPostEditor = () => {
   // Version and annotation hooks
   const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionAsDraft, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion, updateVersionNote } = usePostVersions(id);
   const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = usePostAnnotations(id);
+
+  // Auto-save draft hook - saves content to localStorage with debounce
+  const draftKey = id ? `post_${id}` : `new_post_${formData.slug || 'untitled'}`;
+  const { loadDraft, clearDraft } = useAutoSaveDraft(draftKey, formData.content, true);
+
+  // Load draft on mount for new posts or if content is empty
+  useEffect(() => {
+    if (!loading && !formData.content) {
+      const savedDraft = loadDraft();
+      if (savedDraft) {
+        setFormData(prev => ({ ...prev, content: savedDraft }));
+        toast({
+          title: "Draft restored",
+          description: "Your previous work has been recovered",
+        });
+      }
+    }
+  }, [loading, loadDraft]);
 
   // Check if moderator should see admin edit banner
   const shouldShowAdminBanner = !isAdmin && isModerator && metadata.hasAdminEdits && !dismissedAdminBanner && metadata.lastAdminEdit;
@@ -401,6 +420,9 @@ const AdminPostEditor = () => {
           performed_by: session.user.id,
         });
       }
+
+      // Clear auto-saved draft on successful save
+      clearDraft();
 
       toast({
         title: "Success",
