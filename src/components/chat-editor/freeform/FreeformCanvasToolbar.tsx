@@ -38,6 +38,8 @@ import {
   Network,
   Hash,
   Repeat,
+  Group,
+  Ungroup,
 } from "lucide-react";
 import { FreeformTool, FREEFORM_COLORS, HIGHLIGHTER_COLORS, STROKE_WIDTHS, SHAPE_TEMPLATES, TemplateId } from "./types";
 
@@ -55,6 +57,10 @@ interface FreeformCanvasToolbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onInsertTemplate: (templateId: TemplateId) => void;
+  onGroup: () => void;
+  onUngroup: () => void;
+  canGroup: boolean;
+  canUngroup: boolean;
   canUndo: boolean;
   canRedo: boolean;
   zoom: number;
@@ -122,6 +128,10 @@ export const FreeformCanvasToolbar = ({
   onZoomIn,
   onZoomOut,
   onInsertTemplate,
+  onGroup,
+  onUngroup,
+  canGroup,
+  canUngroup,
   canUndo,
   canRedo,
   zoom,
@@ -236,6 +246,46 @@ export const FreeformCanvasToolbar = ({
       <div className="flex items-center gap-0.5 px-2 border-r border-border/50">
         <ToolButton tool="text" activeTool={activeTool} onToolChange={onToolChange} icon={Type} label="Text" />
         <ToolButton tool="eraser" activeTool={activeTool} onToolChange={onToolChange} icon={Eraser} label="Eraser" />
+      </div>
+
+      {/* Group/Ungroup */}
+      <div className="flex items-center gap-0.5 px-2 border-r border-border/50">
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                onClick={onGroup}
+                disabled={!canGroup}
+              >
+                <Group className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-popover text-popover-foreground border shadow-md">
+              <p className="text-xs">Group Selected</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                onClick={onUngroup}
+                disabled={!canUngroup}
+              >
+                <Ungroup className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-popover text-popover-foreground border shadow-md">
+              <p className="text-xs">Ungroup Selected</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Color Picker */}
