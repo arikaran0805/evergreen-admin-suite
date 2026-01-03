@@ -18,6 +18,7 @@ export interface PostVersion {
   change_summary: string | null;
   versioning_note_type: string | null;
   versioning_note_locked: boolean;
+  is_published: boolean | null;
   editor_profile?: {
     full_name: string | null;
     email: string;
