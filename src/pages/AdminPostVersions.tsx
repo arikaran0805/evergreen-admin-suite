@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   ArrowLeft, 
   History, 
@@ -37,7 +38,8 @@ import {
   Shield, 
   User, 
   ArrowLeftRight,
-  FileText
+  FileText,
+  AlertTriangle
 } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
@@ -532,6 +534,24 @@ const AdminPostVersions = () => {
               This will update the live post content with this version.
             </DialogDescription>
           </DialogHeader>
+          {(() => {
+            const publishedVersion = versions.find(v => v.status === "published");
+            const isOlderThanPublished = publishedVersion && selectedVersion && 
+              selectedVersion.version_number < publishedVersion.version_number;
+            
+            if (isOlderThanPublished) {
+              return (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    You are about to publish an older version (v{selectedVersion?.version_number}) than the currently live version (v{publishedVersion?.version_number}). 
+                    This will replace newer content with older content.
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+            return null;
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPublishDialogOpen(false)}>
               Cancel
