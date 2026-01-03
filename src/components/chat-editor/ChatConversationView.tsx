@@ -5,6 +5,7 @@ import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
+import { CHAT_COLORS, getChatColors } from "./chatColors";
 
 interface ChatConversationViewProps {
   content: string;
@@ -199,14 +200,13 @@ const ChatConversationView = ({
         );
       } else if (match[5]) {
         // Inline code: `code`
+        const colors = getChatColors(isMentorBubble);
         segments.push(
           <code
             key={`${baseKey}-code-${match.index}`}
             className={cn(
               "px-1.5 py-0.5 rounded text-xs font-mono",
-              isMentorBubble
-                ? "bg-emerald-500/30 text-emerald-100"
-                : "bg-muted-foreground/20 text-foreground"
+              colors.inlineCode
             )}
           >
             {match[6]}
@@ -249,10 +249,11 @@ const ChatConversationView = ({
       // Blockquote: > text
       else if (line.match(/^>\s+(.+)$/)) {
         const quoteContent = line.replace(/^>\s+/, '');
+        const colors = getChatColors(isMentorBubble);
         result.push(
           <blockquote key={lineKey} className={cn(
             "border-l-2 pl-3 my-1 italic",
-            isMentorBubble ? "border-emerald-300" : "border-muted-foreground/50"
+            colors.blockquoteBorder
           )}>
             {parseInlineMarkdown(quoteContent, lineKey, isMentorBubble)}
           </blockquote>
@@ -429,9 +430,7 @@ const ChatConversationView = ({
                   className={cn(
                     "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg",
                     "shadow-lg transition-transform duration-300 hover:scale-110",
-                    isMentorBubble
-                      ? "bg-gradient-to-br from-amber-400 to-orange-500"
-                      : "bg-gradient-to-br from-muted to-muted/80"
+                    getChatColors(isMentorBubble).avatar
                   )}
                 >
                   {isMentorBubble ? (
@@ -446,16 +445,18 @@ const ChatConversationView = ({
                   className={cn(
                     "relative max-w-[75%] px-5 py-3 rounded-2xl",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
+                    getChatColors(isMentorBubble).bubble,
+                    getChatColors(isMentorBubble).text,
                     isMentorBubble
-                      ? "bg-[#d4f5e6] text-foreground rounded-br-md"
-                      : "bg-muted/80 text-foreground rounded-bl-md border border-border/30"
+                      ? "rounded-br-md"
+                      : "rounded-bl-md border border-border/30"
                   )}
                 >
                   {/* Subtle speaker indicator */}
                   <div
                     className={cn(
                       "text-[10px] font-semibold mb-1.5 tracking-wide uppercase",
-                      isMentorBubble ? "text-emerald-700/80" : "text-muted-foreground/70"
+                      getChatColors(isMentorBubble).speaker
                     )}
                   >
                     {character.name}
