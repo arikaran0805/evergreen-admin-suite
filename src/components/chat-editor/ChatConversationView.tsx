@@ -1,11 +1,28 @@
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useMemo, useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
+import { FreeformCanvasData } from "./freeform/types";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { getChatColors, getDynamicStyles, DynamicChatColors } from "./chatColors";
+import { Loader2 } from "lucide-react";
+
+// Lazy load the freeform canvas viewer to avoid loading fabric.js until needed
+const FreeformCanvasViewer = lazy(() => 
+  import("./freeform/FreeformCanvasViewer").then(m => ({ default: m.FreeformCanvasViewer }))
+);
+
+// Loading fallback for canvas components
+const CanvasLoadingFallback = ({ className }: { className?: string }) => (
+  <div className={cn("flex items-center justify-center rounded-xl border border-border bg-muted/30 min-h-[200px]", className)}>
+    <div className="text-center text-muted-foreground">
+      <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin opacity-50" />
+      <p className="text-sm">Loading canvas...</p>
+    </div>
+  </div>
+);
 
 interface ChatConversationViewProps {
   content: string;
@@ -23,12 +40,34 @@ interface Course {
 
 // Takeaway format: [TAKEAWAY:icon:title]: content
 const TAKEAWAY_REGEX = /^\[TAKEAWAY(?::([^:]*?))?(?::([^\]]*?))?\]:\s*/;
+// Freeform canvas format: [FREEFORM_CANVAS]:{json data}
+const FREEFORM_REGEX = /^\[FREEFORM_CANVAS\]:(.*)$/;
 
 const parseConversation = (content: string): ChatMessage[] => {
   const segments = extractChatSegments(content);
   if (segments.length === 0) return [];
 
   return segments.map((s, index) => {
+    // Handle freeform canvas blocks
+    const freeformMatch = s.content.match(FREEFORM_REGEX);
+    if (s.speaker === "FREEFORM" || freeformMatch) {
+      let freeformData: FreeformCanvasData | undefined;
+      try {
+        const jsonStr = freeformMatch?.[1] || s.content;
+        freeformData = JSON.parse(jsonStr);
+      } catch {
+        freeformData = undefined;
+      }
+      return {
+        id: `freeform-${index}`,
+        speaker: "FREEFORM",
+        content: freeformMatch?.[1] || s.content,
+        type: "freeform" as const,
+        freeformData,
+      };
+    }
+
+    // Handle takeaway blocks
     const takeawayMatch = s.content.match(TAKEAWAY_REGEX);
     if (s.speaker === "TAKEAWAY" || takeawayMatch) {
       const icon = takeawayMatch?.[1] || "🧠";
@@ -51,7 +90,7 @@ const parseConversation = (content: string): ChatMessage[] => {
       content: s.content,
       type: "message" as const,
     };
-  });
+  }).filter((m) => m.speaker.trim() && (m.content.trim() || m.type === "freeform"));
 };
 
 // Helper to extract code blocks from HTML and replace with placeholders
@@ -410,6 +449,32 @@ const ChatConversationView = ({
         {/* Messages */}
         <div className="p-6 space-y-4">
           {messages.map((message, index) => {
+            // Render freeform canvas blocks
+            if (message.type === "freeform") {
+              return (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "my-4 animate-in fade-in-0 slide-in-from-bottom-2"
+                  )}
+                  style={{ animationDelay: `${index * 100}ms`, animationFillMode: "backwards" }}
+                >
+                  {message.freeformData ? (
+                    <Suspense fallback={<CanvasLoadingFallback />}>
+                      <FreeformCanvasViewer
+                        data={message.freeformData}
+                        className="min-h-[200px] max-h-[500px]"
+                      />
+                    </Suspense>
+                  ) : (
+                    <div className="flex items-center justify-center min-h-[200px] rounded-xl border border-dashed border-border bg-muted/30">
+                      <p className="text-sm text-muted-foreground">Visual explanation unavailable</p>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             // Render takeaway blocks
             if (message.type === "takeaway") {
               const icon = message.takeawayIcon || "🧠";
