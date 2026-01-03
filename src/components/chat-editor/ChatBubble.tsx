@@ -260,7 +260,143 @@ const ChatBubble = ({
     onEndEdit();
   };
 
-  // Parse content for code blocks and inline code
+  // Parse inline markdown formatting (bold, italic, inline code, headings, lists, etc.)
+  const parseInlineMarkdown = (text: string, baseKey: string): React.ReactNode[] => {
+    const segments: React.ReactNode[] = [];
+    
+    // Combined regex for all inline formatting
+    // Order matters: bold first, then italic
+    const markdownRegex = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+)`)/g;
+    
+    let lastIdx = 0;
+    let match;
+    
+    while ((match = markdownRegex.exec(text)) !== null) {
+      // Add text before match
+      if (match.index > lastIdx) {
+        segments.push(
+          <span key={`${baseKey}-text-${lastIdx}`} className="whitespace-pre-wrap">
+            {text.slice(lastIdx, match.index)}
+          </span>
+        );
+      }
+      
+      if (match[1]) {
+        // Bold: **text**
+        segments.push(
+          <strong key={`${baseKey}-bold-${match.index}`} className="font-bold">
+            {match[2]}
+          </strong>
+        );
+      } else if (match[3]) {
+        // Italic: *text*
+        segments.push(
+          <em key={`${baseKey}-italic-${match.index}`} className="italic">
+            {match[4]}
+          </em>
+        );
+      } else if (match[5]) {
+        // Inline code: `code`
+        segments.push(
+          <code
+            key={`${baseKey}-code-${match.index}`}
+            className={cn(
+              "px-1.5 py-0.5 rounded text-xs font-mono",
+              isMentor
+                ? "bg-emerald-200/50 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200"
+                : "bg-slate-200/70 dark:bg-slate-700/70 text-slate-800 dark:text-slate-200"
+            )}
+          >
+            {match[6]}
+          </code>
+        );
+      }
+      
+      lastIdx = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIdx < text.length) {
+      segments.push(
+        <span key={`${baseKey}-text-end`} className="whitespace-pre-wrap">
+          {text.slice(lastIdx)}
+        </span>
+      );
+    }
+    
+    return segments.length > 0 ? segments : [<span key={baseKey} className="whitespace-pre-wrap">{text}</span>];
+  };
+
+  // Parse line-level markdown (headings, lists, blockquotes)
+  const parseLineMarkdown = (text: string, baseKey: string): React.ReactNode[] => {
+    const lines = text.split('\n');
+    const result: React.ReactNode[] = [];
+    
+    lines.forEach((line, lineIdx) => {
+      const lineKey = `${baseKey}-line-${lineIdx}`;
+      
+      // Heading: ## text
+      if (line.match(/^##\s+(.+)$/)) {
+        const headingContent = line.replace(/^##\s+/, '');
+        result.push(
+          <h2 key={lineKey} className="text-base font-bold mt-2 mb-1">
+            {parseInlineMarkdown(headingContent, lineKey)}
+          </h2>
+        );
+      }
+      // Blockquote: > text
+      else if (line.match(/^>\s+(.+)$/)) {
+        const quoteContent = line.replace(/^>\s+/, '');
+        result.push(
+          <blockquote key={lineKey} className={cn(
+            "border-l-2 pl-3 my-1 italic",
+            isMentor ? "border-emerald-400" : "border-slate-400"
+          )}>
+            {parseInlineMarkdown(quoteContent, lineKey)}
+          </blockquote>
+        );
+      }
+      // Bullet list: • text or - text
+      else if (line.match(/^[•\-]\s+(.+)$/)) {
+        const listContent = line.replace(/^[•\-]\s+/, '');
+        result.push(
+          <div key={lineKey} className="flex items-start gap-2 ml-1">
+            <span className="text-sm">•</span>
+            <span>{parseInlineMarkdown(listContent, lineKey)}</span>
+          </div>
+        );
+      }
+      // Numbered list: 1. text
+      else if (line.match(/^(\d+)\.\s+(.+)$/)) {
+        const match = line.match(/^(\d+)\.\s+(.+)$/);
+        if (match) {
+          result.push(
+            <div key={lineKey} className="flex items-start gap-2 ml-1">
+              <span className="text-sm min-w-[1rem]">{match[1]}.</span>
+              <span>{parseInlineMarkdown(match[2], lineKey)}</span>
+            </div>
+          );
+        }
+      }
+      // Regular text with inline formatting
+      else if (line.trim()) {
+        result.push(
+          <span key={lineKey}>
+            {parseInlineMarkdown(line, lineKey)}
+            {lineIdx < lines.length - 1 && <br />}
+          </span>
+        );
+      }
+      // Empty line
+      else if (lineIdx < lines.length - 1) {
+        result.push(<br key={lineKey} />);
+      }
+    });
+    
+    return result;
+  };
+
+  // Parse content for code blocks and inline markdown
   const renderContent = (content: string) => {
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
     const parts: { type: string; language?: string; content: string }[] = [];
@@ -283,48 +419,6 @@ const ChatBubble = ({
       parts.push({ type: "text", content });
     }
 
-    // Render inline code within text parts
-    const renderTextWithInlineCode = (text: string, key: number) => {
-      const inlineCodeRegex = /`([^`]+)`/g;
-      const segments: React.ReactNode[] = [];
-      let lastIdx = 0;
-      let inlineMatch;
-
-      while ((inlineMatch = inlineCodeRegex.exec(text)) !== null) {
-        if (inlineMatch.index > lastIdx) {
-          segments.push(
-            <span key={`${key}-text-${lastIdx}`} className="whitespace-pre-wrap">
-              {text.slice(lastIdx, inlineMatch.index)}
-            </span>
-          );
-        }
-        segments.push(
-          <code
-            key={`${key}-code-${inlineMatch.index}`}
-            className={cn(
-              "px-1.5 py-0.5 rounded text-xs font-mono",
-              isMentor
-                ? "bg-emerald-200/50 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200"
-                : "bg-slate-200/70 dark:bg-slate-700/70 text-slate-800 dark:text-slate-200"
-            )}
-          >
-            {inlineMatch[1]}
-          </code>
-        );
-        lastIdx = inlineMatch.index + inlineMatch[0].length;
-      }
-
-      if (lastIdx < text.length) {
-        segments.push(
-          <span key={`${key}-text-end`} className="whitespace-pre-wrap">
-            {text.slice(lastIdx)}
-          </span>
-        );
-      }
-
-      return segments.length > 0 ? segments : <span className="whitespace-pre-wrap">{text}</span>;
-    };
-
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
@@ -339,7 +433,7 @@ const ChatBubble = ({
           </div>
         );
       }
-      return <span key={idx}>{renderTextWithInlineCode(part.content, idx)}</span>;
+      return <span key={idx}>{parseLineMarkdown(part.content, `part-${idx}`)}</span>;
     });
   };
 
