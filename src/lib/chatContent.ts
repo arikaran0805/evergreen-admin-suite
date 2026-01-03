@@ -113,13 +113,21 @@ export const extractChatSegments = (
     if (count >= 2) allowed.add(key);
   }
 
-  // Ensure at least N speakers based on first appearance (handles short conversations).
-  const speakersByAppearance = [...counts.keys()].sort(
-    (a, b) => (firstSeen.get(a) ?? 0) - (firstSeen.get(b) ?? 0)
-  );
-  for (const key of speakersByAppearance) {
-    if (allowed.size >= requiredSpeakers) break;
-    allowed.add(key);
+  // When allowSingle is true, allow ALL speakers that appear (for chat editor use case)
+  // This ensures each speaker gets their own bubble even if they only appear once
+  if (options?.allowSingle) {
+    for (const key of counts.keys()) {
+      allowed.add(key);
+    }
+  } else {
+    // Ensure at least N speakers based on first appearance (handles short conversations).
+    const speakersByAppearance = [...counts.keys()].sort(
+      (a, b) => (firstSeen.get(a) ?? 0) - (firstSeen.get(b) ?? 0)
+    );
+    for (const key of speakersByAppearance) {
+      if (allowed.size >= requiredSpeakers) break;
+      allowed.add(key);
+    }
   }
 
   let markers = rawMarkers.filter((m) => allowed.has(speakerKey(m.speaker)));
