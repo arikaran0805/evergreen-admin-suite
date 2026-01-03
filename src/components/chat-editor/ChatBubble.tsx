@@ -63,7 +63,9 @@ const ChatBubble = ({
   const [viewModeState, setViewModeState] = useState<'edit' | 'preview' | 'split'>('edit');
   const [isViewModeInitialized, setIsViewModeInitialized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [splitViewHeight, setSplitViewHeight] = useState(150);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const splitViewDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
 
   // Load view mode from localStorage only once on mount
   useEffect(() => {
@@ -555,43 +557,81 @@ const ChatBubble = ({
             
             {/* Editor / Preview based on view mode */}
             {viewMode === 'split' ? (
-              <ResizablePanelGroup direction="horizontal" className="min-h-[150px] rounded-lg border border-border/50">
-                {/* Editor panel */}
-                <ResizablePanel defaultSize={50} minSize={25}>
-                  <textarea
-                    ref={textareaRef}
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className={cn(
-                      "w-full h-full min-h-[150px] bg-transparent resize-none outline-none text-sm leading-relaxed p-2",
-                      "overflow-auto",
-                      isMentor 
-                        ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/30" 
-                        : "text-slate-900 dark:text-slate-100 bg-white/50 dark:bg-slate-900/30"
-                    )}
-                    style={{ maxHeight: '400px' }}
-                    placeholder="Type your message..."
-                  />
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                {/* Preview panel */}
-                <ResizablePanel defaultSize={50} minSize={25}>
-                  <div 
-                    className={cn(
-                      "w-full h-full min-h-[150px] text-sm leading-relaxed p-3 overflow-auto",
-                      isMentor 
-                        ? "bg-emerald-50/30 dark:bg-emerald-900/20" 
-                        : "bg-white/30 dark:bg-slate-900/20"
-                    )}
-                    style={{ maxHeight: '400px' }}
-                  >
-                    {editContent ? renderContent(editContent) : (
-                      <span className="text-muted-foreground italic">Preview...</span>
-                    )}
-                  </div>
-                </ResizablePanel>
-              </ResizablePanelGroup>
+              <div className="relative">
+                <ResizablePanelGroup 
+                  direction="horizontal" 
+                  className="rounded-lg border border-border/50"
+                  style={{ height: `${splitViewHeight}px` }}
+                >
+                  {/* Editor panel */}
+                  <ResizablePanel defaultSize={50} minSize={25}>
+                    <textarea
+                      ref={textareaRef}
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className={cn(
+                        "w-full h-full bg-transparent resize-none outline-none text-sm leading-relaxed p-2",
+                        "overflow-auto",
+                        isMentor 
+                          ? "text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/30" 
+                          : "text-slate-900 dark:text-slate-100 bg-white/50 dark:bg-slate-900/30"
+                      )}
+                      placeholder="Type your message..."
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  {/* Preview panel */}
+                  <ResizablePanel defaultSize={50} minSize={25}>
+                    <div 
+                      className={cn(
+                        "w-full h-full text-sm leading-relaxed p-3 overflow-auto",
+                        isMentor 
+                          ? "bg-emerald-50/30 dark:bg-emerald-900/20" 
+                          : "bg-white/30 dark:bg-slate-900/20"
+                      )}
+                    >
+                      {editContent ? renderContent(editContent) : (
+                        <span className="text-muted-foreground italic">Preview...</span>
+                      )}
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+                {/* Draggable resize handle at bottom right corner */}
+                <div
+                  className="absolute bottom-0 right-0 cursor-nwse-resize opacity-40 hover:opacity-70 transition-opacity z-50 p-1.5 select-none"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    splitViewDragRef.current = { startY: e.clientY, startHeight: splitViewHeight };
+                    
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                      if (!splitViewDragRef.current) return;
+                      const deltaY = moveEvent.clientY - splitViewDragRef.current.startY;
+                      const newHeight = Math.max(100, Math.min(500, splitViewDragRef.current.startHeight + deltaY));
+                      setSplitViewHeight(newHeight);
+                    };
+                    
+                    const handleMouseUp = () => {
+                      splitViewDragRef.current = null;
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                  title="Drag to resize"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" className="text-muted-foreground">
+                    <path
+                      d="M10 2L2 10M10 6L6 10"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+              </div>
             ) : viewMode === 'preview' ? (
               <div 
                 className={cn(
