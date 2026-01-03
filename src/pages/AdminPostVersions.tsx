@@ -39,7 +39,9 @@ import {
   User, 
   ArrowLeftRight,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import SideBySideComparison from "@/components/SideBySideComparison";
@@ -60,6 +62,7 @@ const AdminPostVersions = () => {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "compare" | "preview">("list");
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { versions, loading: versionsLoading, publishVersion, restoreVersion } = usePostVersions(id);
 
@@ -331,7 +334,29 @@ const AdminPostVersions = () => {
 
           {/* Compare View */}
           <TabsContent value="compare" className="mt-6">
-            <Card className="p-6">
+            <Card className={`p-6 transition-all duration-300 ${isFullscreen ? "fixed inset-0 z-50 rounded-none overflow-auto" : ""}`}>
+              {/* Fullscreen Toggle */}
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="gap-2"
+                >
+                  {isFullscreen ? (
+                    <>
+                      <Minimize2 className="h-4 w-4" />
+                      Exit Fullscreen
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="h-4 w-4" />
+                      Fullscreen
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Version Selectors */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex-1">
@@ -406,7 +431,7 @@ const AdminPostVersions = () => {
               </Tabs>
 
               {/* Diff Content */}
-              <ScrollArea className="h-[500px]">
+              <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[500px]"}>
                 {selectedVersion && compareVersion ? (
                   diffViewMode === "side-by-side" ? (
                     <SideBySideComparison
