@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2 } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns } from "lucide-react";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import CodeBlock from "./CodeBlock";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -361,6 +363,137 @@ const SortableMessageItem = ({
   );
 };
 
+// Preview component for the composer - parses and renders markdown
+const ComposerPreview = ({ content, codeTheme }: { content: string; codeTheme?: string }) => {
+  // Extract code blocks first
+  const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+  const parts: { type: 'text' | 'code'; content: string; language?: string }[] = [];
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+    }
+    parts.push({ type: 'code', content: match[2] || '', language: match[1] || 'text' });
+    lastIndex = match.index + match[0].length;
+  }
+  
+  if (lastIndex < content.length) {
+    parts.push({ type: 'text', content: content.slice(lastIndex) });
+  }
+  
+  // Parse inline markdown for text parts
+  const parseInline = (text: string): React.ReactNode[] => {
+    const nodes: React.ReactNode[] = [];
+    let remaining = text;
+    let key = 0;
+    
+    while (remaining.length > 0) {
+      // Bold: **text**
+      const boldMatch = remaining.match(/^\*\*(.+?)\*\*/);
+      if (boldMatch) {
+        nodes.push(<strong key={key++}>{boldMatch[1]}</strong>);
+        remaining = remaining.slice(boldMatch[0].length);
+        continue;
+      }
+      
+      // Italic: *text* or _text_
+      const italicMatch = remaining.match(/^(\*|_)(.+?)\1/);
+      if (italicMatch) {
+        nodes.push(<em key={key++}>{italicMatch[2]}</em>);
+        remaining = remaining.slice(italicMatch[0].length);
+        continue;
+      }
+      
+      // Inline code: `code`
+      const codeMatch = remaining.match(/^`([^`]+)`/);
+      if (codeMatch) {
+        nodes.push(<code key={key++} className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{codeMatch[1]}</code>);
+        remaining = remaining.slice(codeMatch[0].length);
+        continue;
+      }
+      
+      // Link: [text](url)
+      const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+      if (linkMatch) {
+        nodes.push(<a key={key++} href={linkMatch[2]} className="text-primary underline">{linkMatch[1]}</a>);
+        remaining = remaining.slice(linkMatch[0].length);
+        continue;
+      }
+      
+      // Regular character
+      nodes.push(remaining[0]);
+      remaining = remaining.slice(1);
+    }
+    
+    return nodes;
+  };
+  
+  // Parse line-level markdown
+  const parseLines = (text: string): React.ReactNode[] => {
+    const lines = text.split('\n');
+    const nodes: React.ReactNode[] = [];
+    let key = 0;
+    
+    for (const line of lines) {
+      // Heading: ## text
+      const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+        nodes.push(<Tag key={key++} className="font-semibold my-1">{parseInline(headingMatch[2])}</Tag>);
+        continue;
+      }
+      
+      // Blockquote: > text
+      if (line.startsWith('> ')) {
+        nodes.push(<blockquote key={key++} className="border-l-2 border-muted-foreground/30 pl-3 italic text-muted-foreground">{parseInline(line.slice(2))}</blockquote>);
+        continue;
+      }
+      
+      // Bullet list: - or *
+      if (line.match(/^[-*]\s+/)) {
+        nodes.push(<li key={key++} className="ml-4 list-disc">{parseInline(line.slice(2))}</li>);
+        continue;
+      }
+      
+      // Numbered list: 1.
+      const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/);
+      if (numberedMatch) {
+        nodes.push(<li key={key++} className="ml-4 list-decimal">{parseInline(numberedMatch[2])}</li>);
+        continue;
+      }
+      
+      // Regular paragraph
+      if (line.trim()) {
+        nodes.push(<p key={key++} className="my-0.5">{parseInline(line)}</p>);
+      } else {
+        nodes.push(<br key={key++} />);
+      }
+    }
+    
+    return nodes;
+  };
+  
+  return (
+    <div className="space-y-2">
+      {parts.map((part, idx) => 
+        part.type === 'code' ? (
+          <CodeBlock 
+            key={idx} 
+            code={part.content} 
+            language={part.language || 'text'} 
+            overrideTheme={codeTheme}
+          />
+        ) : (
+          <div key={idx}>{parseLines(part.content)}</div>
+        )
+      )}
+    </div>
+  );
+};
+
 const ChatStyleEditor = ({
   value,
   onChange,
@@ -382,9 +515,22 @@ const ChatStyleEditor = ({
   const [courses, setCourses] = useState<Course[]>([]);
   const [manualHeight, setManualHeight] = useState<number | null>(null);
   const [mentorIcon, setMentorIcon] = useState("👨‍💻");
+  const [composerViewMode, setComposerViewMode] = useState<'edit' | 'split' | 'preview'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chatEditorComposerViewMode');
+      if (saved === 'edit' || saved === 'split' || saved === 'preview') return saved;
+    }
+    return 'edit';
+  });
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mentorName = "Karan";
+
+  // Handle composer view mode change
+  const handleComposerViewModeChange = (newMode: 'edit' | 'split' | 'preview') => {
+    setComposerViewMode(newMode);
+    localStorage.setItem('chatEditorComposerViewMode', newMode);
+  };
 
   // Icon options for character selection
   const CHARACTER_ICONS = ["👨‍💻", "👩‍💻", "🧑‍💻", "👨‍🏫", "👩‍🏫", "🧑‍🏫", "🎓", "📚", "💡", "🤖", "🧠", "⭐"];
@@ -1171,117 +1317,206 @@ const ChatStyleEditor = ({
       {/* Input area (only in edit mode) */}
       {mode === "edit" && (
         <div className="border-t border-border bg-muted/30 p-4">
-          {/* Speaker toggle with icon pickers */}
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className="text-xs text-muted-foreground">Speaking as:</span>
-            <div className="flex items-center gap-1">
-              {/* Course character toggle */}
-              <div className="flex items-center rounded-full bg-muted p-0.5">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center transition-all",
-                        currentSpeaker === "course"
-                          ? "bg-slate-200 dark:bg-slate-700 shadow-sm"
-                          : "hover:bg-muted-foreground/10"
-                      )}
-                    >
-                      {renderCourseIcon(courseCharacter.emoji, 16)}
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-popover border border-border shadow-lg z-50">
-                    <div className="p-2 text-xs text-muted-foreground mb-1">Course icon is set in course settings</div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <button
-                  onClick={() => setCurrentSpeaker("course")}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium transition-all",
-                    currentSpeaker === "course"
-                      ? "bg-slate-200 dark:bg-slate-700 shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {courseCharacter.name}
-                </button>
-              </div>
+          {/* Speaker toggle with icon pickers and view mode toggle */}
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground">Speaking as:</span>
+              <div className="flex items-center gap-1">
+                {/* Course character toggle */}
+                <div className="flex items-center rounded-full bg-muted p-0.5">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={cn(
+                          "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                          currentSpeaker === "course"
+                            ? "bg-slate-200 dark:bg-slate-700 shadow-sm"
+                            : "hover:bg-muted-foreground/10"
+                        )}
+                      >
+                        {renderCourseIcon(courseCharacter.emoji, 16)}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-popover border border-border shadow-lg z-50">
+                      <div className="p-2 text-xs text-muted-foreground mb-1">Course icon is set in course settings</div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <button
+                    onClick={() => setCurrentSpeaker("course")}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                      currentSpeaker === "course"
+                        ? "bg-slate-200 dark:bg-slate-700 shadow-sm text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {courseCharacter.name}
+                  </button>
+                </div>
 
-              {/* Mentor toggle */}
-              <div className="flex items-center rounded-full bg-muted p-0.5">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center transition-all",
-                        currentSpeaker === "mentor"
-                          ? "bg-emerald-500 shadow-sm"
-                          : "hover:bg-muted-foreground/10"
-                      )}
-                    >
-                      <span className="text-sm">{mentorIcon}</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-popover border border-border shadow-lg z-50">
-                    <div className="grid grid-cols-4 gap-1 p-2">
-                      {CHARACTER_ICONS.map((icon) => (
-                        <DropdownMenuItem
-                          key={icon}
-                          onClick={() => setMentorIcon(icon)}
-                          className={cn(
-                            "cursor-pointer justify-center text-xl p-2 rounded-lg",
-                            mentorIcon === icon && "bg-emerald-100 dark:bg-emerald-900/50"
-                          )}
-                        >
-                          {icon}
-                        </DropdownMenuItem>
-                      ))}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <button
-                  onClick={() => setCurrentSpeaker("mentor")}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium transition-all",
-                    currentSpeaker === "mentor"
-                      ? "bg-emerald-500 shadow-sm text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {mentorName}
-                </button>
+                {/* Mentor toggle */}
+                <div className="flex items-center rounded-full bg-muted p-0.5">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={cn(
+                          "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                          currentSpeaker === "mentor"
+                            ? "bg-emerald-500 shadow-sm"
+                            : "hover:bg-muted-foreground/10"
+                        )}
+                      >
+                        <span className="text-sm">{mentorIcon}</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-popover border border-border shadow-lg z-50">
+                      <div className="grid grid-cols-4 gap-1 p-2">
+                        {CHARACTER_ICONS.map((icon) => (
+                          <DropdownMenuItem
+                            key={icon}
+                            onClick={() => setMentorIcon(icon)}
+                            className={cn(
+                              "cursor-pointer justify-center text-xl p-2 rounded-lg",
+                              mentorIcon === icon && "bg-emerald-100 dark:bg-emerald-900/50"
+                            )}
+                          >
+                            {icon}
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <button
+                    onClick={() => setCurrentSpeaker("mentor")}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium transition-all",
+                      currentSpeaker === "mentor"
+                        ? "bg-emerald-500 shadow-sm text-white"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {mentorName}
+                  </button>
+                </div>
               </div>
+            </div>
+
+            {/* View mode toggle */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleComposerViewModeChange('edit')}
+                className={cn(
+                  "h-6 px-2 text-xs gap-1",
+                  composerViewMode === 'edit' && "bg-muted"
+                )}
+              >
+                <EyeOff className="w-3 h-3" />
+                Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleComposerViewModeChange('split')}
+                className={cn(
+                  "h-6 px-2 text-xs gap-1",
+                  composerViewMode === 'split' && "bg-muted"
+                )}
+              >
+                <Columns className="w-3 h-3" />
+                Split View
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleComposerViewModeChange('preview')}
+                className={cn(
+                  "h-6 px-2 text-xs gap-1",
+                  composerViewMode === 'preview' && "bg-muted"
+                )}
+              >
+                <Eye className="w-3 h-3" />
+                Preview
+              </Button>
             </div>
           </div>
 
-          {/* Message input */}
+          {/* Message input with view modes */}
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleInputKeyDown}
-                onMouseUp={handleTextareaMouseUp}
-                placeholder={`Type a message as ${
-                  currentSpeaker === "mentor" ? mentorName : courseCharacter.name
-                }...`}
-                className={cn(
-                  "w-full px-4 py-3 pr-8 rounded-2xl border border-border bg-background",
-                  "resize-y min-h-[80px] max-h-[400px] text-sm overflow-y-auto",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
-                  "placeholder:text-muted-foreground/60 transition-colors duration-200"
-                )}
-                style={manualHeight ? { height: `${manualHeight}px` } : undefined}
-                rows={3}
-              />
-              <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
-                Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
-              </div>
-              {/* Resize indicator */}
-              <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground/30">
-                <GripVertical className="w-4 h-4 rotate-45" />
-              </div>
+              {composerViewMode === 'split' ? (
+                <ResizablePanelGroup direction="horizontal" className="rounded-2xl border border-border bg-background min-h-[120px]">
+                  <ResizablePanel defaultSize={50} minSize={30}>
+                    <textarea
+                      ref={inputRef}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleInputKeyDown}
+                      onMouseUp={handleTextareaMouseUp}
+                      placeholder={`Type a message as ${
+                        currentSpeaker === "mentor" ? mentorName : courseCharacter.name
+                      }...`}
+                      className={cn(
+                        "w-full h-full px-4 py-3 text-sm font-mono bg-transparent",
+                        "resize-none min-h-[120px]",
+                        "focus:outline-none",
+                        "placeholder:text-muted-foreground/60"
+                      )}
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={50} minSize={30}>
+                    <div className="h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none min-h-[120px] bg-muted/20">
+                      {newMessage ? (
+                        <ComposerPreview content={newMessage} codeTheme={codeTheme} />
+                      ) : (
+                        <span className="text-muted-foreground/60 italic">Preview will appear here...</span>
+                      )}
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              ) : composerViewMode === 'preview' ? (
+                <div 
+                  className="w-full px-4 py-3 rounded-2xl border border-border bg-background min-h-[120px] text-sm prose prose-sm dark:prose-invert max-w-none cursor-pointer hover:bg-muted/20 transition-colors"
+                  onClick={() => handleComposerViewModeChange('edit')}
+                  title="Click to edit"
+                >
+                  {newMessage ? (
+                    <ComposerPreview content={newMessage} codeTheme={codeTheme} />
+                  ) : (
+                    <span className="text-muted-foreground/60 italic">Click to start typing...</span>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    ref={inputRef}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleInputKeyDown}
+                    onMouseUp={handleTextareaMouseUp}
+                    placeholder={`Type a message as ${
+                      currentSpeaker === "mentor" ? mentorName : courseCharacter.name
+                    }...`}
+                    className={cn(
+                      "w-full px-4 py-3 pr-8 rounded-2xl border border-border bg-background",
+                      "resize-y min-h-[80px] max-h-[400px] text-sm overflow-y-auto",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                      "placeholder:text-muted-foreground/60 transition-colors duration-200"
+                    )}
+                    style={manualHeight ? { height: `${manualHeight}px` } : undefined}
+                    rows={3}
+                  />
+                  <div className="absolute bottom-2 left-4 text-[10px] text-muted-foreground/50">
+                    Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
+                  </div>
+                  {/* Resize indicator */}
+                  <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground/30">
+                    <GripVertical className="w-4 h-4 rotate-45" />
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Insert options dropdown */}
