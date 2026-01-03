@@ -18,6 +18,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
+import CourseStructuredData from "@/components/CourseStructuredData";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import CourseReviewDialog from "@/components/CourseReviewDialog";
 import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck, CheckCircle, Circle, AlertTriangle } from "lucide-react";
@@ -759,6 +760,16 @@ const CourseDetail = () => {
         keywords={`${course.name}, course, learning, tutorial, lessons`}
         ogTitle={`${course.name} Course`}
         ogDescription={course.description || `Learn ${course.name} with our comprehensive course materials`}
+      />
+      <CourseStructuredData
+        course={course}
+        lessons={posts.map((p) => ({ id: p.id, title: p.title, slug: p.slug }))}
+        stats={{
+          enrollmentCount: courseStats.enrollmentCount,
+          averageRating: courseStats.averageRating,
+          reviewCount: courseStats.reviewCount,
+        }}
+        siteUrl={siteSettings?.site_url}
       />
       
       {/* Preview Mode Banner - Only show for unpublished content */}
