@@ -515,6 +515,8 @@ const ChatStyleEditor = ({
   const [courses, setCourses] = useState<Course[]>([]);
   const [manualHeight, setManualHeight] = useState<number | null>(null);
   const [isComposerExpanded, setIsComposerExpanded] = useState(false);
+  const [splitViewHeight, setSplitViewHeight] = useState(120); // Custom height for split view
+  const splitViewDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const [mentorIcon, setMentorIcon] = useState("👨‍💻");
   const [composerViewMode, setComposerViewMode] = useState<'edit' | 'split' | 'preview'>(() => {
     if (typeof window !== 'undefined') {
@@ -1468,10 +1470,8 @@ const ChatStyleEditor = ({
                 <div className="relative">
                   <ResizablePanelGroup
                     direction="horizontal"
-                    className={cn(
-                      "rounded-2xl border border-border bg-background transition-all duration-200",
-                      isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
-                    )}
+                    className="rounded-2xl border border-border bg-background transition-all duration-200"
+                    style={{ height: `${splitViewHeight}px` }}
                     onLayout={handleSplitPanelResize}
                   >
                     <ResizablePanel defaultSize={splitPanelSizes[0]} minSize={20} maxSize={80}>
@@ -1484,37 +1484,12 @@ const ChatStyleEditor = ({
                         placeholder={`Type a message as ${
                           currentSpeaker === "mentor" ? mentorName : courseCharacter.name
                         }...`}
-                        className={cn(
-                          "w-full h-full px-4 py-3 pr-10 text-sm font-mono bg-transparent",
-                          "resize-none",
-                          "focus:outline-none",
-                          "placeholder:text-muted-foreground/60",
-                          isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
-                        )}
+                        className="w-full h-full px-4 py-3 pr-10 text-sm font-mono bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground/60"
                       />
                     </ResizablePanel>
                     <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
                     <ResizablePanel defaultSize={splitPanelSizes[1]} minSize={20} maxSize={80}>
-                      <div
-                        className={cn(
-                          "h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/20 relative",
-                          isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
-                        )}
-                      >
-                        {/* Expand/collapse button in top-right of preview panel */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsComposerExpanded((v) => !v)}
-                          className="absolute top-2 right-2 h-6 w-6 opacity-40 hover:opacity-100 text-muted-foreground z-10"
-                          title={isComposerExpanded ? "Collapse" : "Expand"}
-                        >
-                          {isComposerExpanded ? (
-                            <Minimize2 className="w-3.5 h-3.5" />
-                          ) : (
-                            <Maximize2 className="w-3.5 h-3.5" />
-                          )}
-                        </Button>
+                      <div className="h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/20 relative">
                         {newMessage ? (
                           <ComposerPreview content={newMessage} codeTheme={codeTheme} />
                         ) : (
@@ -1530,11 +1505,30 @@ const ChatStyleEditor = ({
                       Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
                     </div>
                   </div>
-                  {/* Expand/resize handle at bottom right corner */}
+                  {/* Draggable resize handle at bottom right corner */}
                   <div
-                    className="absolute bottom-1 right-1 cursor-nwse-resize opacity-40 hover:opacity-70 transition-opacity z-50"
-                    onClick={() => setIsComposerExpanded((v) => !v)}
-                    title={isComposerExpanded ? "Collapse" : "Expand"}
+                    className="absolute bottom-0 right-0 cursor-nwse-resize opacity-40 hover:opacity-70 transition-opacity z-50 p-1.5 select-none"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      splitViewDragRef.current = { startY: e.clientY, startHeight: splitViewHeight };
+                      
+                      const handleMouseMove = (moveEvent: MouseEvent) => {
+                        if (!splitViewDragRef.current) return;
+                        const deltaY = moveEvent.clientY - splitViewDragRef.current.startY;
+                        const newHeight = Math.max(80, Math.min(600, splitViewDragRef.current.startHeight + deltaY));
+                        setSplitViewHeight(newHeight);
+                      };
+                      
+                      const handleMouseUp = () => {
+                        splitViewDragRef.current = null;
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                      };
+                      
+                      document.addEventListener('mousemove', handleMouseMove);
+                      document.addEventListener('mouseup', handleMouseUp);
+                    }}
+                    title="Drag to resize"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" className="text-muted-foreground">
                       <path
