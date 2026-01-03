@@ -78,16 +78,17 @@ const parseContent = (content: string): ChatMessage[] => {
   if (segments.length === 0) return [];
 
   return segments
-    .map((s) => {
+    .map((s, index) => {
       const takeawayMatch = s.content.match(TAKEAWAY_REGEX);
       if (s.speaker === "TAKEAWAY" || takeawayMatch) {
         const icon = takeawayMatch?.[1] || "🧠";
         const title = takeawayMatch?.[2] || "One-Line Takeaway for Learners";
-        const actualContent = takeawayMatch 
+        const actualContent = takeawayMatch
           ? s.content.replace(TAKEAWAY_REGEX, "").trim()
           : s.content;
         return {
-          id: generateId(),
+          // IMPORTANT: deterministic IDs prevent flicker/remounting when value re-parses
+          id: `takeaway-${index}`,
           speaker: "TAKEAWAY",
           content: actualContent,
           type: "takeaway" as const,
@@ -95,8 +96,10 @@ const parseContent = (content: string): ChatMessage[] => {
           takeawayTitle: title,
         };
       }
+
       return {
-        id: generateId(),
+        // IMPORTANT: deterministic IDs prevent flicker/remounting when value re-parses
+        id: `msg-${index}-${s.speaker}`,
         speaker: s.speaker,
         content: s.content,
         type: "message" as const,
@@ -452,11 +455,15 @@ const ChatStyleEditor = ({
     const parsedExplanation = extractExplanation(value) || "";
 
     const stripIds = (arr: ChatMessage[]) =>
-      arr.map((m) => ({ speaker: m.speaker, content: m.content }));
+      arr.map((m) => ({ speaker: m.speaker, content: m.content, type: m.type }));
 
     if (JSON.stringify(stripIds(parsed)) !== JSON.stringify(stripIds(messages))) {
-      setMessages(parsed);
+      // Preserve existing IDs by position to prevent flicker/remounting while syncing.
+      setMessages((prev) =>
+        parsed.map((m, idx) => ({ ...m, id: prev[idx]?.id ?? m.id }))
+      );
     }
+
     if (parsedExplanation !== explanation) {
       setExplanation(parsedExplanation);
     }
