@@ -27,6 +27,8 @@ export const FreeformCanvas = ({
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
+  const [canGroup, setCanGroup] = useState(false);
+  const [canUngroup, setCanUngroup] = useState(false);
   const isDrawingShape = useRef(false);
   const shapeStartPoint = useRef<{ x: number; y: number } | null>(null);
   const currentShape = useRef<FabricObject | null>(null);
@@ -137,7 +139,7 @@ export const FreeformCanvas = ({
     }
   }, [activeColor, strokeWidth, fabricCanvas, activeTool]);
 
-  // Track changes for auto-save
+  // Track changes for auto-save and selection state
   useEffect(() => {
     if (!fabricCanvas) return;
 
@@ -146,14 +148,31 @@ export const FreeformCanvas = ({
       triggerAutoSave();
     };
 
+    const handleSelectionChange = () => {
+      const activeObject = fabricCanvas.getActiveObject();
+      const activeObjects = fabricCanvas.getActiveObjects();
+      
+      // Can group if multiple objects are selected
+      setCanGroup(activeObjects.length > 1);
+      
+      // Can ungroup if a single Group object is selected
+      setCanUngroup(activeObject instanceof Group && activeObjects.length === 1);
+    };
+
     fabricCanvas.on('object:modified', handleObjectModified);
     fabricCanvas.on('path:created', handleObjectModified);
     fabricCanvas.on('object:added', handleObjectModified);
+    fabricCanvas.on('selection:created', handleSelectionChange);
+    fabricCanvas.on('selection:updated', handleSelectionChange);
+    fabricCanvas.on('selection:cleared', handleSelectionChange);
 
     return () => {
       fabricCanvas.off('object:modified', handleObjectModified);
       fabricCanvas.off('path:created', handleObjectModified);
       fabricCanvas.off('object:added', handleObjectModified);
+      fabricCanvas.off('selection:created', handleSelectionChange);
+      fabricCanvas.off('selection:updated', handleSelectionChange);
+      fabricCanvas.off('selection:cleared', handleSelectionChange);
     };
   }, [fabricCanvas]);
 
@@ -931,6 +950,48 @@ export const FreeformCanvas = ({
     toast.success('Template added');
   }, [fabricCanvas, zoom, saveState, triggerAutoSave]);
 
+  const handleGroup = useCallback(() => {
+    if (!fabricCanvas) return;
+    
+    const activeObjects = fabricCanvas.getActiveObjects();
+    if (activeObjects.length < 2) return;
+    
+    fabricCanvas.discardActiveObject();
+    
+    const group = new Group(activeObjects, {
+      interactive: true,
+      subTargetCheck: true,
+    });
+    
+    activeObjects.forEach(obj => fabricCanvas.remove(obj));
+    fabricCanvas.add(group);
+    fabricCanvas.setActiveObject(group);
+    fabricCanvas.renderAll();
+    
+    saveState();
+    triggerAutoSave();
+    toast.success('Objects grouped');
+  }, [fabricCanvas, saveState, triggerAutoSave]);
+
+  const handleUngroup = useCallback(() => {
+    if (!fabricCanvas) return;
+    
+    const activeObject = fabricCanvas.getActiveObject();
+    if (!(activeObject instanceof Group)) return;
+    
+    const items = activeObject.removeAll();
+    fabricCanvas.remove(activeObject);
+    
+    items.forEach(item => {
+      fabricCanvas.add(item);
+    });
+    
+    fabricCanvas.renderAll();
+    saveState();
+    triggerAutoSave();
+    toast.success('Objects ungrouped');
+  }, [fabricCanvas, saveState, triggerAutoSave]);
+
   return (
     <div
       className={cn(
@@ -953,6 +1014,10 @@ export const FreeformCanvas = ({
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onInsertTemplate={handleInsertTemplate}
+          onGroup={handleGroup}
+          onUngroup={handleUngroup}
+          canGroup={canGroup}
+          canUngroup={canUngroup}
           canUndo={undoStack.length > 1}
           canRedo={redoStack.length > 0}
           zoom={zoom}
