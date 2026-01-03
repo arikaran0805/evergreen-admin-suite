@@ -1458,21 +1458,6 @@ const ChatStyleEditor = ({
                 <Eye className="w-3 h-3" />
                 Preview
               </Button>
-              {/* Always-visible expand/collapse (so it’s not missed in split view) */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsComposerExpanded((v) => !v)}
-                className="h-6 px-2 text-xs gap-1 ml-1"
-                title={isComposerExpanded ? "Collapse composer" : "Expand composer"}
-              >
-                {isComposerExpanded ? (
-                  <Minimize2 className="w-3 h-3" />
-                ) : (
-                  <Maximize2 className="w-3 h-3" />
-                )}
-                {isComposerExpanded ? "Collapse" : "Expand"}
-              </Button>
             </div>
           </div>
 
@@ -1512,10 +1497,24 @@ const ChatStyleEditor = ({
                     <ResizablePanel defaultSize={splitPanelSizes[1]} minSize={20} maxSize={80}>
                       <div
                         className={cn(
-                          "h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/20",
+                          "h-full px-4 py-3 overflow-y-auto text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/20 relative",
                           isComposerExpanded ? "min-h-[300px]" : "min-h-[120px]"
                         )}
                       >
+                        {/* Expand/collapse button in top-right of preview panel */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsComposerExpanded((v) => !v)}
+                          className="absolute top-2 right-2 h-6 w-6 opacity-40 hover:opacity-100 text-muted-foreground z-10"
+                          title={isComposerExpanded ? "Collapse" : "Expand"}
+                        >
+                          {isComposerExpanded ? (
+                            <Minimize2 className="w-3.5 h-3.5" />
+                          ) : (
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
                         {newMessage ? (
                           <ComposerPreview content={newMessage} codeTheme={codeTheme} />
                         ) : (
@@ -1525,24 +1524,11 @@ const ChatStyleEditor = ({
                     </ResizablePanel>
                   </ResizablePanelGroup>
 
-                  {/* Bottom bar with shortcuts and expand button - matching Edit mode */}
-                  <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between z-50">
+                  {/* Bottom bar with shortcuts */}
+                  <div className="absolute bottom-2 left-4 z-50">
                     <div className="text-[10px] text-muted-foreground/50">
                       Enter send • {modKey}+B bold • {modKey}+I italic • {modKey}+` code • {modKey}+⇧+U bullets
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsComposerExpanded((v) => !v)}
-                      className="h-6 w-6 opacity-60 hover:opacity-100 text-muted-foreground"
-                      title={isComposerExpanded ? "Collapse" : "Expand"}
-                    >
-                      {isComposerExpanded ? (
-                        <Minimize2 className="w-3.5 h-3.5" />
-                      ) : (
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      )}
-                    </Button>
                   </div>
                 </div>
               ) : composerViewMode === 'preview' ? (
