@@ -71,6 +71,7 @@ const VersionHistoryPanel = ({
   const navigate = useNavigate();
   const { id } = useParams();
   const [selectedVersion, setSelectedVersion] = useState<PostVersion | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
@@ -80,7 +81,6 @@ const VersionHistoryPanel = ({
   const [editNoteLoading, setEditNoteLoading] = useState(false);
   const [compareVersion, setCompareVersion] = useState<PostVersion | null>(null);
   const [diffViewMode, setDiffViewMode] = useState<"inline" | "side-by-side">("side-by-side");
-  const [hoveredVersionId, setHoveredVersionId] = useState<string | null>(null);
 
   // Version bookmarks
   const { isBookmarked, toggleBookmark } = useVersionBookmarks(id);
@@ -186,79 +186,100 @@ const VersionHistoryPanel = ({
     return versions.find((v) => publishedVersionIds.has(v.id)) || null;
   }, [versions, publishedVersionIds]);
 
-  const VersionListItem = ({ version, isSelected, showBookmarkIcon = false }: { version: PostVersion; isSelected?: boolean; showBookmarkIcon?: boolean }) => {
-    const isHovered = hoveredVersionId === version.id;
+  const VersionListItem = ({
+    version,
+    isSelected,
+    showBookmarkIcon = false,
+  }: {
+    version: PostVersion;
+    isSelected?: boolean;
+    showBookmarkIcon?: boolean;
+  }) => {
     const versionIsBookmarked = isBookmarked(version.id);
     const isCurrentlyPublished = currentlyPublishedVersion?.id === version.id;
-    
+
+    const noteText =
+      version.change_summary ||
+      version.versioning_note_type?.replace(/_/g, " ") ||
+      "No notes";
+
+    const day = format(new Date(version.created_at), "MMM d, yyyy");
+    const time = format(new Date(version.created_at), "h:mm a");
+
     return (
       <div
-        className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+        className={`group relative rounded-lg cursor-pointer transition-colors ${
           isSelected ? "bg-primary/10" : "hover:bg-muted/50"
         }`}
-        onMouseEnter={() => setHoveredVersionId(version.id)}
-        onMouseLeave={() => setHoveredVersionId(null)}
         onClick={() => {
           setSelectedVersion(version);
           onRestore(version); // Load this version into the editor
+          setHistoryOpen(false);
         }}
       >
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          {showBookmarkIcon && (
-            <Bookmark
-              className="h-4 w-4 text-foreground flex-shrink-0"
-              fill="currentColor"
-            />
-          )}
-          <Badge
-            variant="outline"
-            className="h-5 text-[10px] px-1.5 flex-shrink-0 font-mono"
-          >
-            v{version.version_number}
-          </Badge>
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className={`text-sm truncate ${
-                  isSelected ? "text-primary font-medium" : "text-foreground"
-                }`}
-              >
-                {version.change_summary ||
-                  version.versioning_note_type?.replace(/_/g, " ") ||
-                  "No notes"}
-              </span>
-              {isCurrentlyPublished && (
-                <Badge
-                  variant="secondary"
-                  className="h-5 text-[10px] px-1.5 gap-1 flex-shrink-0"
+        <div className="grid grid-cols-[1fr_auto] items-start gap-3 px-3 py-2.5">
+          <div className="flex items-start gap-2 min-w-0">
+            {showBookmarkIcon && (
+              <Bookmark
+                className="h-4 w-4 text-foreground flex-shrink-0"
+                fill="currentColor"
+              />
+            )}
+            <Badge
+              variant="outline"
+              className="h-5 text-[10px] px-1.5 flex-shrink-0 font-mono"
+            >
+              v{version.version_number}
+            </Badge>
+            <div className="flex flex-col min-w-0">
+              <div className="flex flex-wrap items-start gap-2 min-w-0">
+                <span
+                  className={`text-sm leading-snug whitespace-normal break-words overflow-hidden [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] ${
+                    isSelected ? "text-primary font-medium" : "text-foreground"
+                  }`}
+                  title={noteText}
                 >
-                  <CheckCircle className="h-3 w-3" />
-                  Live
-                </Badge>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {version.versioning_note_type && version.change_summary && (
-                <span className="capitalize">
-                  {version.versioning_note_type.replace(/_/g, " ")}
+                  {noteText}
                 </span>
-              )}
-              <span className="flex items-center gap-1">
-                {version.editor_role === "admin" ? (
-                  <Shield className="h-3 w-3" />
-                ) : (
-                  <User className="h-3 w-3" />
+                {isCurrentlyPublished && (
+                  <Badge
+                    variant="secondary"
+                    className="h-5 text-[10px] px-1.5 gap-1 flex-shrink-0"
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                    Live
+                  </Badge>
                 )}
-                <span className="capitalize">{version.editor_role}</span>
-              </span>
+              </div>
+
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                {version.versioning_note_type && version.change_summary && (
+                  <span className="capitalize">
+                    {version.versioning_note_type.replace(/_/g, " ")}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  {version.editor_role === "admin" ? (
+                    <Shield className="h-3 w-3" />
+                  ) : (
+                    <User className="h-3 w-3" />
+                  )}
+                  <span className="capitalize">{version.editor_role}</span>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0 min-w-[10.5rem] justify-end">
-          {isHovered ? (
-            <div className="flex items-center gap-1 bg-muted rounded-md px-1">
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <span
+              className="text-xs text-muted-foreground whitespace-nowrap tabular-nums text-right leading-tight"
+              title={formatVersionDate(version.created_at)}
+            >
+              <span className="block">{day}</span>
+              <span className="block">{time}</span>
+            </span>
+
+            <div className="flex items-center gap-1 bg-muted rounded-md px-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto">
               <Button
                 variant="ghost"
                 size="icon"
@@ -269,9 +290,7 @@ const VersionHistoryPanel = ({
                 }}
               >
                 <Bookmark
-                  className={`h-3.5 w-3.5 ${
-                    versionIsBookmarked ? "text-primary" : ""
-                  }`}
+                  className={`h-3.5 w-3.5 ${versionIsBookmarked ? "text-primary" : ""}`}
                   fill={versionIsBookmarked ? "currentColor" : "none"}
                 />
               </Button>
@@ -313,11 +332,7 @@ const VersionHistoryPanel = ({
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
             </div>
-          ) : (
-            <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums text-right">
-              {formatVersionDate(version.created_at)}
-            </span>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -325,7 +340,7 @@ const VersionHistoryPanel = ({
 
   return (
     <>
-      <Sheet>
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
             <History className="h-4 w-4" />
@@ -337,7 +352,7 @@ const VersionHistoryPanel = ({
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-[400px] sm:w-[480px] p-0">
+        <SheetContent className="w-[460px] sm:w-[640px] max-w-[90vw] p-0">
           <SheetHeader className="px-6 pt-6 pb-4 border-b">
             <SheetTitle className="flex items-center justify-between">
               History
