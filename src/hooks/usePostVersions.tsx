@@ -33,7 +33,9 @@ export interface VersionMetadata {
 
 export const usePostVersions = (postId: string | undefined) => {
   const [versions, setVersions] = useState<PostVersion[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Start in loading state when editing an existing post to prevent UI flicker
+  // while the latest version is fetched and synced.
+  const [loading, setLoading] = useState(!!postId);
   const [currentVersion, setCurrentVersion] = useState<PostVersion | null>(null);
   const [metadata, setMetadata] = useState<VersionMetadata>({
     hasAdminEdits: false,
