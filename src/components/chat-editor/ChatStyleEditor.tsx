@@ -613,11 +613,21 @@ const ChatStyleEditor = ({
   useEffect(() => {
     const serialized = serializeMessages(messages, explanation);
     if (serialized !== value) {
+      isInternalEditRef.current = true;
       onChange(serialized);
     }
   }, [messages, explanation]);
 
+  // Track if we're in the middle of internal edits to avoid feedback loops
+  const isInternalEditRef = useRef(false);
+
   useEffect(() => {
+    // Skip if this update was triggered by our own onChange
+    if (isInternalEditRef.current) {
+      isInternalEditRef.current = false;
+      return;
+    }
+
     const parsed = parseContent(value);
     const parsedExplanation = extractExplanation(value) || "";
 
