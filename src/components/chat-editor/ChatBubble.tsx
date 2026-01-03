@@ -59,17 +59,27 @@ const ChatBubble = ({
   codeTheme,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>(() => {
-    const saved = localStorage.getItem('chatBubbleViewMode');
-    return (saved === 'edit' || saved === 'preview' || saved === 'split') ? saved : 'edit';
-  });
+  const [viewModeState, setViewModeState] = useState<'edit' | 'preview' | 'split'>('edit');
+  const [isViewModeInitialized, setIsViewModeInitialized] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load view mode from localStorage only once on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('chatBubbleViewMode');
+    if (saved === 'edit' || saved === 'preview' || saved === 'split') {
+      setViewModeState(saved);
+    }
+    setIsViewModeInitialized(true);
+  }, []);
 
   // Persist view mode preference
   const handleViewModeChange = (mode: 'edit' | 'preview' | 'split') => {
-    setViewMode(mode);
+    setViewModeState(mode);
     localStorage.setItem('chatBubbleViewMode', mode);
   };
+  
+  // Use default 'edit' until initialized to prevent flicker
+  const viewMode = isViewModeInitialized ? viewModeState : 'edit';
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
