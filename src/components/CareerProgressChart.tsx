@@ -522,21 +522,24 @@ export const CareerProgressChart = ({
                 d={pathData.progressPath}
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="0.5"
-                strokeOpacity="0.1"
+                strokeWidth="3"
+                strokeOpacity="0.15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className="text-primary"
                 vectorEffect="non-scaling-stroke"
               />
 
-              {/* Future path (dashed, muted) */}
+              {/* Future path (solid, muted) */}
               {pathData.futurePath && (
                 <motion.path
                   d={pathData.futurePath}
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="0.5"
-                  strokeDasharray="2,2"
-                  className="text-muted-foreground/30"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-muted-foreground/25"
                   vectorEffect="non-scaling-stroke"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -549,7 +552,7 @@ export const CareerProgressChart = ({
                 d={pathData.progressPath}
                 fill="none"
                 stroke="url(#progressGradient)"
-                strokeWidth="1"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 filter="url(#lineGlow)"
