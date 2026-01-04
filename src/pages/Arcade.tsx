@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCareers } from "@/hooks/useCareers";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { CareerRoadmapChart } from "@/components/CareerRoadmapChart";
+import { CareerProgressChart } from "@/components/CareerProgressChart";
 import * as Icons from "lucide-react";
 import { Target, Trophy, ChevronRight, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react";
 
@@ -200,12 +201,13 @@ const Arcade = () => {
           </Button>
         </div>
 
-        {/* Career Roadmap Chart - X/Y Axis visualization */}
+        {/* Career Progress Chart - New sequential learning visualization */}
         {journeySteps.length > 0 ? (
-          <CareerRoadmapChart
+          <CareerProgressChart
             journeySteps={journeySteps.filter(Boolean) as any}
             readinessPercent={readinessPercent}
             careerName={career?.name || "Career"}
+            totalLearningHours={120}
           />
         ) : (
           <Card>
