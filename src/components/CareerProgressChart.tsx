@@ -145,50 +145,96 @@ export const CareerProgressChart = ({
     }
   }, [chartData.courses, readinessPercent, celebrationCourse]);
 
-  const chartHeight = 400;
-  const chartPadding = { top: 60, right: 80, bottom: 80, left: 80 };
-  const chartWidth = 100; // percentage
+  const chartHeight = 450;
+  const chartPadding = { top: 60, right: 100, bottom: 80, left: 80 };
 
   // Convert data coordinates to chart coordinates
   const toChartX = (hours: number) => (hours / totalLearningHours) * 100;
   const toChartY = (readiness: number) => 100 - readiness; // Invert Y axis
 
-  // Generate path points for the line
-  const generatePath = () => {
+  // Generate diagonal step path (like the reference image)
+  // Pattern: diagonal up -> short horizontal -> diagonal up -> etc.
+  const generateStepPath = () => {
     if (chartData.courses.length === 0) return "";
     
-    const points: string[] = ["0,100"]; // Start at origin (0 hours, 0%)
+    // Start at origin
+    let pathD = "M 0,100";
     
     chartData.courses.forEach((course, index) => {
-      // End point of learning phase
-      const learningEndX = toChartX(course.currentHours);
-      const learningEndY = toChartY(course.currentReadiness);
+      const endX = toChartX(course.endHours);
+      const endY = toChartY(course.endReadiness);
       
-      points.push(`${learningEndX},${learningEndY}`);
+      // Diagonal line to course completion point
+      pathD += ` L ${endX},${endY}`;
       
-      // If in validation, add horizontal line
-      if (course.isInValidation) {
-        const validationEndX = toChartX(course.currentHours + (course.hours * 0.1));
-        points.push(`${validationEndX},${learningEndY}`);
+      // Add small horizontal segment between courses (except last)
+      if (index < chartData.courses.length - 1) {
+        const nextCourse = chartData.courses[index + 1];
+        const horizontalEndX = toChartX(nextCourse.startHours);
+        pathD += ` L ${horizontalEndX},${endY}`;
       }
     });
     
-    return points.join(" ");
+    return pathD;
   };
 
-  // Generate the full path (dashed, showing target)
-  const generateFullPath = () => {
+  // Generate progress path (solid line showing current progress)
+  const generateProgressPath = () => {
     if (chartData.courses.length === 0) return "";
     
-    const points: string[] = ["0,100"];
+    let pathD = "M 0,100";
     
-    chartData.courses.forEach((course) => {
-      const endX = toChartX(course.endHours);
-      const endY = toChartY(course.endReadiness);
-      points.push(`${endX},${endY}`);
-    });
+    for (let i = 0; i < chartData.courses.length; i++) {
+      const course = chartData.courses[i];
+      
+      if (course.isCompleted) {
+        // Full diagonal to completion
+        const endX = toChartX(course.endHours);
+        const endY = toChartY(course.endReadiness);
+        pathD += ` L ${endX},${endY}`;
+        
+        // Horizontal to next course start
+        if (i < chartData.courses.length - 1) {
+          const nextCourse = chartData.courses[i + 1];
+          pathD += ` L ${toChartX(nextCourse.startHours)},${endY}`;
+        }
+      } else if (course.isActive || course.isStarted) {
+        // Partial diagonal for in-progress course
+        const currentX = toChartX(course.currentHours);
+        const currentY = toChartY(course.currentReadiness);
+        pathD += ` L ${currentX},${currentY}`;
+        break;
+      } else {
+        // Stop at locked courses
+        break;
+      }
+    }
     
-    return points.join(" ");
+    return pathD;
+  };
+
+  // Get milestone positions along the path
+  const getMilestonePosition = (percent: number) => {
+    // Find which course this milestone falls into
+    let cumulativeReadiness = 0;
+    let cumulativeHours = 0;
+    
+    for (const course of chartData.courses) {
+      const courseEndReadiness = cumulativeReadiness + course.contribution;
+      
+      if (percent <= courseEndReadiness) {
+        // Milestone is within this course
+        const progressWithinCourse = (percent - cumulativeReadiness) / course.contribution;
+        const hoursForMilestone = cumulativeHours + (course.hours * progressWithinCourse);
+        return { x: toChartX(hoursForMilestone), y: toChartY(percent) };
+      }
+      
+      cumulativeReadiness = courseEndReadiness;
+      cumulativeHours += course.hours;
+    }
+    
+    // 100% milestone
+    return { x: 100, y: 0 };
   };
 
   const activeCourse = chartData.courses[chartData.activeIndex];
@@ -328,18 +374,18 @@ export const CareerProgressChart = ({
 
         {/* X-Axis Ticks */}
         <div 
-          className="absolute flex justify-between text-xs text-muted-foreground"
+          className="absolute flex justify-between text-xs text-muted-foreground font-medium"
           style={{ 
             left: chartPadding.left, 
             right: chartPadding.right, 
             bottom: chartPadding.bottom - 20 
           }}
         >
-          <span>0</span>
-          <span>{Math.round(totalLearningHours * 0.25)}</span>
-          <span>{Math.round(totalLearningHours * 0.5)}</span>
-          <span>{Math.round(totalLearningHours * 0.75)}</span>
-          <span>{totalLearningHours}</span>
+          <span>0h</span>
+          <span>{Math.round(totalLearningHours * 0.25)}h</span>
+          <span>{Math.round(totalLearningHours * 0.5)}h</span>
+          <span>{Math.round(totalLearningHours * 0.75)}h</span>
+          <span>{totalLearningHours}h</span>
         </div>
 
         {/* Chart Area */}
@@ -352,9 +398,9 @@ export const CareerProgressChart = ({
             bottom: chartPadding.bottom 
           }}
         >
-          {/* Grid lines */}
+          {/* Grid lines - dashed horizontal lines like reference */}
           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-            {/* Horizontal grid lines */}
+            {/* Horizontal grid lines - dashed */}
             {[0, 25, 50, 75, 100].map((percent) => (
               <line
                 key={`h-${percent}`}
@@ -364,34 +410,25 @@ export const CareerProgressChart = ({
                 y2={`${100 - percent}%`}
                 stroke="currentColor"
                 strokeWidth="1"
-                className="text-border/30"
-              />
-            ))}
-            {/* Vertical grid lines */}
-            {[0, 25, 50, 75, 100].map((percent) => (
-              <line
-                key={`v-${percent}`}
-                x1={`${percent}%`}
-                y1="0%"
-                x2={`${percent}%`}
-                y2="100%"
-                stroke="currentColor"
-                strokeWidth="1"
-                className="text-border/30"
+                strokeDasharray="4,4"
+                className="text-muted-foreground/20"
               />
             ))}
           </svg>
 
-          {/* Origin point */}
+          {/* Origin point with "Start from 0" label */}
           <div 
             className="absolute z-20"
             style={{ left: 0, bottom: 0, transform: 'translate(-50%, 50%)' }}
           >
             <div className="flex flex-col items-center">
-              <div className="w-4 h-4 rounded-full bg-muted-foreground/20 border-2 border-muted-foreground flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+              <span className="text-xs font-bold text-foreground mb-1 whitespace-nowrap">Start from 0</span>
+              <div className="w-5 h-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-primary" />
               </div>
-              <span className="text-[10px] text-muted-foreground mt-1 whitespace-nowrap">Start from 0</span>
+              <span className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                🎯 STARTED
+              </span>
             </div>
           </div>
 
@@ -411,20 +448,20 @@ export const CareerProgressChart = ({
               </filter>
             </defs>
 
-            {/* Target path (dashed) */}
-            <polyline
-              points={generateFullPath()}
+            {/* Target path (dashed) - diagonal step pattern */}
+            <path
+              d={generateStepPath()}
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              strokeDasharray="8,6"
-              className="text-border"
+              strokeDasharray="6,4"
+              className="text-muted-foreground/40"
               vectorEffect="non-scaling-stroke"
             />
 
-            {/* Progress path (solid) */}
-            <motion.polyline
-              points={generatePath()}
+            {/* Progress path (solid) - diagonal upward */}
+            <motion.path
+              d={generateProgressPath()}
               fill="none"
               stroke="url(#lineGradient)"
               strokeWidth="3"
@@ -463,27 +500,25 @@ export const CareerProgressChart = ({
                     course.isLocked && "cursor-not-allowed"
                   )}
                 >
-                  {/* Node circle */}
-                  <div 
-                    className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg transition-transform",
-                      course.isCompleted && "bg-green-500 border-green-400 text-white",
-                      course.isActive && "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20",
-                      course.isLocked && "bg-muted border-muted-foreground/30 text-muted-foreground",
-                      !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted border-border text-muted-foreground",
-                      !course.isLocked && "hover:scale-110"
-                    )}
-                  >
-                    {course.isCompleted ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : course.isLocked ? (
-                      <Lock className="h-4 w-4" />
-                    ) : course.isActive ? (
-                      <Play className="h-4 w-4 fill-current" />
-                    ) : (
-                      <Clock className="h-4 w-4" />
-                    )}
-                  </div>
+                {/* Node circle - smaller like reference */}
+                <div 
+                  className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center border-2 shadow-md transition-transform",
+                    course.isCompleted && "bg-muted/50 border-muted-foreground/50",
+                    course.isActive && "bg-primary/20 border-primary ring-4 ring-primary/20",
+                    course.isLocked && "bg-muted/30 border-muted-foreground/20",
+                    !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted/50 border-muted-foreground/30",
+                    !course.isLocked && "hover:scale-125"
+                  )}
+                >
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    course.isCompleted && "bg-muted-foreground/50",
+                    course.isActive && "bg-primary",
+                    course.isLocked && "bg-muted-foreground/30",
+                    !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted-foreground/50"
+                  )} />
+                </div>
 
                   {/* Active course indicator */}
                   {course.isActive && (
@@ -528,44 +563,74 @@ export const CareerProgressChart = ({
             );
           })}
 
-          {/* Milestone markers */}
-          {milestones.map((milestone) => {
+          {/* Milestone markers positioned along the path */}
+          {milestones.filter(m => m.percent > 0).map((milestone) => {
             const isReached = readinessPercent >= milestone.percent;
+            const pos = getMilestonePosition(milestone.percent);
+            
             return (
               <motion.div
                 key={milestone.percent}
                 className="absolute z-20"
                 style={{ 
-                  right: -30, 
-                  top: `${100 - milestone.percent}%`, 
-                  transform: 'translateY(-50%)' 
+                  left: `${pos.x}%`, 
+                  top: `${pos.y}%`, 
+                  transform: 'translate(-50%, -50%)' 
                 }}
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 1 + milestone.percent * 0.01 }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 1.2 + milestone.percent * 0.005 }}
               >
-                <div className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                  isReached 
-                    ? "bg-primary/20 text-primary border border-primary/30" 
-                    : "bg-muted text-muted-foreground border border-border"
-                )}>
-                  <span>{milestone.emoji}</span>
+                <div className="flex flex-col items-center">
+                  {/* Milestone circle */}
+                  <div className={cn(
+                    "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                    isReached 
+                      ? "bg-primary/20 border-primary" 
+                      : "bg-muted/50 border-muted-foreground/30"
+                  )}>
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      isReached ? "bg-primary" : "bg-muted-foreground/50"
+                    )} />
+                  </div>
+                  {/* Milestone label */}
+                  <div className={cn(
+                    "mt-2 flex items-center gap-1 text-[10px] font-medium whitespace-nowrap",
+                    isReached ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    <span>{milestone.emoji}</span>
+                    <span className="uppercase tracking-wide">{milestone.label}</span>
+                  </div>
                 </div>
               </motion.div>
             );
           })}
 
-          {/* Goal indicator */}
+          {/* Career Ready marker at end */}
           <div 
             className="absolute z-20"
             style={{ right: 0, top: 0, transform: 'translate(50%, -50%)' }}
           >
-            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg px-3 py-1">
-              <Trophy className="h-3 w-3 mr-1" />
-              Job Ready
-            </Badge>
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "w-8 h-8 rounded-full border-2 flex items-center justify-center",
+                readinessPercent >= 100 
+                  ? "bg-amber-500/20 border-amber-500" 
+                  : "bg-muted/50 border-muted-foreground/30"
+              )}>
+                <div className={cn(
+                  "w-3 h-3 rounded-full",
+                  readinessPercent >= 100 ? "bg-amber-500" : "bg-muted-foreground/50"
+                )} />
+              </div>
+              <div className="flex items-center gap-1 text-xs font-medium text-amber-500">
+                <Trophy className="h-4 w-4" />
+                <span className="uppercase tracking-wide">Career Ready</span>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
 
