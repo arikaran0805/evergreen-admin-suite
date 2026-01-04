@@ -183,6 +183,20 @@ export const FreeformCanvasViewer = ({
     return () => ro.disconnect();
   }, [fullscreenFabricCanvas, baseWidth, baseHeight, fullscreenZoom]);
 
+  // Escape key to close fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
     setZoomPopoverOpen(false);
