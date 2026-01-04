@@ -713,6 +713,45 @@ export const CareerProgressChart = ({
                       ease: "easeOut"
                     }}
                   />
+                  {/* Glowing center dot */}
+                  <motion.circle
+                    key={`pulse-dot-glow-${animationKey}`}
+                    cx={pathData.currentX}
+                    cy={pathData.currentY}
+                    r="1.8"
+                    fill="hsl(var(--primary))"
+                    filter="url(#lineGlow)"
+                    vectorEffect="non-scaling-stroke"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ 
+                      opacity: [0.6, 1, 0.6],
+                      scale: [0.9, 1.1, 0.9]
+                    }}
+                    transition={{ 
+                      delay: 2.3,
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  {/* Solid center dot */}
+                  <motion.circle
+                    key={`pulse-dot-${animationKey}`}
+                    cx={pathData.currentX}
+                    cy={pathData.currentY}
+                    r="1.2"
+                    fill="hsl(var(--background))"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="0.4"
+                    vectorEffect="non-scaling-stroke"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ 
+                      delay: 2.3,
+                      duration: 0.3,
+                      ease: "easeOut"
+                    }}
+                  />
                 </>
               )}
 
