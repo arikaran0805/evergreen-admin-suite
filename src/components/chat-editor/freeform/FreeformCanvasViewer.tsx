@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, RotateCcw, Expand, Maximize2, Fullscreen, X } from "lucide-react";
+import { ZoomIn, RotateCcw, Expand, Maximize2, Fullscreen, X, Move } from "lucide-react";
 import { FreeformCanvasData } from "./types";
 import {
   Popover,
@@ -32,6 +32,11 @@ export const FreeformCanvasViewer = ({
   const [containerHeight, setContainerHeight] = useState(300);
   const [zoomPopoverOpen, setZoomPopoverOpen] = useState(false);
   const [fullscreenZoomPopoverOpen, setFullscreenZoomPopoverOpen] = useState(false);
+  
+  // Pan state for fullscreen
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
   const baseWidth = data.width || 800;
   const baseHeight = data.height || 400;
@@ -215,6 +220,26 @@ export const FreeformCanvasViewer = ({
   const handleFullscreenReset = () => {
     setFullscreenZoom(1);
     setFullscreenZoomPopoverOpen(false);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  // Pan handlers for fullscreen
+  const handlePanStart = (e: React.MouseEvent) => {
+    if (fullscreenZoom <= 1) return; // Only pan when zoomed in
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+  };
+
+  const handlePanMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPanOffset({
+      x: e.clientX - panStart.x,
+      y: e.clientY - panStart.y,
+    });
+  };
+
+  const handlePanEnd = () => {
+    setIsPanning(false);
   };
 
   const toggleExpanded = () => {
@@ -399,6 +424,12 @@ export const FreeformCanvasViewer = ({
                 open={fullscreenZoomPopoverOpen}
                 onOpenChange={setFullscreenZoomPopoverOpen}
               />
+              {fullscreenZoom > 1 && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Move className="h-3.5 w-3.5" />
+                  <span>Drag to pan</span>
+                </div>
+              )}
             </div>
             <Button
               variant="outline"
@@ -414,16 +445,29 @@ export const FreeformCanvasViewer = ({
           {/* Fullscreen canvas container */}
           <div
             ref={fullscreenContainerRef}
-            className="flex-1 overflow-auto flex items-center justify-center"
+            className={cn(
+              "flex-1 overflow-hidden flex items-center justify-center",
+              fullscreenZoom > 1 ? "cursor-grab" : "cursor-default",
+              isPanning && "cursor-grabbing"
+            )}
             style={{
               backgroundImage: 'radial-gradient(circle, hsl(var(--muted)) 1px, transparent 1px)',
               backgroundSize: '20px 20px',
             }}
+            onMouseDown={handlePanStart}
+            onMouseMove={handlePanMove}
+            onMouseUp={handlePanEnd}
+            onMouseLeave={handlePanEnd}
           >
-            <div className="p-8">
+            <div 
+              className="p-8 transition-transform duration-75"
+              style={{
+                transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+              }}
+            >
               <canvas
                 ref={fullscreenCanvasRef}
-                className="block shadow-lg rounded-lg bg-white"
+                className="block shadow-lg rounded-lg bg-white select-none"
                 style={{ maxWidth: '100%', height: 'auto' }}
               />
             </div>
