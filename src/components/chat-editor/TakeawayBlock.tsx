@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChatMessage, TAKEAWAY_ICONS } from "./types";
 import { cn } from "@/lib/utils";
-import { Check, X, Pencil, Lightbulb, Sparkles, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, ChevronDown, Terminal } from "lucide-react";
+import { Check, X, Pencil, Lightbulb, Sparkles, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, ChevronDown, Terminal, Copy } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -469,15 +470,31 @@ const TakeawayBlock = ({
               <h4 className="font-bold text-foreground text-lg leading-snug tracking-tight">{title}</h4>
             </div>
 
-            {/* Edit button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-amber-200/50 dark:hover:bg-amber-800/40 hover:scale-105"
-              onClick={() => onStartEdit(message.id)}
-            >
-              <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            </Button>
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-xl hover:bg-amber-200/50 dark:hover:bg-amber-800/40 hover:scale-105 transition-all duration-200"
+                onClick={() => {
+                  navigator.clipboard.writeText(message.content);
+                  toast({
+                    title: "Copied!",
+                    description: "Takeaway copied to clipboard",
+                  });
+                }}
+              >
+                <Copy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-xl hover:bg-amber-200/50 dark:hover:bg-amber-800/40 hover:scale-105 transition-all duration-200"
+                onClick={() => onStartEdit(message.id)}
+              >
+                <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </Button>
+            </div>
           </div>
 
           {/* Content section */}
