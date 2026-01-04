@@ -71,6 +71,7 @@ export const CareerProgressChart = ({
   const [showCelebration, setShowCelebration] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
+  const [isLineHovered, setIsLineHovered] = useState(false);
   const chartAreaRef = useRef<HTMLDivElement>(null);
 
   const handleReplayAnimation = useCallback(() => {
@@ -610,6 +611,15 @@ export const CareerProgressChart = ({
                     <feMergeNode in="SourceGraphic"/>
                   </feMerge>
                 </filter>
+                {/* Enhanced glow effect for hover */}
+                <filter id="lineGlowHover" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
               </defs>
 
               {/* Background trace of progress path (shows where line will draw) */}
@@ -655,13 +665,32 @@ export const CareerProgressChart = ({
                 filter="url(#lineGlow)"
                 vectorEffect="non-scaling-stroke"
                 initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
+                animate={{ 
+                  pathLength: 1,
+                  strokeWidth: isLineHovered ? 7 : 5,
+                  filter: isLineHovered ? "url(#lineGlowHover)" : "url(#lineGlow)"
+                }}
                 transition={{ 
-                  duration: 2.5, 
-                  ease: [0.16, 1, 0.3, 1],
-                  delay: 0.3
+                  pathLength: { duration: 2.5, ease: [0.16, 1, 0.3, 1], delay: 0.3 },
+                  strokeWidth: { duration: 0.2, ease: "easeOut" },
+                  filter: { duration: 0.2 }
                 }}
                 style={{ pathLength: 1 }}
+              />
+
+              {/* Invisible wider hit area for easier hover */}
+              <path
+                d={pathData.progressPath}
+                fill="none"
+                stroke="transparent"
+                strokeWidth="20"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                className="cursor-pointer"
+                onMouseEnter={() => setIsLineHovered(true)}
+                onMouseLeave={() => setIsLineHovered(false)}
+                style={{ pointerEvents: 'stroke' }}
               />
 
               {/* Particle trail effects */}
