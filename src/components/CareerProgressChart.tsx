@@ -8,7 +8,8 @@ import {
   Target, 
   Rocket, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  RotateCcw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,12 @@ export const CareerProgressChart = ({
   const navigate = useNavigate();
   const [showCelebration, setShowCelebration] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const [animationKey, setAnimationKey] = useState(0);
   const chartAreaRef = useRef<HTMLDivElement>(null);
+
+  const handleReplayAnimation = useCallback(() => {
+    setAnimationKey(prev => prev + 1);
+  }, []);
 
   // Build the complete path data for the career journey
   const pathData = useMemo(() => {
@@ -395,7 +401,16 @@ export const CareerProgressChart = ({
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReplayAnimation}
+            className="gap-1.5 text-xs"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Replay
+          </Button>
           <div className="text-right">
             <div className="text-2xl font-bold text-primary">{Math.round(readinessPercent)}%</div>
             <div className="text-xs text-muted-foreground">Career Readiness</div>
@@ -550,6 +565,7 @@ export const CareerProgressChart = ({
               {/* Future path (solid, muted) */}
               {pathData.futurePath && (
                 <motion.path
+                  key={`future-${animationKey}`}
                   d={pathData.futurePath}
                   fill="none"
                   stroke="currentColor"
@@ -566,6 +582,7 @@ export const CareerProgressChart = ({
 
               {/* Progress path (solid, gradient) - THE HERO LINE with drawing animation */}
               <motion.path
+                key={`progress-${animationKey}`}
                 d={pathData.progressPath}
                 fill="none"
                 stroke="url(#progressGradient)"
@@ -587,7 +604,7 @@ export const CareerProgressChart = ({
               {/* Particle trail effects */}
               {[...Array(8)].map((_, i) => (
                 <motion.circle
-                  key={`particle-${i}`}
+                  key={`particle-${animationKey}-${i}`}
                   r={0.8 - i * 0.08}
                   fill="hsl(var(--primary))"
                   opacity={0.6 - i * 0.07}
@@ -612,7 +629,7 @@ export const CareerProgressChart = ({
               {/* Sparkle particles that burst periodically */}
               {[...Array(12)].map((_, i) => (
                 <motion.circle
-                  key={`sparkle-${i}`}
+                  key={`sparkle-${animationKey}-${i}`}
                   r={0.4}
                   fill="hsl(142 76% 66%)"
                   initial={{ opacity: 0, scale: 0 }}
@@ -638,6 +655,7 @@ export const CareerProgressChart = ({
 
               {/* Animated drawing head (glowing dot that travels along the path) */}
               <motion.circle
+                key={`head-${animationKey}`}
                 r="1.8"
                 fill="hsl(var(--primary))"
                 filter="url(#lineGlow)"
@@ -660,6 +678,7 @@ export const CareerProgressChart = ({
               
               {/* Inner bright core of drawing head */}
               <motion.circle
+                key={`core-${animationKey}`}
                 r="0.8"
                 fill="white"
                 initial={{ opacity: 1 }}
