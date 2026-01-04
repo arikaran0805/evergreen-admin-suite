@@ -778,7 +778,7 @@ export const CareerProgressChart = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/courses/${tooltip.courseSlug}`);
+                    navigate(`/course/${tooltip.courseSlug}`);
                   }}
                 >
                   <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2.5 text-sm cursor-pointer hover:border-primary/50 transition-colors">
