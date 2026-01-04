@@ -396,68 +396,92 @@ const TakeawayBlock = ({
   const title = message.takeawayTitle || "One-Line Takeaway for Learners";
 
   return (
-    <div className="my-6 mx-2">
+    <div className="my-8 mx-2">
       <div
         className={cn(
-          "group relative rounded-2xl overflow-hidden",
-          "bg-gradient-to-br from-amber-50 via-yellow-50/80 to-orange-50/60",
-          "dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-orange-950/20",
-          "border border-amber-200/80 dark:border-amber-700/50",
-          "shadow-md hover:shadow-lg transition-shadow duration-300"
+          "group relative rounded-3xl overflow-hidden",
+          "bg-gradient-to-br from-amber-50/90 via-yellow-50/70 to-orange-50/50",
+          "dark:from-amber-950/50 dark:via-yellow-950/40 dark:to-orange-950/30",
+          "border-2 border-amber-300/60 dark:border-amber-600/40",
+          "shadow-[0_8px_32px_-8px_rgba(251,191,36,0.3)] dark:shadow-[0_8px_32px_-8px_rgba(251,191,36,0.15)]",
+          "hover:shadow-[0_12px_40px_-8px_rgba(251,191,36,0.4)] dark:hover:shadow-[0_12px_40px_-8px_rgba(251,191,36,0.25)]",
+          "transition-all duration-500 ease-out",
+          "backdrop-blur-sm"
         )}
       >
+        {/* Animated gradient border overlay */}
+        <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+          <div className="absolute inset-[-2px] rounded-3xl bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-20 blur-sm" />
+        </div>
+
         {/* Decorative background pattern */}
-        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
+        <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]">
           <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
-            backgroundSize: '24px 24px'
+            backgroundImage: `radial-gradient(circle at 3px 3px, currentColor 1.5px, transparent 0)`,
+            backgroundSize: '32px 32px'
           }} />
         </div>
 
-        {/* Glowing accent line */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400" />
+        {/* Glowing accent line at top */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 shadow-[0_2px_12px_rgba(251,191,36,0.5)]" />
 
-        {/* Header */}
-        <div className="relative flex items-center gap-3 px-5 py-4 border-b border-amber-200/50 dark:border-amber-700/30">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-400 shadow-md">
-            <span className="text-xl filter drop-shadow-sm">{icon}</span>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-500" />
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide">
-                Key Takeaway
-              </span>
+        {/* Main content wrapper */}
+        <div className="relative p-6">
+          {/* Header row */}
+          <div className="flex items-start gap-4 mb-4">
+            {/* Icon container with glow effect */}
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+              <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-500 shadow-lg ring-2 ring-white/30 dark:ring-black/20">
+                <span className="text-2xl filter drop-shadow-md transform group-hover:scale-110 transition-transform duration-300">{icon}</span>
+              </div>
             </div>
-            <h4 className="font-bold text-foreground text-base mt-0.5">{title}</h4>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-amber-100 dark:hover:bg-amber-900/30"
-            onClick={() => onStartEdit(message.id)}
-          >
-            <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </Button>
-        </div>
 
-        {/* Content */}
-        <div className="relative px-5 py-4">
-          <div className="flex gap-4">
-            {/* Decorative side accent */}
-            <div className="flex-shrink-0 w-1 rounded-full bg-gradient-to-b from-amber-400 via-yellow-400 to-orange-400" />
+            {/* Title section */}
+            <div className="flex-1 pt-1">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 dark:bg-amber-500/20 backdrop-blur-sm">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                    Key Takeaway
+                  </span>
+                </div>
+                <Sparkles className="w-4 h-4 text-amber-400/60 dark:text-amber-500/50 animate-pulse" />
+              </div>
+              <h4 className="font-bold text-foreground text-lg leading-snug tracking-tight">{title}</h4>
+            </div>
+
+            {/* Edit button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-amber-200/50 dark:hover:bg-amber-800/40 hover:scale-105"
+              onClick={() => onStartEdit(message.id)}
+            >
+              <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </Button>
+          </div>
+
+          {/* Content section */}
+          <div className="relative">
+            {/* Vertical accent bar */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-amber-400 via-yellow-400 to-orange-400 shadow-[0_0_8px_rgba(251,191,36,0.4)]" />
             
             {/* Content text */}
-            <div className="flex-1">
-              <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-medium">
+            <div className="pl-5">
+              <div className="text-base text-foreground/90 leading-relaxed whitespace-pre-wrap font-medium tracking-wide">
                 {message.content}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Decorative sparkle */}
-        <Sparkles className="absolute top-4 right-14 w-4 h-4 text-amber-300/50 dark:text-amber-500/30" />
+        {/* Bottom decorative gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-amber-100/30 to-transparent dark:from-amber-900/20 pointer-events-none" />
+
+        {/* Corner decorations */}
+        <div className="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-amber-300/40 dark:border-amber-600/30 rounded-tr-xl opacity-60" />
+        <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-amber-300/40 dark:border-amber-600/30 rounded-bl-xl opacity-60" />
       </div>
     </div>
   );
