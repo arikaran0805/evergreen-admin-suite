@@ -170,41 +170,78 @@ export const CareerProgressChart = ({
       return result;
     });
 
-    // Generate SVG paths
+    // Generate SVG paths with smooth curves
     const toX = (h: number) => (h / totalLearningHours) * 100;
     const toY = (r: number) => 100 - r;
+    const curveRadius = 2; // Radius for smooth curve transitions
 
-    // Complete path (full journey - dashed for future)
-    let completePathPoints = [`M 0 100`]; // Start at origin
+    // Helper to create smooth path with quadratic bezier curves at corners
+    const createSmoothPath = (points: { x: number; y: number }[]): string => {
+      if (points.length < 2) return '';
+      
+      let path = `M ${points[0].x} ${points[0].y}`;
+      
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const next = points[i + 1];
+        
+        if (next && i < points.length - 1) {
+          // Calculate direction vectors
+          const dx1 = curr.x - prev.x;
+          const dy1 = curr.y - prev.y;
+          const dx2 = next.x - curr.x;
+          const dy2 = next.y - curr.y;
+          
+          // Normalize and apply curve radius
+          const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+          const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+          
+          const radius = Math.min(curveRadius, len1 / 3, len2 / 3);
+          
+          // Points before and after the corner
+          const beforeX = curr.x - (dx1 / len1) * radius;
+          const beforeY = curr.y - (dy1 / len1) * radius;
+          const afterX = curr.x + (dx2 / len2) * radius;
+          const afterY = curr.y + (dy2 / len2) * radius;
+          
+          // Line to point before corner, then quadratic curve through corner
+          path += ` L ${beforeX} ${beforeY}`;
+          path += ` Q ${curr.x} ${curr.y} ${afterX} ${afterY}`;
+        } else {
+          // Last point - just line to it
+          path += ` L ${curr.x} ${curr.y}`;
+        }
+      }
+      
+      return path;
+    };
+
+    // Build complete path points
+    const completePoints: { x: number; y: number }[] = [{ x: 0, y: 100 }];
     courses.forEach(course => {
-      // Diagonal up (learning phase)
-      completePathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
-      // Horizontal (validation phase)
-      completePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+      completePoints.push({ x: toX(course.learningEndHours), y: toY(course.learningEndReadiness) });
+      completePoints.push({ x: toX(course.validationEndHours), y: toY(course.validationEndReadiness) });
     });
-    const completePath = completePathPoints.join(' ');
+    const completePath = createSmoothPath(completePoints);
 
-    // Progress path (what the learner has completed)
-    let progressPathPoints = [`M 0 100`];
+    // Build progress path points
+    const progressPoints: { x: number; y: number }[] = [{ x: 0, y: 100 }];
     let lastProgressX = 0;
     let lastProgressY = 100;
     
     for (const course of courses) {
       if (course.isCompleted) {
-        // Full course completed
-        progressPathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
-        progressPathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+        progressPoints.push({ x: toX(course.learningEndHours), y: toY(course.learningEndReadiness) });
+        progressPoints.push({ x: toX(course.validationEndHours), y: toY(course.validationEndReadiness) });
         lastProgressX = toX(course.validationEndHours);
         lastProgressY = toY(course.validationEndReadiness);
       } else if (course.isActive || course.isStarted) {
-        // Partial progress
         if (course.isInValidation) {
-          // Completed learning, partial validation
-          progressPathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
-          progressPathPoints.push(`L ${toX(course.currentHours)} ${toY(course.currentReadiness)}`);
+          progressPoints.push({ x: toX(course.learningEndHours), y: toY(course.learningEndReadiness) });
+          progressPoints.push({ x: toX(course.currentHours), y: toY(course.currentReadiness) });
         } else {
-          // Still in learning phase
-          progressPathPoints.push(`L ${toX(course.currentHours)} ${toY(course.currentReadiness)}`);
+          progressPoints.push({ x: toX(course.currentHours), y: toY(course.currentReadiness) });
         }
         lastProgressX = toX(course.currentHours);
         lastProgressY = toY(course.currentReadiness);
@@ -213,10 +250,10 @@ export const CareerProgressChart = ({
         break;
       }
     }
-    const progressPath = progressPathPoints.join(' ');
+    const progressPath = createSmoothPath(progressPoints);
 
-    // Future path (remaining journey - will be shown as dashed)
-    let futurePathPoints: string[] = [];
+    // Build future path points
+    const futurePoints: { x: number; y: number }[] = [];
     let startedFuture = false;
     
     for (let i = 0; i < courses.length; i++) {
@@ -224,30 +261,28 @@ export const CareerProgressChart = ({
       
       if (!course.isCompleted && !course.isActive && !course.isStarted) {
         if (!startedFuture) {
-          // Start from the last progress point
           const prevCourse = courses[i - 1];
           if (prevCourse) {
-            futurePathPoints.push(`M ${toX(prevCourse.validationEndHours)} ${toY(prevCourse.validationEndReadiness)}`);
+            futurePoints.push({ x: toX(prevCourse.validationEndHours), y: toY(prevCourse.validationEndReadiness) });
           } else {
-            futurePathPoints.push(`M 0 100`);
+            futurePoints.push({ x: 0, y: 100 });
           }
           startedFuture = true;
         }
-        futurePathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
-        futurePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+        futurePoints.push({ x: toX(course.learningEndHours), y: toY(course.learningEndReadiness) });
+        futurePoints.push({ x: toX(course.validationEndHours), y: toY(course.validationEndReadiness) });
       } else if (course.isActive || course.isStarted) {
-        // Continue from current progress point
-        futurePathPoints.push(`M ${toX(course.currentHours)} ${toY(course.currentReadiness)}`);
+        futurePoints.push({ x: toX(course.currentHours), y: toY(course.currentReadiness) });
         if (course.isInValidation) {
-          futurePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+          futurePoints.push({ x: toX(course.validationEndHours), y: toY(course.validationEndReadiness) });
         } else {
-          futurePathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
-          futurePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+          futurePoints.push({ x: toX(course.learningEndHours), y: toY(course.learningEndReadiness) });
+          futurePoints.push({ x: toX(course.validationEndHours), y: toY(course.validationEndReadiness) });
         }
         startedFuture = true;
       }
     }
-    const futurePath = futurePathPoints.join(' ');
+    const futurePath = futurePoints.length >= 2 ? createSmoothPath(futurePoints) : '';
 
     // Calculate milestones (attached to the line)
     const milestones = [
