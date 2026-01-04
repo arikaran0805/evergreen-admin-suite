@@ -806,7 +806,7 @@ export const CareerProgressChart = ({
               </div>
             </div>
 
-            {/* Current progress indicator (pulsing dot) */}
+            {/* Current progress indicator (pulsing dot with glow) */}
             {pathData.currentX > 0 && pathData.currentY < 100 && (
               <motion.div
                 className="absolute z-40"
@@ -817,13 +817,40 @@ export const CareerProgressChart = ({
                 }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 1.5 }}
+                transition={{ delay: 2.8 }}
               >
+                {/* Outer pulsing glow ring */}
                 <motion.div
-                  className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg"
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute inset-0 rounded-full bg-primary/30"
+                  style={{ width: 32, height: 32, left: -8, top: -8 }}
+                  animate={{ 
+                    scale: [1, 1.8, 1],
+                    opacity: [0.6, 0, 0.6]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
+                {/* Second glow ring (offset timing) */}
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-primary/20"
+                  style={{ width: 32, height: 32, left: -8, top: -8 }}
+                  animate={{ 
+                    scale: [1, 2.2, 1],
+                    opacity: [0.4, 0, 0.4]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                />
+                {/* Main dot with subtle pulse */}
+                <motion.div
+                  className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg relative"
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ 
+                    boxShadow: '0 0 12px 4px hsl(var(--primary) / 0.4), 0 0 20px 8px hsl(var(--primary) / 0.2)'
+                  }}
+                >
+                  {/* Inner bright core */}
+                  <div className="absolute inset-1 rounded-full bg-primary-foreground/80" />
+                </motion.div>
               </motion.div>
             )}
 
