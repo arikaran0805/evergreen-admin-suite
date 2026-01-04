@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Lock, 
@@ -40,6 +40,15 @@ interface CareerProgressChartProps {
   totalLearningHours?: number;
 }
 
+interface TooltipData {
+  x: number;
+  y: number;
+  hours: number;
+  readiness: number;
+  courseName: string;
+  phase: 'learning' | 'validation';
+}
+
 export const CareerProgressChart = ({ 
   journeySteps, 
   readinessPercent,
@@ -48,6 +57,8 @@ export const CareerProgressChart = ({
 }: CareerProgressChartProps) => {
   const navigate = useNavigate();
   const [showCelebration, setShowCelebration] = useState(false);
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
 
   // Build the complete path data for the career journey
   const pathData = useMemo(() => {
@@ -264,6 +275,68 @@ export const CareerProgressChart = ({
     }
   }, [readinessPercent]);
 
+  // Handle mouse movement for tooltip
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!chartAreaRef.current || pathData.courses.length === 0) return;
+    
+    const rect = chartAreaRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const chartWidth = rect.width;
+    const chartHeight = rect.height;
+    
+    // Convert mouse X to hours
+    const xPercent = Math.max(0, Math.min(100, (mouseX / chartWidth) * 100));
+    const hours = (xPercent / 100) * totalLearningHours;
+    
+    // Find which course this hour falls into and calculate readiness
+    let readiness = 0;
+    let courseName = "";
+    let phase: 'learning' | 'validation' = 'learning';
+    
+    for (const course of pathData.courses) {
+      if (hours <= course.validationEndHours) {
+        courseName = course.name;
+        
+        if (hours <= course.learningEndHours) {
+          // In learning phase - diagonal part
+          phase = 'learning';
+          const progressInCourse = (hours - course.startHours) / course.learningHours;
+          readiness = course.startReadiness + (course.contribution * progressInCourse);
+        } else {
+          // In validation phase - flat part
+          phase = 'validation';
+          readiness = course.learningEndReadiness;
+        }
+        break;
+      }
+      readiness = course.validationEndReadiness;
+    }
+    
+    // Calculate Y position on the line
+    const yPercent = 100 - readiness;
+    const lineY = (yPercent / 100) * chartHeight;
+    
+    // Only show tooltip if mouse is near the line (within 30px)
+    const distanceToLine = Math.abs(mouseY - lineY);
+    if (distanceToLine < 30) {
+      setTooltip({
+        x: mouseX,
+        y: lineY,
+        hours: Math.round(hours * 10) / 10,
+        readiness: Math.round(readiness * 10) / 10,
+        courseName,
+        phase
+      });
+    } else {
+      setTooltip(null);
+    }
+  }, [pathData.courses, totalLearningHours]);
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+  }, []);
+
   const chartHeight = 400;
   const chartPadding = { top: 50, right: 60, bottom: 70, left: 70 };
 
@@ -394,13 +467,16 @@ export const CareerProgressChart = ({
 
           {/* Chart Area */}
           <div 
-            className="absolute"
+            ref={chartAreaRef}
+            className="absolute cursor-crosshair"
             style={{ 
               left: chartPadding.left, 
               right: chartPadding.right, 
               top: chartPadding.top, 
               bottom: chartPadding.bottom 
             }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
           >
             {/* Grid lines - horizontal dashed */}
             <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
@@ -469,6 +545,46 @@ export const CareerProgressChart = ({
                 transition={{ duration: 2, ease: "easeOut" }}
               />
             </svg>
+
+            {/* Interactive Tooltip */}
+            <AnimatePresence>
+              {tooltip && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute z-50 pointer-events-none"
+                  style={{
+                    left: tooltip.x,
+                    top: tooltip.y,
+                    transform: 'translate(-50%, -120%)'
+                  }}
+                >
+                  <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2 text-sm">
+                    <div className="font-semibold text-foreground">{tooltip.courseName}</div>
+                    <div className="flex items-center gap-3 mt-1 text-muted-foreground">
+                      <span className="font-medium">{tooltip.hours}h</span>
+                      <span>•</span>
+                      <span className="text-primary font-medium">{tooltip.readiness}%</span>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
+                      {tooltip.phase === 'learning' ? '📚 Learning' : '✓ Validation'}
+                    </div>
+                    {/* Arrow */}
+                    <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-border" />
+                    <div className="absolute left-1/2 bottom-0.5 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-popover" />
+                  </div>
+                  {/* Vertical line to point */}
+                  <div 
+                    className="absolute left-1/2 -translate-x-1/2 top-full w-px bg-primary/50"
+                    style={{ height: '8px' }}
+                  />
+                  {/* Dot on line */}
+                  <div className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-primary border-2 border-background shadow-md" style={{ top: 'calc(100% + 8px)', transform: 'translate(-50%, -50%)' }} />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Origin point - Start from 0 */}
             <div 
