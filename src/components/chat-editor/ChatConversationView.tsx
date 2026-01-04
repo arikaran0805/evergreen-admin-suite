@@ -424,10 +424,28 @@ const ChatConversationView = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-3">
             <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
+              {/* Mentor (Karan) avatar - use dynamic or static mentor colors */}
+              <div 
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-lg ring-2 ring-background",
+                  !dynamicColors && getChatColors(true).avatar
+                )}
+                style={dynamicColors ? { 
+                  background: `linear-gradient(135deg, ${dynamicColors.mentor.avatarGradientFrom}, ${dynamicColors.mentor.avatarGradientTo})` 
+                } : undefined}
+              >
                 👨‍🎓
               </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-sm shadow-lg ring-2 ring-background">
+              {/* Course avatar - use dynamic or static course colors */}
+              <div 
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-lg ring-2 ring-background",
+                  !dynamicColors && getChatColors(false).avatar
+                )}
+                style={dynamicColors ? { 
+                  background: `linear-gradient(135deg, ${dynamicColors.course.avatarGradientFrom}, ${dynamicColors.course.avatarGradientTo})` 
+                } : undefined}
+              >
                 {renderCourseIcon(courseCharacter.emoji, 16)}
               </div>
             </div>

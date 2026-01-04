@@ -130,6 +130,7 @@ export const FreeformCanvasViewer = ({
     <div
       className={cn(
         "relative rounded-xl border border-border bg-background shadow-md overflow-hidden group",
+        "w-full max-w-full",
         className
       )}
     >
@@ -175,13 +176,15 @@ export const FreeformCanvasViewer = ({
         }}
       >
         <div
+          className="flex items-center justify-center"
           style={{
             transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
             transformOrigin: 'center center',
             transition: isPanning.current ? 'none' : 'transform 0.1s ease-out',
+            maxWidth: '100%',
           }}
         >
-          <canvas ref={canvasRef} className="block" />
+          <canvas ref={canvasRef} className="block max-w-full" style={{ maxWidth: '100%' }} />
         </div>
       </div>
 
