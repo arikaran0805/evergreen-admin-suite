@@ -34,6 +34,7 @@ interface TakeawayBlockProps {
   onEdit: (id: string, content: string, title?: string, icon?: string) => void;
   onStartEdit: (id: string) => void;
   onEndEdit: () => void;
+  index?: number; // For staggered animation
 }
 
 const TakeawayBlock = ({
@@ -42,6 +43,7 @@ const TakeawayBlock = ({
   onEdit,
   onStartEdit,
   onEndEdit,
+  index = 0,
 }: TakeawayBlockProps) => {
   const [editContent, setEditContent] = useState(message.content);
   const [editTitle, setEditTitle] = useState(message.takeawayTitle || "One-Line Takeaway for Learners");
@@ -396,21 +398,24 @@ const TakeawayBlock = ({
   const icon = message.takeawayIcon || "🧠";
   const title = message.takeawayTitle || "One-Line Takeaway for Learners";
 
+  // Calculate stagger delay based on index
+  const staggerDelay = index * 0.15;
+
   return (
     <motion.div 
       className="my-8 mx-2"
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      initial={{ opacity: 0, y: 24, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ 
-        duration: 0.5, 
+        duration: 0.6, 
         ease: [0.22, 1, 0.36, 1],
-        delay: 0.1 
+        delay: 0.1 + staggerDelay,
       }}
     >
       <motion.div
-        initial={{ boxShadow: "0 4px 16px -4px rgba(251,191,36,0.2)" }}
+        initial={{ boxShadow: "0 4px 16px -4px rgba(251,191,36,0.15)" }}
         animate={{ boxShadow: "0 8px 32px -8px rgba(251,191,36,0.3)" }}
-        transition={{ duration: 0.6, delay: 0.3 }}
+        transition={{ duration: 0.8, delay: 0.4 + staggerDelay }}
         className={cn(
           "group relative rounded-3xl overflow-hidden",
           "bg-gradient-to-br from-amber-50/90 via-yellow-50/70 to-orange-50/50",

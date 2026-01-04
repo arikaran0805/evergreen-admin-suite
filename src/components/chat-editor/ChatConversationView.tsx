@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MENTOR_CHARACTER, CourseCharacter, ChatMessage } from "./types";
 import { FreeformCanvasData } from "./freeform/types";
@@ -493,34 +494,64 @@ const ChatConversationView = ({
               );
             }
 
-            // Render takeaway blocks
+            // Render takeaway blocks with staggered animation
             if (message.type === "takeaway") {
               const icon = message.takeawayIcon || "🧠";
               const title = message.takeawayTitle || "One-Line Takeaway for Learners";
+              const staggerDelay = index * 0.12;
+              
               return (
-                <div
+                <motion.div
                   key={message.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    ease: [0.22, 1, 0.36, 1],
+                    delay: 0.1 + staggerDelay 
+                  }}
                   className={cn(
-                    "my-4 rounded-xl overflow-hidden animate-in fade-in-0 slide-in-from-bottom-2",
+                    "my-4 rounded-xl overflow-hidden",
                     "border-t border-b border-border/50",
                     "bg-gradient-to-r from-muted/20 to-muted/10"
                   )}
-                  style={{ animationDelay: `${index * 100}ms`, animationFillMode: "backwards" }}
                 >
                   {/* Header */}
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
-                    <span className="text-xl">{icon}</span>
+                    <motion.span 
+                      className="text-xl"
+                      initial={{ scale: 0.5, rotate: -10 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 300, 
+                        damping: 15,
+                        delay: 0.2 + staggerDelay 
+                      }}
+                    >
+                      {icon}
+                    </motion.span>
                     <span className="font-semibold text-sm text-foreground">{title}</span>
                   </div>
 
                   {/* Content */}
                   <div className="px-4 py-3 pl-6 relative">
-                    <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-primary/40 rounded-full" />
+                    <motion.div 
+                      className="absolute left-4 top-3 bottom-3 w-0.5 bg-primary/40 rounded-full"
+                      initial={{ scaleY: 0 }}
+                      animate={{ scaleY: 1 }}
+                      transition={{ 
+                        duration: 0.4, 
+                        delay: 0.3 + staggerDelay,
+                        ease: "easeOut"
+                      }}
+                      style={{ originY: 0 }}
+                    />
                     <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
                       {message.content}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             }
 
