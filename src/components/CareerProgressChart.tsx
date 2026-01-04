@@ -816,6 +816,46 @@ export const CareerProgressChart = ({
               />
             </svg>
 
+            {/* Traveling indicator dot */}
+            <AnimatePresence>
+              {tooltip && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute z-40 pointer-events-none"
+                  style={{
+                    left: tooltip.x,
+                    top: tooltip.y,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                >
+                  {/* Outer glow ring */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-primary/20"
+                    style={{ width: 24, height: 24, marginLeft: -12, marginTop: -12 }}
+                    animate={{ 
+                      scale: [1, 1.5, 1],
+                      opacity: [0.4, 0, 0.4]
+                    }}
+                    transition={{ 
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  {/* Main dot */}
+                  <div 
+                    className="w-3 h-3 rounded-full bg-primary border-2 border-background shadow-lg"
+                    style={{ 
+                      boxShadow: '0 0 8px hsl(var(--primary)), 0 0 16px hsl(var(--primary) / 0.5)' 
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Interactive Tooltip */}
             <AnimatePresence>
               {tooltip && (
