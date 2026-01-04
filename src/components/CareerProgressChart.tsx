@@ -517,9 +517,20 @@ export const CareerProgressChart = ({
                 </filter>
               </defs>
 
+              {/* Background trace of progress path (shows where line will draw) */}
+              <path
+                d={pathData.progressPath}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                strokeOpacity="0.1"
+                className="text-primary"
+                vectorEffect="non-scaling-stroke"
+              />
+
               {/* Future path (dashed, muted) */}
               {pathData.futurePath && (
-                <path
+                <motion.path
                   d={pathData.futurePath}
                   fill="none"
                   stroke="currentColor"
@@ -527,10 +538,13 @@ export const CareerProgressChart = ({
                   strokeDasharray="2,2"
                   className="text-muted-foreground/30"
                   vectorEffect="non-scaling-stroke"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 2.2, duration: 0.5 }}
                 />
               )}
 
-              {/* Progress path (solid, gradient) - THE HERO LINE */}
+              {/* Progress path (solid, gradient) - THE HERO LINE with drawing animation */}
               <motion.path
                 d={pathData.progressPath}
                 fill="none"
@@ -540,9 +554,36 @@ export const CareerProgressChart = ({
                 strokeLinejoin="round"
                 filter="url(#lineGlow)"
                 vectorEffect="non-scaling-stroke"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 2, ease: "easeOut" }}
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ 
+                  duration: 2.5, 
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: 0.3
+                }}
+                style={{ pathLength: 1 }}
+              />
+
+              {/* Animated drawing head (glowing dot that travels along the path) */}
+              <motion.circle
+                r="1.5"
+                fill="hsl(var(--primary))"
+                filter="url(#lineGlow)"
+                initial={{ opacity: 1 }}
+                animate={{ 
+                  opacity: [1, 1, 0],
+                  offsetDistance: ['0%', '100%', '100%']
+                }}
+                transition={{ 
+                  duration: 2.8,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: 0.3,
+                  times: [0, 0.9, 1]
+                }}
+                style={{
+                  offsetPath: `path('${pathData.progressPath}')`,
+                  offsetRotate: '0deg'
+                }}
               />
             </svg>
 
