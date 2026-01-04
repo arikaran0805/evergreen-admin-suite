@@ -236,6 +236,7 @@ interface MessageItemProps {
   isFirst: boolean;
   isLast: boolean;
   codeTheme?: string;
+  index?: number;
 }
 
 const SortableMessageItem = ({
@@ -255,6 +256,7 @@ const SortableMessageItem = ({
   isFirst,
   isLast,
   codeTheme,
+  index = 0,
 }: MessageItemProps) => {
   const {
     attributes,
@@ -382,6 +384,7 @@ const SortableMessageItem = ({
             onEdit={onEdit}
             onStartEdit={onStartEdit}
             onEndEdit={onEndEdit}
+            index={index}
           />
         </div>
         {isEditMode && !isEditing && <ActionButtons />}
@@ -1416,6 +1419,7 @@ const ChatStyleEditor = ({
                       isFirst={index === 0}
                       isLast={index === messages.length - 1}
                       codeTheme={codeTheme}
+                      index={index}
                     />
                     {/* Insert between button - show after every bubble in edit mode */}
                     {mode === "edit" && (
