@@ -9,11 +9,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface FreeformCanvasViewerProps {
   data: FreeformCanvasData;
@@ -35,6 +30,8 @@ export const FreeformCanvasViewer = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [containerHeight, setContainerHeight] = useState(300);
+  const [zoomPopoverOpen, setZoomPopoverOpen] = useState(false);
+  const [fullscreenZoomPopoverOpen, setFullscreenZoomPopoverOpen] = useState(false);
 
   const baseWidth = data.width || 800;
   const baseHeight = data.height || 400;
@@ -80,37 +77,45 @@ export const FreeformCanvasViewer = ({
   useEffect(() => {
     if (!isFullscreen || !fullscreenCanvasRef.current) return;
 
-    const canvas = new FabricCanvas(fullscreenCanvasRef.current, {
-      width: baseWidth,
-      height: baseHeight,
-      backgroundColor: "#ffffff",
-      selection: false,
-      interactive: false,
-    });
+    // Small delay to ensure the dialog is fully rendered
+    const timer = setTimeout(() => {
+      if (!fullscreenCanvasRef.current) return;
+      
+      const canvas = new FabricCanvas(fullscreenCanvasRef.current, {
+        width: baseWidth,
+        height: baseHeight,
+        backgroundColor: "#ffffff",
+        selection: false,
+        interactive: false,
+      });
 
-    if (data.canvasJson) {
-      try {
-        canvas.loadFromJSON(JSON.parse(data.canvasJson)).then(() => {
-          canvas.getObjects().forEach((obj) => {
-            obj.set({
-              selectable: false,
-              evented: false,
-              hasControls: false,
-              hasBorders: false,
+      if (data.canvasJson) {
+        try {
+          canvas.loadFromJSON(JSON.parse(data.canvasJson)).then(() => {
+            canvas.getObjects().forEach((obj) => {
+              obj.set({
+                selectable: false,
+                evented: false,
+                hasControls: false,
+                hasBorders: false,
+              });
             });
+            canvas.renderAll();
           });
-          canvas.renderAll();
-        });
-      } catch (e) {
-        console.error("Failed to load canvas data:", e);
+        } catch (e) {
+          console.error("Failed to load canvas data:", e);
+        }
       }
-    }
 
-    setFullscreenFabricCanvas(canvas);
+      setFullscreenFabricCanvas(canvas);
+    }, 100);
 
     return () => {
-      canvas.dispose();
-      setFullscreenFabricCanvas(null);
+      clearTimeout(timer);
+      if (fullscreenFabricCanvas) {
+        fullscreenFabricCanvas.dispose();
+        setFullscreenFabricCanvas(null);
+      }
     };
   }, [isFullscreen, data.canvasJson, baseWidth, baseHeight]);
 
@@ -180,18 +185,22 @@ export const FreeformCanvasViewer = ({
 
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
+    setZoomPopoverOpen(false);
   };
 
   const handleFullscreenZoomChange = (newZoom: number) => {
     setFullscreenZoom(newZoom);
+    setFullscreenZoomPopoverOpen(false);
   };
 
   const handleReset = () => {
     setZoom(1);
+    setZoomPopoverOpen(false);
   };
 
   const handleFullscreenReset = () => {
     setFullscreenZoom(1);
+    setFullscreenZoomPopoverOpen(false);
   };
 
   const toggleExpanded = () => {
@@ -211,20 +220,24 @@ export const FreeformCanvasViewer = ({
   const ZoomControls = ({ 
     currentZoom, 
     onZoomChange, 
-    onReset 
+    onReset,
+    open,
+    onOpenChange,
   }: { 
     currentZoom: number; 
     onZoomChange: (zoom: number) => void; 
     onReset: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
   }) => (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5">
           <ZoomIn className="h-3.5 w-3.5" />
           <span className="text-xs">{Math.round(currentZoom * 100)}%</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-36 p-2" align="end">
+      <PopoverContent className="w-36 p-2 z-[100]" align="end">
         <div className="flex flex-col gap-1">
           <p className="text-xs font-medium text-muted-foreground mb-1">Zoom Level</p>
           {zoomOptions.map((option) => (
@@ -268,7 +281,9 @@ export const FreeformCanvasViewer = ({
           <ZoomControls 
             currentZoom={zoom} 
             onZoomChange={handleZoomChange} 
-            onReset={handleReset} 
+            onReset={handleReset}
+            open={zoomPopoverOpen}
+            onOpenChange={setZoomPopoverOpen}
           />
 
           <div className="w-px h-4 bg-border mx-1" />
@@ -356,28 +371,29 @@ export const FreeformCanvasViewer = ({
         </div>
       </div>
 
-      {/* Fullscreen Dialog */}
-      <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
-        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] max-h-[95vh] p-0 gap-0">
-          <DialogTitle className="sr-only">Visual Explanation - Fullscreen</DialogTitle>
-          
+      {/* Fullscreen Modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col">
           {/* Fullscreen header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">Visual Explanation</span>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
+            <div className="flex items-center gap-4">
+              <span className="text-base font-medium">Visual Explanation</span>
               <ZoomControls 
                 currentZoom={fullscreenZoom} 
                 onZoomChange={handleFullscreenZoomChange} 
-                onReset={handleFullscreenReset} 
+                onReset={handleFullscreenReset}
+                open={fullscreenZoomPopoverOpen}
+                onOpenChange={setFullscreenZoomPopoverOpen}
               />
             </div>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              variant="outline"
+              size="sm"
+              className="gap-2"
               onClick={() => setIsFullscreen(false)}
             >
               <X className="h-4 w-4" />
+              Close
             </Button>
           </div>
 
@@ -393,13 +409,13 @@ export const FreeformCanvasViewer = ({
             <div className="p-8">
               <canvas
                 ref={fullscreenCanvasRef}
-                className="block shadow-lg rounded-lg"
+                className="block shadow-lg rounded-lg bg-white"
                 style={{ maxWidth: '100%', height: 'auto' }}
               />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </>
   );
 };
