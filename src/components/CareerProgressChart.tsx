@@ -648,44 +648,69 @@ export const CareerProgressChart = ({
                 vectorEffect="non-scaling-stroke"
               />
 
-              {/* Future path (solid, muted) with pulse animation */}
+              {/* Future path (solid, muted) */}
               {pathData.futurePath && (
+                <motion.path
+                  key={`future-${animationKey}`}
+                  d={pathData.futurePath}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-muted-foreground/20"
+                  vectorEffect="non-scaling-stroke"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 2.2, duration: 0.5 }}
+                />
+              )}
+
+              {/* Pulse effect at current progress endpoint */}
+              {pathData.currentX > 0 && readinessPercent < 100 && (
                 <>
-                  {/* Base future path */}
-                  <motion.path
-                    key={`future-${animationKey}`}
-                    d={pathData.futurePath}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-muted-foreground/20"
-                    vectorEffect="non-scaling-stroke"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2.2, duration: 0.5 }}
-                  />
-                  {/* Pulsing glow overlay */}
-                  <motion.path
-                    key={`future-pulse-${animationKey}`}
-                    d={pathData.futurePath}
+                  {/* Outer pulsing ring */}
+                  <motion.circle
+                    key={`pulse-outer-${animationKey}`}
+                    cx={pathData.currentX}
+                    cy={pathData.currentY}
+                    r="2"
                     fill="none"
                     stroke="hsl(var(--primary))"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    strokeWidth="0.5"
                     vectorEffect="non-scaling-stroke"
-                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 0, r: 1 }}
                     animate={{ 
-                      opacity: [0, 0.15, 0.3, 0.15, 0],
-                      strokeWidth: [4, 5, 6, 5, 4]
+                      opacity: [0, 0.6, 0],
+                      r: [1.5, 4, 6]
                     }}
                     transition={{ 
-                      delay: 2.7,
-                      duration: 2.5,
+                      delay: 2.5,
+                      duration: 1.5,
                       repeat: Infinity,
-                      ease: "easeInOut"
+                      ease: "easeOut"
+                    }}
+                  />
+                  {/* Middle pulsing ring */}
+                  <motion.circle
+                    key={`pulse-middle-${animationKey}`}
+                    cx={pathData.currentX}
+                    cy={pathData.currentY}
+                    r="1.5"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="0.3"
+                    vectorEffect="non-scaling-stroke"
+                    initial={{ opacity: 0, r: 1 }}
+                    animate={{ 
+                      opacity: [0, 0.4, 0],
+                      r: [1, 3, 4.5]
+                    }}
+                    transition={{ 
+                      delay: 2.8,
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeOut"
                     }}
                   />
                 </>
