@@ -1207,6 +1207,90 @@ export const CareerProgressChart = ({
               );
             })}
 
+            {/* Course starting position markers (location pins with lock) */}
+            {pathData.courses.map((course, index) => {
+              // Skip first course (start point already exists at origin)
+              if (index === 0) return null;
+              
+              const x = (course.startHours / totalLearningHours) * 100;
+              const y = 100 - course.startReadiness;
+              
+              return (
+                <motion.div
+                  key={`start-marker-${course.id}`}
+                  className="absolute z-25 group"
+                  style={{ 
+                    left: `${x}%`, 
+                    top: `${y}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  initial={{ scale: 0, opacity: 0, y: -10 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.15, type: "spring", stiffness: 200 }}
+                >
+                  {/* Location pin shape */}
+                  <div className="relative">
+                    {/* Pin body */}
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center shadow-md border-2 transition-all",
+                      course.isLocked 
+                        ? "bg-muted border-muted-foreground/30" 
+                        : course.isCompleted 
+                          ? "bg-green-500/20 border-green-500/50"
+                          : course.isActive
+                            ? "bg-primary/20 border-primary/50"
+                            : "bg-background border-border"
+                    )}>
+                      <Lock className={cn(
+                        "h-3 w-3 transition-colors",
+                        course.isLocked 
+                          ? "text-muted-foreground" 
+                          : course.isCompleted
+                            ? "text-green-500"
+                            : course.isActive
+                              ? "text-primary"
+                              : "text-muted-foreground/50"
+                      )} />
+                    </div>
+                    {/* Pin pointer */}
+                    <div className={cn(
+                      "absolute left-1/2 -translate-x-1/2 -bottom-1 w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent transition-colors",
+                      course.isLocked 
+                        ? "border-t-muted-foreground/30" 
+                        : course.isCompleted
+                          ? "border-t-green-500/50"
+                          : course.isActive
+                            ? "border-t-primary/50"
+                            : "border-t-border"
+                    )} />
+                  </div>
+                  
+                  {/* Tooltip on hover */}
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 px-2 py-1 rounded bg-popover border border-border shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs z-50">
+                    <div className="font-medium text-foreground">{course.name}</div>
+                    <div className={cn(
+                      "text-[10px] mt-0.5",
+                      course.isLocked ? "text-muted-foreground" : "text-primary"
+                    )}>
+                      {course.isLocked ? (
+                        <span className="flex items-center gap-1">
+                          <Lock className="h-2.5 w-2.5" /> Locked
+                        </span>
+                      ) : course.isCompleted ? (
+                        <span className="text-green-500">✓ Completed</span>
+                      ) : course.isActive ? (
+                        <span>In Progress</span>
+                      ) : (
+                        <span>Available</span>
+                      )}
+                    </div>
+                    {/* Tooltip arrow */}
+                    <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-border" />
+                  </div>
+                </motion.div>
+              );
+            })}
+
             {/* Halfway milestone (attached to line at ~60h, 50%) */}
             <motion.div
               className="absolute z-20"
