@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import { ChatMessage, TAKEAWAY_ICONS } from "./types";
 import { cn } from "@/lib/utils";
 import { Check, X, Pencil, Lightbulb, Sparkles, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, ChevronDown, Terminal } from "lucide-react";
@@ -396,8 +397,20 @@ const TakeawayBlock = ({
   const title = message.takeawayTitle || "One-Line Takeaway for Learners";
 
   return (
-    <div className="my-8 mx-2">
-      <div
+    <motion.div 
+      className="my-8 mx-2"
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ 
+        duration: 0.5, 
+        ease: [0.22, 1, 0.36, 1],
+        delay: 0.1 
+      }}
+    >
+      <motion.div
+        initial={{ boxShadow: "0 4px 16px -4px rgba(251,191,36,0.2)" }}
+        animate={{ boxShadow: "0 8px 32px -8px rgba(251,191,36,0.3)" }}
+        transition={{ duration: 0.6, delay: 0.3 }}
         className={cn(
           "group relative rounded-3xl overflow-hidden",
           "bg-gradient-to-br from-amber-50/90 via-yellow-50/70 to-orange-50/50",
@@ -482,8 +495,8 @@ const TakeawayBlock = ({
         {/* Corner decorations */}
         <div className="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-amber-300/40 dark:border-amber-600/30 rounded-tr-xl opacity-60" />
         <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-amber-300/40 dark:border-amber-600/30 rounded-bl-xl opacity-60" />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
