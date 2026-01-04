@@ -22,12 +22,15 @@ export const FreeformCanvasViewer = ({
   const isPanning = useRef(false);
   const lastPanPoint = useRef({ x: 0, y: 0 });
 
+  const baseWidth = data.width || 800;
+  const baseHeight = data.height || 400;
+
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
     const canvas = new FabricCanvas(canvasRef.current, {
-      width: data.width || 800,
-      height: data.height || 400,
+      width: baseWidth,
+      height: baseHeight,
       backgroundColor: "#ffffff",
       selection: false,
       interactive: false,
@@ -38,7 +41,7 @@ export const FreeformCanvasViewer = ({
       try {
         canvas.loadFromJSON(JSON.parse(data.canvasJson)).then(() => {
           // Make all objects non-interactive
-          canvas.getObjects().forEach(obj => {
+          canvas.getObjects().forEach((obj) => {
             obj.set({
               selectable: false,
               evented: false,
@@ -58,7 +61,38 @@ export const FreeformCanvasViewer = ({
     return () => {
       canvas.dispose();
     };
-  }, [data]);
+  }, [data.canvasJson, baseWidth, baseHeight]);
+
+  // Fit the canvas to the container width (prevents it from forcing the layout / shrinking sidebars)
+  useEffect(() => {
+    if (!fabricCanvas || !containerRef.current) return;
+
+    const el = containerRef.current;
+    const aspect = baseHeight / baseWidth;
+
+    const applySize = () => {
+      const available = el.clientWidth;
+      if (!available) return;
+      const displayWidth = Math.min(available, baseWidth);
+      const displayHeight = Math.max(180, Math.round(displayWidth * aspect));
+      fabricCanvas.setDimensions({ width: displayWidth, height: displayHeight }, { cssOnly: true });
+      fabricCanvas.renderAll();
+    };
+
+    applySize();
+
+    const resizeObserverSupported = typeof ResizeObserver !== "undefined";
+
+    if (resizeObserverSupported) {
+      const ro = new ResizeObserver(() => applySize());
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+
+    const onResize = () => applySize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [fabricCanvas, baseWidth, baseHeight]);
 
   // Handle panning
   useEffect(() => {
@@ -184,7 +218,11 @@ export const FreeformCanvasViewer = ({
             maxWidth: '100%',
           }}
         >
-          <canvas ref={canvasRef} className="block max-w-full" style={{ maxWidth: '100%' }} />
+          <canvas
+            ref={canvasRef}
+            className="block max-w-full"
+            style={{ width: '100%', height: 'auto', maxWidth: '100%' }}
+          />
         </div>
       </div>
 

@@ -944,7 +944,7 @@ const CourseDetail = () => {
           </aside>
 
           {/* MAIN CONTENT - Lesson Content */}
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             <Card className="border-l border-t border-b border-primary/10 shadow-card rounded-none">
               <CardContent className="pt-8 px-12 pb-12 leading-relaxed">
                 {loadingPost ? (
@@ -1361,7 +1361,7 @@ const CourseDetail = () => {
           </main>
 
           {/* RIGHT SIDEBAR - Ads Only */}
-          <aside className="lg:w-[300px] flex-shrink-0">
+          <aside className="w-full lg:w-[300px] lg:min-w-[300px] lg:flex-none flex-shrink-0">
             <div className="sticky top-4 space-y-1">
               {/* SidebarAdTop - Always Google AdSense */}
               <SidebarAdTop 

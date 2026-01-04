@@ -66,7 +66,7 @@ const ContentRenderer = ({
   if (isChat) {
     const plainText = normalizeChatInput(htmlContent);
     return (
-      <div className="my-6">
+      <div className="my-6 min-w-0">
         <ChatConversationView content={plainText} courseType={courseType} codeTheme={codeTheme} />
       </div>
     );
