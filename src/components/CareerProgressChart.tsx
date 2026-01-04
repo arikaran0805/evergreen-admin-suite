@@ -770,15 +770,18 @@ export const CareerProgressChart = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute z-50 pointer-events-auto cursor-pointer"
+                  className="absolute z-50 pointer-events-auto"
                   style={{
                     left: tooltip.x,
                     top: tooltip.y,
                     transform: 'translate(-50%, -120%)'
                   }}
-                  onClick={() => navigate(`/courses/${tooltip.courseSlug}`)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/courses/${tooltip.courseSlug}`);
+                  }}
                 >
-                  <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2.5 text-sm hover:border-primary/50 transition-colors">
+                  <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2.5 text-sm cursor-pointer hover:border-primary/50 transition-colors">
                     <div className="font-semibold text-foreground flex items-center gap-1.5">
                       {tooltip.courseName}
                       <ChevronRight className="h-3 w-3 text-primary" />
