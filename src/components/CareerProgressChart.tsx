@@ -564,11 +564,84 @@ export const CareerProgressChart = ({
                 style={{ pathLength: 1 }}
               />
 
+              {/* Particle trail effects */}
+              {[...Array(8)].map((_, i) => (
+                <motion.circle
+                  key={`particle-${i}`}
+                  r={0.8 - i * 0.08}
+                  fill="hsl(var(--primary))"
+                  opacity={0.6 - i * 0.07}
+                  initial={{ opacity: 0 }}
+                  animate={{ 
+                    opacity: [0, 0.6 - i * 0.07, 0.6 - i * 0.07, 0],
+                    offsetDistance: ['0%', '100%', '100%']
+                  }}
+                  transition={{ 
+                    duration: 2.8,
+                    ease: [0.16, 1, 0.3, 1],
+                    delay: 0.3 + (i * 0.06),
+                    times: [0, 0.05, 0.9, 1]
+                  }}
+                  style={{
+                    offsetPath: `path('${pathData.progressPath}')`,
+                    offsetRotate: '0deg'
+                  }}
+                />
+              ))}
+
+              {/* Sparkle particles that burst periodically */}
+              {[...Array(12)].map((_, i) => (
+                <motion.circle
+                  key={`sparkle-${i}`}
+                  r={0.4}
+                  fill="hsl(142 76% 66%)"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ 
+                    opacity: [0, 0, 1, 0],
+                    scale: [0, 0, 1.5, 0],
+                    offsetDistance: [`${(i + 1) * 8}%`, `${(i + 1) * 8}%`, `${(i + 1) * 8}%`, `${(i + 1) * 8}%`],
+                    x: [0, 0, (i % 2 === 0 ? 1 : -1) * (2 + Math.random() * 2), (i % 2 === 0 ? 2 : -2) * 3],
+                    y: [0, 0, (i % 3 === 0 ? -1 : 1) * (1 + Math.random() * 2), (i % 3 === 0 ? -3 : 3)]
+                  }}
+                  transition={{ 
+                    duration: 2.8,
+                    ease: "easeOut",
+                    delay: 0.3 + (i * 0.2),
+                    times: [0, (i + 1) * 0.075, (i + 1) * 0.075 + 0.02, (i + 1) * 0.075 + 0.15]
+                  }}
+                  style={{
+                    offsetPath: `path('${pathData.progressPath}')`,
+                    offsetRotate: '0deg'
+                  }}
+                />
+              ))}
+
               {/* Animated drawing head (glowing dot that travels along the path) */}
               <motion.circle
-                r="1.5"
+                r="1.8"
                 fill="hsl(var(--primary))"
                 filter="url(#lineGlow)"
+                initial={{ opacity: 1 }}
+                animate={{ 
+                  opacity: [1, 1, 0],
+                  offsetDistance: ['0%', '100%', '100%']
+                }}
+                transition={{ 
+                  duration: 2.8,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: 0.3,
+                  times: [0, 0.9, 1]
+                }}
+                style={{
+                  offsetPath: `path('${pathData.progressPath}')`,
+                  offsetRotate: '0deg'
+                }}
+              />
+              
+              {/* Inner bright core of drawing head */}
+              <motion.circle
+                r="0.8"
+                fill="white"
                 initial={{ opacity: 1 }}
                 animate={{ 
                   opacity: [1, 1, 0],
