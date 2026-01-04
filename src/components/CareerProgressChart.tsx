@@ -1129,44 +1129,24 @@ export const CareerProgressChart = ({
               </div>
             </div>
 
-            {/* Current progress indicator (pulsing dot with glow) */}
-            {pathData.currentX > 0 && pathData.currentY < 100 && (
+            {/* Current progress indicator (glowing dot) */}
+            {pathData.currentX > 0 && readinessPercent < 100 && (
               <motion.div
                 className="absolute z-40"
                 style={{ 
                   left: `${pathData.currentX}%`, 
-                  top: `${pathData.currentY}%`,
+                  top: `${100 - pathData.currentY}%`,
                   transform: 'translate(-50%, -50%)'
                 }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 2.8 }}
               >
-                {/* Outer pulsing glow ring */}
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-primary/30"
-                  style={{ width: 32, height: 32, left: -8, top: -8 }}
-                  animate={{ 
-                    scale: [1, 1.8, 1],
-                    opacity: [0.6, 0, 0.6]
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                />
-                {/* Second glow ring (offset timing) */}
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-primary/20"
-                  style={{ width: 32, height: 32, left: -8, top: -8 }}
-                  animate={{ 
-                    scale: [1, 2.2, 1],
-                    opacity: [0.4, 0, 0.4]
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                />
-                {/* Main dot with subtle pulse */}
+                {/* Main dot with glow */}
                 <motion.div
                   className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg relative"
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   style={{ 
                     boxShadow: '0 0 12px 4px hsl(var(--primary) / 0.4), 0 0 20px 8px hsl(var(--primary) / 0.2)'
                   }}
