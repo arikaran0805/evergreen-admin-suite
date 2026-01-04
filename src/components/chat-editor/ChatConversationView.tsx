@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { getChatColors, getDynamicStyles, DynamicChatColors } from "./chatColors";
+import { Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 // Lazy load the freeform canvas viewer to avoid loading fabric.js until needed
@@ -129,6 +131,92 @@ const extractCodeBlocksFromHtml = (html: string): {
   });
 
   return { processedHtml, codeBlocks };
+};
+
+// Inline takeaway block with copy functionality
+const TakeawayInlineBlock = ({ 
+  icon, 
+  title, 
+  content, 
+  staggerDelay 
+}: { 
+  icon: string; 
+  title: string; 
+  content: string; 
+  staggerDelay: number;
+}) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ 
+        duration: 0.5, 
+        ease: [0.22, 1, 0.36, 1],
+        delay: 0.1 + staggerDelay 
+      }}
+      className={cn(
+        "group my-4 rounded-xl overflow-hidden",
+        "border-t border-b border-border/50",
+        "bg-gradient-to-r from-muted/20 to-muted/10"
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
+        <motion.span 
+          className="text-xl"
+          initial={{ scale: 0.5, rotate: -10 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 300, 
+            damping: 15,
+            delay: 0.2 + staggerDelay 
+          }}
+        >
+          {icon}
+        </motion.span>
+        <span className="flex-1 font-semibold text-sm text-foreground">{title}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleCopy}
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 text-green-500" />
+          ) : (
+            <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+        </Button>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 py-3 pl-6 relative">
+        <motion.div 
+          className="absolute left-4 top-3 bottom-3 w-0.5 bg-primary/40 rounded-full"
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ 
+            duration: 0.4, 
+            delay: 0.3 + staggerDelay,
+            ease: "easeOut"
+          }}
+          style={{ originY: 0 }}
+        />
+        <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </motion.div>
+  );
 };
 
 const ChatConversationView = ({
@@ -501,57 +589,13 @@ const ChatConversationView = ({
               const staggerDelay = index * 0.12;
               
               return (
-                <motion.div
+                <TakeawayInlineBlock
                   key={message.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ 
-                    duration: 0.5, 
-                    ease: [0.22, 1, 0.36, 1],
-                    delay: 0.1 + staggerDelay 
-                  }}
-                  className={cn(
-                    "my-4 rounded-xl overflow-hidden",
-                    "border-t border-b border-border/50",
-                    "bg-gradient-to-r from-muted/20 to-muted/10"
-                  )}
-                >
-                  {/* Header */}
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
-                    <motion.span 
-                      className="text-xl"
-                      initial={{ scale: 0.5, rotate: -10 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ 
-                        type: "spring", 
-                        stiffness: 300, 
-                        damping: 15,
-                        delay: 0.2 + staggerDelay 
-                      }}
-                    >
-                      {icon}
-                    </motion.span>
-                    <span className="font-semibold text-sm text-foreground">{title}</span>
-                  </div>
-
-                  {/* Content */}
-                  <div className="px-4 py-3 pl-6 relative">
-                    <motion.div 
-                      className="absolute left-4 top-3 bottom-3 w-0.5 bg-primary/40 rounded-full"
-                      initial={{ scaleY: 0 }}
-                      animate={{ scaleY: 1 }}
-                      transition={{ 
-                        duration: 0.4, 
-                        delay: 0.3 + staggerDelay,
-                        ease: "easeOut"
-                      }}
-                      style={{ originY: 0 }}
-                    />
-                    <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </div>
-                  </div>
-                </motion.div>
+                  icon={icon}
+                  title={title}
+                  content={message.content}
+                  staggerDelay={staggerDelay}
+                />
               );
             }
 
