@@ -7,10 +7,8 @@ import {
   Trophy, 
   Target, 
   Rocket, 
-  Star,
   Sparkles,
-  ChevronRight,
-  Clock
+  ChevronRight
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,8 +29,8 @@ interface CourseStep {
   completedLessons: number;
   skills: string[];
   order: number;
-  contributionPercent?: number; // Contribution to career readiness
-  learningHours?: number; // Learning hours for this course
+  contributionPercent?: number;
+  learningHours?: number;
 }
 
 interface CareerProgressChartProps {
@@ -42,13 +40,6 @@ interface CareerProgressChartProps {
   totalLearningHours?: number;
 }
 
-// Milestone definitions
-const milestones = [
-  { percent: 0, label: "Started", icon: Target, emoji: "🎯" },
-  { percent: 50, label: "Halfway", icon: Rocket, emoji: "🚀" },
-  { percent: 100, label: "Completed", icon: Trophy, emoji: "🏆" },
-];
-
 export const CareerProgressChart = ({ 
   journeySteps, 
   readinessPercent,
@@ -57,33 +48,36 @@ export const CareerProgressChart = ({
 }: CareerProgressChartProps) => {
   const navigate = useNavigate();
   const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationCourse, setCelebrationCourse] = useState<string | null>(null);
 
-  // Calculate chart data with sequential locking
-  const chartData = useMemo(() => {
-    if (journeySteps.length === 0) return { 
-      courses: [], 
-      totalHours: totalLearningHours, 
-      currentHours: 0,
-      activeIndex: 0 
+  // Build the complete path data for the career journey
+  const pathData = useMemo(() => {
+    if (journeySteps.length === 0) return {
+      completePath: "",
+      progressPath: "",
+      futurePath: "",
+      milestones: [],
+      courses: [],
+      currentX: 0,
+      currentY: 0
     };
 
     const totalCourses = journeySteps.length;
-    
-    // Calculate contribution per course (equal distribution if not specified)
     const defaultContribution = 100 / totalCourses;
     
-    // Calculate learning hours per course based on contribution
+    // Build course data with positions
     let cumulativeHours = 0;
     let cumulativeReadiness = 0;
-    let activeIndex = 0;
+    let activeIndex = -1;
     let foundActive = false;
 
     const courses = journeySteps.map((step, index) => {
       const contribution = step.contributionPercent || defaultContribution;
       const hours = step.learningHours || (totalLearningHours * (contribution / 100));
       
-      // Determine if course is locked (all courses after active are locked)
+      // Learning phase takes 80% of course hours, validation takes 20%
+      const learningHours = hours * 0.8;
+      const validationHours = hours * 0.2;
+      
       const previousCourse = index > 0 ? journeySteps[index - 1] : null;
       const isPreviousCompleted = index === 0 || (previousCourse?.isCompleted ?? false);
       const isLocked = !isPreviousCompleted && !step.isCompleted && !step.isStarted;
@@ -94,153 +88,187 @@ export const CareerProgressChart = ({
         foundActive = true;
       }
 
-      // Calculate positions on the chart
+      // Calculate course segment positions
       const startHours = cumulativeHours;
       const startReadiness = cumulativeReadiness;
       
+      // Learning end point (after diagonal climb)
+      const learningEndHours = startHours + learningHours;
+      const learningEndReadiness = startReadiness + contribution;
+      
+      // Validation end point (flat line after learning)
+      const validationEndHours = startHours + hours;
+      const validationEndReadiness = learningEndReadiness; // Same Y - flat line
+      
       // Progress within this course
       const courseProgress = step.progress / 100;
-      const earnedReadiness = contribution * courseProgress;
-      const earnedHours = hours * courseProgress;
+      let currentHoursInCourse = 0;
+      let currentReadinessInCourse = 0;
+      let isInValidation = false;
       
-      cumulativeHours += step.isCompleted ? hours : earnedHours;
-      cumulativeReadiness += step.isCompleted ? contribution : earnedReadiness;
-
-      // Validation phase detection (if progress > 80%, assume in validation)
-      const isInValidation = step.isStarted && !step.isCompleted && step.progress > 80;
-
-      return {
+      if (step.isCompleted) {
+        currentHoursInCourse = hours;
+        currentReadinessInCourse = contribution;
+      } else if (step.isStarted || isActive) {
+        // If progress > 80%, we're in validation phase
+        if (courseProgress > 0.8) {
+          isInValidation = true;
+          currentHoursInCourse = learningHours + (validationHours * ((courseProgress - 0.8) / 0.2));
+          currentReadinessInCourse = contribution; // Already at max for this course
+        } else {
+          // Still in learning phase
+          currentHoursInCourse = learningHours * (courseProgress / 0.8);
+          currentReadinessInCourse = contribution * (courseProgress / 0.8);
+        }
+      }
+      
+      const result = {
         ...step,
         contribution,
         hours,
+        learningHours,
+        validationHours,
         startHours,
         startReadiness,
-        currentHours: startHours + earnedHours,
-        currentReadiness: startReadiness + earnedReadiness,
-        endHours: startHours + hours,
-        endReadiness: startReadiness + contribution,
+        learningEndHours,
+        learningEndReadiness,
+        validationEndHours,
+        validationEndReadiness,
+        currentHours: startHours + currentHoursInCourse,
+        currentReadiness: startReadiness + currentReadinessInCourse,
         isLocked,
         isActive,
         isInValidation,
       };
+      
+      cumulativeHours += hours;
+      cumulativeReadiness += contribution;
+      
+      return result;
     });
 
-    return { 
-      courses, 
-      totalHours: totalLearningHours, 
-      currentHours: cumulativeHours,
-      currentReadiness: cumulativeReadiness,
-      activeIndex 
-    };
-  }, [journeySteps, totalLearningHours]);
+    // Generate SVG paths
+    const toX = (h: number) => (h / totalLearningHours) * 100;
+    const toY = (r: number) => 100 - r;
 
-  // Check for completion celebrations
-  useEffect(() => {
-    const recentlyCompleted = chartData.courses.find(c => 
-      c.isCompleted && !celebrationCourse
-    );
-    if (recentlyCompleted && readinessPercent === 100) {
-      setShowCelebration(true);
-      setCelebrationCourse("final");
-    }
-  }, [chartData.courses, readinessPercent, celebrationCourse]);
-
-  const chartHeight = 450;
-  const chartPadding = { top: 60, right: 100, bottom: 80, left: 80 };
-
-  // Convert data coordinates to chart coordinates
-  const toChartX = (hours: number) => (hours / totalLearningHours) * 100;
-  const toChartY = (readiness: number) => 100 - readiness; // Invert Y axis
-
-  // Generate diagonal step path (like the reference image)
-  // Pattern: diagonal up -> short horizontal -> diagonal up -> etc.
-  const generateStepPath = () => {
-    if (chartData.courses.length === 0) return "";
-    
-    // Start at origin
-    let pathD = "M 0,100";
-    
-    chartData.courses.forEach((course, index) => {
-      const endX = toChartX(course.endHours);
-      const endY = toChartY(course.endReadiness);
-      
-      // Diagonal line to course completion point
-      pathD += ` L ${endX},${endY}`;
-      
-      // Add small horizontal segment between courses (except last)
-      if (index < chartData.courses.length - 1) {
-        const nextCourse = chartData.courses[index + 1];
-        const horizontalEndX = toChartX(nextCourse.startHours);
-        pathD += ` L ${horizontalEndX},${endY}`;
-      }
+    // Complete path (full journey - dashed for future)
+    let completePathPoints = [`M 0 100`]; // Start at origin
+    courses.forEach(course => {
+      // Diagonal up (learning phase)
+      completePathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
+      // Horizontal (validation phase)
+      completePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
     });
-    
-    return pathD;
-  };
+    const completePath = completePathPoints.join(' ');
 
-  // Generate progress path (solid line showing current progress)
-  const generateProgressPath = () => {
-    if (chartData.courses.length === 0) return "";
+    // Progress path (what the learner has completed)
+    let progressPathPoints = [`M 0 100`];
+    let lastProgressX = 0;
+    let lastProgressY = 100;
     
-    let pathD = "M 0,100";
-    
-    for (let i = 0; i < chartData.courses.length; i++) {
-      const course = chartData.courses[i];
-      
+    for (const course of courses) {
       if (course.isCompleted) {
-        // Full diagonal to completion
-        const endX = toChartX(course.endHours);
-        const endY = toChartY(course.endReadiness);
-        pathD += ` L ${endX},${endY}`;
-        
-        // Horizontal to next course start
-        if (i < chartData.courses.length - 1) {
-          const nextCourse = chartData.courses[i + 1];
-          pathD += ` L ${toChartX(nextCourse.startHours)},${endY}`;
-        }
+        // Full course completed
+        progressPathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
+        progressPathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+        lastProgressX = toX(course.validationEndHours);
+        lastProgressY = toY(course.validationEndReadiness);
       } else if (course.isActive || course.isStarted) {
-        // Partial diagonal for in-progress course
-        const currentX = toChartX(course.currentHours);
-        const currentY = toChartY(course.currentReadiness);
-        pathD += ` L ${currentX},${currentY}`;
+        // Partial progress
+        if (course.isInValidation) {
+          // Completed learning, partial validation
+          progressPathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
+          progressPathPoints.push(`L ${toX(course.currentHours)} ${toY(course.currentReadiness)}`);
+        } else {
+          // Still in learning phase
+          progressPathPoints.push(`L ${toX(course.currentHours)} ${toY(course.currentReadiness)}`);
+        }
+        lastProgressX = toX(course.currentHours);
+        lastProgressY = toY(course.currentReadiness);
         break;
       } else {
-        // Stop at locked courses
         break;
       }
     }
-    
-    return pathD;
-  };
+    const progressPath = progressPathPoints.join(' ');
 
-  // Get milestone positions along the path
-  const getMilestonePosition = (percent: number) => {
-    // Find which course this milestone falls into
-    let cumulativeReadiness = 0;
-    let cumulativeHours = 0;
+    // Future path (remaining journey - will be shown as dashed)
+    let futurePathPoints: string[] = [];
+    let startedFuture = false;
     
-    for (const course of chartData.courses) {
-      const courseEndReadiness = cumulativeReadiness + course.contribution;
+    for (let i = 0; i < courses.length; i++) {
+      const course = courses[i];
       
-      if (percent <= courseEndReadiness) {
-        // Milestone is within this course
-        const progressWithinCourse = (percent - cumulativeReadiness) / course.contribution;
-        const hoursForMilestone = cumulativeHours + (course.hours * progressWithinCourse);
-        return { x: toChartX(hoursForMilestone), y: toChartY(percent) };
+      if (!course.isCompleted && !course.isActive && !course.isStarted) {
+        if (!startedFuture) {
+          // Start from the last progress point
+          const prevCourse = courses[i - 1];
+          if (prevCourse) {
+            futurePathPoints.push(`M ${toX(prevCourse.validationEndHours)} ${toY(prevCourse.validationEndReadiness)}`);
+          } else {
+            futurePathPoints.push(`M 0 100`);
+          }
+          startedFuture = true;
+        }
+        futurePathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
+        futurePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+      } else if (course.isActive || course.isStarted) {
+        // Continue from current progress point
+        futurePathPoints.push(`M ${toX(course.currentHours)} ${toY(course.currentReadiness)}`);
+        if (course.isInValidation) {
+          futurePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+        } else {
+          futurePathPoints.push(`L ${toX(course.learningEndHours)} ${toY(course.learningEndReadiness)}`);
+          futurePathPoints.push(`L ${toX(course.validationEndHours)} ${toY(course.validationEndReadiness)}`);
+        }
+        startedFuture = true;
       }
-      
-      cumulativeReadiness = courseEndReadiness;
-      cumulativeHours += course.hours;
     }
-    
-    // 100% milestone
-    return { x: 100, y: 0 };
-  };
+    const futurePath = futurePathPoints.join(' ');
 
-  const activeCourse = chartData.courses[chartData.activeIndex];
+    // Calculate milestones (attached to the line)
+    const milestones = [
+      { x: 0, y: 100, label: "Started", emoji: "🎯", reached: true },
+      { 
+        x: toX(60), 
+        y: toY(50), 
+        label: "Halfway", 
+        emoji: "🚀", 
+        reached: readinessPercent >= 50 
+      },
+      { 
+        x: 100, 
+        y: 0, 
+        label: "Career Ready", 
+        emoji: "🏆", 
+        reached: readinessPercent >= 100 
+      },
+    ];
+
+    return {
+      completePath,
+      progressPath,
+      futurePath,
+      milestones,
+      courses,
+      currentX: lastProgressX,
+      currentY: lastProgressY,
+      activeIndex
+    };
+  }, [journeySteps, totalLearningHours, readinessPercent]);
+
+  // Check for completion celebration
+  useEffect(() => {
+    if (readinessPercent === 100) {
+      setShowCelebration(true);
+    }
+  }, [readinessPercent]);
+
+  const chartHeight = 400;
+  const chartPadding = { top: 50, right: 60, bottom: 70, left: 70 };
 
   return (
-    <div className="relative bg-gradient-to-br from-card via-card to-muted/20 rounded-2xl border border-border p-6 overflow-hidden">
+    <div className="relative bg-card rounded-2xl border border-border overflow-hidden">
       {/* Celebration overlay */}
       <AnimatePresence>
         {showCelebration && (
@@ -254,405 +282,352 @@ export const CareerProgressChart = ({
             <motion.div
               initial={{ scale: 0.5, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.5, y: 20 }}
               className="text-center"
             >
-              <motion.div
-                animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
-                transition={{ duration: 0.5, repeat: 3 }}
-              >
+              <motion.div animate={{ rotate: [0, -10, 10, -10, 10, 0] }} transition={{ duration: 0.5, repeat: 3 }}>
                 <Trophy className="h-24 w-24 mx-auto text-amber-500 drop-shadow-lg" />
               </motion.div>
               <h2 className="text-3xl font-bold mt-4 bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                 100% Career Readiness Achieved!
               </h2>
-              <p className="text-muted-foreground mt-2">
-                You've completed all courses in the {careerName} path
-              </p>
-              <div className="flex gap-4 justify-center mt-6">
-                <Badge className="px-4 py-2 text-lg bg-amber-500/20 text-amber-600 border-amber-500/30">
-                  🏆 Career Champion
-                </Badge>
-                <Badge className="px-4 py-2 text-lg bg-primary/20 text-primary border-primary/30">
-                  🛡️ Career Shield Earned
-                </Badge>
-              </div>
-              <Button 
-                variant="outline" 
-                className="mt-6"
-                onClick={() => setShowCelebration(false)}
-              >
-                Continue Learning
-              </Button>
+              <p className="text-muted-foreground mt-2">You've completed all courses in the {careerName} path</p>
+              <Button variant="outline" className="mt-6" onClick={() => setShowCelebration(false)}>Continue</Button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 border-b border-border">
         <div>
           <h3 className="text-xl font-bold flex items-center gap-2">
-            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Career Chart
-            </span>
-            <Badge variant="outline" className="font-normal">
-              {careerName}
-            </Badge>
+            <span className="text-foreground">Career Chart</span>
+            <Badge variant="outline" className="font-normal">{careerName}</Badge>
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
             Sequential skill mastery — strong foundations unlock future success
           </p>
         </div>
         
-        {/* Overall progress indicator */}
         <div className="flex items-center gap-4">
           <div className="text-right">
             <div className="text-2xl font-bold text-primary">{Math.round(readinessPercent)}%</div>
             <div className="text-xs text-muted-foreground">Career Readiness</div>
           </div>
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-primary/30">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/30">
             {readinessPercent >= 100 ? (
-              <Trophy className="h-8 w-8 text-amber-500" />
+              <Trophy className="h-7 w-7 text-amber-500" />
             ) : readinessPercent >= 50 ? (
-              <Rocket className="h-8 w-8 text-primary" />
+              <Rocket className="h-7 w-7 text-primary" />
             ) : (
-              <Target className="h-8 w-8 text-muted-foreground" />
+              <Target className="h-7 w-7 text-muted-foreground" />
             )}
           </div>
         </div>
       </div>
 
       {/* Chart Container */}
-      <div 
-        className="relative bg-background/50 rounded-xl border border-border/50"
-        style={{ height: `${chartHeight}px` }}
-      >
-        {/* Y-Axis Label (Career Readiness) */}
+      <div className="p-6">
         <div 
-          className="absolute text-xs font-medium text-muted-foreground"
-          style={{ 
-            left: 8, 
-            top: '50%', 
-            transform: 'rotate(-90deg) translateX(50%)',
-            transformOrigin: 'left center',
-            whiteSpace: 'nowrap'
-          }}
+          className="relative bg-muted/30 rounded-xl"
+          style={{ height: `${chartHeight}px` }}
         >
-          % Career Readiness
-        </div>
-
-        {/* Y-Axis Ticks */}
-        <div 
-          className="absolute flex flex-col justify-between text-xs text-muted-foreground"
-          style={{ 
-            left: chartPadding.left - 30, 
-            top: chartPadding.top, 
-            bottom: chartPadding.bottom,
-            width: 25,
-            textAlign: 'right'
-          }}
-        >
-          <span>100%</span>
-          <span>75%</span>
-          <span>50%</span>
-          <span>25%</span>
-          <span>0%</span>
-        </div>
-
-        {/* X-Axis Label (Learning Hours) */}
-        <div 
-          className="absolute text-xs font-medium text-muted-foreground text-center"
-          style={{ 
-            bottom: 8, 
-            left: chartPadding.left, 
-            right: chartPadding.right 
-          }}
-        >
-          Learning Hours
-        </div>
-
-        {/* X-Axis Ticks */}
-        <div 
-          className="absolute flex justify-between text-xs text-muted-foreground font-medium"
-          style={{ 
-            left: chartPadding.left, 
-            right: chartPadding.right, 
-            bottom: chartPadding.bottom - 20 
-          }}
-        >
-          <span>0h</span>
-          <span>{Math.round(totalLearningHours * 0.25)}h</span>
-          <span>{Math.round(totalLearningHours * 0.5)}h</span>
-          <span>{Math.round(totalLearningHours * 0.75)}h</span>
-          <span>{totalLearningHours}h</span>
-        </div>
-
-        {/* Chart Area */}
-        <div 
-          className="absolute overflow-visible"
-          style={{ 
-            left: chartPadding.left, 
-            right: chartPadding.right, 
-            top: chartPadding.top, 
-            bottom: chartPadding.bottom 
-          }}
-        >
-          {/* Grid lines - dashed horizontal lines like reference */}
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-            {/* Horizontal grid lines - dashed */}
-            {[0, 25, 50, 75, 100].map((percent) => (
-              <line
-                key={`h-${percent}`}
-                x1="0%"
-                y1={`${100 - percent}%`}
-                x2="100%"
-                y2={`${100 - percent}%`}
-                stroke="currentColor"
-                strokeWidth="1"
-                strokeDasharray="4,4"
-                className="text-muted-foreground/20"
-              />
-            ))}
-          </svg>
-
-          {/* Origin point with "Start from 0" label */}
+          {/* Y-Axis Label */}
           <div 
-            className="absolute z-20"
-            style={{ left: 0, bottom: 0, transform: 'translate(-50%, 50%)' }}
+            className="absolute text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            style={{ 
+              left: 8, 
+              top: '50%', 
+              transform: 'rotate(-90deg) translateX(50%)',
+              transformOrigin: 'left center',
+              whiteSpace: 'nowrap'
+            }}
           >
-            <div className="flex flex-col items-center">
-              <span className="text-xs font-bold text-foreground mb-1 whitespace-nowrap">Start from 0</span>
-              <div className="w-5 h-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              </div>
-              <span className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                🎯 STARTED
-              </span>
-            </div>
+            % Readiness
           </div>
 
-          {/* SVG for paths */}
-          <svg className="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="lineGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" />
-                <stop offset="100%" stopColor="hsl(142 76% 36%)" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
+          {/* Y-Axis Ticks */}
+          <div 
+            className="absolute flex flex-col justify-between text-xs font-medium text-muted-foreground"
+            style={{ 
+              left: chartPadding.left - 35, 
+              top: chartPadding.top, 
+              bottom: chartPadding.bottom,
+              width: 30,
+              textAlign: 'right'
+            }}
+          >
+            <span>100%</span>
+            <span>75%</span>
+            <span>50%</span>
+            <span>25%</span>
+            <span>0%</span>
+          </div>
 
-            {/* Target path (dashed) - diagonal step pattern */}
-            <path
-              d={generateStepPath()}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeDasharray="6,4"
-              className="text-muted-foreground/40"
-              vectorEffect="non-scaling-stroke"
-            />
+          {/* X-Axis Label */}
+          <div 
+            className="absolute text-xs font-semibold text-muted-foreground text-center uppercase tracking-wider"
+            style={{ 
+              bottom: 12, 
+              left: chartPadding.left, 
+              right: chartPadding.right 
+            }}
+          >
+            Learning Hours
+          </div>
 
-            {/* Progress path (solid) - diagonal upward */}
-            <motion.path
-              d={generateProgressPath()}
-              fill="none"
-              stroke="url(#lineGradient)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              filter="url(#glow)"
-              vectorEffect="non-scaling-stroke"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-            />
-          </svg>
+          {/* X-Axis Ticks */}
+          <div 
+            className="absolute flex justify-between text-xs font-medium text-muted-foreground"
+            style={{ 
+              left: chartPadding.left, 
+              right: chartPadding.right, 
+              bottom: chartPadding.bottom - 25 
+            }}
+          >
+            <span>0h</span>
+            <span>30h</span>
+            <span>60h</span>
+            <span>90h</span>
+            <span>120h</span>
+          </div>
 
-          {/* Course nodes */}
-          {chartData.courses.map((course, index) => {
-            const x = toChartX(course.isCompleted ? course.endHours : course.currentHours);
-            const y = toChartY(course.isCompleted ? course.endReadiness : course.currentReadiness);
-            
-            return (
+          {/* Chart Area */}
+          <div 
+            className="absolute"
+            style={{ 
+              left: chartPadding.left, 
+              right: chartPadding.right, 
+              top: chartPadding.top, 
+              bottom: chartPadding.bottom 
+            }}
+          >
+            {/* Grid lines - horizontal dashed */}
+            <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+              {[0, 25, 50, 75, 100].map((percent) => (
+                <line
+                  key={`h-${percent}`}
+                  x1="0%"
+                  y1={`${100 - percent}%`}
+                  x2="100%"
+                  y2={`${100 - percent}%`}
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  strokeDasharray="4,4"
+                  className="text-muted-foreground/15"
+                />
+              ))}
+            </svg>
+
+            {/* Main SVG for the career line */}
+            <svg 
+              className="absolute inset-0 w-full h-full overflow-visible" 
+              viewBox="0 0 100 100" 
+              preserveAspectRatio="none"
+            >
+              <defs>
+                {/* Gradient for progress line */}
+                <linearGradient id="progressGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="100%" stopColor="hsl(142 76% 46%)" />
+                </linearGradient>
+                {/* Glow effect */}
+                <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur"/>
+                  <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* Future path (dashed, muted) */}
+              {pathData.futurePath && (
+                <path
+                  d={pathData.futurePath}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="0.5"
+                  strokeDasharray="2,2"
+                  className="text-muted-foreground/30"
+                  vectorEffect="non-scaling-stroke"
+                />
+              )}
+
+              {/* Progress path (solid, gradient) - THE HERO LINE */}
+              <motion.path
+                d={pathData.progressPath}
+                fill="none"
+                stroke="url(#progressGradient)"
+                strokeWidth="1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#lineGlow)"
+                vectorEffect="non-scaling-stroke"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 2, ease: "easeOut" }}
+              />
+            </svg>
+
+            {/* Origin point - Start from 0 */}
+            <div 
+              className="absolute z-30"
+              style={{ left: 0, bottom: 0, transform: 'translate(-50%, 50%)' }}
+            >
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-foreground mb-1 whitespace-nowrap">Start from 0</span>
+                <motion.div 
+                  className="w-5 h-5 rounded-full bg-primary border-2 border-primary-foreground shadow-lg flex items-center justify-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                </motion.div>
+                <span className="text-[10px] text-amber-500 font-medium mt-1 flex items-center gap-0.5">
+                  🎯 <span className="uppercase tracking-wide">Started</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Current progress indicator (pulsing dot) */}
+            {pathData.currentX > 0 && pathData.currentY < 100 && (
               <motion.div
-                key={course.id}
-                className="absolute z-30"
+                className="absolute z-40"
                 style={{ 
-                  left: `${x}%`, 
-                  top: `${y}%`, 
-                  transform: 'translate(-50%, -50%)' 
+                  left: `${pathData.currentX}%`, 
+                  top: `${pathData.currentY}%`,
+                  transform: 'translate(-50%, -50%)'
                 }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.5 + index * 0.1, duration: 0.3 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 1.5 }}
               >
-                <div
-                  onClick={() => !course.isLocked && navigate(`/course/${course.slug}`)}
-                  className={cn(
-                    "relative group cursor-pointer transition-all duration-200",
-                    course.isLocked && "cursor-not-allowed"
-                  )}
+                <motion.div
+                  className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg"
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              </motion.div>
+            )}
+
+            {/* Course completion markers (small dots on the line) */}
+            {pathData.courses.map((course, index) => {
+              if (!course.isCompleted) return null;
+              
+              const x = (course.validationEndHours / totalLearningHours) * 100;
+              const y = 100 - course.validationEndReadiness;
+              
+              return (
+                <motion.div
+                  key={course.id}
+                  className="absolute z-20 group"
+                  style={{ 
+                    left: `${x}%`, 
+                    top: `${y}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.8 + index * 0.2 }}
                 >
-                {/* Node circle - smaller like reference */}
-                <div 
-                  className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center border-2 shadow-md transition-transform",
-                    course.isCompleted && "bg-muted/50 border-muted-foreground/50",
-                    course.isActive && "bg-primary/20 border-primary ring-4 ring-primary/20",
-                    course.isLocked && "bg-muted/30 border-muted-foreground/20",
-                    !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted/50 border-muted-foreground/30",
-                    !course.isLocked && "hover:scale-125"
-                  )}
-                >
+                  <div className="w-3 h-3 rounded-full bg-green-500 border border-green-400 shadow-sm" />
+                  {/* Tooltip */}
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-popover border border-border shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs z-50">
+                    <span className="font-medium">{course.name}</span>
+                    <span className="text-green-500 ml-1">✓ {Math.round(course.contribution)}%</span>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            {/* Halfway milestone (attached to line at ~60h, 50%) */}
+            <motion.div
+              className="absolute z-20"
+              style={{ 
+                left: '50%', 
+                top: '50%',
+                transform: 'translate(-50%, -50%)'
+              }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 1.2 }}
+            >
+              <div className="flex flex-col items-center">
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  readinessPercent >= 50 
+                    ? "bg-primary/20 border-primary" 
+                    : "bg-muted/50 border-muted-foreground/30"
+                )}>
                   <div className={cn(
-                    "w-2 h-2 rounded-full",
-                    course.isCompleted && "bg-muted-foreground/50",
-                    course.isActive && "bg-primary",
-                    course.isLocked && "bg-muted-foreground/30",
-                    !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted-foreground/50"
+                    "w-1.5 h-1.5 rounded-full",
+                    readinessPercent >= 50 ? "bg-primary" : "bg-muted-foreground/40"
                   )} />
                 </div>
+                <span className={cn(
+                  "text-[10px] font-medium mt-1 flex items-center gap-0.5",
+                  readinessPercent >= 50 ? "text-primary" : "text-muted-foreground"
+                )}>
+                  🚀 <span className="uppercase tracking-wide">Halfway</span>
+                </span>
+              </div>
+            </motion.div>
 
-                  {/* Active course indicator */}
-                  {course.isActive && (
-                    <motion.div
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
-                    </motion.div>
-                  )}
-
-                  {/* Tooltip on hover */}
-                  <div className={cn(
-                    "absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 rounded-lg",
-                    "bg-popover border border-border shadow-lg",
-                    "opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none",
-                    "min-w-[180px] z-50"
-                  )}>
-                    <div className="font-medium text-sm">{course.name}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {course.isLocked ? (
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <Lock className="h-3 w-3" />
-                          Complete previous course first
-                        </span>
-                      ) : course.isCompleted ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle2 className="h-3 w-3" />
-                          {Math.round(course.contribution)}% Career Readiness
-                        </span>
-                      ) : (
-                        <>
-                          <Progress value={course.progress} className="h-1.5 mt-1" />
-                          <span className="block mt-1">{course.completedLessons}/{course.lessonCount} lessons</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* Milestone markers positioned along the path */}
-          {milestones.filter(m => m.percent > 0).map((milestone) => {
-            const isReached = readinessPercent >= milestone.percent;
-            const pos = getMilestonePosition(milestone.percent);
-            
-            return (
-              <motion.div
-                key={milestone.percent}
-                className="absolute z-20"
-                style={{ 
-                  left: `${pos.x}%`, 
-                  top: `${pos.y}%`, 
-                  transform: 'translate(-50%, -50%)' 
-                }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 1.2 + milestone.percent * 0.005 }}
-              >
-                <div className="flex flex-col items-center">
-                  {/* Milestone circle */}
-                  <div className={cn(
-                    "w-6 h-6 rounded-full border-2 flex items-center justify-center",
-                    isReached 
-                      ? "bg-primary/20 border-primary" 
-                      : "bg-muted/50 border-muted-foreground/30"
-                  )}>
-                    <div className={cn(
-                      "w-2 h-2 rounded-full",
-                      isReached ? "bg-primary" : "bg-muted-foreground/50"
-                    )} />
-                  </div>
-                  {/* Milestone label */}
-                  <div className={cn(
-                    "mt-2 flex items-center gap-1 text-[10px] font-medium whitespace-nowrap",
-                    isReached ? "text-primary" : "text-muted-foreground"
-                  )}>
-                    <span>{milestone.emoji}</span>
-                    <span className="uppercase tracking-wide">{milestone.label}</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* Career Ready marker at end */}
-          <div 
-            className="absolute z-20"
-            style={{ right: 0, top: 0, transform: 'translate(50%, -50%)' }}
-          >
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-8 h-8 rounded-full border-2 flex items-center justify-center",
-                readinessPercent >= 100 
-                  ? "bg-amber-500/20 border-amber-500" 
-                  : "bg-muted/50 border-muted-foreground/30"
-              )}>
+            {/* Career Ready milestone (at 120h, 100%) */}
+            <motion.div
+              className="absolute z-20"
+              style={{ right: 0, top: 0, transform: 'translate(50%, -50%)' }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 1.4 }}
+            >
+              <div className="flex flex-col items-center">
                 <div className={cn(
-                  "w-3 h-3 rounded-full",
-                  readinessPercent >= 100 ? "bg-amber-500" : "bg-muted-foreground/50"
-                )} />
+                  "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                  readinessPercent >= 100 
+                    ? "bg-amber-500/20 border-amber-500" 
+                    : "bg-muted/50 border-muted-foreground/30"
+                )}>
+                  {readinessPercent >= 100 ? (
+                    <Trophy className="h-3 w-3 text-amber-500" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
+                  )}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium mt-1 flex items-center gap-0.5 whitespace-nowrap",
+                  readinessPercent >= 100 ? "text-amber-500" : "text-muted-foreground"
+                )}>
+                  🏆 <span className="uppercase tracking-wide">Career Ready</span>
+                </span>
               </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-amber-500">
-                <Trophy className="h-4 w-4" />
-                <span className="uppercase tracking-wide">Career Ready</span>
-              </div>
-            </div>
+            </motion.div>
           </div>
-
         </div>
       </div>
 
-      {/* Course List (Sequential) */}
-      <div className="mt-6 space-y-2">
-        <h4 className="text-sm font-medium text-muted-foreground mb-3">Course Sequence</h4>
+      {/* Course Sequence List */}
+      <div className="px-6 pb-6">
+        <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Course Sequence</h4>
         <div className="grid gap-2">
-          {chartData.courses.map((course, index) => (
+          {pathData.courses.map((course, index) => (
             <motion.div
               key={course.id}
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.1 * index }}
+              transition={{ delay: 0.05 * index }}
+              onClick={() => !course.isLocked && navigate(`/course/${course.slug}`)}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-lg border transition-all",
+                "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
                 course.isActive && "bg-primary/5 border-primary/30 ring-1 ring-primary/20",
                 course.isCompleted && "bg-green-500/5 border-green-500/30",
-                course.isLocked && "bg-muted/50 border-border opacity-60",
-                !course.isCompleted && !course.isActive && !course.isLocked && "bg-card border-border"
+                course.isLocked && "bg-muted/30 border-border/50 opacity-50 cursor-not-allowed",
+                !course.isCompleted && !course.isActive && !course.isLocked && "bg-card border-border hover:border-primary/30"
               )}
             >
-              {/* Order number */}
+              {/* Status indicator */}
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
                 course.isCompleted && "bg-green-500 text-white",
@@ -660,58 +635,46 @@ export const CareerProgressChart = ({
                 course.isLocked && "bg-muted text-muted-foreground",
                 !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted text-muted-foreground"
               )}>
-                {course.isCompleted ? <CheckCircle2 className="h-4 w-4" /> : course.isLocked ? <Lock className="h-3 w-3" /> : index + 1}
+                {course.isCompleted ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : course.isLocked ? (
+                  <Lock className="h-3 w-3" />
+                ) : course.isActive ? (
+                  <Play className="h-3 w-3 fill-current" />
+                ) : (
+                  index + 1
+                )}
               </div>
 
               {/* Course info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "font-medium truncate",
-                    course.isLocked && "text-muted-foreground"
-                  )}>
+                  <span className={cn("font-medium truncate", course.isLocked && "text-muted-foreground")}>
                     {course.name}
                   </span>
                   {course.isActive && (
-                    <Badge variant="default" className="text-[10px] px-1.5 py-0">
-                      Active
-                    </Badge>
+                    <Badge variant="default" className="text-[10px] px-1.5 py-0">Active</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                   <span>{Math.round(course.contribution)}% contribution</span>
                   <span>{Math.round(course.hours)}h</span>
-                  {!course.isLocked && (
-                    <span>{course.completedLessons}/{course.lessonCount} lessons</span>
-                  )}
                 </div>
               </div>
 
               {/* Progress/Status */}
               <div className="shrink-0">
                 {course.isCompleted ? (
-                  <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
-                    Completed
-                  </Badge>
+                  <Badge className="bg-green-500/20 text-green-600 border-green-500/30">✓ Completed</Badge>
                 ) : course.isActive ? (
                   <div className="text-right">
                     <div className="text-sm font-medium text-primary">{course.progress}%</div>
-                    <Progress value={course.progress} className="h-1 w-20" />
+                    <Progress value={course.progress} className="h-1 w-16" />
                   </div>
                 ) : course.isLocked ? (
-                  <Badge variant="outline" className="text-muted-foreground">
-                    <Lock className="h-3 w-3 mr-1" />
-                    Locked
-                  </Badge>
+                  <Lock className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => navigate(`/course/${course.slug}`)}
-                  >
-                    Start
-                    <ChevronRight className="h-3 w-3 ml-1" />
-                  </Button>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             </motion.div>
@@ -720,32 +683,18 @@ export const CareerProgressChart = ({
       </div>
 
       {/* Legend */}
-      <div className="mt-6 pt-4 border-t border-border flex flex-wrap gap-4 text-xs">
+      <div className="px-6 pb-6 pt-2 border-t border-border flex flex-wrap gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-            <CheckCircle2 className="h-2.5 w-2.5 text-white" />
-          </div>
-          <span className="text-muted-foreground">Completed</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-            <Play className="h-2 w-2 text-primary-foreground fill-current" />
-          </div>
-          <span className="text-muted-foreground">Active Course</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-muted border border-muted-foreground/30 flex items-center justify-center">
-            <Lock className="h-2 w-2 text-muted-foreground" />
-          </div>
-          <span className="text-muted-foreground">Locked</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-0.5 bg-border" style={{ borderTop: '2px dashed' }} />
-          <span className="text-muted-foreground">Target Path</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-0.5 bg-gradient-to-r from-primary to-green-500 rounded" />
+          <div className="w-6 h-0.5 bg-gradient-to-r from-primary to-green-500 rounded" />
           <span className="text-muted-foreground">Your Progress</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-6 h-0.5 border-t-2 border-dashed border-muted-foreground/30" />
+          <span className="text-muted-foreground">Remaining Path</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-green-500" />
+          <span className="text-muted-foreground">Completed Course</span>
         </div>
       </div>
     </div>
