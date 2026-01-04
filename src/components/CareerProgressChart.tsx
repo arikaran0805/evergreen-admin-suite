@@ -54,6 +54,11 @@ interface TooltipData {
   courseName: string;
   courseSlug: string;
   phase: 'learning' | 'validation';
+  completedLessons: number;
+  lessonCount: number;
+  nextLessonNumber: number;
+  isCompleted: boolean;
+  progress: number;
 }
 
 export const CareerProgressChart = ({ 
@@ -341,11 +346,19 @@ export const CareerProgressChart = ({
     let courseName = "";
     let courseSlug = "";
     let phase: 'learning' | 'validation' = 'learning';
+    let completedLessons = 0;
+    let lessonCount = 0;
+    let isCompleted = false;
+    let progress = 0;
     
     for (const course of pathData.courses) {
       if (hours <= course.validationEndHours) {
         courseName = course.name;
         courseSlug = course.slug;
+        completedLessons = course.completedLessons;
+        lessonCount = course.lessonCount;
+        isCompleted = course.isCompleted;
+        progress = course.progress;
         
         if (hours <= course.learningEndHours) {
           // In learning phase - diagonal part
@@ -362,6 +375,10 @@ export const CareerProgressChart = ({
       readiness = course.validationEndReadiness;
       courseSlug = course.slug;
       courseName = course.name;
+      completedLessons = course.completedLessons;
+      lessonCount = course.lessonCount;
+      isCompleted = course.isCompleted;
+      progress = course.progress;
     }
     
     // Calculate Y position on the line
@@ -371,6 +388,7 @@ export const CareerProgressChart = ({
     // Only show tooltip if mouse is near the line (within 30px)
     const distanceToLine = Math.abs(mouseY - lineY);
     if (distanceToLine < 30) {
+      const nextLessonNumber = Math.min(completedLessons + 1, lessonCount);
       setTooltip({
         x: mouseX,
         y: lineY,
@@ -378,7 +396,12 @@ export const CareerProgressChart = ({
         readiness: Math.round(readiness * 10) / 10,
         courseName,
         courseSlug,
-        phase
+        phase,
+        completedLessons,
+        lessonCount,
+        nextLessonNumber,
+        isCompleted,
+        progress
       });
     } else {
       setTooltip(null);
@@ -747,14 +770,15 @@ export const CareerProgressChart = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute z-50 pointer-events-none"
+                  className="absolute z-50 pointer-events-auto cursor-pointer"
                   style={{
                     left: tooltip.x,
                     top: tooltip.y,
                     transform: 'translate(-50%, -120%)'
                   }}
+                  onClick={() => navigate(`/courses/${tooltip.courseSlug}`)}
                 >
-                  <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2 text-sm">
+                  <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2.5 text-sm hover:border-primary/50 transition-colors">
                     <div className="font-semibold text-foreground flex items-center gap-1.5">
                       {tooltip.courseName}
                       <ChevronRight className="h-3 w-3 text-primary" />
@@ -767,9 +791,39 @@ export const CareerProgressChart = ({
                     <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
                       {tooltip.phase === 'learning' ? '📚 Learning' : '✓ Validation'}
                     </div>
-                    <div className="text-[10px] text-primary/70 mt-1 font-medium">
-                      Click to view course
+                    
+                    {/* Next Lesson Info */}
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      {tooltip.isCompleted ? (
+                        <div className="flex items-center gap-1.5 text-green-500">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span className="text-xs font-medium">Course Completed</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 text-primary">
+                            <Play className="h-3.5 w-3.5" />
+                            <span className="text-xs font-medium">
+                              Next: Lesson {tooltip.nextLessonNumber}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            {tooltip.completedLessons}/{tooltip.lessonCount}
+                          </span>
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* Progress bar */}
+                    <div className="mt-1.5">
+                      <Progress value={tooltip.progress} className="h-1" />
+                    </div>
+                    
+                    <div className="text-[10px] text-primary mt-2 font-medium flex items-center gap-1">
+                      <span>Click to continue</span>
+                      <ChevronRight className="h-3 w-3" />
+                    </div>
+                    
                     {/* Arrow */}
                     <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-border" />
                     <div className="absolute left-1/2 bottom-0.5 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-popover" />
