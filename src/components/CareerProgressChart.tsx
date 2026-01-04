@@ -635,22 +635,47 @@ export const CareerProgressChart = ({
                 vectorEffect="non-scaling-stroke"
               />
 
-              {/* Future path (solid, muted) */}
+              {/* Future path (solid, muted) with pulse animation */}
               {pathData.futurePath && (
-                <motion.path
-                  key={`future-${animationKey}`}
-                  d={pathData.futurePath}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-muted-foreground/25"
-                  vectorEffect="non-scaling-stroke"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 2.2, duration: 0.5 }}
-                />
+                <>
+                  {/* Base future path */}
+                  <motion.path
+                    key={`future-${animationKey}`}
+                    d={pathData.futurePath}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-muted-foreground/20"
+                    vectorEffect="non-scaling-stroke"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 2.2, duration: 0.5 }}
+                  />
+                  {/* Pulsing glow overlay */}
+                  <motion.path
+                    key={`future-pulse-${animationKey}`}
+                    d={pathData.futurePath}
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                      opacity: [0, 0.15, 0.3, 0.15, 0],
+                      strokeWidth: [4, 5, 6, 5, 4]
+                    }}
+                    transition={{ 
+                      delay: 2.7,
+                      duration: 2.5,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </>
               )}
 
               {/* Progress path (solid, gradient) - THE HERO LINE with drawing animation */}
