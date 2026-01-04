@@ -13,6 +13,11 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -887,73 +892,206 @@ export const CareerProgressChart = ({
       <div className="px-6 pb-6">
         <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Course Sequence</h4>
         <div className="grid gap-2">
-          {pathData.courses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.05 * index }}
-              onClick={() => !course.isLocked && navigate(`/course/${course.slug}`)}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
-                course.isActive && "bg-primary/5 border-primary/30 ring-1 ring-primary/20",
-                course.isCompleted && "bg-green-500/5 border-green-500/30",
-                course.isLocked && "bg-muted/30 border-border/50 opacity-50 cursor-not-allowed",
-                !course.isCompleted && !course.isActive && !course.isLocked && "bg-card border-border hover:border-primary/30"
-              )}
-            >
-              {/* Status indicator */}
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-                course.isCompleted && "bg-green-500 text-white",
-                course.isActive && "bg-primary text-primary-foreground",
-                course.isLocked && "bg-muted text-muted-foreground",
-                !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted text-muted-foreground"
-              )}>
-                {course.isCompleted ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : course.isLocked ? (
-                  <Lock className="h-3 w-3" />
-                ) : course.isActive ? (
-                  <Play className="h-3 w-3 fill-current" />
-                ) : (
-                  index + 1
+          {pathData.courses.map((course, index) => {
+            const courseItem = (
+              <motion.div
+                key={course.id}
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.05 * index }}
+                onClick={() => !course.isLocked && navigate(`/course/${course.slug}`)}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
+                  course.isActive && "bg-primary/5 border-primary/30 ring-1 ring-primary/20",
+                  course.isCompleted && "bg-green-500/5 border-green-500/30",
+                  course.isLocked && "bg-muted/30 border-border/50 opacity-50 cursor-not-allowed",
+                  !course.isCompleted && !course.isActive && !course.isLocked && "bg-card border-border hover:border-primary/30"
                 )}
-              </div>
-
-              {/* Course info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className={cn("font-medium truncate", course.isLocked && "text-muted-foreground")}>
-                    {course.name}
-                  </span>
-                  {course.isActive && (
-                    <Badge variant="default" className="text-[10px] px-1.5 py-0">Active</Badge>
+              >
+                {/* Status indicator */}
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                  course.isCompleted && "bg-green-500 text-white",
+                  course.isActive && "bg-primary text-primary-foreground",
+                  course.isLocked && "bg-muted text-muted-foreground",
+                  !course.isCompleted && !course.isActive && !course.isLocked && "bg-muted text-muted-foreground"
+                )}>
+                  {course.isCompleted ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : course.isLocked ? (
+                    <Lock className="h-3 w-3" />
+                  ) : course.isActive ? (
+                    <Play className="h-3 w-3 fill-current" />
+                  ) : (
+                    index + 1
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                  <span>{Math.round(course.contribution)}% contribution</span>
-                  <span>{Math.round(course.hours)}h</span>
-                </div>
-              </div>
 
-              {/* Progress/Status */}
-              <div className="shrink-0">
-                {course.isCompleted ? (
-                  <Badge className="bg-green-500/20 text-green-600 border-green-500/30">✓ Completed</Badge>
-                ) : course.isActive ? (
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-primary">{course.progress}%</div>
-                    <Progress value={course.progress} className="h-1 w-16" />
+                {/* Course info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("font-medium truncate", course.isLocked && "text-muted-foreground")}>
+                      {course.name}
+                    </span>
+                    {course.isActive && (
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0">Active</Badge>
+                    )}
                   </div>
-                ) : course.isLocked ? (
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-            </motion.div>
-          ))}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                    <span>{Math.round(course.contribution)}% contribution</span>
+                    <span>{Math.round(course.hours)}h</span>
+                  </div>
+                </div>
+
+                {/* Progress/Status */}
+                <div className="shrink-0">
+                  {course.isCompleted ? (
+                    <Badge className="bg-green-500/20 text-green-600 border-green-500/30">✓ Completed</Badge>
+                  ) : course.isActive ? (
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-primary">{course.progress}%</div>
+                      <Progress value={course.progress} className="h-1 w-16" />
+                    </div>
+                  ) : course.isLocked ? (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </motion.div>
+            );
+
+            // Wrap locked courses in HoverCard with mini-map
+            if (course.isLocked) {
+              return (
+                <HoverCard key={course.id} openDelay={200} closeDelay={100}>
+                  <HoverCardTrigger asChild>
+                    {courseItem}
+                  </HoverCardTrigger>
+                  <HoverCardContent 
+                    side="left" 
+                    align="center"
+                    className="w-80 p-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold text-sm">Journey Overview</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Complete previous courses to unlock <span className="font-medium text-foreground">{course.name}</span>
+                      </p>
+                      
+                      {/* Mini-map SVG */}
+                      <div className="relative bg-muted/30 rounded-lg p-3">
+                        <svg 
+                          viewBox="0 0 100 60" 
+                          className="w-full h-20"
+                          preserveAspectRatio="xMidYMid meet"
+                        >
+                          <defs>
+                            <linearGradient id="miniProgressGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="hsl(var(--primary))" />
+                              <stop offset="100%" stopColor="hsl(142 76% 46%)" />
+                            </linearGradient>
+                          </defs>
+                          
+                          {/* Full path (muted) */}
+                          <path
+                            d={pathData.completePath}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-muted-foreground/20"
+                            vectorEffect="non-scaling-stroke"
+                            transform="scale(1, 0.6) translate(0, 0)"
+                          />
+                          
+                          {/* Progress path */}
+                          <path
+                            d={pathData.progressPath}
+                            fill="none"
+                            stroke="url(#miniProgressGradient)"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            vectorEffect="non-scaling-stroke"
+                            transform="scale(1, 0.6) translate(0, 0)"
+                          />
+                          
+                          {/* Current position dot */}
+                          {pathData.currentX > 0 && (
+                            <circle
+                              cx={pathData.currentX}
+                              cy={pathData.currentY * 0.6}
+                              r="3"
+                              fill="hsl(var(--primary))"
+                              stroke="hsl(var(--background))"
+                              strokeWidth="1.5"
+                            />
+                          )}
+                          
+                          {/* Highlighted locked course position */}
+                          <circle
+                            cx={(course.startHours / totalLearningHours) * 100}
+                            cy={(100 - course.startReadiness) * 0.6}
+                            r="4"
+                            fill="hsl(var(--muted-foreground))"
+                            stroke="hsl(var(--background))"
+                            strokeWidth="1.5"
+                            className="animate-pulse"
+                          />
+                          
+                          {/* Label for locked course */}
+                          <text
+                            x={(course.startHours / totalLearningHours) * 100}
+                            y={(100 - course.startReadiness) * 0.6 - 8}
+                            textAnchor="middle"
+                            className="fill-muted-foreground text-[6px] font-medium"
+                          >
+                            You are here →
+                          </text>
+                        </svg>
+                        
+                        {/* Mini legend */}
+                        <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
+                          <span>0h</span>
+                          <span className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                            <span>Current</span>
+                          </span>
+                          <span>{totalLearningHours}h</span>
+                        </div>
+                      </div>
+                      
+                      {/* Prerequisites */}
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Prerequisites: </span>
+                        {pathData.courses
+                          .filter((c, i) => i < index && !c.isCompleted)
+                          .slice(0, 2)
+                          .map((c, i, arr) => (
+                            <span key={c.id}>
+                              <span className="font-medium text-foreground">{c.name}</span>
+                              {i < arr.length - 1 && ", "}
+                            </span>
+                          ))}
+                        {pathData.courses.filter((c, i) => i < index && !c.isCompleted).length > 2 && (
+                          <span className="text-muted-foreground">
+                            {" "}+{pathData.courses.filter((c, i) => i < index && !c.isCompleted).length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              );
+            }
+            
+            return courseItem;
+          })}
         </div>
       </div>
 
