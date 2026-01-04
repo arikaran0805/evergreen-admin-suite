@@ -72,6 +72,8 @@ export const CareerProgressChart = ({
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
   const [isLineHovered, setIsLineHovered] = useState(false);
+  const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number; key: number } | null>(null);
+  const lastCompletedHoverRef = useRef<string | null>(null);
   const chartAreaRef = useRef<HTMLDivElement>(null);
 
   const handleReplayAnimation = useCallback(() => {
@@ -390,6 +392,15 @@ export const CareerProgressChart = ({
     const distanceToLine = Math.abs(mouseY - lineY);
     if (distanceToLine < 30) {
       const nextLessonNumber = Math.min(completedLessons + 1, lessonCount);
+      
+      // Trigger confetti burst when first entering a completed course section
+      if (isCompleted && lastCompletedHoverRef.current !== courseSlug) {
+        lastCompletedHoverRef.current = courseSlug;
+        setConfettiBurst({ x: mouseX, y: lineY, key: Date.now() });
+      } else if (!isCompleted) {
+        lastCompletedHoverRef.current = null;
+      }
+      
       setTooltip({
         x: mouseX,
         y: lineY,
@@ -406,11 +417,13 @@ export const CareerProgressChart = ({
       });
     } else {
       setTooltip(null);
+      lastCompletedHoverRef.current = null;
     }
   }, [pathData.courses, totalLearningHours]);
 
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);
+    lastCompletedHoverRef.current = null;
   }, []);
 
   // Handle click to navigate to course
@@ -815,6 +828,101 @@ export const CareerProgressChart = ({
                 }}
               />
             </svg>
+
+            {/* Confetti burst for completed sections */}
+            <AnimatePresence>
+              {confettiBurst && (
+                <motion.div
+                  key={confettiBurst.key}
+                  className="absolute z-30 pointer-events-none"
+                  style={{
+                    left: confettiBurst.x,
+                    top: confettiBurst.y,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  onAnimationComplete={() => setConfettiBurst(null)}
+                >
+                  {/* Confetti particles */}
+                  {[...Array(12)].map((_, i) => {
+                    const angle = (i / 12) * 360;
+                    const distance = 30 + Math.random() * 25;
+                    const size = 4 + Math.random() * 4;
+                    const colors = [
+                      'hsl(142, 76%, 46%)', // green
+                      'hsl(var(--primary))',
+                      'hsl(45, 93%, 58%)',  // gold
+                      'hsl(280, 87%, 65%)', // purple
+                      'hsl(190, 90%, 50%)', // cyan
+                    ];
+                    const color = colors[i % colors.length];
+                    
+                    return (
+                      <motion.div
+                        key={i}
+                        className="absolute rounded-full"
+                        style={{
+                          width: size,
+                          height: size,
+                          backgroundColor: color,
+                          boxShadow: `0 0 4px ${color}`,
+                        }}
+                        initial={{ 
+                          x: 0, 
+                          y: 0, 
+                          scale: 0,
+                          rotate: 0
+                        }}
+                        animate={{ 
+                          x: Math.cos(angle * Math.PI / 180) * distance,
+                          y: Math.sin(angle * Math.PI / 180) * distance - 20,
+                          scale: [0, 1.2, 0.8, 0],
+                          rotate: Math.random() * 360
+                        }}
+                        transition={{ 
+                          duration: 0.8 + Math.random() * 0.4,
+                          ease: "easeOut"
+                        }}
+                      />
+                    );
+                  })}
+                  {/* Sparkle stars */}
+                  {[...Array(6)].map((_, i) => {
+                    const angle = (i / 6) * 360 + 30;
+                    const distance = 20 + Math.random() * 15;
+                    
+                    return (
+                      <motion.div
+                        key={`star-${i}`}
+                        className="absolute text-yellow-400"
+                        style={{ fontSize: 10 + Math.random() * 6 }}
+                        initial={{ 
+                          x: 0, 
+                          y: 0, 
+                          scale: 0,
+                          opacity: 1
+                        }}
+                        animate={{ 
+                          x: Math.cos(angle * Math.PI / 180) * distance,
+                          y: Math.sin(angle * Math.PI / 180) * distance - 15,
+                          scale: [0, 1.5, 0],
+                          opacity: [1, 1, 0]
+                        }}
+                        transition={{ 
+                          duration: 0.6 + Math.random() * 0.3,
+                          ease: "easeOut",
+                          delay: Math.random() * 0.1
+                        }}
+                      >
+                        ✦
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Traveling indicator dot */}
             <AnimatePresence>
