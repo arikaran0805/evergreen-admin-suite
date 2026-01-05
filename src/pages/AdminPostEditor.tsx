@@ -858,6 +858,17 @@ const AdminPostEditor = () => {
                 }
                 placeholder="Start a conversation..."
                 codeTheme={formData.code_theme}
+                onTextSelect={(selection) => {
+                  if (!id) return; // Only allow annotations on existing posts
+                  if (!isAdmin && !isModerator) return;
+                  setSelectedText({
+                    start: selection.start,
+                    end: selection.end,
+                    text: selection.text,
+                    type: selection.type,
+                    bubbleIndex: selection.bubbleIndex,
+                  });
+                }}
               />
             )}
           </div>
