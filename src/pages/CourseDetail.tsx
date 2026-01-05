@@ -269,6 +269,7 @@ const CourseDetail = () => {
       const { data, error } = await supabase
         .from("courses")
         .select("name, slug")
+        .eq("status", "published")
         .order("name", { ascending: true })
         .limit(6);
 
@@ -281,11 +282,20 @@ const CourseDetail = () => {
 
   const fetchCourseAndLessons = async () => {
     try {
-      // Fetch course - show all courses regardless of status on public pages
+      // Fetch course
+      // Regular users only see published courses
+      // Admins/moderators in preview mode can see unpublished courses
+      const showAllStatuses = isPreviewMode && (isAdmin || isModerator);
+      
       let courseQuery = supabase
         .from("courses")
         .select("*")
         .eq("slug", slug);
+
+      // Filter to only published courses for regular users
+      if (!showAllStatuses) {
+        courseQuery = courseQuery.eq("status", "published");
+      }
 
       const { data: courseData, error: courseError } = await courseQuery.single();
 
@@ -298,7 +308,10 @@ const CourseDetail = () => {
       }
       setCourse(courseData);
 
-      // Fetch posts in this course - show all posts regardless of status
+      // Fetch posts in this course
+      // Regular users only see published posts
+      // Admins/moderators in preview mode can see all posts
+      
       let postsQuery = supabase
         .from("posts")
         .select(`
@@ -317,6 +330,11 @@ const CourseDetail = () => {
         .eq("category_id", courseData.id)
         .order("lesson_order", { ascending: true })
         .order("created_at", { ascending: true });
+
+      // Filter to only published posts for regular users
+      if (!showAllStatuses) {
+        postsQuery = postsQuery.eq("status", "published");
+      }
 
       const { data: postsData, error: postsError } = await postsQuery;
 
@@ -338,6 +356,7 @@ const CourseDetail = () => {
       const { data, error } = await supabase
         .from("courses")
         .select("id, name, slug, description")
+        .eq("status", "published")
         .neq("slug", slug)
         .order("created_at", { ascending: false })
         .limit(5);
