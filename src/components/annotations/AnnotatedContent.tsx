@@ -89,8 +89,6 @@ const AnnotatedContent = ({
   const handleTextSelection = useCallback((type: "paragraph" | "code" | "conversation", bubbleIndex?: number) => {
     if (!onTextSelect) return;
     if (!isAdmin && !isModerator) return;
-    // Moderators can't annotate conversations
-    if (isModerator && !isAdmin && type === "conversation") return;
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
@@ -197,7 +195,7 @@ const AnnotatedContent = ({
                 bubble={bubble}
                 courseType={courseType}
                 codeTheme={codeTheme}
-                canAnnotate={isAdmin} // Only admins can annotate conversation bubbles
+                canAnnotate={isAdmin || isModerator}
               />
             </div>
           );
