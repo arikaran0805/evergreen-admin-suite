@@ -865,7 +865,7 @@ const AdminPostEditor = () => {
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
-        <div className="flex-shrink-0 flex">
+        <div className="flex-shrink-0 flex sticky top-0 h-screen">
           {/* Vertical Tab Toggle - Always visible */}
           <button
             onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
