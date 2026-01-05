@@ -23,7 +23,8 @@ import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +115,7 @@ const AdminPostEditor = () => {
   const [dismissedAdminBanner, setDismissedAdminBanner] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [annotationMode, setAnnotationMode] = useState(false);
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
@@ -704,7 +706,19 @@ const AdminPostEditor = () => {
             
             {/* Version and Annotation Controls */}
             {id && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                {/* Annotation Mode Toggle */}
+                {(isAdmin || isModerator) && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/30">
+                    <Highlighter className={`h-4 w-4 ${annotationMode ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-medium text-muted-foreground">Annotate</span>
+                    <Switch
+                      checked={annotationMode}
+                      onCheckedChange={setAnnotationMode}
+                      className="scale-75"
+                    />
+                  </div>
+                )}
                 <VersionHistoryPanel
                   versions={versions}
                   loading={versionsLoading}
@@ -841,6 +855,7 @@ const AdminPostEditor = () => {
                 onTextSelect={(selection) => {
                   if (!id) return; // Only allow annotations on existing posts
                   if (!isAdmin && !isModerator) return;
+                  if (!annotationMode) return; // Only show popup when annotation mode is ON
                   setSelectedText({
                     start: selection.start,
                     end: selection.end,
@@ -861,6 +876,7 @@ const AdminPostEditor = () => {
                 onTextSelect={(selection) => {
                   if (!id) return; // Only allow annotations on existing posts
                   if (!isAdmin && !isModerator) return;
+                  if (!annotationMode) return; // Only show popup when annotation mode is ON
                   setSelectedText({
                     start: selection.start,
                     end: selection.end,
