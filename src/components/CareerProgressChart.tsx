@@ -10,7 +10,9 @@ import {
   Sparkles,
   ChevronRight,
   RotateCcw,
-  ArrowUp
+  ArrowUp,
+  MapPin,
+  X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,9 +21,17 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "@/hooks/use-toast";
 
 interface CourseStep {
   id: string;
@@ -60,6 +70,10 @@ interface TooltipData {
   nextLessonNumber: number;
   isCompleted: boolean;
   progress: number;
+  courseIndex: number;
+  isLocked: boolean;
+  isActive: boolean;
+  isEnrolled: boolean;
 }
 
 export const CareerProgressChart = ({ 
@@ -75,6 +89,8 @@ export const CareerProgressChart = ({
   const [isLineHovered, setIsLineHovered] = useState(false);
   const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number; key: number } | null>(null);
   const [interpolatedDotPosition, setInterpolatedDotPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [completedCourseInfo, setCompletedCourseInfo] = useState<{name: string; slug: string} | null>(null);
   const lastCompletedHoverRef = useRef<string | null>(null);
   const chartAreaRef = useRef<HTMLDivElement>(null);
   const progressPathRef = useRef<SVGPathElement>(null);
@@ -83,7 +99,7 @@ export const CareerProgressChart = ({
     setAnimationKey(prev => prev + 1);
   }, []);
 
-  // Build the complete path data for the career journey
+  // Build the complete path data for the career journey with sharp upward segments
   const pathData = useMemo(() => {
     if (journeySteps.length === 0) return {
       completePath: "",
@@ -181,60 +197,32 @@ export const CareerProgressChart = ({
       return result;
     });
 
-    // Generate SVG paths with smooth curves
+    // Generate SVG paths with SHARP lines (no curves) for upward growth effect
     const toX = (h: number) => (h / totalLearningHours) * 100;
     const toY = (r: number) => 100 - r;
-    const curveRadius = 2; // Radius for smooth curve transitions
 
-    // Helper to create smooth path with quadratic bezier curves at corners
-    const createSmoothPath = (points: { x: number; y: number }[]): string => {
+    // Helper to create SHARP path (only L commands, no curves)
+    const createSharpPath = (points: { x: number; y: number }[]): string => {
       if (points.length < 2) return '';
       
       let path = `M ${points[0].x} ${points[0].y}`;
       
       for (let i = 1; i < points.length; i++) {
-        const prev = points[i - 1];
-        const curr = points[i];
-        const next = points[i + 1];
-        
-        if (next && i < points.length - 1) {
-          // Calculate direction vectors
-          const dx1 = curr.x - prev.x;
-          const dy1 = curr.y - prev.y;
-          const dx2 = next.x - curr.x;
-          const dy2 = next.y - curr.y;
-          
-          // Normalize and apply curve radius
-          const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-          const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-          
-          const radius = Math.min(curveRadius, len1 / 3, len2 / 3);
-          
-          // Points before and after the corner
-          const beforeX = curr.x - (dx1 / len1) * radius;
-          const beforeY = curr.y - (dy1 / len1) * radius;
-          const afterX = curr.x + (dx2 / len2) * radius;
-          const afterY = curr.y + (dy2 / len2) * radius;
-          
-          // Line to point before corner, then quadratic curve through corner
-          path += ` L ${beforeX} ${beforeY}`;
-          path += ` Q ${curr.x} ${curr.y} ${afterX} ${afterY}`;
-        } else {
-          // Last point - just line to it
-          path += ` L ${curr.x} ${curr.y}`;
-        }
+        path += ` L ${points[i].x} ${points[i].y}`;
       }
       
       return path;
     };
 
-    // Build complete path points
+    // Build complete path points with sharp zigzag upward pattern
     const completePoints: { x: number; y: number }[] = [{ x: 0, y: 100 }];
     courses.forEach(course => {
+      // Sharp upward climb during learning
       completePoints.push({ x: toX(course.learningEndHours), y: toY(course.learningEndReadiness) });
+      // Flat validation segment
       completePoints.push({ x: toX(course.validationEndHours), y: toY(course.validationEndReadiness) });
     });
-    const completePath = createSmoothPath(completePoints);
+    const completePath = createSharpPath(completePoints);
 
     // Build progress path points
     const progressPoints: { x: number; y: number }[] = [{ x: 0, y: 100 }];
@@ -261,7 +249,7 @@ export const CareerProgressChart = ({
         break;
       }
     }
-    const progressPath = createSmoothPath(progressPoints);
+    const progressPath = createSharpPath(progressPoints);
 
     // Build future path points
     const futurePoints: { x: number; y: number }[] = [];
@@ -293,7 +281,7 @@ export const CareerProgressChart = ({
         startedFuture = true;
       }
     }
-    const futurePath = futurePoints.length >= 2 ? createSmoothPath(futurePoints) : '';
+    const futurePath = futurePoints.length >= 2 ? createSharpPath(futurePoints) : '';
 
     // Calculate milestones (attached to the line)
     const milestones = [
@@ -350,6 +338,43 @@ export const CareerProgressChart = ({
     setInterpolatedDotPosition({ x: point.x, y: point.y });
   }, [pathData.progressPath, pathData.currentX, readinessPercent, animationKey]);
 
+  // Handle click on course - with proper locking and navigation logic
+  const handleCourseClick = useCallback((course: typeof pathData.courses[0], courseIndex: number) => {
+    // Check if locked - show toast and prevent navigation
+    if (course.isLocked) {
+      toast({
+        title: "Course Locked 🔒",
+        description: "Complete the previous course to unlock this.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if completed - show completion dialog
+    if (course.isCompleted) {
+      setCompletedCourseInfo({ name: course.name, slug: course.slug });
+      setShowCompletionDialog(true);
+      return;
+    }
+
+    // Enrolled but not completed - navigate to next lesson
+    if (course.isEnrolled && course.progress > 0) {
+      navigate(`/courses/${course.slug}?continue=true`);
+      return;
+    }
+
+    // Active or not started - navigate to course
+    navigate(`/courses/${course.slug}`);
+  }, [navigate]);
+
+  // Handle restart course from completion dialog
+  const handleRestartCourse = useCallback(() => {
+    if (completedCourseInfo) {
+      navigate(`/courses/${completedCourseInfo.slug}?restart=true`);
+    }
+    setShowCompletionDialog(false);
+  }, [completedCourseInfo, navigate]);
+
   // Handle mouse movement for tooltip
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!chartAreaRef.current || pathData.courses.length === 0) return;
@@ -373,8 +398,13 @@ export const CareerProgressChart = ({
     let lessonCount = 0;
     let isCompleted = false;
     let progress = 0;
+    let courseIndex = 0;
+    let isLocked = false;
+    let isActive = false;
+    let isEnrolled = false;
     
-    for (const course of pathData.courses) {
+    for (let i = 0; i < pathData.courses.length; i++) {
+      const course = pathData.courses[i];
       if (hours <= course.validationEndHours) {
         courseName = course.name;
         courseSlug = course.slug;
@@ -382,6 +412,10 @@ export const CareerProgressChart = ({
         lessonCount = course.lessonCount;
         isCompleted = course.isCompleted;
         progress = course.progress;
+        courseIndex = i;
+        isLocked = course.isLocked;
+        isActive = course.isActive;
+        isEnrolled = course.isEnrolled;
         
         if (hours <= course.learningEndHours) {
           // In learning phase - diagonal part
@@ -402,6 +436,10 @@ export const CareerProgressChart = ({
       lessonCount = course.lessonCount;
       isCompleted = course.isCompleted;
       progress = course.progress;
+      courseIndex = i;
+      isLocked = course.isLocked;
+      isActive = course.isActive;
+      isEnrolled = course.isEnrolled;
     }
     
     // Calculate Y position on the line
@@ -433,7 +471,11 @@ export const CareerProgressChart = ({
         lessonCount,
         nextLessonNumber,
         isCompleted,
-        progress
+        progress,
+        courseIndex,
+        isLocked,
+        isActive,
+        isEnrolled
       });
     } else {
       setTooltip(null);
@@ -446,18 +488,53 @@ export const CareerProgressChart = ({
     lastCompletedHoverRef.current = null;
   }, []);
 
-  // Handle click to navigate to course
+  // Handle click to navigate to course with proper locking logic
   const handleClick = useCallback(() => {
-    if (tooltip?.courseSlug) {
-      navigate(`/courses/${tooltip.courseSlug}`);
+    if (tooltip) {
+      const course = pathData.courses[tooltip.courseIndex];
+      if (course) {
+        handleCourseClick(course, tooltip.courseIndex);
+      }
     }
-  }, [tooltip, navigate]);
+  }, [tooltip, pathData.courses, handleCourseClick]);
 
   const chartHeight = 500;
   const chartPadding = { top: 50, right: 60, bottom: 70, left: 70 };
 
   return (
     <div className="relative bg-card rounded-2xl border border-border overflow-hidden">
+      {/* Completion Dialog */}
+      <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl flex items-center justify-center gap-2">
+              Congratulations <span className="text-3xl">🎉</span>
+            </DialogTitle>
+            <DialogDescription className="text-center text-base pt-2">
+              You have completed this course.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-4">
+            <Button
+              onClick={handleRestartCourse}
+              className="w-full gap-2"
+              variant="default"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Restart Course
+            </Button>
+            <Button
+              onClick={() => setShowCompletionDialog(false)}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <X className="h-4 w-4" />
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Celebration overlay */}
       <AnimatePresence>
         {showCelebration && (
@@ -636,26 +713,28 @@ export const CareerProgressChart = ({
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(142 76% 46%)" />
                 </linearGradient>
-                {/* Upward arrow marker for progress line end - always points up */}
+                {/* Upward arrow marker for progress line end - clean upward pointing arrow */}
                 <marker
                   id="progressArrow"
-                  viewBox="0 0 20 24"
-                  refX="10"
-                  refY="24"
-                  markerWidth="3"
-                  markerHeight="3.5"
+                  viewBox="0 0 24 32"
+                  refX="12"
+                  refY="32"
+                  markerWidth="16"
+                  markerHeight="20"
                   orient="0"
                 >
-                  {/* Arrow body with 3D effect */}
+                  {/* Arrow pointing up with gradient effect */}
                   <path
-                    d="M 10 0 L 18 14 L 13 14 L 13 24 L 7 24 L 7 14 L 2 14 Z"
+                    d="M 12 0 L 22 16 L 16 16 L 16 32 L 8 32 L 8 16 L 2 16 Z"
                     fill="hsl(142 76% 46%)"
+                    stroke="hsl(142 76% 36%)"
+                    strokeWidth="1"
                   />
-                  {/* Highlight for 3D effect */}
+                  {/* Inner highlight for 3D depth */}
                   <path
-                    d="M 10 2 L 15 12 L 12 12 L 12 22 L 10 22 L 10 2"
-                    fill="hsl(142 76% 52%)"
-                    opacity="0.6"
+                    d="M 12 3 L 19 14 L 14 14 L 14 29 L 12 29 L 12 3"
+                    fill="hsl(142 76% 56%)"
+                    opacity="0.5"
                   />
                 </marker>
                 {/* Glow effect */}
@@ -1006,26 +1085,37 @@ export const CareerProgressChart = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/course/${tooltip.courseSlug}`);
+                    handleClick();
                   }}
                 >
-                  <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2.5 text-sm cursor-pointer hover:border-primary/50 transition-colors">
+                  <div className={cn(
+                    "bg-popover border rounded-lg shadow-xl px-3 py-2.5 text-sm transition-colors",
+                    tooltip.isLocked 
+                      ? "border-muted-foreground/30 cursor-not-allowed opacity-80" 
+                      : "border-border cursor-pointer hover:border-primary/50"
+                  )}>
                     <div className="font-semibold text-foreground flex items-center gap-1.5">
+                      {tooltip.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
                       {tooltip.courseName}
-                      <ChevronRight className="h-3 w-3 text-primary" />
+                      {!tooltip.isLocked && <ChevronRight className="h-3 w-3 text-primary" />}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-muted-foreground">
                       <span className="font-medium">{tooltip.hours}h</span>
                       <span>•</span>
-                      <span className="text-primary font-medium">{tooltip.readiness}%</span>
+                      <span className={cn("font-medium", tooltip.isLocked ? "text-muted-foreground" : "text-primary")}>{tooltip.readiness}%</span>
                     </div>
                     <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
-                      {tooltip.phase === 'learning' ? '📚 Learning' : '✓ Validation'}
+                      {tooltip.isLocked ? '🔒 Locked' : tooltip.phase === 'learning' ? '📚 Learning' : '✓ Validation'}
                     </div>
                     
-                    {/* Next Lesson Info */}
+                    {/* Status Info */}
                     <div className="mt-2 pt-2 border-t border-border/50">
-                      {tooltip.isCompleted ? (
+                      {tooltip.isLocked ? (
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Lock className="h-3.5 w-3.5" />
+                          <span className="text-xs">Complete previous course to unlock</span>
+                        </div>
+                      ) : tooltip.isCompleted ? (
                         <div className="flex items-center gap-1.5 text-green-500">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <span className="text-xs font-medium">Course Completed</span>
@@ -1046,13 +1136,26 @@ export const CareerProgressChart = ({
                     </div>
                     
                     {/* Progress bar */}
-                    <div className="mt-1.5">
-                      <Progress value={tooltip.progress} className="h-1" />
-                    </div>
+                    {!tooltip.isLocked && (
+                      <div className="mt-1.5">
+                        <Progress value={tooltip.progress} className="h-1" />
+                      </div>
+                    )}
                     
-                    <div className="text-[10px] text-primary mt-2 font-medium flex items-center gap-1">
-                      <span>Click to continue</span>
-                      <ChevronRight className="h-3 w-3" />
+                    <div className={cn(
+                      "text-[10px] mt-2 font-medium flex items-center gap-1",
+                      tooltip.isLocked ? "text-muted-foreground" : "text-primary"
+                    )}>
+                      {tooltip.isLocked ? (
+                        <span>🔒 Locked</span>
+                      ) : tooltip.isCompleted ? (
+                        <span>Click to view</span>
+                      ) : (
+                        <>
+                          <span>Click to continue</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </>
+                      )}
                     </div>
                     
                     {/* Arrow */}
@@ -1061,30 +1164,41 @@ export const CareerProgressChart = ({
                   </div>
                   {/* Vertical line to point */}
                   <div 
-                    className="absolute left-1/2 -translate-x-1/2 top-full w-px bg-primary/50"
+                    className={cn(
+                      "absolute left-1/2 -translate-x-1/2 top-full w-px",
+                      tooltip.isLocked ? "bg-muted-foreground/30" : "bg-primary/50"
+                    )}
                     style={{ height: '8px' }}
                   />
                   {/* Dot on line */}
-                  <div className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-primary border-2 border-background shadow-md" style={{ top: 'calc(100% + 8px)', transform: 'translate(-50%, -50%)' }} />
+                  <div className={cn(
+                    "absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-background shadow-md",
+                    tooltip.isLocked ? "bg-muted-foreground" : "bg-primary"
+                  )} style={{ top: 'calc(100% + 8px)', transform: 'translate(-50%, -50%)' }} />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Origin point - Start marker */}
+            {/* Origin point - Start marker with MapPin */}
             <div 
               className="absolute z-30"
-              style={{ left: 0, bottom: 0, transform: 'translate(-8px, 8px)' }}
+              style={{ left: 0, bottom: 0, transform: 'translate(-12px, 12px)' }}
             >
-              <div className="flex flex-col items-start gap-1">
+              <div className="flex flex-col items-center gap-1">
                 <motion.div 
-                  className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
+                  className="relative"
+                  initial={{ scale: 0, y: -10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                 >
-                  <div className="w-1 h-1 rounded-full bg-primary-foreground" />
+                  {/* Location pin shape */}
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-background">
+                    <MapPin className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  {/* Pin pointer */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-primary" />
                 </motion.div>
-                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                <span className="text-xs text-primary font-semibold uppercase tracking-wide mt-2">
                   Start
                 </span>
               </div>
@@ -1282,13 +1396,13 @@ export const CareerProgressChart = ({
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.05 * index }}
-                onClick={() => !course.isLocked && navigate(`/course/${course.slug}`)}
+                onClick={() => handleCourseClick(course, index)}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
-                  course.isActive && "bg-primary/5 border-primary/30 ring-1 ring-primary/20",
-                  course.isCompleted && "bg-green-500/5 border-green-500/30",
-                  course.isLocked && "bg-muted/30 border-border/50 opacity-50 cursor-not-allowed",
-                  !course.isCompleted && !course.isActive && !course.isLocked && "bg-card border-border hover:border-primary/30"
+                  "flex items-center gap-3 p-3 rounded-lg border transition-all",
+                  course.isActive && "bg-primary/5 border-primary/30 ring-1 ring-primary/20 cursor-pointer",
+                  course.isCompleted && "bg-green-500/5 border-green-500/30 cursor-pointer",
+                  course.isLocked && "bg-muted/30 border-border/50 opacity-60 cursor-not-allowed",
+                  !course.isCompleted && !course.isActive && !course.isLocked && "bg-card border-border hover:border-primary/30 cursor-pointer"
                 )}
               >
                 {/* Status indicator */}
