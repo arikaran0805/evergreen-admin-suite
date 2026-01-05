@@ -237,21 +237,21 @@ const Library = () => {
     
     return (
       <Card
-        className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg"
+        className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
         onClick={() => navigate(`/course/${course.slug}`)}
       >
         <div className="flex h-full">
-          {/* Left Section - Dark */}
-          <div className="w-1/3 bg-slate-800 dark:bg-slate-900 p-4 flex flex-col justify-between">
+          {/* Left Section - Primary */}
+          <div className="w-1/3 bg-primary p-4 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+              <span className="text-[10px] font-medium tracking-wider text-primary-foreground/70 uppercase">
                 Course
               </span>
-              <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+              <h3 className="text-sm font-semibold text-primary-foreground mt-1 leading-tight line-clamp-3">
                 {course.name}
               </h3>
             </div>
-            <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs mt-2">
+            <div className="flex items-center gap-1 text-primary-foreground/70 hover:text-primary-foreground transition-colors text-xs mt-2">
               <span>View all</span>
               <ChevronRight className="h-3 w-3" />
             </div>
@@ -271,7 +271,7 @@ const Library = () => {
               {showProgress && course.progress !== undefined && (
                 <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
                   <div 
-                    className="h-full bg-slate-800 dark:bg-slate-600 rounded-full transition-all"
+                    className="h-full bg-primary rounded-full transition-all"
                     style={{ width: `${course.progress}%` }}
                   />
                 </div>
@@ -308,7 +308,7 @@ const Library = () => {
               <Button 
                 variant="default" 
                 size="sm"
-                className="bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-full px-4 h-7 text-xs"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-7 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/course/${course.slug}`);
