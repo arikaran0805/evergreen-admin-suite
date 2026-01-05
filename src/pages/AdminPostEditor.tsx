@@ -116,6 +116,7 @@ const AdminPostEditor = () => {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [savingDraft, setSavingDraft] = useState(false);
   const [annotationMode, setAnnotationMode] = useState(false);
+  const saveToAnnotateToastShownRef = useRef(false);
   const previousContentRef = useRef<string>("");
 
   // Version and annotation hooks
@@ -834,12 +835,12 @@ const AdminPostEditor = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Label htmlFor="content" className="text-base">Content</Label>
-                {annotationMode && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20 animate-fade-in">
-                    <Highlighter className="h-3 w-3" />
-                    Annotation Mode
-                  </span>
-                )}
+                 {annotationMode && (
+                   <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20 animate-fade-in">
+                     <Highlighter className="h-3 w-3" />
+                     Annotation Mode
+                   </span>
+                 )}
               </div>
               <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
                 <TabsList className="h-9">
@@ -862,17 +863,27 @@ const AdminPostEditor = () => {
                 onChange={(value) => setFormData({ ...formData, content: value })}
                 placeholder="Write your post content here..."
                 annotationMode={annotationMode}
-                onTextSelect={(selection) => {
-                  if (!id) return; // Only allow annotations on existing posts
-                  if (!isAdmin && !isModerator) return;
-                  if (!annotationMode) return; // Only show popup when annotation mode is ON
-                  setSelectedText({
-                    start: selection.start,
-                    end: selection.end,
-                    text: selection.text,
-                    type: selection.type,
-                  });
-                }}
+                 onTextSelect={(selection) => {
+                   if (!annotationMode) return; // Only show popup when annotation mode is ON
+                   if (!isAdmin && !isModerator) return;
+                   if (!id) {
+                     if (!saveToAnnotateToastShownRef.current) {
+                       saveToAnnotateToastShownRef.current = true;
+                       toast({
+                         title: "Save to annotate",
+                         description: "Create/save the post first, then you can add annotations.",
+                       });
+                     }
+                     return;
+                   }
+
+                   setSelectedText({
+                     start: selection.start,
+                     end: selection.end,
+                     text: selection.text,
+                     type: selection.type,
+                   });
+                 }}
               />
             ) : (
               <ChatStyleEditor
@@ -883,18 +894,28 @@ const AdminPostEditor = () => {
                 }
                 placeholder="Start a conversation..."
                 codeTheme={formData.code_theme}
-                onTextSelect={(selection) => {
-                  if (!id) return; // Only allow annotations on existing posts
-                  if (!isAdmin && !isModerator) return;
-                  if (!annotationMode) return; // Only show popup when annotation mode is ON
-                  setSelectedText({
-                    start: selection.start,
-                    end: selection.end,
-                    text: selection.text,
-                    type: selection.type,
-                    bubbleIndex: selection.bubbleIndex,
-                  });
-                }}
+                 onTextSelect={(selection) => {
+                   if (!annotationMode) return; // Only show popup when annotation mode is ON
+                   if (!isAdmin && !isModerator) return;
+                   if (!id) {
+                     if (!saveToAnnotateToastShownRef.current) {
+                       saveToAnnotateToastShownRef.current = true;
+                       toast({
+                         title: "Save to annotate",
+                         description: "Create/save the post first, then you can add annotations.",
+                       });
+                     }
+                     return;
+                   }
+
+                   setSelectedText({
+                     start: selection.start,
+                     end: selection.end,
+                     text: selection.text,
+                     type: selection.type,
+                     bubbleIndex: selection.bubbleIndex,
+                   });
+                 }}
               />
             )}
             </div>

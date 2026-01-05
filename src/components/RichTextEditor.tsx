@@ -204,32 +204,56 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
     }
   }, [annotationMode]);
 
-  // Handle text selection for annotations
+  // Emit selection info for annotations (used by AdminPostEditor)
+  const emitTextSelection = useCallback(
+    (range?: { index: number; length: number } | null) => {
+      if (!onTextSelect) return;
+
+      const quill = quillRef.current?.getEditor();
+      if (!quill) return;
+
+      const selection = range ?? quill.getSelection();
+      if (!selection || selection.length === 0) return;
+
+      const text = quill.getText(selection.index, selection.length).trim();
+      if (!text || text.length < 2) return;
+
+      const formats = quill.getFormat(selection);
+      const type: "paragraph" | "code" = formats["code-block"] ? "code" : "paragraph";
+
+      onTextSelect({
+        start: selection.index,
+        end: selection.index + selection.length,
+        text,
+        type,
+      });
+    },
+    [onTextSelect]
+  );
+
+  // Handle text selection for annotations (fallback for mouse/key events)
   const handleTextSelection = useCallback(() => {
-    // Update floating toolbar
     updateFloatingToolbar();
+    emitTextSelection();
+  }, [updateFloatingToolbar, emitTextSelection]);
 
-    if (!onTextSelect) return;
-
+  // Primary: listen to Quill's selection-change (more reliable than DOM mouseup)
+  useEffect(() => {
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
 
-    const selection = quill.getSelection();
-    if (!selection || selection.length === 0) return;
+    const handler = (range: any) => {
+      if (!range || range.length === 0) return;
+      emitTextSelection({ index: range.index, length: range.length });
+      requestAnimationFrame(() => updateFloatingToolbar());
+    };
 
-    const text = quill.getText(selection.index, selection.length).trim();
-    if (!text || text.length < 2) return;
+    quill.on("selection-change", handler);
+    return () => {
+      quill.off("selection-change", handler);
+    };
+  }, [viewMode, emitTextSelection, updateFloatingToolbar]);
 
-    const formats = quill.getFormat(selection);
-    const type: "paragraph" | "code" = formats["code-block"] ? "code" : "paragraph";
-
-    onTextSelect({
-      start: selection.index,
-      end: selection.index + selection.length,
-      text,
-      type,
-    });
-  }, [onTextSelect, updateFloatingToolbar]);
 
   // Apply format from floating toolbar
   const applyFormat = useCallback((format: string, value?: any) => {
