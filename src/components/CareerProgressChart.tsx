@@ -1098,23 +1098,22 @@ export const CareerProgressChart = ({
               )}
             </AnimatePresence>
 
-            {/* Origin point - Start from 0 */}
+            {/* Origin point - Start marker */}
             <div 
               className="absolute z-30"
-              style={{ left: 0, bottom: 0, transform: 'translate(-50%, 50%)' }}
+              style={{ left: 0, bottom: 0, transform: 'translate(-8px, 8px)' }}
             >
-              <div className="flex flex-col items-center">
-                <span className="text-xs font-bold text-foreground mb-1 whitespace-nowrap">Start from 0</span>
+              <div className="flex flex-col items-start gap-1">
                 <motion.div 
-                  className="w-5 h-5 rounded-full bg-primary border-2 border-primary-foreground shadow-lg flex items-center justify-center"
+                  className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg flex items-center justify-center"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                  <div className="w-1 h-1 rounded-full bg-primary-foreground" />
                 </motion.div>
-                <span className="text-[10px] text-amber-500 font-medium mt-1 flex items-center gap-0.5">
-                  🎯 <span className="uppercase tracking-wide">Started</span>
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                  Start
                 </span>
               </div>
             </div>
