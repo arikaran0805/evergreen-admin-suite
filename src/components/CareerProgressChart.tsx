@@ -713,28 +713,42 @@ export const CareerProgressChart = ({
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(142 76% 46%)" />
                 </linearGradient>
-                {/* Upward arrow marker for progress line end - clean upward pointing arrow */}
+                {/* Upward arrow marker for progress line end - prominent upward pointing arrow */}
                 <marker
                   id="progressArrow"
-                  viewBox="0 0 24 32"
-                  refX="12"
-                  refY="32"
-                  markerWidth="16"
-                  markerHeight="20"
+                  viewBox="0 0 40 50"
+                  refX="20"
+                  refY="50"
+                  markerWidth="24"
+                  markerHeight="30"
                   orient="0"
                 >
-                  {/* Arrow pointing up with gradient effect */}
-                  <path
-                    d="M 12 0 L 22 16 L 16 16 L 16 32 L 8 32 L 8 16 L 2 16 Z"
+                  {/* Arrow body - thick stem */}
+                  <rect
+                    x="14"
+                    y="20"
+                    width="12"
+                    height="30"
                     fill="hsl(142 76% 46%)"
-                    stroke="hsl(142 76% 36%)"
-                    strokeWidth="1"
+                    rx="2"
                   />
-                  {/* Inner highlight for 3D depth */}
-                  <path
-                    d="M 12 3 L 19 14 L 14 14 L 14 29 L 12 29 L 12 3"
+                  {/* Arrow head - large upward pointing triangle */}
+                  <polygon
+                    points="20,0 40,25 30,25 30,20 10,20 10,25 0,25"
+                    fill="hsl(142 76% 46%)"
+                  />
+                  {/* Highlight for 3D effect */}
+                  <polygon
+                    points="20,4 32,22 26,22 26,18 20,18"
                     fill="hsl(142 76% 56%)"
-                    opacity="0.5"
+                    opacity="0.6"
+                  />
+                  {/* Border outline */}
+                  <polygon
+                    points="20,0 40,25 30,25 30,50 10,50 10,25 0,25"
+                    fill="none"
+                    stroke="hsl(142 76% 36%)"
+                    strokeWidth="1.5"
                   />
                 </marker>
                 {/* Glow effect */}
