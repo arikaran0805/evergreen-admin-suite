@@ -47,21 +47,40 @@ const FloatingAnnotationPopup = ({
       return;
     }
 
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      setPosition(null);
-      return;
-    }
+    // Small delay to ensure selection is stable
+    const timeoutId = setTimeout(() => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        setPosition(null);
+        return;
+      }
 
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
 
-    // Position popup above the selection, centered
-    const top = rect.top + window.scrollY - 10;
-    const left = rect.left + window.scrollX + rect.width / 2;
+      // If no valid rect, hide popup
+      if (rect.width === 0 && rect.height === 0) {
+        setPosition(null);
+        return;
+      }
 
-    setPosition({ top, left });
-  }, [selectedText]);
+      // Position popup above the selection (fixed positioning relative to viewport)
+      // Add padding to ensure it's visible above the selection
+      const popupHeight = isExpanded ? 220 : 50;
+      let top = rect.top - popupHeight - 12;
+      
+      // If popup would go above viewport, position below selection instead
+      if (top < 10) {
+        top = rect.bottom + 12;
+      }
+      
+      const left = rect.left + rect.width / 2;
+
+      setPosition({ top, left });
+    }, 10);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedText, isExpanded]);
 
   // Focus textarea when expanded
   useEffect(() => {
@@ -151,17 +170,17 @@ const FloatingAnnotationPopup = ({
     <div
       ref={popupRef}
       className={cn(
-        "fixed z-50 transform -translate-x-1/2 -translate-y-full",
-        "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
+        "fixed z-[9999] transform -translate-x-1/2",
+        "animate-in fade-in-0 zoom-in-95 duration-200"
       )}
       style={{
-        top: position.top,
-        left: position.left,
+        top: `${position.top}px`,
+        left: `${position.left}px`,
       }}
     >
       {/* Arrow pointing to selection */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full">
-        <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-popover" />
+      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+        <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-popover drop-shadow-sm" />
       </div>
 
       <div className="bg-popover border border-border rounded-lg shadow-xl overflow-hidden min-w-[280px] max-w-[400px]">
