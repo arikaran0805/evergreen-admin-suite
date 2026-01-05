@@ -201,10 +201,17 @@ const AdminPostEditor = () => {
   }, [id, versionsLoading, versions, didSyncLatestVersion]);
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("courses")
         .select("*")
         .order("name");
+
+      // For moderators (non-admins), only show courses they created or are assigned to
+      if (isModerator && !isAdmin && userId) {
+        query = query.or(`author_id.eq.${userId},assigned_to.eq.${userId}`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setCategories(data || []);
