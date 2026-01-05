@@ -863,6 +863,25 @@ const AdminPostEditor = () => {
                 onChange={(value) => setFormData({ ...formData, content: value })}
                 placeholder="Write your post content here..."
                 annotationMode={annotationMode}
+                annotations={annotations.map(a => ({
+                  id: a.id,
+                  selection_start: a.selection_start,
+                  selection_end: a.selection_end,
+                  selected_text: a.selected_text,
+                  status: a.status,
+                }))}
+                onAnnotationClick={(annotation) => {
+                  // Find the full annotation and scroll to it in the panel
+                  const fullAnnotation = annotations.find(a => a.id === annotation.id);
+                  if (fullAnnotation) {
+                    setSelectedText({
+                      start: fullAnnotation.selection_start,
+                      end: fullAnnotation.selection_end,
+                      text: fullAnnotation.selected_text,
+                      type: "paragraph",
+                    });
+                  }
+                }}
                  onTextSelect={(selection) => {
                    if (!annotationMode) return; // Only show popup when annotation mode is ON
                    if (!isAdmin && !isModerator) return;
