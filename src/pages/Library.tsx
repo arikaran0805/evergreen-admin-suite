@@ -211,10 +211,10 @@ const Library = () => {
 
   const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => (
     <Card
-      className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group border border-border/50 shadow-sm bg-card"
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group border-0 shadow-sm bg-card h-28"
       onClick={() => navigate(`/course/${course.slug}`)}
     >
-      <div className="flex items-start gap-4 p-4">
+      <div className="flex items-center gap-4 p-4 h-full">
         {/* Course Icon/Image */}
         <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 relative">
           {course.featured_image ? (
@@ -237,37 +237,31 @@ const Library = () => {
 
         {/* Course Details */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors">
-              {course.name}
-            </h3>
-            {course.level && (
-              <Badge className={`${getLevelColor(course.level)} border-0 text-xs px-2 py-0.5 rounded-md font-medium flex-shrink-0`}>
-                {course.level}
-              </Badge>
-            )}
-          </div>
+          <h3 className="font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors mb-1">
+            {course.name}
+          </h3>
           
-          <div className="space-y-1.5 text-sm text-muted-foreground">
+          {course.level && (
+            <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-medium mb-2 ${getLevelColor(course.level)}`}>
+              {course.level}
+            </span>
+          )}
+          
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             {course.averageRating && (
-              <div className="flex items-center gap-1.5">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                 <span className="font-medium text-foreground">{course.averageRating.toFixed(1)}</span>
-                <span className="text-muted-foreground">({course.enrollmentCount.toLocaleString()} ratings)</span>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
-              <span>{estimatedHours(course.lessonCount)} Hours</span>
-            </div>
-            
-            <div className="flex items-center gap-1.5">
-              <Users className="h-4 w-4" />
-              <span>
-                {course.enrollmentCount.toLocaleString()} Ants Enrolled
               </span>
-            </div>
+            )}
+            <span className="flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              {estimatedHours(course.lessonCount)}h
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {course.enrollmentCount.toLocaleString()} Ants
+            </span>
           </div>
         </div>
       </div>
