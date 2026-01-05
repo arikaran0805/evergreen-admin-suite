@@ -528,58 +528,7 @@ const Library = () => {
                         <h2 className="text-xl font-bold mb-6">All Courses</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredCourses.map((course) => (
-                            <Card
-                              key={course.id}
-                              className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-md"
-                              onClick={() => navigate(`/course/${course.slug}`)}
-                            >
-                              <div className="h-44 relative overflow-hidden">
-                                {course.featured_image ? (
-                                  <img
-                                    src={course.featured_image}
-                                    alt={course.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-primary/30 via-primary/20 to-accent/30 flex items-center justify-center">
-                                    <BookOpen className="h-16 w-16 text-primary/50" />
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                {course.level && (
-                                  <Badge className={`absolute top-3 left-3 ${getLevelColor(course.level)} border-0 shadow-lg`}>
-                                    {course.level}
-                                  </Badge>
-                                )}
-                              </div>
-                              <CardContent className="p-4">
-                                <h3 className="font-semibold text-base mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                                  {course.name}
-                                </h3>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                                  <span className="flex items-center gap-1">
-                                    <BookOpen className="h-3.5 w-3.5" />
-                                    {course.lessonCount}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    {estimatedHours(course.lessonCount)}h
-                                  </span>
-                                  {course.averageRating && (
-                                    <span className="flex items-center gap-1">
-                                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                                      {course.averageRating.toFixed(1)}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Users className="h-3.5 w-3.5" />
-                                    {course.enrollmentCount} enrolled
-                                  </span>
-                                </div>
-                              </CardContent>
-                            </Card>
+                            <CourseCard key={course.id} course={course} />
                           ))}
                         </div>
                       </section>
