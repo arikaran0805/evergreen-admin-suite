@@ -70,6 +70,7 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  annotationMode?: boolean;
   onTextSelect?: (selection: {
     start: number;
     end: number;
@@ -85,7 +86,7 @@ interface CodeBlockOverlay {
   language: string;
 }
 
-const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichTextEditorProps) => {
+const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSelect }: RichTextEditorProps) => {
   const quillRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shortcutListenerRootRef = useRef<HTMLElement | null>(null);
@@ -167,6 +168,12 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
 
   // Update floating toolbar position and visibility
   const updateFloatingToolbar = useCallback(() => {
+    // Hide floating toolbar when annotation mode is active
+    if (annotationMode) {
+      setFloatingToolbar(prev => ({ ...prev, visible: false }));
+      return;
+    }
+    
     const quill = quillRef.current?.getEditor();
     if (!quill) {
       setFloatingToolbar(prev => ({ ...prev, visible: false }));
@@ -195,7 +202,7 @@ const RichTextEditor = ({ value, onChange, placeholder, onTextSelect }: RichText
         formats,
       });
     }
-  }, []);
+  }, [annotationMode]);
 
   // Handle text selection for annotations
   const handleTextSelection = useCallback(() => {
