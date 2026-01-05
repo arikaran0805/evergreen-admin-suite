@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp, MessageCircle } from "lucide-react";
+import { Settings, Globe, Mail, Shield, Database, Zap, Upload, Eye, Twitter, Facebook, Instagram, Linkedin, Youtube, Github, Search, Code, Download, FileUp, MessageCircle, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 
@@ -108,10 +109,32 @@ const AdminSettings = () => {
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  const { 
+    preferences: allNotificationsPrefs, 
+    loading: notifPrefsLoading, 
+    saving: notifPrefsSaving 
+  } = useNotificationPreferences(userId);
+  
+  const [allNotificationsEnabled, setAllNotificationsEnabled] = useState(true);
+  const [savingAllNotifications, setSavingAllNotifications] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
   }, []);
+  
+  // Sync allNotificationsEnabled with preferences
+  useEffect(() => {
+    if (allNotificationsPrefs) {
+      const allEnabled = 
+        allNotificationsPrefs.content_submissions &&
+        allNotificationsPrefs.reports &&
+        allNotificationsPrefs.new_users &&
+        allNotificationsPrefs.delete_requests;
+      setAllNotificationsEnabled(allEnabled);
+    }
+  }, [allNotificationsPrefs]);
 
   const checkAdminAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -119,6 +142,8 @@ const AdminSettings = () => {
       navigate("/auth");
       return;
     }
+    
+    setUserId(session.user.id);
 
     const { data: roleData } = await supabase
       .from("user_roles")
@@ -135,6 +160,66 @@ const AdminSettings = () => {
 
     await Promise.all([loadSettings(), loadCourses()]);
     setLoading(false);
+  };
+  
+  const handleToggleAllNotifications = async (enabled: boolean) => {
+    if (!userId) return;
+    
+    setSavingAllNotifications(true);
+    setAllNotificationsEnabled(enabled);
+    
+    try {
+      const { data: existingData } = await supabase
+        .from("notification_preferences")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const updates = {
+        content_submissions: enabled,
+        reports: enabled,
+        new_users: enabled,
+        delete_requests: enabled,
+      };
+
+      if (existingData) {
+        const { error } = await supabase
+          .from("notification_preferences")
+          .update(updates)
+          .eq("user_id", userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("notification_preferences")
+          .insert({
+            user_id: userId,
+            ...updates,
+            content_approved: true,
+            content_rejected: true,
+            changes_requested: true,
+            annotations: true,
+            email_notifications: false,
+          });
+        if (error) throw error;
+      }
+
+      toast({
+        title: enabled ? "Notifications enabled" : "Notifications disabled",
+        description: enabled 
+          ? "You will now receive all admin notifications" 
+          : "You will no longer receive admin notifications",
+      });
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      setAllNotificationsEnabled(!enabled);
+      toast({
+        title: "Error",
+        description: "Failed to update notification preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAllNotifications(false);
+    }
   };
 
   const loadCourses = async () => {
@@ -1454,11 +1539,32 @@ const AdminSettings = () => {
                 <Separator />
 
                 <div className="rounded-lg bg-muted p-4">
-                  <h3 className="font-semibold mb-2">Notification Settings</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold">Notification Settings</h3>
+                  </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Configure how long notifications appear in the admin panel
+                    Configure admin notification preferences
                   </p>
                   <div className="space-y-4">
+                    {/* Master Toggle */}
+                    <div className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="all-notifications" className="font-medium">All Notifications</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Enable or disable all admin notifications at once
+                        </p>
+                      </div>
+                      <Switch
+                        id="all-notifications"
+                        checked={allNotificationsEnabled}
+                        onCheckedChange={handleToggleAllNotifications}
+                        disabled={savingAllNotifications || notifPrefsLoading}
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
                     <div className="space-y-2">
                       <Label htmlFor="notificationWindowDays">Notification Time Window</Label>
                       <Select 
