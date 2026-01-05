@@ -731,67 +731,6 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
         </div>
       </div>
       
-      {/* Floating toolbar on text selection */}
-      {floatingToolbar.visible && (viewMode === 'edit' || viewMode === 'split') && (
-        <div 
-          className="floating-toolbar absolute z-[100] flex items-center gap-0.5 px-1.5 py-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-150"
-          style={{
-            left: `${floatingToolbar.x}px`,
-            top: `${floatingToolbar.y}px`,
-            transform: 'translateX(-50%)',
-          }}
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.underline && "bg-primary/20 text-primary")}
-            onClick={() => applyFormat('underline')}
-          >
-            <Underline className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.strike && "bg-primary/20 text-primary")}
-            onClick={() => applyFormat('strike')}
-          >
-            <Strikethrough className="w-3.5 h-3.5" />
-          </Button>
-          <div className="w-px h-5 bg-border mx-0.5" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.code && "bg-primary/20 text-primary")}
-            onClick={() => applyFormat('code')}
-          >
-            <Code className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.background && "bg-primary/20 text-primary")}
-            onClick={() => applyFormat('background', floatingToolbar.formats.background ? false : '#ffff00')}
-          >
-            <Highlighter className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.link && "bg-primary/20 text-primary")}
-            onClick={() => {
-              if (floatingToolbar.formats.link) {
-                applyFormat('link', false);
-              } else {
-                const url = prompt('Enter URL:');
-                if (url) applyFormat('link', url);
-              }
-            }}
-          >
-            <Link className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      )}
       
       {/* Editor / Preview based on view mode */}
       {viewMode === 'split' ? (
