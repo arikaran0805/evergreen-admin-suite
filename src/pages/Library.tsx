@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -68,9 +68,6 @@ const Library = () => {
   const [aiPicksExpanded, setAiPicksExpanded] = useState(true);
   const navigate = useNavigate();
   
-  const continueScrollRef = useRef<HTMLDivElement>(null);
-  const recommendedScrollRef = useRef<HTMLDivElement>(null);
-  const popularScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -214,7 +211,7 @@ const Library = () => {
 
   const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => (
     <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border border-border/50 shadow-sm bg-card min-w-[280px] max-w-[320px] flex-shrink-0"
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border border-border/50 shadow-sm bg-card"
       onClick={() => navigate(`/course/${course.slug}`)}
     >
       <div className="h-44 relative overflow-hidden">
@@ -277,51 +274,24 @@ const Library = () => {
     </Card>
   );
 
-  const scrollCarousel = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
-    if (!ref.current) return;
-    const scrollAmount = 320;
-    ref.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth'
-    });
-  };
-
   const SectionHeader = ({ 
     title, 
     icon: Icon, 
-    badge,
-    scrollRef
+    badge
   }: { 
     title: string; 
     icon?: React.ComponentType<{ className?: string }>; 
     badge?: string;
-    scrollRef?: React.RefObject<HTMLDivElement>;
   }) => (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        {Icon && <Icon className="h-5 w-5 text-primary" />}
-        <h2 className="text-xl font-bold">{title}</h2>
-        {badge && (
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-0 gap-1">
-            <Sparkles className="h-3 w-3" />
-            {badge}
-          </Badge>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <button 
-          onClick={() => scrollRef && scrollCarousel(scrollRef, 'left')}
-          className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors hover:scale-105 active:scale-95"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <button 
-          onClick={() => scrollRef && scrollCarousel(scrollRef, 'right')}
-          className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors hover:scale-105 active:scale-95"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+    <div className="flex items-center gap-3 mb-6">
+      {Icon && <Icon className="h-5 w-5 text-primary" />}
+      <h2 className="text-xl font-bold">{title}</h2>
+      {badge && (
+        <Badge variant="secondary" className="bg-primary/10 text-primary border-0 gap-1">
+          <Sparkles className="h-3 w-3" />
+          {badge}
+        </Badge>
+      )}
     </div>
   );
 
@@ -511,8 +481,8 @@ const Library = () => {
                     {/* Continue Learning Section */}
                     {enrolledCourses.length > 0 && (
                       <section>
-                        <SectionHeader title="Continue Learning" icon={Play} scrollRef={continueScrollRef} />
-                        <div ref={continueScrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                        <SectionHeader title="Continue Learning" icon={Play} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {enrolledCourses.map((course) => (
                             <CourseCard key={course.id} course={course} showProgress />
                           ))}
@@ -522,14 +492,14 @@ const Library = () => {
 
                     {/* Recommended for You Section */}
                     <section>
-                      <SectionHeader title="Recommended for You" icon={Sparkles} badge="AI Picks" scrollRef={recommendedScrollRef} />
-                      <div ref={recommendedScrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                      <SectionHeader title="Recommended for You" icon={Sparkles} badge="AI Picks" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {recommendedCourses.length > 0 ? (
                           recommendedCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))
                         ) : (
-                          <div className="text-center py-16 w-full">
+                          <div className="text-center py-16 col-span-full">
                             <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                             <h3 className="text-lg font-medium mb-2">No courses found</h3>
                             <p className="text-muted-foreground">
@@ -543,8 +513,8 @@ const Library = () => {
                     {/* Popular This Week Section */}
                     {popularCourses.length > 0 && (
                       <section>
-                        <SectionHeader title="Popular This Week" icon={TrendingUp} scrollRef={popularScrollRef} />
-                        <div ref={popularScrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                        <SectionHeader title="Popular This Week" icon={TrendingUp} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {popularCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))}
