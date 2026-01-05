@@ -669,9 +669,9 @@ const AdminPostEditor = () => {
 
   return (
     <AdminLayout defaultSidebarCollapsed>
-      <div className="flex gap-6 h-full">
+      <div className="flex gap-4 h-full overflow-hidden">
         {/* Main Content Area */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -865,7 +865,7 @@ const AdminPostEditor = () => {
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
-        <div className="flex-shrink-0 flex">
+        <div className="flex-shrink-0 flex h-fit sticky top-0">
           {/* Vertical Tab Toggle - Always visible */}
           <button
             onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
@@ -878,7 +878,7 @@ const AdminPostEditor = () => {
           </button>
 
           {/* Sidebar Content */}
-          <Card className={`flex flex-col min-h-0 transition-all duration-300 sticky top-6 h-fit rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-80 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 h-fit rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
             <div className={`space-y-4 ${!rightSidebarOpen ? 'hidden' : ''}`}>
             {/* Action Buttons */}
             <div className="space-y-2">
