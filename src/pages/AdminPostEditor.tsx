@@ -832,7 +832,15 @@ const AdminPostEditor = () => {
 
           <div className="mt-4">
             <div className="flex items-center justify-between mb-3">
-              <Label htmlFor="content" className="text-base">Content</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="content" className="text-base">Content</Label>
+                {annotationMode && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20 animate-fade-in">
+                    <Highlighter className="h-3 w-3" />
+                    Annotation Mode
+                  </span>
+                )}
+              </div>
               <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
                 <TabsList className="h-9">
                   <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
@@ -847,6 +855,7 @@ const AdminPostEditor = () => {
               </Tabs>
             </div>
             
+            <div className={`transition-all duration-300 rounded-lg ${annotationMode ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background [&_*]:cursor-crosshair' : ''}`}>
             {editorType === "rich" ? (
               <RichTextEditor
                 value={formData.content}
@@ -887,6 +896,7 @@ const AdminPostEditor = () => {
                 }}
               />
             )}
+            </div>
           </div>
         </div>
 
