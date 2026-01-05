@@ -64,6 +64,11 @@ const CODE_LANGUAGES = [
   { value: "cpp", label: "C++" },
 ];
 
+interface BubbleAnnotation {
+  bubble_index: number | null;
+  status: string;
+}
+
 interface ChatStyleEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -71,6 +76,7 @@ interface ChatStyleEditorProps {
   placeholder?: string;
   codeTheme?: string;
   annotationMode?: boolean;
+  annotations?: BubbleAnnotation[];
   onTextSelect?: (selection: {
     start: number;
     end: number;
@@ -247,6 +253,7 @@ interface MessageItemProps {
   codeTheme?: string;
   index?: number;
   annotationMode?: boolean;
+  hasOpenAnnotations?: boolean;
 }
 
 const SortableMessageItem = ({
@@ -269,6 +276,7 @@ const SortableMessageItem = ({
   codeTheme,
   index = 0,
   annotationMode,
+  hasOpenAnnotations,
 }: MessageItemProps) => {
   const {
     attributes,
@@ -442,6 +450,7 @@ const SortableMessageItem = ({
           onStartEdit={onStartEdit}
           onEndEdit={onEndEdit}
           codeTheme={codeTheme}
+          hasOpenAnnotations={hasOpenAnnotations}
         />
       </div>
     </div>
@@ -586,6 +595,7 @@ const ChatStyleEditor = ({
   placeholder,
   codeTheme,
   annotationMode,
+  annotations = [],
   onTextSelect,
 }: ChatStyleEditorProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => parseContent(value));
@@ -1462,7 +1472,11 @@ const ChatStyleEditor = ({
                   />
                 )}
 
-                {messages.map((message, index) => (
+                {messages.map((message, index) => {
+                  const bubbleHasOpenAnnotations = annotations.some(
+                    a => a.bubble_index === index && a.status === "open"
+                  );
+                  return (
                   <div key={message.id}>
                     <SortableMessageItem
                       message={message}
@@ -1484,6 +1498,7 @@ const ChatStyleEditor = ({
                       codeTheme={codeTheme}
                       index={index}
                       annotationMode={annotationMode}
+                      hasOpenAnnotations={bubbleHasOpenAnnotations}
                     />
                     {/* Insert between button - show after every bubble in edit mode */}
                     {mode === "edit" && (
@@ -1496,7 +1511,8 @@ const ChatStyleEditor = ({
                       />
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </SortableContext>
           </DndContext>
