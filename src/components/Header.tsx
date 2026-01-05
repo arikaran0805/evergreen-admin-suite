@@ -272,7 +272,7 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/practice-lab" className="cursor-pointer">
+                        <Link to="/profile?tab=practice" className="cursor-pointer">
                           <FlaskConical className="mr-2 h-4 w-4" />
                           Practice Lab
                         </Link>

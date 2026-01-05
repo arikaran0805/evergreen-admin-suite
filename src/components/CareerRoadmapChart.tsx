@@ -382,7 +382,7 @@ export const CareerRoadmapChart = ({
                   style={{ left: 'calc(100% + 8px)', top: 'calc(100% + 4px)' }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate('/practice-lab');
+                    navigate('/profile?tab=practice');
                   }}
                 >
                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer">
