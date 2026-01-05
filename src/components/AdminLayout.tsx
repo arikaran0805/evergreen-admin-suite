@@ -17,6 +17,7 @@ import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
 import AdminContentNotificationBell from "@/components/AdminContentNotificationBell";
+import NotificationDropdown from "@/components/NotificationDropdown";
 interface AdminLayoutProps {
   children: ReactNode;
   defaultSidebarCollapsed?: boolean;
@@ -344,6 +345,16 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
           sidebarOpen ? "pl-64" : "pl-16"
         }`}
       >
+        {/* Top header bar with notification bell */}
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+          <div className="flex items-center justify-end h-14 px-8">
+            <NotificationDropdown 
+              isAdmin={isAdmin} 
+              isModerator={isModerator} 
+              userId={userId} 
+            />
+          </div>
+        </div>
         <div className="p-8">{children}</div>
       </main>
     </div>
