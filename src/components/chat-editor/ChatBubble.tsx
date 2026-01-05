@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, CourseCharacter, MENTOR_CHARACTER } from "./types";
 import { cn } from "@/lib/utils";
-import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff, Columns, PanelLeft, Maximize2, Minimize2 } from "lucide-react";
+import { Check, X, Bold, Italic, Code, List, ListOrdered, Heading2, Quote, Link, Image, Terminal, ChevronDown, Eye, EyeOff, Columns, PanelLeft, Maximize2, Minimize2, MessageSquare } from "lucide-react";
 import { renderCourseIcon } from "./utils";
 import CodeBlock from "./CodeBlock";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ interface ChatBubbleProps {
   isDragging?: boolean;
   dragHandleProps?: any;
   codeTheme?: string;
+  hasOpenAnnotations?: boolean;
 }
 
 const ChatBubble = ({
@@ -62,6 +63,7 @@ const ChatBubble = ({
   isDragging,
   dragHandleProps,
   codeTheme,
+  hasOpenAnnotations,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
   const [viewModeState, setViewModeState] = useState<'edit' | 'preview' | 'split'>('edit');
@@ -496,9 +498,16 @@ const ChatBubble = ({
           getChatColors(isMentor).bubble,
           getChatColors(isMentor).text,
           isMentor ? "rounded-br-md" : "rounded-bl-md",
-          isDragging && "ring-2 ring-primary/50"
+          isDragging && "ring-2 ring-primary/50",
+          hasOpenAnnotations && "ring-2 ring-amber-500 ring-offset-1 ring-offset-background"
         )}
       >
+        {/* Annotation indicator badge */}
+        {hasOpenAnnotations && (
+          <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white shadow-sm">
+            <MessageSquare className="w-3 h-3" />
+          </div>
+        )}
 
         {/* Speaker name (subtle) */}
         <div

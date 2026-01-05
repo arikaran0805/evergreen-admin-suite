@@ -914,6 +914,7 @@ const AdminPostEditor = () => {
                 placeholder="Start a conversation..."
                 codeTheme={formData.code_theme}
                 annotationMode={annotationMode}
+                annotations={annotations.map(a => ({ bubble_index: a.bubble_index, status: a.status }))}
                 onTextSelect={(selection) => {
                   if (!annotationMode) return; // Only show popup when annotation mode is ON
                   if (!isAdmin && !isModerator) return;
