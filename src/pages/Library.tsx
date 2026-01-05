@@ -338,19 +338,16 @@ const Library = () => {
             </div>
             
             <div className="flex items-center justify-between mt-3">
-              {!showProgress && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-medium">{course.averageRating?.toFixed(1) || "0"}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs font-medium">{course.enrollmentCount || 0}</span>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  <span className="text-xs font-medium">{course.averageRating?.toFixed(1) || "0"}</span>
                 </div>
-              )}
-              {showProgress && <div />}
+                <div className="flex items-center gap-1">
+                  <Users className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs font-medium">{course.enrollmentCount || 0}</span>
+                </div>
+              </div>
               <Button 
                 variant="default" 
                 size="sm"
