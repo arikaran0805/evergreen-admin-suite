@@ -34,9 +34,11 @@ const FloatingAnnotationPopup = ({
 }: FloatingAnnotationPopupProps) => {
   const [comment, setComment] = useState("");
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [placement, setPlacement] = useState<"top" | "bottom">("top");
   const [isExpanded, setIsExpanded] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastRectRef = useRef<DOMRect | null>(null);
 
   // Calculate position based on selection
   useEffect(() => {
@@ -44,42 +46,52 @@ const FloatingAnnotationPopup = ({
       setPosition(null);
       setIsExpanded(false);
       setComment("");
+      setPlacement("top");
+      lastRectRef.current = null;
       return;
     }
 
-    // Small delay to ensure selection is stable
-    const timeoutId = setTimeout(() => {
+    const update = () => {
+      // Capture the selection rect if it's still available (it may disappear after clicking the popup)
       const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) {
+      if (selection && selection.rangeCount > 0) {
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        if (rect && (rect.width !== 0 || rect.height !== 0)) {
+          lastRectRef.current = rect;
+        }
+      }
+
+      const rect = lastRectRef.current;
+      if (!rect) {
         setPosition(null);
         return;
       }
 
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-
-      // If no valid rect, hide popup
-      if (rect.width === 0 && rect.height === 0) {
-        setPosition(null);
-        return;
-      }
-
-      // Position popup above the selection (fixed positioning relative to viewport)
-      // Add padding to ensure it's visible above the selection
+      const padding = 12;
+      const minHalfWidth = 150; // ~min-w-[280px] / 2 + breathing room
       const popupHeight = isExpanded ? 220 : 50;
+
       let top = rect.top - popupHeight - 12;
-      
+      let nextPlacement: "top" | "bottom" = "top";
+
       // If popup would go above viewport, position below selection instead
-      if (top < 10) {
+      if (top < padding) {
         top = rect.bottom + 12;
+        nextPlacement = "bottom";
       }
-      
-      const left = rect.left + rect.width / 2;
 
+      const rawLeft = rect.left + rect.width / 2;
+      const left = Math.max(
+        padding + minHalfWidth,
+        Math.min(window.innerWidth - padding - minHalfWidth, rawLeft)
+      );
+
+      setPlacement(nextPlacement);
       setPosition({ top, left });
-    }, 10);
+    };
 
-    return () => clearTimeout(timeoutId);
+    const raf = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(raf);
   }, [selectedText, isExpanded]);
 
   // Focus textarea when expanded
@@ -179,9 +191,15 @@ const FloatingAnnotationPopup = ({
       }}
     >
       {/* Arrow pointing to selection */}
-      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-        <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-popover drop-shadow-sm" />
-      </div>
+      {placement === "top" ? (
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+          <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-popover drop-shadow-sm" />
+        </div>
+      ) : (
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+          <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-popover drop-shadow-sm" />
+        </div>
+      )}
 
       <div className="bg-popover border border-border rounded-lg shadow-xl overflow-hidden min-w-[280px] max-w-[400px]">
         {!isExpanded ? (

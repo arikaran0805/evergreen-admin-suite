@@ -208,31 +208,24 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
   const handleTextSelection = useCallback(() => {
     // Update floating toolbar
     updateFloatingToolbar();
-    
+
     if (!onTextSelect) return;
 
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
 
-    const text = selection.toString().trim();
+    const selection = quill.getSelection();
+    if (!selection || selection.length === 0) return;
+
+    const text = quill.getText(selection.index, selection.length).trim();
     if (!text || text.length < 2) return;
 
-    const quillEditor = quillRef.current?.getEditor();
-    if (!quillEditor) return;
-
-    const editorElement = containerRef.current?.querySelector('.ql-editor');
-    if (!editorElement) return;
-
-    const range = selection.getRangeAt(0);
-
-    if (!editorElement.contains(range.commonAncestorContainer)) return;
-
-    const codeBlockElement = range.commonAncestorContainer.parentElement?.closest('pre.ql-syntax');
-    const type: "paragraph" | "code" = codeBlockElement ? "code" : "paragraph";
+    const formats = quill.getFormat(selection);
+    const type: "paragraph" | "code" = formats["code-block"] ? "code" : "paragraph";
 
     onTextSelect({
-      start: range.startOffset,
-      end: range.endOffset,
+      start: selection.index,
+      end: selection.index + selection.length,
       text,
       type,
     });
@@ -673,7 +666,7 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
   const stablePlaceholder = useMemo(() => placeholder || "Write your content here...", [placeholder]);
 
   return (
-    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onFocus={handleEditorFocus}>
+    <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onKeyUp={handleTextSelection} onFocus={handleEditorFocus}>
       {/* View mode toggle and keyboard shortcuts */}
       <div className="flex items-center justify-between mb-2 px-1">
         {/* Keyboard shortcuts popover - left side */}
