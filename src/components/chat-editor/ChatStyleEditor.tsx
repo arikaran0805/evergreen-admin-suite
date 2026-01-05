@@ -70,6 +70,13 @@ interface ChatStyleEditorProps {
   courseType?: string;
   placeholder?: string;
   codeTheme?: string;
+  onTextSelect?: (selection: {
+    start: number;
+    end: number;
+    text: string;
+    type: "conversation";
+    bubbleIndex?: number;
+  }) => void;
 }
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -561,6 +568,7 @@ const ChatStyleEditor = ({
   courseType = "python",
   placeholder,
   codeTheme,
+  onTextSelect,
 }: ChatStyleEditorProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => parseContent(value));
   const [explanation, setExplanation] = useState<string>(() => extractExplanation(value) || "");
@@ -1319,6 +1327,27 @@ const ChatStyleEditor = ({
   const isMentor = (speaker: string) =>
     speaker.toLowerCase() === mentorName.toLowerCase();
 
+  // Handle text selection for annotations
+  const handleTextSelection = useCallback((bubbleIndex?: number) => {
+    if (!onTextSelect) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+
+    const text = selection.toString().trim();
+    if (!text || text.length < 2) return;
+
+    const range = selection.getRangeAt(0);
+    
+    onTextSelect({
+      start: range.startOffset,
+      end: range.endOffset,
+      text,
+      type: "conversation",
+      bubbleIndex,
+    });
+  }, [onTextSelect]);
+
   return (
     <div className="chat-style-editor rounded-xl border border-border bg-background overflow-hidden shadow-lg">
       {/* Header */}
@@ -1369,6 +1398,7 @@ const ChatStyleEditor = ({
         style={{
           backgroundImage: `radial-gradient(circle at 50% 50%, hsl(var(--muted) / 0.3) 0%, transparent 70%)`,
         }}
+        onMouseUp={() => handleTextSelection()}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
