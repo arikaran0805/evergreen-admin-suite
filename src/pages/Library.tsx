@@ -288,7 +288,7 @@ const Library = () => {
       >
         <div className="flex h-full">
           {/* Left Section - Dark */}
-          <div className="w-1/3 bg-slate-800 dark:bg-slate-900 p-4 flex flex-col justify-between">
+          <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#14532d' }}>
             <div>
               <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
                 Course
@@ -317,8 +317,8 @@ const Library = () => {
               {showProgress && course.progress !== undefined && (
                 <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
                   <div 
-                    className="h-full bg-slate-800 dark:bg-slate-600 rounded-full transition-all"
-                    style={{ width: `${course.progress}%` }}
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${course.progress}%`, background: '#14532d' }}
                   />
                 </div>
               )}
@@ -351,7 +351,7 @@ const Library = () => {
               <Button 
                 variant="default" 
                 size="sm"
-                className="bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-full px-4 h-7 text-xs"
+                className="text-white rounded-full px-4 h-7 text-xs hover:opacity-90" style={{ background: '#14532d' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/course/${course.slug}`);
@@ -555,7 +555,7 @@ const Library = () => {
                         <Card key={i} className="overflow-hidden h-[160px]">
                           <div className="flex h-full">
                             {/* Left Section Skeleton - Dark */}
-                            <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#1f2937' }}>
+                            <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#14532d' }}>
                               <div>
                                 <Skeleton className="h-3 w-16 mb-2 bg-slate-700" />
                                 <Skeleton className="h-5 w-full mb-1 bg-slate-700" />
