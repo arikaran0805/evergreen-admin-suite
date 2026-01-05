@@ -713,42 +713,28 @@ export const CareerProgressChart = ({
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(142 76% 46%)" />
                 </linearGradient>
-                {/* Upward arrow marker for progress line end - prominent upward pointing arrow */}
+                {/* Upward arrow marker for progress line end */}
                 <marker
                   id="progressArrow"
                   viewBox="0 0 40 50"
                   refX="20"
                   refY="50"
-                  markerWidth="24"
-                  markerHeight="30"
+                  markerWidth="20"
+                  markerHeight="25"
                   orient="0"
                 >
-                  {/* Arrow body - thick stem */}
-                  <rect
-                    x="14"
-                    y="20"
-                    width="12"
-                    height="30"
+                  {/* Arrow shape - stem + head combined */}
+                  <path
+                    d="M 20 0 L 38 22 L 27 22 L 27 50 L 13 50 L 13 22 L 2 22 Z"
                     fill="hsl(142 76% 46%)"
-                    rx="2"
-                  />
-                  {/* Arrow head - large upward pointing triangle */}
-                  <polygon
-                    points="20,0 40,25 30,25 30,20 10,20 10,25 0,25"
-                    fill="hsl(142 76% 46%)"
-                  />
-                  {/* Highlight for 3D effect */}
-                  <polygon
-                    points="20,4 32,22 26,22 26,18 20,18"
-                    fill="hsl(142 76% 56%)"
-                    opacity="0.6"
-                  />
-                  {/* Border outline */}
-                  <polygon
-                    points="20,0 40,25 30,25 30,50 10,50 10,25 0,25"
-                    fill="none"
                     stroke="hsl(142 76% 36%)"
                     strokeWidth="1.5"
+                  />
+                  {/* Highlight for 3D effect */}
+                  <path
+                    d="M 20 4 L 32 20 L 25 20 L 25 46 L 20 46 L 20 4"
+                    fill="hsl(142 76% 56%)"
+                    opacity="0.5"
                   />
                 </marker>
                 {/* Glow effect */}
