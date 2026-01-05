@@ -66,11 +66,21 @@ const KEYBOARD_SHORTCUTS = [
   { keys: `${modKey}+⇧+3`, action: 'Heading 3' },
 ];
 
+interface Annotation {
+  id: string;
+  selection_start: number;
+  selection_end: number;
+  selected_text: string;
+  status: string;
+}
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   annotationMode?: boolean;
+  annotations?: Annotation[];
+  onAnnotationClick?: (annotation: Annotation) => void;
   onTextSelect?: (selection: {
     start: number;
     end: number;
@@ -86,7 +96,7 @@ interface CodeBlockOverlay {
   language: string;
 }
 
-const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSelect }: RichTextEditorProps) => {
+const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotations = [], onAnnotationClick, onTextSelect }: RichTextEditorProps) => {
   const quillRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shortcutListenerRootRef = useRef<HTMLElement | null>(null);
@@ -523,16 +533,114 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
     return () => window.clearTimeout(timeout);
   }, [normalizeCodeBlocksIfNeeded, updateCodeBlockPositions]);
 
-  // Update positions on scroll/resize
+  // Apply annotation highlights to the editor content
   useEffect(() => {
-    const handleUpdate = () => updateCodeBlockPositions();
-    window.addEventListener('resize', handleUpdate);
-    window.addEventListener('scroll', handleUpdate, true);
+    if (!containerRef.current || annotations.length === 0) return;
+
+    const editorRoot = containerRef.current.querySelector('.ql-editor');
+    if (!editorRoot) return;
+
+    // Remove existing annotation highlights
+    editorRoot.querySelectorAll('.annotation-highlight').forEach(el => {
+      const parent = el.parentNode;
+      if (parent) {
+        parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+        parent.normalize();
+      }
+    });
+
+    // Get the text content for position mapping
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    // Apply highlights for each annotation
+    const openAnnotations = annotations.filter(a => a.status === 'open');
+    
+    openAnnotations.forEach((annotation) => {
+      try {
+        const { index, length } = { index: annotation.selection_start, length: annotation.selection_end - annotation.selection_start };
+        if (length <= 0) return;
+
+        // Use Quill's formatText to apply a custom format
+        // We'll use the background format with a special class approach
+        const bounds = quill.getBounds(index, length);
+        if (!bounds) return;
+
+        // Create highlight overlay
+        const highlight = document.createElement('div');
+        highlight.className = 'annotation-highlight-overlay';
+        highlight.style.cssText = `
+          position: absolute;
+          left: ${bounds.left}px;
+          top: ${bounds.top}px;
+          width: ${bounds.width}px;
+          height: ${bounds.height}px;
+          background: hsl(var(--primary) / 0.15);
+          border-bottom: 2px solid hsl(var(--primary) / 0.5);
+          pointer-events: auto;
+          cursor: pointer;
+          border-radius: 2px;
+          z-index: 1;
+        `;
+        highlight.dataset.annotationId = annotation.id;
+        highlight.title = `Annotation: "${annotation.selected_text.slice(0, 50)}..."`;
+        
+        highlight.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onAnnotationClick?.(annotation);
+        });
+
+        // Add to editor container
+        const editorContainer = containerRef.current?.querySelector('.ql-container');
+        if (editorContainer) {
+          (editorContainer as HTMLElement).style.position = 'relative';
+          editorContainer.appendChild(highlight);
+        }
+      } catch (err) {
+        console.error('Error applying annotation highlight:', err);
+      }
+    });
+
     return () => {
-      window.removeEventListener('resize', handleUpdate);
-      window.removeEventListener('scroll', handleUpdate, true);
+      // Cleanup overlays
+      containerRef.current?.querySelectorAll('.annotation-highlight-overlay').forEach(el => el.remove());
     };
-  }, [updateCodeBlockPositions]);
+  }, [annotations, value, onAnnotationClick]);
+
+  // Update annotation highlight positions on scroll/resize
+  useEffect(() => {
+    const updateAnnotationPositions = () => {
+      if (!containerRef.current || annotations.length === 0) return;
+      
+      const quill = quillRef.current?.getEditor();
+      if (!quill) return;
+
+      const overlays = containerRef.current.querySelectorAll('.annotation-highlight-overlay');
+      overlays.forEach((overlay) => {
+        const annotationId = (overlay as HTMLElement).dataset.annotationId;
+        const annotation = annotations.find(a => a.id === annotationId);
+        if (!annotation) return;
+
+        const { index, length } = { index: annotation.selection_start, length: annotation.selection_end - annotation.selection_start };
+        const bounds = quill.getBounds(index, length);
+        if (!bounds) return;
+
+        (overlay as HTMLElement).style.left = `${bounds.left}px`;
+        (overlay as HTMLElement).style.top = `${bounds.top}px`;
+        (overlay as HTMLElement).style.width = `${bounds.width}px`;
+        (overlay as HTMLElement).style.height = `${bounds.height}px`;
+      });
+    };
+
+    window.addEventListener('resize', updateAnnotationPositions);
+    window.addEventListener('scroll', updateAnnotationPositions, true);
+    return () => {
+      window.removeEventListener('resize', updateAnnotationPositions);
+      window.removeEventListener('scroll', updateAnnotationPositions, true);
+    };
+  }, [annotations]);
+
+  // Update positions on scroll/resize
 
   // Setup takeaway toolbar button
   useEffect(() => {
