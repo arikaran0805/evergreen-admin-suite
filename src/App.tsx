@@ -13,7 +13,7 @@ import CourseDetail from "./pages/CourseDetail";
 import Library from "./pages/Library";
 import Arcade from "./pages/Arcade";
 
-import PracticeLab from "./pages/PracticeLab";
+
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
@@ -105,7 +105,7 @@ const AppContent = () => {
         <Route path="/library" element={<Library />} />
         <Route path="/arcade" element={<Arcade />} />
         
-        <Route path="/practice-lab" element={<PracticeLab />} />
+        <Route path="/practice-lab" element={<Navigate to="/profile?tab=practice" replace />} />
         <Route path="/tag/:slug" element={<TagPosts />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
