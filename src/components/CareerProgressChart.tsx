@@ -636,19 +636,20 @@ export const CareerProgressChart = ({
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(142 76% 46%)" />
                 </linearGradient>
-                {/* Arrow marker for progress line end */}
+                {/* Small arrow marker for progress line end */}
                 <marker
                   id="progressArrow"
-                  viewBox="0 0 10 10"
-                  refX="5"
-                  refY="5"
-                  markerWidth="4"
-                  markerHeight="4"
-                  orient="auto-start-reverse"
+                  viewBox="0 0 12 12"
+                  refX="6"
+                  refY="6"
+                  markerWidth="2.5"
+                  markerHeight="2.5"
+                  orient="auto"
                 >
+                  <circle cx="6" cy="6" r="5" fill="hsl(142 76% 46%)" />
                   <path
-                    d="M 0 0 L 10 5 L 0 10 z"
-                    fill="hsl(142 76% 46%)"
+                    d="M 4 3 L 9 6 L 4 9 z"
+                    fill="white"
                   />
                 </marker>
                 {/* Glow effect */}
