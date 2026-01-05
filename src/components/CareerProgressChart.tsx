@@ -559,7 +559,7 @@ export const CareerProgressChart = ({
             <span>75%</span>
             <span>50%</span>
             <span>25%</span>
-            <span>0%</span>
+            <span></span>
           </div>
 
           {/* X-Axis Label */}
@@ -583,7 +583,7 @@ export const CareerProgressChart = ({
               bottom: chartPadding.bottom - 25 
             }}
           >
-            <span>0h</span>
+            <span></span>
             <span>30h</span>
             <span>60h</span>
             <span>90h</span>
