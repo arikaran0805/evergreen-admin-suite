@@ -555,7 +555,7 @@ const Library = () => {
                         <Card key={i} className="overflow-hidden h-[160px]">
                           <div className="flex h-full">
                             {/* Left Section Skeleton - Dark */}
-                            <div className="w-1/3 bg-slate-800 dark:bg-slate-900 p-4 flex flex-col justify-between">
+                            <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#1f2937' }}>
                               <div>
                                 <Skeleton className="h-3 w-16 mb-2 bg-slate-700" />
                                 <Skeleton className="h-5 w-full mb-1 bg-slate-700" />
