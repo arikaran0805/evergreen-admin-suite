@@ -10,6 +10,7 @@ export interface AdminNotifications {
   mediaLibrary: number;
   newUsers: number;
   deleteRequests: number;
+  openAnnotations: number;
   totalApprovals: number;
 }
 
@@ -23,6 +24,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
     mediaLibrary: 0,
     newUsers: 0,
     deleteRequests: 0,
+    openAnnotations: 0,
     totalApprovals: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +67,8 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
           commentsResult,
           mediaResult,
           usersResult,
-          deleteRequestsResult
+          deleteRequestsResult,
+          annotationsResult
         ] = await Promise.all([
           supabase.from("content_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
           supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
@@ -74,7 +77,8 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
           supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
           supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
           supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
-          supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
+          supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("post_annotations").select("*", { count: "exact", head: true }).eq("status", "open")
         ]);
 
         const totalApprovals = (postsResult.count || 0) + (coursesResult.count || 0) + (tagsResult.count || 0);
@@ -88,6 +92,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
           mediaLibrary: mediaResult.count || 0,
           newUsers: usersResult.count || 0,
           deleteRequests: deleteRequestsResult.count || 0,
+          openAnnotations: annotationsResult.count || 0,
           totalApprovals,
         });
       } catch (error) {
@@ -112,6 +117,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => fetchNotifications())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchNotifications())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'delete_requests' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_annotations' }, () => fetchNotifications())
       .subscribe();
 
     return () => {
@@ -135,7 +141,8 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
         commentsResult,
         mediaResult,
         usersResult,
-        deleteRequestsResult
+        deleteRequestsResult,
+        annotationsResult
       ] = await Promise.all([
         supabase.from("content_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
@@ -144,7 +151,8 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
         supabase.from("comments").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
         supabase.from("media").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
         supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", windowDate),
-        supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
+        supabase.from("delete_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("post_annotations").select("*", { count: "exact", head: true }).eq("status", "open")
       ]);
 
       const totalApprovals = (postsResult.count || 0) + (coursesResult.count || 0) + (tagsResult.count || 0);
@@ -158,6 +166,7 @@ export const useAdminNotifications = (isAdmin: boolean, userId: string | null) =
         mediaLibrary: mediaResult.count || 0,
         newUsers: usersResult.count || 0,
         deleteRequests: deleteRequestsResult.count || 0,
+        openAnnotations: annotationsResult.count || 0,
         totalApprovals,
       });
     } catch (error) {
