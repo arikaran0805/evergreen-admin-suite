@@ -713,28 +713,24 @@ export const CareerProgressChart = ({
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(142 76% 46%)" />
                 </linearGradient>
-                {/* Upward arrow marker for progress line end */}
+                {/* Upward arrow marker for progress line end (no horizontal bar) */}
                 <marker
                   id="progressArrow"
-                  viewBox="0 0 40 50"
-                  refX="20"
-                  refY="50"
-                  markerWidth="20"
-                  markerHeight="25"
+                  viewBox="0 0 24 28"
+                  refX="12"
+                  refY="28"
+                  markerWidth="18"
+                  markerHeight="22"
                   orient="0"
+                  markerUnits="userSpaceOnUse"
                 >
-                  {/* Arrow shape - stem + head combined */}
                   <path
-                    d="M 20 0 L 38 22 L 27 22 L 27 50 L 13 50 L 13 22 L 2 22 Z"
-                    fill="hsl(142 76% 46%)"
-                    stroke="hsl(142 76% 36%)"
-                    strokeWidth="1.5"
-                  />
-                  {/* Highlight for 3D effect */}
-                  <path
-                    d="M 20 4 L 32 20 L 25 20 L 25 46 L 20 46 L 20 4"
-                    fill="hsl(142 76% 56%)"
-                    opacity="0.5"
+                    d="M12 2 L22 12 M12 2 L2 12 M12 10 L12 28"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </marker>
                 {/* Glow effect */}
