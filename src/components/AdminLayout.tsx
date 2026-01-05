@@ -213,7 +213,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
   const roleLabel = isAdmin ? "Admin" : isModerator ? "Moderator" : "User";
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-x-hidden">
       {/* Sidebar */}
       <aside
         className={`${
@@ -319,9 +319,9 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
 
       {/* Main Content */}
       <main
-        className={`${
-          sidebarOpen ? "ml-64" : "ml-16"
-        } flex-1 transition-all duration-300`}
+        className={`flex-1 min-w-0 transition-all duration-300 ${
+          sidebarOpen ? "pl-64" : "pl-16"
+        }`}
       >
         <div className="p-8">{children}</div>
       </main>
