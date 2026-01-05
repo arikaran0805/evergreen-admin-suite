@@ -894,28 +894,29 @@ const AdminPostEditor = () => {
                 }
                 placeholder="Start a conversation..."
                 codeTheme={formData.code_theme}
-                 onTextSelect={(selection) => {
-                   if (!annotationMode) return; // Only show popup when annotation mode is ON
-                   if (!isAdmin && !isModerator) return;
-                   if (!id) {
-                     if (!saveToAnnotateToastShownRef.current) {
-                       saveToAnnotateToastShownRef.current = true;
-                       toast({
-                         title: "Save to annotate",
-                         description: "Create/save the post first, then you can add annotations.",
-                       });
-                     }
-                     return;
-                   }
+                annotationMode={annotationMode}
+                onTextSelect={(selection) => {
+                  if (!annotationMode) return; // Only show popup when annotation mode is ON
+                  if (!isAdmin && !isModerator) return;
+                  if (!id) {
+                    if (!saveToAnnotateToastShownRef.current) {
+                      saveToAnnotateToastShownRef.current = true;
+                      toast({
+                        title: "Save to annotate",
+                        description: "Create/save the post first, then you can add annotations.",
+                      });
+                    }
+                    return;
+                  }
 
-                   setSelectedText({
-                     start: selection.start,
-                     end: selection.end,
-                     text: selection.text,
-                     type: selection.type,
-                     bubbleIndex: selection.bubbleIndex,
-                   });
-                 }}
+                  setSelectedText({
+                    start: selection.start,
+                    end: selection.end,
+                    text: selection.text,
+                    type: selection.type,
+                    bubbleIndex: selection.bubbleIndex,
+                  });
+                }}
               />
             )}
             </div>
