@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "@/components/RichTextEditor";
-import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns, Maximize2, Minimize2, PenTool } from "lucide-react";
+import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns, Maximize2, Minimize2, PenTool, MessageSquarePlus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import CodeBlock from "./CodeBlock";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +70,7 @@ interface ChatStyleEditorProps {
   courseType?: string;
   placeholder?: string;
   codeTheme?: string;
+  annotationMode?: boolean;
   onTextSelect?: (selection: {
     start: number;
     end: number;
@@ -239,11 +240,13 @@ interface MessageItemProps {
   onMoveDown: () => void;
   onConvertToTakeaway: (id: string) => void;
   onConvertToMessage: (id: string) => void;
+  onAnnotateBubble?: (index: number, text: string) => void;
   isEditMode: boolean;
   isFirst: boolean;
   isLast: boolean;
   codeTheme?: string;
   index?: number;
+  annotationMode?: boolean;
 }
 
 const SortableMessageItem = ({
@@ -259,11 +262,13 @@ const SortableMessageItem = ({
   onMoveDown,
   onConvertToTakeaway,
   onConvertToMessage,
+  onAnnotateBubble,
   isEditMode,
   isFirst,
   isLast,
   codeTheme,
   index = 0,
+  annotationMode,
 }: MessageItemProps) => {
   const {
     attributes,
@@ -345,6 +350,18 @@ const SortableMessageItem = ({
           title="Convert to takeaway"
         >
           <Lightbulb className="w-3 h-3" />
+        </Button>
+      )}
+      {/* Annotate bubble button - only in annotation mode */}
+      {annotationMode && onAnnotateBubble && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
+          onClick={() => onAnnotateBubble(index, message.content)}
+          title="Annotate this bubble"
+        >
+          <MessageSquarePlus className="w-3 h-3" />
         </Button>
       )}
       <Button
@@ -568,6 +585,7 @@ const ChatStyleEditor = ({
   courseType = "python",
   placeholder,
   codeTheme,
+  annotationMode,
   onTextSelect,
 }: ChatStyleEditorProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => parseContent(value));
@@ -1348,6 +1366,20 @@ const ChatStyleEditor = ({
     });
   }, [onTextSelect]);
 
+  // Handle annotating a full bubble
+  const handleAnnotateBubble = useCallback((bubbleIndex: number, text: string) => {
+    if (!onTextSelect) return;
+    if (!text || text.length < 2) return;
+
+    onTextSelect({
+      start: 0,
+      end: text.length,
+      text: text.trim(),
+      type: "conversation",
+      bubbleIndex,
+    });
+  }, [onTextSelect]);
+
   return (
     <div className="chat-style-editor rounded-xl border border-border bg-background overflow-hidden shadow-lg">
       {/* Header */}
@@ -1445,11 +1477,13 @@ const ChatStyleEditor = ({
                       onMoveDown={() => handleMoveMessage(message.id, "down")}
                       onConvertToTakeaway={handleConvertToTakeaway}
                       onConvertToMessage={handleConvertToMessage}
+                      onAnnotateBubble={handleAnnotateBubble}
                       isEditMode={mode === "edit"}
                       isFirst={index === 0}
                       isLast={index === messages.length - 1}
                       codeTheme={codeTheme}
                       index={index}
+                      annotationMode={annotationMode}
                     />
                     {/* Insert between button - show after every bubble in edit mode */}
                     {mode === "edit" && (
