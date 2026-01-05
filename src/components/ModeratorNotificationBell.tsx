@@ -33,7 +33,7 @@ const ModeratorNotificationBell = ({ userId }: ModeratorNotificationBellProps) =
     }
     
     // Navigate to activity page to see full details
-    navigate("/admin/moderator-activity");
+    navigate("/admin/activity");
   };
 
   const getNotificationIcon = (type: string) => {
@@ -173,7 +173,7 @@ const ModeratorNotificationBell = ({ userId }: ModeratorNotificationBellProps) =
               variant="ghost"
               size="sm"
               className="w-full text-xs"
-              onClick={() => navigate("/admin/moderator-activity")}
+              onClick={() => navigate("/admin/activity")}
             >
               View all activity
             </Button>
