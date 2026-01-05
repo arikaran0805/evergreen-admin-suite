@@ -865,11 +865,11 @@ const AdminPostEditor = () => {
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
-        <div className="flex-shrink-0 flex sticky top-0 h-screen">
+        <div className="flex-shrink-0 flex sticky top-0 self-start">
           {/* Vertical Tab Toggle - Always visible */}
           <button
             onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
+            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer self-stretch"
           >
             <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${rightSidebarOpen ? 'rotate-180' : ''}`} />
             <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
@@ -878,7 +878,7 @@ const AdminPostEditor = () => {
           </button>
 
           {/* Sidebar Content */}
-          <Card className={`flex flex-col min-h-0 transition-all duration-300 h-fit rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
             <div className={`space-y-4 ${!rightSidebarOpen ? 'hidden' : ''}`}>
             {/* Action Buttons */}
             <div className="space-y-2">
