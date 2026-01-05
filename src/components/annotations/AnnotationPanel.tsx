@@ -7,43 +7,35 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { 
-  MessageSquare, 
-  CheckCircle, 
+  MessageSquarePlus, 
+  CheckCircle2, 
   XCircle, 
   Trash2, 
-  Plus, 
   Reply, 
   ChevronDown, 
   ChevronRight,
-  Filter,
-  User,
-  Shield,
-  Code,
-  FileText,
-  MessageCircle
+  Lightbulb,
+  Heart,
+  BookOpen,
+  Sparkles,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AnnotationPanelProps {
   annotations: PostAnnotation[];
@@ -75,9 +67,6 @@ interface AnnotationPanelProps {
   onToggleInlineAnnotations?: (show: boolean) => void;
 }
 
-type FilterStatus = "all" | "open" | "resolved";
-type FilterAuthor = "all" | "admin" | "moderator" | "mine";
-
 const AnnotationPanel = ({
   annotations,
   loading,
@@ -96,9 +85,7 @@ const AnnotationPanel = ({
   onToggleInlineAnnotations,
 }: AnnotationPanelProps) => {
   const [newComment, setNewComment] = useState("");
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const [filterAuthor, setFilterAuthor] = useState<FilterAuthor>("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState<"needs-attention" | "resolved">("needs-attention");
 
   // Check if moderator can annotate the selected type
   const canAnnotateSelection = () => {
@@ -106,7 +93,6 @@ const AnnotationPanel = ({
     if (!isModerator) return false;
     if (!selectedText) return false;
     
-    // Moderators can only annotate paragraphs and code blocks
     const type = selectedText.type || "paragraph";
     return type === "paragraph" || type === "code";
   };
@@ -126,256 +112,224 @@ const AnnotationPanel = ({
     onClearSelection?.();
   };
 
-  // Filter annotations
-  const filteredAnnotations = annotations.filter(a => {
-    // Status filter
-    if (filterStatus === "open" && a.status !== "open") return false;
-    if (filterStatus === "resolved" && a.status === "open") return false;
-    
-    // Author filter - would need author role info
-    if (filterAuthor === "mine" && a.author_id !== userId) return false;
-    
-    return true;
-  });
-
-  const openAnnotations = filteredAnnotations.filter(a => a.status === "open");
-  const resolvedAnnotations = filteredAnnotations.filter(a => a.status !== "open");
-  const totalOpen = annotations.filter(a => a.status === "open").length;
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "bg-amber-500/10 text-amber-600 border-amber-500/30";
-      case "resolved":
-        return "bg-green-500/10 text-green-600 border-green-500/30";
-      case "dismissed":
-        return "bg-gray-500/10 text-gray-600 border-gray-500/30";
-      default:
-        return "";
-    }
-  };
-
-  const getTypeIcon = (editorType: string, bubbleIndex: number | null) => {
-    if (bubbleIndex !== null) {
-      return <MessageCircle className="h-3 w-3" />;
-    }
-    if (editorType === "chat") {
-      return <MessageCircle className="h-3 w-3" />;
-    }
-    return <FileText className="h-3 w-3" />;
-  };
+  const openAnnotations = annotations.filter(a => a.status === "open");
+  const resolvedAnnotations = annotations.filter(a => a.status !== "open");
+  const totalOpen = openAnnotations.length;
 
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <MessageSquare className="h-4 w-4" />
-          Annotations
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={cn(
+            "gap-2 border-2 transition-all",
+            totalOpen > 0 
+              ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40" 
+              : "hover:border-primary/50"
+          )}
+        >
+          <Lightbulb className={cn(
+            "h-4 w-4",
+            totalOpen > 0 ? "text-amber-500" : ""
+          )} />
+          <span className="font-medium">Teaching Notes</span>
           {totalOpen > 0 && (
-            <Badge variant="destructive" className="ml-1">
+            <Badge className="bg-amber-500 hover:bg-amber-600 text-white ml-1">
               {totalOpen}
             </Badge>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[420px] sm:w-[560px] flex flex-col">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Annotations & Feedback
+      
+      <SheetContent className="w-[460px] sm:w-[520px] flex flex-col p-0 gap-0">
+        {/* Header */}
+        <SheetHeader className="p-6 pb-4 border-b bg-gradient-to-br from-primary/5 to-transparent">
+          <SheetTitle className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <span className="text-lg">Teaching Notes</span>
+              <p className="text-sm font-normal text-muted-foreground mt-0.5">
+                Guidance to help improve this content
+              </p>
+            </div>
           </SheetTitle>
-          <SheetDescription>
-            Review comments and suggestions on this post
-          </SheetDescription>
         </SheetHeader>
 
         {/* Toggle inline annotations */}
         {onToggleInlineAnnotations && (
-          <div className="flex items-center gap-2 py-3 border-b">
+          <div className="flex items-center justify-between px-6 py-3 bg-muted/30 border-b">
+            <Label htmlFor="inline-annotations" className="text-sm cursor-pointer flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+              Highlight notes in content
+            </Label>
             <Switch
               id="inline-annotations"
               checked={showAnnotationsInline}
               onCheckedChange={onToggleInlineAnnotations}
             />
-            <Label htmlFor="inline-annotations" className="text-sm cursor-pointer">
-              Show highlights in content
-            </Label>
           </div>
         )}
-
-        {/* Filters */}
-        <div className="py-3 border-b">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 mb-2"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-            {showFilters ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          </Button>
-          
-          {showFilters && (
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Status</Label>
-                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Created by</Label>
-                <Select value={filterAuthor} onValueChange={(v) => setFilterAuthor(v as FilterAuthor)}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="mine">My annotations</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Add annotation section */}
-        {selectedText && (isAdmin || (isModerator && canAnnotateSelection())) && (
-          <div className="py-4 border-b">
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Plus className="h-4 w-4 text-primary" />
-                <p className="text-sm font-medium">Add annotation</p>
-                {selectedText.type && (
-                  <Badge variant="outline" className="text-xs gap-1">
-                    {selectedText.type === "conversation" && <MessageCircle className="h-3 w-3" />}
-                    {selectedText.type === "code" && <Code className="h-3 w-3" />}
-                    {selectedText.type === "paragraph" && <FileText className="h-3 w-3" />}
-                    {selectedText.type}
-                  </Badge>
-                )}
-              </div>
-              
-              {/* Show warning if moderator trying to annotate conversation */}
-              {isModerator && !isAdmin && selectedText.type === "conversation" && (
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded text-xs mb-3 text-amber-700 dark:text-amber-300">
-                  Moderators cannot annotate conversation bubbles. Only admins can add annotations here.
+        <AnimatePresence>
+          {selectedText && (isAdmin || (isModerator && canAnnotateSelection())) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden border-b"
+            >
+              <div className="p-6 bg-gradient-to-br from-emerald-50 to-transparent dark:from-emerald-950/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                    <MessageSquarePlus className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    Share your teaching insight
+                  </p>
                 </div>
-              )}
-              
-              <div className="p-2 bg-primary/10 border-l-4 border-primary rounded text-sm mb-3 line-clamp-3">
-                "{selectedText.text}"
+                
+                {/* Warning for moderators on conversation */}
+                {isModerator && !isAdmin && selectedText.type === "conversation" && (
+                  <div className="p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm mb-3 text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                    <Lightbulb className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>Only senior mentors can add notes to conversation sections.</span>
+                  </div>
+                )}
+                
+                {/* Selected text preview */}
+                <div className="p-3 bg-white dark:bg-card border border-emerald-200 dark:border-emerald-800 rounded-lg mb-3">
+                  <p className="text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">
+                    Selected text
+                  </p>
+                  <p className="text-sm italic text-foreground/80 line-clamp-3">
+                    "{selectedText.text}"
+                  </p>
+                </div>
+                
+                <Textarea
+                  placeholder="What teaching guidance would you like to share? (e.g., 'Consider adding a real-world example here for beginners')"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="mb-3 bg-white dark:bg-card border-emerald-200 dark:border-emerald-800 focus:border-emerald-400 min-h-[80px]"
+                  rows={3}
+                  disabled={!canAnnotateSelection()}
+                />
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleAddAnnotation} 
+                    disabled={!newComment.trim() || !canAnnotateSelection()}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Send className="h-4 w-4" />
+                    Add Note
+                  </Button>
+                  <Button variant="ghost" onClick={onClearSelection}>
+                    Cancel
+                  </Button>
+                </div>
               </div>
-              
-              <Textarea
-                placeholder="Enter your feedback or suggestion..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="mb-2"
-                rows={3}
-                disabled={!canAnnotateSelection()}
-              />
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={handleAddAnnotation} 
-                  disabled={!newComment.trim() || !canAnnotateSelection()}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Comment
-                </Button>
-                <Button size="sm" variant="outline" onClick={onClearSelection}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <ScrollArea className="flex-1 pr-4">
+        {/* Tabs */}
+        <div className="flex border-b px-6">
+          <button
+            onClick={() => setActiveTab("needs-attention")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+              activeTab === "needs-attention"
+                ? "border-amber-500 text-amber-600 dark:text-amber-400"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              openAnnotations.length > 0 ? "bg-amber-500 animate-pulse" : "bg-amber-300"
+            )} />
+            Needs Attention
+            {openAnnotations.length > 0 && (
+              <span className="text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                {openAnnotations.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("resolved")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+              activeTab === "resolved"
+                ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Addressed
+            {resolvedAnnotations.length > 0 && (
+              <span className="text-xs bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">
+                {resolvedAnnotations.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Content */}
+        <ScrollArea className="flex-1">
           {loading ? (
-            <div className="space-y-4 py-4">
+            <div className="p-6 space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="p-4 border rounded-lg animate-pulse">
-                  <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+                <div key={i} className="p-4 border rounded-xl animate-pulse bg-muted/30">
+                  <div className="h-4 bg-muted rounded w-1/3 mb-3" />
+                  <div className="h-3 bg-muted rounded w-2/3 mb-2" />
                   <div className="h-3 bg-muted rounded w-1/2" />
                 </div>
               ))}
             </div>
-          ) : filteredAnnotations.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No annotations found</p>
-              {(isAdmin || isModerator) && (
-                <p className="text-sm mt-2">
-                  Select text in the content to add an annotation
-                </p>
-              )}
-            </div>
           ) : (
-            <div className="space-y-4 py-4">
-              {/* Open annotations */}
-              {openAnnotations.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    Open ({openAnnotations.length})
-                  </h4>
-                  <div className="space-y-3">
-                    {openAnnotations.map((annotation) => (
-                      <AnnotationCard
-                        key={annotation.id}
-                        annotation={annotation}
-                        isAdmin={isAdmin}
-                        isModerator={isModerator}
-                        userId={userId}
-                        onUpdateStatus={onUpdateStatus}
-                        onDelete={onDelete}
-                        onAddReply={onAddReply}
-                        onDeleteReply={onDeleteReply}
-                        getStatusColor={getStatusColor}
-                        getTypeIcon={getTypeIcon}
-                        onClick={() => onAnnotationClick?.(annotation)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Resolved/dismissed annotations */}
-              {resolvedAnnotations.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    Resolved ({resolvedAnnotations.length})
-                  </h4>
-                  <div className="space-y-3 opacity-70">
-                    {resolvedAnnotations.map((annotation) => (
-                      <AnnotationCard
-                        key={annotation.id}
-                        annotation={annotation}
-                        isAdmin={isAdmin}
-                        isModerator={isModerator}
-                        userId={userId}
-                        onUpdateStatus={onUpdateStatus}
-                        onDelete={onDelete}
-                        onAddReply={onAddReply}
-                        onDeleteReply={onDeleteReply}
-                        getStatusColor={getStatusColor}
-                        getTypeIcon={getTypeIcon}
-                        onClick={() => onAnnotationClick?.(annotation)}
-                      />
-                    ))}
-                  </div>
-                </div>
+            <div className="p-6 space-y-4">
+              {activeTab === "needs-attention" ? (
+                openAnnotations.length === 0 ? (
+                  <EmptyState type="open" isAdmin={isAdmin} isModerator={isModerator} />
+                ) : (
+                  openAnnotations.map((annotation) => (
+                    <AnnotationCard
+                      key={annotation.id}
+                      annotation={annotation}
+                      isAdmin={isAdmin}
+                      isModerator={isModerator}
+                      userId={userId}
+                      onUpdateStatus={onUpdateStatus}
+                      onDelete={onDelete}
+                      onAddReply={onAddReply}
+                      onDeleteReply={onDeleteReply}
+                      onClick={() => onAnnotationClick?.(annotation)}
+                    />
+                  ))
+                )
+              ) : (
+                resolvedAnnotations.length === 0 ? (
+                  <EmptyState type="resolved" isAdmin={isAdmin} isModerator={isModerator} />
+                ) : (
+                  resolvedAnnotations.map((annotation) => (
+                    <AnnotationCard
+                      key={annotation.id}
+                      annotation={annotation}
+                      isAdmin={isAdmin}
+                      isModerator={isModerator}
+                      userId={userId}
+                      onUpdateStatus={onUpdateStatus}
+                      onDelete={onDelete}
+                      onAddReply={onAddReply}
+                      onDeleteReply={onDeleteReply}
+                      onClick={() => onAnnotationClick?.(annotation)}
+                    />
+                  ))
+                )
               )}
             </div>
           )}
@@ -384,6 +338,37 @@ const AnnotationPanel = ({
     </Sheet>
   );
 };
+
+const EmptyState = ({ type, isAdmin, isModerator }: { type: "open" | "resolved"; isAdmin: boolean; isModerator: boolean }) => (
+  <div className="text-center py-12 px-6">
+    {type === "open" ? (
+      <>
+        <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+          <Heart className="h-8 w-8 text-emerald-500" />
+        </div>
+        <h3 className="font-medium text-lg mb-2">All caught up!</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          There are no notes that need attention right now.
+        </p>
+        {(isAdmin || isModerator) && (
+          <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+            💡 Select any text in the content to share teaching guidance
+          </p>
+        )}
+      </>
+    ) : (
+      <>
+        <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-medium text-lg mb-2">No addressed notes yet</h3>
+        <p className="text-sm text-muted-foreground">
+          Notes that have been addressed will appear here for reference.
+        </p>
+      </>
+    )}
+  </div>
+);
 
 interface AnnotationCardProps {
   annotation: PostAnnotation;
@@ -394,8 +379,6 @@ interface AnnotationCardProps {
   onDelete: (id: string) => void;
   onAddReply: (annotationId: string, content: string) => void;
   onDeleteReply: (replyId: string) => void;
-  getStatusColor: (status: string) => string;
-  getTypeIcon: (editorType: string, bubbleIndex: number | null) => React.ReactNode;
   onClick?: () => void;
 }
 
@@ -408,8 +391,6 @@ const AnnotationCard = ({
   onDelete,
   onAddReply,
   onDeleteReply,
-  getStatusColor,
-  getTypeIcon,
   onClick,
 }: AnnotationCardProps) => {
   const [showReplyInput, setShowReplyInput] = useState(false);
@@ -425,171 +406,199 @@ const AnnotationCard = ({
 
   const replyCount = annotation.replies?.length || 0;
   const isOwnAnnotation = annotation.author_id === userId;
+  const isOpen = annotation.status === "open";
   
-  // Only admins can resolve/dismiss and delete
   const canResolve = isAdmin;
   const canDelete = isAdmin;
-  // Everyone can reply
   const canReply = isAdmin || isModerator;
 
+  const authorName = annotation.author_profile?.full_name || annotation.author_profile?.email?.split("@")[0] || "Mentor";
+  const authorInitials = authorName.slice(0, 2).toUpperCase();
+
   return (
-    <div 
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer",
-        annotation.status === "resolved" && "bg-muted/30"
+        "rounded-xl border-2 transition-all hover:shadow-lg cursor-pointer overflow-hidden",
+        isOpen 
+          ? "border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20" 
+          : "border-muted bg-muted/20 opacity-75 hover:opacity-100"
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Badge className={getStatusColor(annotation.status)} variant="outline">
-            {annotation.status}
-          </Badge>
-          <span className="text-muted-foreground">
-            {getTypeIcon(annotation.editor_type, annotation.bubble_index)}
-          </span>
-          {annotation.bubble_index !== null && (
-            <Badge variant="secondary" className="text-xs">
-              Bubble #{annotation.bubble_index + 1}
-            </Badge>
-          )}
+      {/* Header */}
+      <div className="p-4 pb-3">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-9 w-9 shrink-0">
+            <AvatarFallback className={cn(
+              "text-xs font-medium",
+              isOpen 
+                ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300" 
+                : "bg-muted text-muted-foreground"
+            )}>
+              {authorInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">{authorName}</span>
+              {isOwnAnnotation && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">you</Badge>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {format(new Date(annotation.created_at), "MMM d")}
+              </span>
+            </div>
+            {/* Status indicator for open */}
+            {isOpen && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Waiting for response
+              </p>
+            )}
+          </div>
         </div>
-        <span className="text-xs text-muted-foreground">
-          {format(new Date(annotation.created_at), "MMM d, h:mm a")}
-        </span>
       </div>
 
-      {/* Selected text highlight */}
-      <div 
-        className="p-2 bg-primary/10 border-l-4 border-primary rounded text-sm mb-3 line-clamp-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        "{annotation.selected_text}"
+      {/* Selected text */}
+      <div className="px-4 pb-3">
+        <div className={cn(
+          "p-3 rounded-lg border-l-4",
+          isOpen 
+            ? "bg-amber-100/50 dark:bg-amber-900/20 border-amber-400" 
+            : "bg-muted/50 border-muted-foreground/30"
+        )}>
+          <p className="text-xs text-muted-foreground mb-1">Regarding this section:</p>
+          <p className="text-sm italic line-clamp-2">"{annotation.selected_text}"</p>
+        </div>
       </div>
 
       {/* Comment */}
-      <p className="text-sm mb-3">{annotation.comment}</p>
-
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-        <Shield className="h-3 w-3" />
-        {annotation.author_profile?.full_name || annotation.author_profile?.email || "Admin"}
-        {isOwnAnnotation && (
-          <Badge variant="outline" className="text-xs py-0">You</Badge>
-        )}
+      <div className="px-4 pb-4">
+        <p className="text-sm leading-relaxed">{annotation.comment}</p>
       </div>
 
       {/* Replies section */}
       {replyCount > 0 && (
-        <Collapsible open={repliesExpanded} onOpenChange={setRepliesExpanded} className="mb-3">
-          <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1 p-0 h-auto text-muted-foreground hover:text-foreground"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {repliesExpanded ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
-              )}
-              <span className="text-xs">{replyCount} {replyCount === 1 ? 'reply' : 'replies'}</span>
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
-            {annotation.replies?.map((reply) => (
-              <ReplyCard
-                key={reply.id}
-                reply={reply}
-                isAdmin={isAdmin}
-                userId={userId}
-                onDelete={onDeleteReply}
-              />
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {/* Reply input */}
-      {showReplyInput && (
-        <div className="mb-3 p-3 bg-muted/50 rounded-lg space-y-2" onClick={(e) => e.stopPropagation()}>
-          <Textarea
-            placeholder="Write a reply..."
-            value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
-            rows={2}
-            className="text-sm"
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleAddReply} disabled={!replyContent.trim()}>
-              Reply
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => {
-              setShowReplyInput(false);
-              setReplyContent("");
-            }}>
-              Cancel
-            </Button>
-          </div>
+        <div className="border-t border-dashed px-4 py-3">
+          <Collapsible open={repliesExpanded} onOpenChange={setRepliesExpanded}>
+            <CollapsibleTrigger asChild>
+              <button
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {repliesExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+                <span>{replyCount} {replyCount === 1 ? "response" : "responses"}</span>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
+              {annotation.replies?.map((reply) => (
+                <ReplyCard
+                  key={reply.id}
+                  reply={reply}
+                  isAdmin={isAdmin}
+                  userId={userId}
+                  onDelete={onDeleteReply}
+                />
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       )}
 
+      {/* Reply input */}
+      <AnimatePresence>
+        {showReplyInput && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 bg-muted/30 space-y-3">
+              <Textarea
+                placeholder="Share your thoughts..."
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                rows={2}
+                className="text-sm bg-background"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAddReply} disabled={!replyContent.trim()} className="gap-2">
+                  <Send className="h-3 w-3" />
+                  Send
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => {
+                  setShowReplyInput(false);
+                  setReplyContent("");
+                }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Actions */}
-      <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="flex items-center gap-1 px-4 py-3 border-t bg-muted/20"
+        onClick={(e) => e.stopPropagation()}
+      >
         {canReply && !showReplyInput && (
           <Button
             size="sm"
             variant="ghost"
             onClick={() => setShowReplyInput(true)}
-            className="gap-1"
+            className="gap-1.5 h-8 text-xs"
           >
-            <Reply className="h-3 w-3" />
-            Reply
+            <Reply className="h-3.5 w-3.5" />
+            Respond
           </Button>
         )}
-        {canResolve && annotation.status === "open" && (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUpdateStatus(annotation.id, "resolved")}
-              className="gap-1"
-            >
-              <CheckCircle className="h-3 w-3" />
-              Resolve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUpdateStatus(annotation.id, "dismissed")}
-              className="gap-1"
-            >
-              <XCircle className="h-3 w-3" />
-              Dismiss
-            </Button>
-          </>
-        )}
-        {canResolve && annotation.status !== "open" && (
+        
+        {canResolve && isOpen && (
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
+            onClick={() => onUpdateStatus(annotation.id, "resolved")}
+            className="gap-1.5 h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Mark Addressed
+          </Button>
+        )}
+        
+        {canResolve && !isOpen && (
+          <Button
+            size="sm"
+            variant="ghost"
             onClick={() => onUpdateStatus(annotation.id, "open")}
+            className="gap-1.5 h-8 text-xs"
           >
             Reopen
           </Button>
         )}
+        
         {canDelete && (
           <Button
             size="sm"
             variant="ghost"
             onClick={() => onDelete(annotation.id)}
-            className="text-destructive hover:text-destructive ml-auto"
+            className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive ml-auto"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -602,35 +611,37 @@ interface ReplyCardProps {
 
 const ReplyCard = ({ reply, isAdmin, userId, onDelete }: ReplyCardProps) => {
   const isOwnReply = reply.author_id === userId;
+  const authorName = reply.author_profile?.full_name || reply.author_profile?.email?.split("@")[0] || "Team member";
+  const authorInitials = authorName.slice(0, 2).toUpperCase();
   
   return (
-    <div className="pl-3 border-l-2 border-primary/30">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1">
-          <p className="text-sm">{reply.content}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-muted-foreground">
-              {reply.author_profile?.full_name || reply.author_profile?.email || "User"}
-            </span>
-            {isOwnReply && (
-              <Badge variant="outline" className="text-xs py-0">You</Badge>
-            )}
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground">
-              {format(new Date(reply.created_at), "MMM d, h:mm a")}
-            </span>
-          </div>
+    <div className="flex gap-3 pl-2">
+      <Avatar className="h-7 w-7 shrink-0">
+        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+          {authorInitials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-medium">{authorName}</span>
+          {isOwnReply && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">you</Badge>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(reply.created_at), "MMM d")}
+          </span>
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(reply.id)}
+              className="h-5 w-5 p-0 ml-auto text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
         </div>
-        {isAdmin && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onDelete(reply.id)}
-            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        )}
+        <p className="text-sm text-foreground/90">{reply.content}</p>
       </div>
     </div>
   );

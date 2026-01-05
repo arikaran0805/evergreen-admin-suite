@@ -1,10 +1,15 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import { PostAnnotation } from "@/hooks/usePostAnnotations";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
-import ChatConversationView from "@/components/chat-editor/ChatConversationView";
 import CodeBlock from "@/components/chat-editor/CodeBlock";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Lightbulb, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AnnotatedContentProps {
@@ -74,22 +79,10 @@ const AnnotatedContent = ({
   const isChat = useMemo(() => isChatTranscript(htmlContent), [htmlContent]);
   const { processedHtml, codeBlocks } = useMemo(() => extractCodeBlocks(htmlContent), [htmlContent]);
 
-  // Get annotations for specific content type
-  const getAnnotationsForType = useCallback((type: "paragraph" | "code" | "conversation", index?: number) => {
-    return annotations.filter(a => {
-      if (type === "conversation" && a.bubble_index !== null) {
-        return index !== undefined && a.bubble_index === index;
-      }
-      if (a.bubble_index !== null) return false;
-      return a.editor_type === (type === "code" ? "rich-text" : type);
-    });
-  }, [annotations]);
-
   // Handle text selection for creating annotations
   const handleTextSelection = useCallback((type: "paragraph" | "code" | "conversation", bubbleIndex?: number) => {
     if (!onTextSelect) return;
     if (!isAdmin && !isModerator) return;
-    // Moderators can't annotate conversations
     if (isModerator && !isAdmin && type === "conversation") return;
 
     const selection = window.getSelection();
@@ -113,51 +106,64 @@ const AnnotatedContent = ({
     setEditedCodes(prev => ({ ...prev, [index]: newCode }));
   };
 
-  // Render annotation indicator
-  const AnnotationIndicator = ({ annotation, onClick }: { annotation: PostAnnotation; onClick?: () => void }) => (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
-      className={cn(
-        "inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs transition-all",
-        annotation.status === "open" 
-          ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50"
-          : "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/50",
-        activeAnnotationId === annotation.id && "ring-2 ring-primary"
-      )}
-    >
-      <MessageSquare className="h-3 w-3" />
-      {annotation.replies?.length ? annotation.replies.length : ""}
-    </button>
-  );
-
-  // Render highlighted text with annotation
-  const renderHighlightedText = (text: string, contentAnnotations: PostAnnotation[]) => {
-    if (!showAnnotations || contentAnnotations.length === 0) {
-      return <span dangerouslySetInnerHTML={{ __html: text }} />;
-    }
-
-    // Group annotations by their position
-    const openAnnotations = contentAnnotations.filter(a => a.status === "open");
-    const resolvedAnnotations = contentAnnotations.filter(a => a.status !== "open");
-
+  // Annotation indicator with gentle styling
+  const AnnotationIndicator = ({ 
+    annotation, 
+    onClick,
+    count = 1 
+  }: { 
+    annotation: PostAnnotation; 
+    onClick?: () => void;
+    count?: number;
+  }) => {
+    const isOpen = annotation.status === "open";
+    const replyCount = annotation.replies?.length || 0;
+    
     return (
-      <span className="relative">
-        <span dangerouslySetInnerHTML={{ __html: text }} />
-        {openAnnotations.length > 0 && (
-          <span className="absolute -top-1 -right-1">
-            <Badge 
-              variant="destructive" 
-              className="h-4 min-w-4 p-0 flex items-center justify-center text-[10px] cursor-pointer hover:scale-110 transition-transform"
-              onClick={() => onAnnotationClick?.(openAnnotations[0])}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick?.();
+              }}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all",
+                "hover:scale-105 active:scale-95",
+                isOpen 
+                  ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm shadow-amber-200/50 dark:shadow-amber-900/30"
+                  : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+                activeAnnotationId === annotation.id && "ring-2 ring-primary ring-offset-2"
+              )}
             >
-              {openAnnotations.length}
-            </Badge>
-          </span>
-        )}
-      </span>
+              <Lightbulb className="h-3 w-3" />
+              {count > 1 && <span>{count}</span>}
+              {replyCount > 0 && (
+                <span className="flex items-center gap-0.5 text-[10px] opacity-70">
+                  <MessageCircle className="h-2.5 w-2.5" />
+                  {replyCount}
+                </span>
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent 
+            side="top" 
+            className={cn(
+              "max-w-[250px] p-3",
+              isOpen ? "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800" : ""
+            )}
+          >
+            <p className="text-xs font-medium mb-1 text-muted-foreground">
+              {isOpen ? "Teaching note" : "Addressed"}
+            </p>
+            <p className="text-sm line-clamp-3">{annotation.comment}</p>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Click to view details
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 
@@ -176,20 +182,25 @@ const AnnotatedContent = ({
               key={index}
               className={cn(
                 "relative group",
-                showAnnotations && hasOpenAnnotations && "ring-2 ring-amber-400 dark:ring-amber-600 rounded-xl"
+                showAnnotations && hasOpenAnnotations && "ring-2 ring-amber-300 dark:ring-amber-700 ring-offset-2 rounded-2xl"
               )}
               onMouseUp={() => handleTextSelection("conversation", index)}
             >
               {/* Annotation indicators */}
               {showAnnotations && bubbleAnnotations.length > 0 && (
-                <div className="absolute -top-2 right-2 z-10 flex gap-1">
-                  {bubbleAnnotations.map(a => (
+                <div className="absolute -top-3 right-3 z-10 flex gap-1">
+                  {bubbleAnnotations.length === 1 ? (
                     <AnnotationIndicator 
-                      key={a.id} 
-                      annotation={a}
-                      onClick={() => onAnnotationClick?.(a)} 
+                      annotation={bubbleAnnotations[0]}
+                      onClick={() => onAnnotationClick?.(bubbleAnnotations[0])} 
                     />
-                  ))}
+                  ) : (
+                    <AnnotationIndicator 
+                      annotation={bubbleAnnotations[0]}
+                      onClick={() => onAnnotationClick?.(bubbleAnnotations[0])}
+                      count={bubbleAnnotations.length}
+                    />
+                  )}
                 </div>
               )}
               
@@ -197,7 +208,7 @@ const AnnotatedContent = ({
                 bubble={bubble}
                 courseType={courseType}
                 codeTheme={codeTheme}
-                canAnnotate={isAdmin} // Only admins can annotate conversation bubbles
+                canAnnotate={isAdmin}
               />
             </div>
           );
@@ -209,6 +220,7 @@ const AnnotatedContent = ({
   // Render regular content with annotations
   if (codeBlocks.length === 0) {
     const contentAnnotations = annotations.filter(a => a.bubble_index === null);
+    const openAnnotations = contentAnnotations.filter(a => a.status === "open");
     
     return (
       <div
@@ -217,18 +229,21 @@ const AnnotatedContent = ({
         onMouseUp={() => handleTextSelection("paragraph")}
       >
         {showAnnotations && contentAnnotations.length > 0 && (
-          <div className="absolute -top-2 right-0 flex gap-1 z-10">
-            {contentAnnotations.slice(0, 3).map(a => (
+          <div className="absolute -top-3 right-0 flex gap-1.5 z-10">
+            {openAnnotations.length > 0 ? (
               <AnnotationIndicator 
-                key={a.id} 
-                annotation={a}
-                onClick={() => onAnnotationClick?.(a)} 
+                annotation={openAnnotations[0]}
+                onClick={() => onAnnotationClick?.(openAnnotations[0])}
+                count={openAnnotations.length}
               />
-            ))}
-            {contentAnnotations.length > 3 && (
-              <Badge variant="secondary" className="text-xs">
-                +{contentAnnotations.length - 3}
-              </Badge>
+            ) : (
+              contentAnnotations.length > 0 && (
+                <AnnotationIndicator 
+                  annotation={contentAnnotations[0]}
+                  onClick={() => onAnnotationClick?.(contentAnnotations[0])}
+                  count={contentAnnotations.length}
+                />
+              )
             )}
           </div>
         )}
@@ -256,14 +271,12 @@ const AnnotatedContent = ({
               onMouseUp={() => handleTextSelection("paragraph")}
             >
               {showAnnotations && partAnnotations.length > 0 && idx === 0 && (
-                <div className="absolute -top-2 right-0 flex gap-1 z-10">
-                  {partAnnotations.slice(0, 2).map(a => (
-                    <AnnotationIndicator 
-                      key={a.id} 
-                      annotation={a}
-                      onClick={() => onAnnotationClick?.(a)} 
-                    />
-                  ))}
+                <div className="absolute -top-3 right-0 flex gap-1.5 z-10">
+                  <AnnotationIndicator 
+                    annotation={partAnnotations[0]}
+                    onClick={() => onAnnotationClick?.(partAnnotations[0])}
+                    count={partAnnotations.length}
+                  />
                 </div>
               )}
               <div dangerouslySetInnerHTML={{ __html: part }} />
