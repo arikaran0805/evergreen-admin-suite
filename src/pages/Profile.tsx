@@ -26,6 +26,7 @@ import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { useUserRole } from "@/hooks/useUserRole";
+import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { z } from "zod";
 import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { 
@@ -1874,6 +1875,15 @@ const Profile = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Notification Preferences - Only show for admins/moderators */}
+      {(isAdmin || isModerator) && (
+        <NotificationPreferences 
+          userId={userId} 
+          isAdmin={isAdmin} 
+          isModerator={isModerator} 
+        />
+      )}
 
       {/* Logout */}
       <Card className="border-destructive/20">

@@ -1023,6 +1023,54 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          annotations: boolean
+          changes_requested: boolean
+          content_approved: boolean
+          content_rejected: boolean
+          content_submissions: boolean
+          created_at: string
+          delete_requests: boolean
+          email_notifications: boolean
+          id: string
+          new_users: boolean
+          reports: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annotations?: boolean
+          changes_requested?: boolean
+          content_approved?: boolean
+          content_rejected?: boolean
+          content_submissions?: boolean
+          created_at?: string
+          delete_requests?: boolean
+          email_notifications?: boolean
+          id?: string
+          new_users?: boolean
+          reports?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annotations?: boolean
+          changes_requested?: boolean
+          content_approved?: boolean
+          content_rejected?: boolean
+          content_submissions?: boolean
+          created_at?: string
+          delete_requests?: boolean
+          email_notifications?: boolean
+          id?: string
+          new_users?: boolean
+          reports?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_reads: {
         Row: {
           id: string
@@ -1868,6 +1916,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_notification_preference: {
+        Args: { p_preference_type: string; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
