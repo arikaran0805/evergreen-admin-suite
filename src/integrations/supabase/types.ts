@@ -229,6 +229,13 @@ export type Database = {
             referencedRelation: "post_annotations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "annotation_replies_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       api_integrations: {
@@ -1072,6 +1079,13 @@ export type Database = {
           version_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "post_annotations_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_annotations_post_id_fkey"
             columns: ["post_id"]
