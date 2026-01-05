@@ -550,15 +550,39 @@ const Library = () => {
                 {[...Array(3)].map((_, sectionIdx) => (
                   <div key={sectionIdx}>
                     <Skeleton className="h-8 w-48 mb-6" />
-                    <div className="flex gap-6 overflow-hidden">
-                      {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="min-w-[280px]">
-                          <Skeleton className="h-44 rounded-t-lg" />
-                          <CardContent className="p-4 space-y-2">
-                            <Skeleton className="h-5 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-1/2" />
-                          </CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(3)].map((_, i) => (
+                        <Card key={i} className="overflow-hidden h-[160px]">
+                          <div className="flex h-full">
+                            {/* Left Section Skeleton - Dark */}
+                            <div className="w-1/3 bg-slate-800 dark:bg-slate-900 p-4 flex flex-col justify-between">
+                              <div>
+                                <Skeleton className="h-3 w-16 mb-2 bg-slate-700" />
+                                <Skeleton className="h-5 w-full mb-1 bg-slate-700" />
+                                <Skeleton className="h-5 w-3/4 bg-slate-700" />
+                              </div>
+                              <Skeleton className="h-3 w-16 bg-slate-700" />
+                            </div>
+                            {/* Right Section Skeleton - Light */}
+                            <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Skeleton className="h-3 w-20" />
+                                  <Skeleton className="h-3 w-12" />
+                                </div>
+                                <Skeleton className="h-1 w-full mb-3" />
+                                <Skeleton className="h-4 w-full mb-1" />
+                                <Skeleton className="h-4 w-3/4" />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Skeleton className="h-4 w-10" />
+                                  <Skeleton className="h-4 w-10" />
+                                </div>
+                                <Skeleton className="h-7 w-20 rounded-full" />
+                              </div>
+                            </div>
+                          </div>
                         </Card>
                       ))}
                     </div>
