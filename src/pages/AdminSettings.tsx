@@ -222,6 +222,52 @@ const AdminSettings = () => {
     }
   };
 
+  const handleToggleSingleNotification = async (key: string, enabled: boolean) => {
+    if (!userId) return;
+    
+    try {
+      const { data: existingData } = await supabase
+        .from("notification_preferences")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingData) {
+        const { error } = await supabase
+          .from("notification_preferences")
+          .update({ [key]: enabled })
+          .eq("user_id", userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("notification_preferences")
+          .insert({
+            user_id: userId,
+            [key]: enabled,
+            content_submissions: true,
+            reports: true,
+            new_users: true,
+            delete_requests: true,
+            content_approved: true,
+            content_rejected: true,
+            changes_requested: true,
+            annotations: true,
+            email_notifications: false,
+          });
+        if (error) throw error;
+      }
+
+      toast({ title: `Notification ${enabled ? 'enabled' : 'disabled'}` });
+    } catch (error) {
+      console.error("Error updating notification preference:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update notification preference",
+        variant: "destructive",
+      });
+    }
+  };
+
   const loadCourses = async () => {
     const { data } = await supabase
       .from("courses")
@@ -603,6 +649,10 @@ const AdminSettings = () => {
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Email
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notifications
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -1463,6 +1513,156 @@ const AdminSettings = () => {
             </Card>
           </TabsContent>
 
+          {/* Notifications Settings */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-primary" />
+                  Notification Preferences
+                </CardTitle>
+                <CardDescription>
+                  Configure which notifications you want to receive
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Master Toggle */}
+                <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="space-y-1">
+                    <Label htmlFor="all-notifications-tab" className="font-medium text-base">All Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable or disable all admin notifications at once
+                    </p>
+                  </div>
+                  <Switch
+                    id="all-notifications-tab"
+                    checked={allNotificationsEnabled}
+                    onCheckedChange={handleToggleAllNotifications}
+                    disabled={savingAllNotifications || notifPrefsLoading}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Individual Notification Toggles */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Content Submissions</h3>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-md border">
+                    <div className="space-y-0.5">
+                      <Label className="font-medium">New Content Submissions</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When moderators submit content for approval
+                      </p>
+                    </div>
+                    <Switch
+                      checked={allNotificationsPrefs?.content_submissions ?? true}
+                      onCheckedChange={(enabled) => handleToggleSingleNotification('content_submissions', enabled)}
+                      disabled={notifPrefsLoading}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-md border">
+                    <div className="space-y-0.5">
+                      <Label className="font-medium">Delete Requests</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When moderators request content deletion
+                      </p>
+                    </div>
+                    <Switch
+                      checked={allNotificationsPrefs?.delete_requests ?? true}
+                      onCheckedChange={(enabled) => handleToggleSingleNotification('delete_requests', enabled)}
+                      disabled={notifPrefsLoading}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Users & Reports</h3>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-md border">
+                    <div className="space-y-0.5">
+                      <Label className="font-medium">New User Registrations</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When new users sign up on the platform
+                      </p>
+                    </div>
+                    <Switch
+                      checked={allNotificationsPrefs?.new_users ?? true}
+                      onCheckedChange={(enabled) => handleToggleSingleNotification('new_users', enabled)}
+                      disabled={notifPrefsLoading}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-md border">
+                    <div className="space-y-0.5">
+                      <Label className="font-medium">Content Reports</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When users report content or issues
+                      </p>
+                    </div>
+                    <Switch
+                      checked={allNotificationsPrefs?.reports ?? true}
+                      onCheckedChange={(enabled) => handleToggleSingleNotification('reports', enabled)}
+                      disabled={notifPrefsLoading}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Notification Time Window</h3>
+                  
+                  <div className="space-y-2">
+                    <Select 
+                      value={notificationWindowDays.toString()} 
+                      onValueChange={(value) => setNotificationWindowDays(parseInt(value))}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select days" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Last 24 hours</SelectItem>
+                        <SelectItem value="3">Last 3 days</SelectItem>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="14">Last 14 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Comments, media uploads, and new users within this window will show as notifications
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={async () => {
+                      if (!settingsId) return;
+                      setSavingNotification(true);
+                      try {
+                        const { error } = await supabase
+                          .from("site_settings")
+                          .update({ notification_window_days: notificationWindowDays })
+                          .eq("id", settingsId);
+                        if (error) throw error;
+                        toast({ title: "Notification settings saved" });
+                      } catch (error: any) {
+                        toast({ title: "Error saving", description: error.message, variant: "destructive" });
+                      } finally {
+                        setSavingNotification(false);
+                      }
+                    }}
+                    disabled={savingNotification}
+                    size="sm"
+                  >
+                    {savingNotification ? "Saving..." : "Save Time Window"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Security Settings */}
           <TabsContent value="security" className="space-y-6">
             <Card>
@@ -1533,81 +1733,6 @@ const AdminSettings = () => {
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     <span className="text-sm font-medium text-primary">Connected</span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="rounded-lg bg-muted p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bell className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold">Notification Settings</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Configure admin notification preferences
-                  </p>
-                  <div className="space-y-4">
-                    {/* Master Toggle */}
-                    <div className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="all-notifications" className="font-medium">All Notifications</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Enable or disable all admin notifications at once
-                        </p>
-                      </div>
-                      <Switch
-                        id="all-notifications"
-                        checked={allNotificationsEnabled}
-                        onCheckedChange={handleToggleAllNotifications}
-                        disabled={savingAllNotifications || notifPrefsLoading}
-                      />
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="notificationWindowDays">Notification Time Window</Label>
-                      <Select 
-                        value={notificationWindowDays.toString()} 
-                        onValueChange={(value) => setNotificationWindowDays(parseInt(value))}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Select days" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Last 24 hours</SelectItem>
-                          <SelectItem value="3">Last 3 days</SelectItem>
-                          <SelectItem value="7">Last 7 days</SelectItem>
-                          <SelectItem value="14">Last 14 days</SelectItem>
-                          <SelectItem value="30">Last 30 days</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Comments, media uploads, and new users within this window will show as notifications
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={async () => {
-                        if (!settingsId) return;
-                        setSavingNotification(true);
-                        try {
-                          const { error } = await supabase
-                            .from("site_settings")
-                            .update({ notification_window_days: notificationWindowDays })
-                            .eq("id", settingsId);
-                          if (error) throw error;
-                          toast({ title: "Notification settings saved" });
-                        } catch (error: any) {
-                          toast({ title: "Error saving", description: error.message, variant: "destructive" });
-                        } finally {
-                          setSavingNotification(false);
-                        }
-                      }}
-                      disabled={savingNotification}
-                      size="sm"
-                    >
-                      {savingNotification ? "Saving..." : "Save Notification Settings"}
-                    </Button>
                   </div>
                 </div>
 
