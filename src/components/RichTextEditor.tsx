@@ -745,27 +745,8 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
           <Button
             variant="ghost"
             size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.bold && "bg-primary/20 text-primary")}
-            onClick={() => applyFormat('bold')}
-            title="Bold"
-          >
-            <Bold className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("h-7 w-7 p-0", floatingToolbar.formats.italic && "bg-primary/20 text-primary")}
-            onClick={() => applyFormat('italic')}
-            title="Italic"
-          >
-            <Italic className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
             className={cn("h-7 w-7 p-0", floatingToolbar.formats.underline && "bg-primary/20 text-primary")}
             onClick={() => applyFormat('underline')}
-            title="Underline"
           >
             <Underline className="w-3.5 h-3.5" />
           </Button>
@@ -774,7 +755,6 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
             size="sm"
             className={cn("h-7 w-7 p-0", floatingToolbar.formats.strike && "bg-primary/20 text-primary")}
             onClick={() => applyFormat('strike')}
-            title="Strikethrough"
           >
             <Strikethrough className="w-3.5 h-3.5" />
           </Button>
@@ -784,7 +764,6 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
             size="sm"
             className={cn("h-7 w-7 p-0", floatingToolbar.formats.code && "bg-primary/20 text-primary")}
             onClick={() => applyFormat('code')}
-            title="Inline Code"
           >
             <Code className="w-3.5 h-3.5" />
           </Button>
@@ -793,7 +772,6 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
             size="sm"
             className={cn("h-7 w-7 p-0", floatingToolbar.formats.background && "bg-primary/20 text-primary")}
             onClick={() => applyFormat('background', floatingToolbar.formats.background ? false : '#ffff00')}
-            title="Highlight"
           >
             <Highlighter className="w-3.5 h-3.5" />
           </Button>
@@ -809,7 +787,6 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, onTextSe
                 if (url) applyFormat('link', url);
               }
             }}
-            title="Link"
           >
             <Link className="w-3.5 h-3.5" />
           </Button>
