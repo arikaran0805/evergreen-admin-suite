@@ -290,6 +290,37 @@ const AdminApprovals = () => {
 
       if (historyError) throw historyError;
 
+      // Send notification to the content author
+      if (selectedItem.author_id) {
+        const itemName = getItemName(selectedItem);
+        let notificationTitle = "";
+        let notificationMessage = "";
+        
+        switch (actionName) {
+          case "changes_requested":
+            notificationTitle = `Changes requested for "${itemName}"`;
+            notificationMessage = feedback || "Please review and make the requested changes.";
+            break;
+          case "approved":
+            notificationTitle = `"${itemName}" has been approved!`;
+            notificationMessage = "Your content is now published and visible to learners.";
+            break;
+          case "rejected":
+            notificationTitle = `"${itemName}" was rejected`;
+            notificationMessage = feedback || "Your content has been rejected.";
+            break;
+        }
+
+        await supabase.from("moderator_notifications").insert({
+          user_id: selectedItem.author_id,
+          type: actionName,
+          title: notificationTitle,
+          message: notificationMessage,
+          content_id: selectedItem.id,
+          content_type: selectedContentType,
+        });
+      }
+
       toast({
         title: `Content ${actionName}`,
         description: `The ${selectedContentType} has been ${actionName}.`,
