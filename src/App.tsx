@@ -44,6 +44,7 @@ import AdminDeleteRequests from "./pages/AdminDeleteRequests";
 import AdminModeratorActivity from "./pages/AdminModeratorActivity";
 import AdminReports from "./pages/AdminReports";
 import AdminPostVersions from "./pages/AdminPostVersions";
+import AdminAnnotations from "./pages/AdminAnnotations";
 import TagPosts from "./pages/TagPosts";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -129,6 +130,7 @@ const AppContent = () => {
         <Route path="/admin/careers/new" element={<AdminCareerEditor />} />
         <Route path="/admin/careers/:id" element={<AdminCareerEditor />} />
         <Route path="/admin/comments" element={<AdminComments />} />
+        <Route path="/admin/annotations" element={<AdminAnnotations />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/tags" element={<AdminTags />} />
         <Route path="/admin/authors" element={<AdminAuthors />} />
