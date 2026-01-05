@@ -487,7 +487,7 @@ const Library = () => {
                     {/* Recommended for You Section */}
                     <section>
                       <SectionHeader title="Recommended for You" icon={Sparkles} badge="AI Picks" />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="flex flex-col gap-4">
                         {recommendedCourses.length > 0 ? (
                           recommendedCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
@@ -508,7 +508,7 @@ const Library = () => {
                     {popularCourses.length > 0 && (
                       <section>
                         <SectionHeader title="Popular This Week" icon={TrendingUp} />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="flex flex-col gap-4">
                           {popularCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))}
@@ -520,7 +520,7 @@ const Library = () => {
                     {filteredCourses.length > 0 && (
                       <section>
                         <h2 className="text-xl font-bold mb-6">All Courses</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="flex flex-col gap-4">
                           {filteredCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))}
@@ -559,7 +559,7 @@ const Library = () => {
                             <Play className="h-5 w-5 text-primary" />
                             In Progress ({enrolledCourses.filter(c => (c.progress || 0) < 100).length})
                           </h2>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="flex flex-col gap-4">
                             {enrolledCourses
                               .filter(c => (c.progress || 0) < 100)
                               .map((course) => (
@@ -575,7 +575,7 @@ const Library = () => {
                               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                               Completed ({enrolledCourses.filter(c => c.progress === 100).length})
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                          <div className="flex flex-col gap-4">
                               {enrolledCourses
                                 .filter(c => c.progress === 100)
                                 .map((course) => (
@@ -611,7 +611,7 @@ const Library = () => {
                         <Button onClick={() => setActiveNav("all-courses")}>Start Learning</Button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="flex flex-col gap-4">
                         {certificates.map((cert) => (
                           <Card
                             key={cert.id}
