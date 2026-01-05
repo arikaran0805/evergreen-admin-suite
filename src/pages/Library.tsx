@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -67,6 +67,10 @@ const Library = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [aiPicksExpanded, setAiPicksExpanded] = useState(true);
   const navigate = useNavigate();
+  
+  const continueScrollRef = useRef<HTMLDivElement>(null);
+  const recommendedScrollRef = useRef<HTMLDivElement>(null);
+  const popularScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -306,14 +310,25 @@ const Library = () => {
     </Card>
   );
 
+  const scrollCarousel = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
+    if (!ref.current) return;
+    const scrollAmount = 320;
+    ref.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+
   const SectionHeader = ({ 
     title, 
     icon: Icon, 
-    badge 
+    badge,
+    scrollRef
   }: { 
     title: string; 
     icon?: React.ComponentType<{ className?: string }>; 
     badge?: string;
+    scrollRef?: React.RefObject<HTMLDivElement>;
   }) => (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
@@ -327,10 +342,16 @@ const Library = () => {
         )}
       </div>
       <div className="flex items-center gap-2">
-        <button className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors">
+        <button 
+          onClick={() => scrollRef && scrollCarousel(scrollRef, 'left')}
+          className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors hover:scale-105 active:scale-95"
+        >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <button className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors">
+        <button 
+          onClick={() => scrollRef && scrollCarousel(scrollRef, 'right')}
+          className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors hover:scale-105 active:scale-95"
+        >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -523,8 +544,8 @@ const Library = () => {
                     {/* Continue Learning Section */}
                     {enrolledCourses.length > 0 && (
                       <section>
-                        <SectionHeader title="Continue Learning" icon={Play} />
-                        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                        <SectionHeader title="Continue Learning" icon={Play} scrollRef={continueScrollRef} />
+                        <div ref={continueScrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
                           {enrolledCourses.map((course) => (
                             <CourseCard key={course.id} course={course} showProgress />
                           ))}
@@ -534,8 +555,8 @@ const Library = () => {
 
                     {/* Recommended for You Section */}
                     <section>
-                      <SectionHeader title="Recommended for You" icon={Sparkles} badge="AI Picks" />
-                      <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                      <SectionHeader title="Recommended for You" icon={Sparkles} badge="AI Picks" scrollRef={recommendedScrollRef} />
+                      <div ref={recommendedScrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
                         {recommendedCourses.length > 0 ? (
                           recommendedCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
@@ -555,8 +576,8 @@ const Library = () => {
                     {/* Popular This Week Section */}
                     {popularCourses.length > 0 && (
                       <section>
-                        <SectionHeader title="Popular This Week" icon={TrendingUp} />
-                        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                        <SectionHeader title="Popular This Week" icon={TrendingUp} scrollRef={popularScrollRef} />
+                        <div ref={popularScrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
                           {popularCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))}
