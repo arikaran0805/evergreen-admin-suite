@@ -61,6 +61,8 @@ const Library = () => {
   const [courses, setCourses] = useState<CourseWithStats[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<CourseWithStats[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [careerCourseIds, setCareerCourseIds] = useState<string[]>([]);
+  const [enrollments24h, setEnrollments24h] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
@@ -74,6 +76,26 @@ const Library = () => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
+      
+      // Fetch user's selected career and related courses
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("selected_career")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile?.selected_career) {
+          const { data: careerCourses } = await supabase
+            .from("career_courses")
+            .select("course_id")
+            .eq("career_id", profile.selected_career);
+          
+          if (careerCourses) {
+            setCareerCourseIds(careerCourses.map(cc => cc.course_id));
+          }
+        }
+      }
     };
     checkAuth();
   }, []);
@@ -88,6 +110,22 @@ const Library = () => {
           .order("name");
 
         if (error) throw error;
+
+        // Get 24h ago timestamp
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        // Fetch 24h enrollment counts for all courses
+        const { data: recentEnrollments } = await supabase
+          .from("course_enrollments")
+          .select("course_id")
+          .gte("enrolled_at", twentyFourHoursAgo);
+        
+        // Count enrollments per course in last 24h
+        const enrollmentCounts: Record<string, number> = {};
+        recentEnrollments?.forEach(e => {
+          enrollmentCounts[e.course_id] = (enrollmentCounts[e.course_id] || 0) + 1;
+        });
+        setEnrollments24h(enrollmentCounts);
 
         const coursesWithStats = await Promise.all(
           (coursesData || []).map(async (course) => {
@@ -206,8 +244,16 @@ const Library = () => {
   });
 
   const beginnerCourses = courses.filter(c => c.level?.toLowerCase() === "beginner").slice(0, 3);
-  const recommendedCourses = filteredCourses.slice(0, 4);
-  const popularCourses = [...filteredCourses].sort((a, b) => b.enrollmentCount - a.enrollmentCount).slice(0, 4);
+  
+  // Recommended courses: prioritize courses linked to user's career, fallback to filtered
+  const recommendedCourses = careerCourseIds.length > 0
+    ? filteredCourses.filter(c => careerCourseIds.includes(c.id)).slice(0, 4)
+    : filteredCourses.slice(0, 4);
+  
+  // Popular courses: sort by 24h enrollment count
+  const popularCourses = [...filteredCourses]
+    .sort((a, b) => (enrollments24h[b.id] || 0) - (enrollments24h[a.id] || 0))
+    .slice(0, 4);
 
   const estimatedHours = (lessonCount: number) => Math.max(1, Math.round((lessonCount * 15) / 60));
 
