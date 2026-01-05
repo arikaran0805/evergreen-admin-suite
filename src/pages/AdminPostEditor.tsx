@@ -18,7 +18,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
-import { AnnotationPanel } from "@/components/annotations";
+import { AnnotationPanel, FloatingAnnotationPopup } from "@/components/annotations";
 import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
@@ -548,9 +548,8 @@ const AdminPostEditor = () => {
   // Handle text selection for annotations (admin only)
   // Handle text selection for annotations (admin and moderators)
   const handleTextSelection = useCallback((type: "paragraph" | "code" | "conversation" = "paragraph", bubbleIndex?: number) => {
-    // Admins can annotate anything, moderators only paragraphs and code
+    // Admins and moderators can annotate anything
     if (!isAdmin && !isModerator) return;
-    if (isModerator && !isAdmin && type === "conversation") return;
     
     const selection = window.getSelection();
     if (selection && selection.toString().trim().length > 0) {
@@ -1204,6 +1203,15 @@ const AdminPostEditor = () => {
             setSavingDraft(false);
           }
         }}
+      />
+
+      {/* Floating Annotation Popup */}
+      <FloatingAnnotationPopup
+        selectedText={selectedText}
+        onAddAnnotation={handleAddAnnotation}
+        onClose={() => setSelectedText(null)}
+        isAdmin={isAdmin}
+        isModerator={isModerator}
       />
     </AdminLayout>
   );
