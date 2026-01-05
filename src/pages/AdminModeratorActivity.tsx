@@ -20,6 +20,12 @@ interface MyAction {
   status: string;
   created_at: string;
   updated_at: string;
+  latestFeedback?: {
+    action: string;
+    feedback: string | null;
+    admin_name: string;
+    created_at: string;
+  };
 }
 
 interface AdminReaction {
@@ -93,6 +99,47 @@ const AdminModeratorActivity = () => {
       .order("created_at", { ascending: false })
       .limit(50);
 
+    // Collect all content IDs
+    const allContentIds = [
+      ...(posts || []).map(p => p.id),
+      ...(courses || []).map(c => c.id),
+      ...(tags || []).map(t => t.id)
+    ];
+
+    // Fetch latest approval history for each content
+    let feedbackMap = new Map<string, { action: string; feedback: string | null; admin_name: string; created_at: string }>();
+    
+    if (allContentIds.length > 0) {
+      const { data: history } = await supabase
+        .from("approval_history")
+        .select("content_id, action, feedback, created_at, performed_by")
+        .in("content_id", allContentIds)
+        .order("created_at", { ascending: false });
+
+      if (history && history.length > 0) {
+        // Get admin names
+        const adminIds = [...new Set(history.map(h => h.performed_by))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", adminIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name || "Admin"]) || []);
+
+        // Get the latest feedback for each content (first occurrence since sorted desc)
+        for (const h of history) {
+          if (!feedbackMap.has(h.content_id)) {
+            feedbackMap.set(h.content_id, {
+              action: h.action,
+              feedback: h.feedback,
+              admin_name: profileMap.get(h.performed_by) || "Admin",
+              created_at: h.created_at
+            });
+          }
+        }
+      }
+    }
+
     const actions: MyAction[] = [
       ...(posts || []).map(p => ({
         id: p.id,
@@ -100,7 +147,8 @@ const AdminModeratorActivity = () => {
         title: p.title,
         status: p.status,
         created_at: p.created_at,
-        updated_at: p.updated_at
+        updated_at: p.updated_at,
+        latestFeedback: feedbackMap.get(p.id)
       })),
       ...(courses || []).map(c => ({
         id: c.id,
@@ -108,7 +156,8 @@ const AdminModeratorActivity = () => {
         title: c.name,
         status: c.status,
         created_at: c.created_at,
-        updated_at: c.updated_at || c.created_at
+        updated_at: c.updated_at || c.created_at,
+        latestFeedback: feedbackMap.get(c.id)
       })),
       ...(tags || []).map(t => ({
         id: t.id,
@@ -116,7 +165,8 @@ const AdminModeratorActivity = () => {
         title: t.name,
         status: t.status,
         created_at: t.created_at,
-        updated_at: t.created_at
+        updated_at: t.created_at,
+        latestFeedback: feedbackMap.get(t.id)
       }))
     ].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
@@ -305,23 +355,43 @@ const AdminModeratorActivity = () => {
                       {myActions.map((action) => (
                         <div
                           key={`${action.type}-${action.id}`}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-lg bg-muted">
-                              {getTypeIcon(action.type)}
-                            </div>
-                            <div>
-                              <p className="font-medium">{action.title}</p>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span className="capitalize">{action.type}</span>
-                                <span>•</span>
-                                <Clock className="h-3 w-3" />
-                                <span>{format(new Date(action.updated_at), "MMM d, yyyy")}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="p-2 rounded-lg bg-muted">
+                                {getTypeIcon(action.type)}
+                              </div>
+                              <div>
+                                <p className="font-medium">{action.title}</p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <span className="capitalize">{action.type}</span>
+                                  <span>•</span>
+                                  <Clock className="h-3 w-3" />
+                                  <span>{format(new Date(action.updated_at), "MMM d, yyyy")}</span>
+                                </div>
                               </div>
                             </div>
+                            {getStatusBadge(action.status)}
                           </div>
-                          {getStatusBadge(action.status)}
+                          
+                          {/* Admin feedback box */}
+                          {action.latestFeedback && action.latestFeedback.feedback && (
+                            <div className="mt-3 ml-12 p-3 bg-muted/60 border-l-4 border-primary/50 rounded-r-md">
+                              <div className="flex items-center gap-2 mb-1">
+                                <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-xs font-medium text-primary">
+                                  Admin Feedback from {action.latestFeedback.admin_name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  • {format(new Date(action.latestFeedback.created_at), "MMM d, yyyy")}
+                                </span>
+                              </div>
+                              <p className="text-sm text-foreground/80 italic">
+                                "{action.latestFeedback.feedback}"
+                              </p>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
