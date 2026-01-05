@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, Files, Tags, Users, UserCog, 
   MessageSquare, Image, DollarSign, Link2, Key, Briefcase,
   Settings, BarChart3, Share2, Menu, X, LogOut, Home, GraduationCap,
-  ClipboardCheck, Trash2, Activity, Flag
+  ClipboardCheck, Trash2, Activity, Flag, MessageSquarePlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,6 +49,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     "/admin/comments": "pendingComments",
     "/admin/media": "mediaLibrary",
     "/admin/users": "newUsers",
+    "/admin/annotations": "openAnnotations",
   }), []);
 
   // Mark badge as seen when visiting a page
@@ -123,6 +124,14 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     if (isAdmin) {
       items.push({ icon: Briefcase, label: "Careers", path: "/admin/careers" });
     }
+
+    // Annotations - Available to both admins and moderators
+    items.push({ 
+      icon: MessageSquarePlus, 
+      label: "Annotations", 
+      path: "/admin/annotations",
+      badge: getBadgeCount("openAnnotations", notifications.openAnnotations)
+    });
 
     // Comments - Available to both, but moderators see only their own
     items.push({ 
