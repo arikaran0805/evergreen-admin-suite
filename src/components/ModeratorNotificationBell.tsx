@@ -62,6 +62,8 @@ const ModeratorNotificationBell = ({ userId }: ModeratorNotificationBellProps) =
         return "✅";
       case "rejected":
         return "❌";
+      case "annotation_added":
+        return "💬";
       default:
         return "📣";
     }
