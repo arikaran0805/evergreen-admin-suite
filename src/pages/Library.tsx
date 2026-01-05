@@ -43,6 +43,7 @@ interface CourseWithStats {
   authorName?: string;
   authorAvatar?: string;
   completedAt?: string;
+  nextLesson?: { title: string; order: number } | null;
 }
 
 interface Certificate {
@@ -134,7 +135,7 @@ const Library = () => {
             
             const enrolledWithProgress = await Promise.all(
               enrolled.map(async (course) => {
-                const [{ count: completedLessons }, { count: totalLessons }] = await Promise.all([
+                const [{ count: completedLessons }, { data: allLessons }, { data: completedLessonIds }] = await Promise.all([
                   supabase
                     .from("lesson_progress")
                     .select("*", { count: "exact", head: true })
@@ -143,15 +144,31 @@ const Library = () => {
                     .eq("completed", true),
                   supabase
                     .from("posts")
-                    .select("*", { count: "exact", head: true })
-                    .eq("category_id", course.id),
+                    .select("id, title, lesson_order")
+                    .eq("category_id", course.id)
+                    .eq("status", "published")
+                    .order("lesson_order", { ascending: true }),
+                  supabase
+                    .from("lesson_progress")
+                    .select("lesson_id")
+                    .eq("course_id", course.id)
+                    .eq("user_id", userId)
+                    .eq("completed", true),
                 ]);
                 
-                const progress = totalLessons && totalLessons > 0 
+                const totalLessons = allLessons?.length || 0;
+                const progress = totalLessons > 0 
                   ? Math.round(((completedLessons || 0) / totalLessons) * 100) 
                   : 0;
                 
-                return { ...course, progress };
+                // Find next incomplete lesson
+                const completedIds = new Set(completedLessonIds?.map(l => l.lesson_id) || []);
+                const nextLessonData = allLessons?.find(lesson => !completedIds.has(lesson.id));
+                const nextLesson = nextLessonData 
+                  ? { title: nextLessonData.title, order: nextLessonData.lesson_order || 0 }
+                  : null;
+                
+                return { ...course, progress, nextLesson };
               })
             );
             
@@ -215,7 +232,7 @@ const Library = () => {
     return html.replace(/<[^>]*>/g, '').trim();
   };
 
-  const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => {
+  const CourseCard = ({ course, showProgress = false, nextLesson }: { course: CourseWithStats; showProgress?: boolean; nextLesson?: { title: string; order: number } | null }) => {
     const cleanDescription = stripHtml(course.description);
     
     return (
@@ -257,6 +274,16 @@ const Library = () => {
                     className="h-full bg-slate-800 dark:bg-slate-600 rounded-full transition-all"
                     style={{ width: `${course.progress}%` }}
                   />
+                </div>
+              )}
+              {/* Next Lesson */}
+              {showProgress && nextLesson && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Play className="h-3 w-3 text-primary fill-primary" />
+                  <span className="text-[10px] text-muted-foreground">Next:</span>
+                  <span className="text-[10px] font-medium text-foreground truncate">
+                    {nextLesson.title}
+                  </span>
                 </div>
               )}
               <p className="text-xs text-foreground line-clamp-2">
@@ -501,7 +528,7 @@ const Library = () => {
                         <SectionHeader title="Continue Learning" icon={Play} />
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {enrolledCourses.map((course) => (
-                            <CourseCard key={course.id} course={course} showProgress />
+                            <CourseCard key={course.id} course={course} showProgress nextLesson={course.nextLesson} />
                           ))}
                         </div>
                       </section>
@@ -586,7 +613,7 @@ const Library = () => {
                             {enrolledCourses
                               .filter(c => (c.progress || 0) < 100)
                               .map((course) => (
-                                <CourseCard key={course.id} course={course} showProgress />
+                                <CourseCard key={course.id} course={course} showProgress nextLesson={course.nextLesson} />
                               ))}
                           </div>
                         </section>
@@ -602,7 +629,7 @@ const Library = () => {
                               {enrolledCourses
                                 .filter(c => c.progress === 100)
                                 .map((course) => (
-                                  <CourseCard key={course.id} course={course} showProgress />
+                                  <CourseCard key={course.id} course={course} showProgress nextLesson={course.nextLesson} />
                                 ))}
                             </div>
                           </section>
