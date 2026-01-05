@@ -1,10 +1,13 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Bell, BellOff, Mail, CheckCircle, XCircle, MessageSquare, FileText, Users, Trash2, Flag, Loader2 } from "lucide-react";
+import { Bell, BellOff, Mail, CheckCircle, XCircle, MessageSquare, FileText, Users, Trash2, Flag, Loader2, Power } from "lucide-react";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface NotificationPreferencesProps {
   userId: string | null;
@@ -13,7 +16,84 @@ interface NotificationPreferencesProps {
 }
 
 export const NotificationPreferences = ({ userId, isAdmin, isModerator }: NotificationPreferencesProps) => {
-  const { preferences, loading, saving, updatePreference } = useNotificationPreferences(userId);
+  const { preferences, loading, saving, updatePreference, refetch } = useNotificationPreferences(userId);
+  const { toast } = useToast();
+  const [allModeratorEnabled, setAllModeratorEnabled] = useState(true);
+  const [savingAll, setSavingAll] = useState(false);
+
+  // Sync master toggle with individual preferences
+  useEffect(() => {
+    if (preferences && (isModerator || isAdmin)) {
+      const allEnabled = 
+        preferences.content_approved &&
+        preferences.content_rejected &&
+        preferences.changes_requested &&
+        preferences.annotations;
+      setAllModeratorEnabled(allEnabled);
+    }
+  }, [preferences, isModerator, isAdmin]);
+
+  const handleToggleAllModerator = async (enabled: boolean) => {
+    if (!userId) return;
+    
+    setSavingAll(true);
+    setAllModeratorEnabled(enabled);
+    
+    try {
+      const { data: existingData } = await supabase
+        .from("notification_preferences")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const updates = {
+        content_approved: enabled,
+        content_rejected: enabled,
+        changes_requested: enabled,
+        annotations: enabled,
+      };
+
+      if (existingData) {
+        const { error } = await supabase
+          .from("notification_preferences")
+          .update(updates)
+          .eq("user_id", userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("notification_preferences")
+          .insert({
+            user_id: userId,
+            content_submissions: true,
+            reports: true,
+            new_users: true,
+            delete_requests: true,
+            ...updates,
+            email_notifications: false,
+          });
+        if (error) throw error;
+      }
+
+      await refetch();
+      
+      toast({
+        title: enabled ? "Notifications enabled" : "Notifications disabled",
+        description: enabled 
+          ? "You will now receive all moderator notifications" 
+          : "You will no longer receive moderator notifications",
+      });
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      setAllModeratorEnabled(!enabled);
+      toast({
+        title: "Error",
+        description: "Failed to update notification preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAll(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -140,6 +220,30 @@ export const NotificationPreferences = ({ userId, isAdmin, isModerator }: Notifi
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {isAdmin ? 'Moderator Notifications' : 'Your Notifications'}
               </h4>
+            </div>
+            
+            {/* Master Toggle for Moderators */}
+            <div className="flex items-center justify-between py-3 px-3 rounded-lg bg-muted/50 border mb-2">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 p-2 rounded-lg bg-primary/10">
+                  <Power className="h-4 w-4 text-primary" />
+                </div>
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium cursor-pointer" htmlFor="all-moderator-notifications">
+                    All Notifications
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Enable or disable all notifications at once</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {savingAll && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                <Switch
+                  id="all-moderator-notifications"
+                  checked={allModeratorEnabled}
+                  onCheckedChange={handleToggleAllModerator}
+                  disabled={savingAll || saving}
+                />
+              </div>
             </div>
             
             <PreferenceRow
