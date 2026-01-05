@@ -211,66 +211,66 @@ const Library = () => {
 
   const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => (
     <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border border-border/50 shadow-sm bg-card"
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group border border-border/50 shadow-sm bg-card"
       onClick={() => navigate(`/course/${course.slug}`)}
     >
-      <div className="h-44 relative overflow-hidden">
-        {course.featured_image ? (
-          <img
-            src={course.featured_image}
-            alt={course.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-b from-emerald-200/80 via-emerald-100/60 to-emerald-50/40 dark:from-emerald-900/40 dark:via-emerald-800/30 dark:to-emerald-700/20 flex items-center justify-center">
-            <BookOpen className="h-16 w-16 text-emerald-500 dark:text-emerald-400 stroke-[1.5]" />
-          </div>
-        )}
-        
-        {showProgress && course.progress !== undefined && (
-          <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1">
-            {course.progress}%
-          </Badge>
-        )}
-        
-        {course.level && !showProgress && (
-          <Badge className={`absolute top-3 left-3 ${getLevelColor(course.level)} border-0 shadow-lg px-3 py-1 rounded-md font-medium`}>
-            {course.level}
-          </Badge>
-        )}
-      </div>
-      
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-base mb-3 line-clamp-1 group-hover:text-primary transition-colors">
-          {course.name}
-        </h3>
-        
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-          <span className="flex items-center gap-1.5">
-            <BookOpen className="h-4 w-4" />
-            {course.lessonCount}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4" />
-            {estimatedHours(course.lessonCount)}h
-          </span>
-          {course.averageRating && (
-            <span className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              {course.averageRating.toFixed(1)}
-            </span>
+      <div className="flex items-start gap-4 p-4">
+        {/* Course Icon/Image */}
+        <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 relative">
+          {course.featured_image ? (
+            <img
+              src={course.featured_image}
+              alt={course.name}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-b from-emerald-200/80 via-emerald-100/60 to-emerald-50/40 dark:from-emerald-900/40 dark:via-emerald-800/30 dark:to-emerald-700/20 flex items-center justify-center">
+              <BookOpen className="h-8 w-8 text-emerald-500 dark:text-emerald-400 stroke-[1.5]" />
+            </div>
+          )}
+          {showProgress && course.progress !== undefined && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">{course.progress}%</span>
+            </div>
           )}
         </div>
-        
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Users className="h-4 w-4" />
-          <span>
-            {course.enrollmentCount > 1000 
-              ? `${(course.enrollmentCount / 1000).toFixed(1)}k` 
-              : course.enrollmentCount} enrolled
-          </span>
+
+        {/* Course Details */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h3 className="font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors">
+              {course.name}
+            </h3>
+            {course.level && (
+              <Badge className={`${getLevelColor(course.level)} border-0 text-xs px-2 py-0.5 rounded-md font-medium flex-shrink-0`}>
+                {course.level}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="space-y-1.5 text-sm text-muted-foreground">
+            {course.averageRating && (
+              <div className="flex items-center gap-1.5">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                <span className="font-medium text-foreground">{course.averageRating.toFixed(1)}</span>
+                <span className="text-muted-foreground">({course.enrollmentCount.toLocaleString()} ratings)</span>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              <span>{estimatedHours(course.lessonCount)} Hours</span>
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              <span>
+                {course.enrollmentCount.toLocaleString()} Ants Enrolled
+              </span>
+            </div>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 
