@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Flag, BookOpen, GraduationCap, Tags, MessageSquare, User, CheckCheck } from "lucide-react";
+import { Bell, Flag, BookOpen, GraduationCap, Tags, MessageSquare, User, CheckCheck, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,7 +17,7 @@ import { Link } from "react-router-dom";
 
 interface Notification {
   id: string;
-  type: "report" | "post" | "course" | "tag" | "comment" | "user";
+  type: "report" | "post" | "course" | "tag" | "comment" | "user" | "annotation";
   title: string;
   description: string;
   timestamp: string;
@@ -82,6 +82,27 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
       const notificationsList: Notification[] = [];
       const windowMs = notificationWindowDays * 24 * 60 * 60 * 1000;
       const windowDate = new Date(Date.now() - windowMs).toISOString();
+
+      // Fetch annotations for both admin and moderator
+      const annotationsRes = await supabase
+        .from("post_annotations")
+        .select("id, post_id, selected_text, comment, created_at, status, posts!inner(title, slug)")
+        .eq("status", "open")
+        .gte("created_at", windowDate)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      annotationsRes.data?.forEach((annotation: any) => {
+        notificationsList.push({
+          id: `annotation-${annotation.id}`,
+          type: "annotation",
+          title: "New Annotation",
+          description: `"${annotation.selected_text?.substring(0, 30)}..." on ${annotation.posts?.title || "a post"}`,
+          timestamp: annotation.created_at,
+          read: false,
+          link: `/admin/posts/edit/${annotation.posts?.slug || annotation.post_id}`,
+        });
+      });
 
       if (isAdmin) {
         // Fetch all data in parallel
@@ -242,6 +263,7 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, () => fetchNotifications())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, () => fetchNotifications())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, () => fetchNotifications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_annotations' }, () => fetchNotifications())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notification_reads' }, () => fetchReadNotifications())
       .subscribe();
 
@@ -310,6 +332,8 @@ const NotificationDropdown = ({ isAdmin, isModerator, userId }: NotificationDrop
         return <MessageSquare className="h-4 w-4 text-green-500" />;
       case "user":
         return <User className="h-4 w-4 text-primary" />;
+      case "annotation":
+        return <MessageSquarePlus className="h-4 w-4 text-orange-500" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
