@@ -32,7 +32,25 @@ const ModeratorNotificationBell = ({ userId }: ModeratorNotificationBellProps) =
       markAsRead(notification.id);
     }
     
-    // Navigate to activity page to see full details
+    // Navigate to specific content editor based on content type
+    if (notification.content_id && notification.content_type) {
+      switch (notification.content_type) {
+        case "post":
+          navigate(`/admin/posts/edit/${notification.content_id}`);
+          return;
+        case "course":
+          navigate(`/admin/courses/edit/${notification.content_id}`);
+          return;
+        case "career":
+          navigate(`/admin/careers/edit/${notification.content_id}`);
+          return;
+        case "tag":
+          navigate("/admin/tags");
+          return;
+      }
+    }
+    
+    // Fallback to activity page
     navigate("/admin/activity");
   };
 
