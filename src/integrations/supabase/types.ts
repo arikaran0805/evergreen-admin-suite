@@ -104,6 +104,60 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notifications: {
+        Row: {
+          admin_id: string
+          content_id: string | null
+          content_type: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string | null
+          submitted_by: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          admin_id: string
+          content_id?: string | null
+          content_type?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          submitted_by?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          admin_id?: string
+          content_id?: string | null
+          content_type?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          submitted_by?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_notifications_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ads: {
         Row: {
           ad_code: string | null

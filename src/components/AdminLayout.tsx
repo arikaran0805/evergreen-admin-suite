@@ -16,6 +16,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
+import AdminContentNotificationBell from "@/components/AdminContentNotificationBell";
 interface AdminLayoutProps {
   children: ReactNode;
   defaultSidebarCollapsed?: boolean;
@@ -250,6 +251,10 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
             </div>
           )}
           <div className="flex items-center gap-1">
+            {/* Notification bell for admins */}
+            {isAdmin && sidebarOpen && (
+              <AdminContentNotificationBell userId={userId} />
+            )}
             {/* Notification bell for moderators */}
             {isModerator && !isAdmin && sidebarOpen && (
               <ModeratorNotificationBell userId={userId} />
