@@ -209,77 +209,87 @@ const Library = () => {
     { id: "certificates", label: "Certificates", icon: Award },
   ];
 
-  const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => (
-    <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg"
-      onClick={() => navigate(`/course/${course.slug}`)}
-    >
-      <div className="flex flex-col sm:flex-row">
-        {/* Left Section - Dark */}
-        <div className="sm:w-2/5 bg-slate-800 dark:bg-slate-900 p-6 flex flex-col justify-between min-h-[160px]">
-          <div>
-            <span className="text-xs font-medium tracking-wider text-slate-400 uppercase">
-              Course
-            </span>
-            <h3 className="text-xl font-semibold text-white mt-2 leading-tight">
-              {course.name}
-            </h3>
-          </div>
-          <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-sm mt-4">
-            <span>View all chapters</span>
-            <ChevronRight className="h-4 w-4" />
-          </div>
-        </div>
+  // Strip HTML tags from description
+  const stripHtml = (html: string | null) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, '').trim();
+  };
 
-        {/* Right Section - Light */}
-        <div className="sm:w-3/5 bg-card p-6 flex flex-col justify-between min-h-[160px]">
-          <div className="flex items-start justify-between gap-4">
+  const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => {
+    const cleanDescription = stripHtml(course.description);
+    
+    return (
+      <Card
+        className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg"
+        onClick={() => navigate(`/course/${course.slug}`)}
+      >
+        <div className="flex h-full">
+          {/* Left Section - Dark */}
+          <div className="w-1/3 bg-slate-800 dark:bg-slate-900 p-4 flex flex-col justify-between">
             <div>
-              <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-                {course.level || "Chapter"} {course.lessonCount > 0 ? `• ${course.lessonCount} Lessons` : ""}
+              <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+                Course
               </span>
-              <p className="text-lg font-semibold text-foreground mt-1">
-                {course.description ? course.description.slice(0, 50) + (course.description.length > 50 ? "..." : "") : "Start your learning journey"}
-              </p>
+              <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+                {course.name}
+              </h3>
             </div>
-            {showProgress && course.progress !== undefined && (
-              <div className="text-right flex-shrink-0">
-                <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden mb-1">
+            <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs mt-2">
+              <span>View all</span>
+              <ChevronRight className="h-3 w-3" />
+            </div>
+          </div>
+
+          {/* Right Section - Light */}
+          <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                  {course.level || "Beginner"} • {course.lessonCount} Lessons
+                </span>
+                {showProgress && course.progress !== undefined && (
+                  <span className="text-[10px] text-muted-foreground">{course.progress}%</span>
+                )}
+              </div>
+              {showProgress && course.progress !== undefined && (
+                <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
                   <div 
                     className="h-full bg-slate-800 dark:bg-slate-600 rounded-full transition-all"
                     style={{ width: `${course.progress}%` }}
                   />
                 </div>
-                <span className="text-xs text-muted-foreground">{course.progress}% Complete</span>
-              </div>
-            )}
-            {!showProgress && course.averageRating && (
-              <div className="text-right flex-shrink-0">
-                <div className="flex items-center gap-1 justify-end">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-medium">{course.averageRating.toFixed(1)}</span>
+              )}
+              <p className="text-xs text-foreground line-clamp-2">
+                {cleanDescription || "Start your learning journey"}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between mt-3">
+              {!showProgress && course.averageRating && (
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  <span className="text-xs font-medium">{course.averageRating.toFixed(1)}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{course.enrollmentCount} enrolled</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center justify-end mt-4">
-            <Button 
-              variant="default" 
-              className="bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-full px-6"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/course/${course.slug}`);
-              }}
-            >
-              {showProgress ? "Continue" : "Start"}
-            </Button>
+              )}
+              {!showProgress && !course.averageRating && <div />}
+              {showProgress && <div />}
+              <Button 
+                variant="default" 
+                size="sm"
+                className="bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-full px-4 h-7 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/course/${course.slug}`);
+                }}
+              >
+                {showProgress ? "Continue" : "Start"}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   const SectionHeader = ({ 
     title, 
@@ -500,7 +510,7 @@ const Library = () => {
                     {/* Recommended for You Section */}
                     <section>
                       <SectionHeader title="Recommended for You" icon={Sparkles} badge="AI Picks" />
-                        <div className="flex flex-col gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {recommendedCourses.length > 0 ? (
                           recommendedCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
@@ -521,7 +531,7 @@ const Library = () => {
                     {popularCourses.length > 0 && (
                       <section>
                         <SectionHeader title="Popular This Week" icon={TrendingUp} />
-                        <div className="flex flex-col gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {popularCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))}
@@ -533,7 +543,7 @@ const Library = () => {
                     {filteredCourses.length > 0 && (
                       <section>
                         <h2 className="text-xl font-bold mb-6">All Courses</h2>
-                        <div className="flex flex-col gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {filteredCourses.map((course) => (
                             <CourseCard key={course.id} course={course} />
                           ))}
@@ -572,7 +582,7 @@ const Library = () => {
                             <Play className="h-5 w-5 text-primary" />
                             In Progress ({enrolledCourses.filter(c => (c.progress || 0) < 100).length})
                           </h2>
-                        <div className="flex flex-col gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {enrolledCourses
                               .filter(c => (c.progress || 0) < 100)
                               .map((course) => (
@@ -588,7 +598,7 @@ const Library = () => {
                               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                               Completed ({enrolledCourses.filter(c => c.progress === 100).length})
                             </h2>
-                          <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                               {enrolledCourses
                                 .filter(c => c.progress === 100)
                                 .map((course) => (
