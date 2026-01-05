@@ -433,7 +433,7 @@ export const CareerProgressChart = ({
     }
   }, [tooltip, navigate]);
 
-  const chartHeight = 400;
+  const chartHeight = 500;
   const chartPadding = { top: 50, right: 60, bottom: 70, left: 70 };
 
   return (
@@ -1129,32 +1129,23 @@ export const CareerProgressChart = ({
               </div>
             </div>
 
-            {/* Current progress indicator (glowing dot) */}
+            {/* Current progress indicator (glowing dot on the SVG path) */}
             {pathData.currentX > 0 && readinessPercent < 100 && (
               <motion.div
-                className="absolute z-40"
+                className="absolute z-40 w-3 h-3 rounded-full bg-primary border-2 border-background"
                 style={{ 
                   left: `${pathData.currentX}%`, 
-                  top: `${100 - pathData.currentY}%`,
-                  transform: 'translate(-50%, -50%)'
+                  top: `${pathData.currentY}%`,
+                  transform: 'translate(-50%, -50%)',
+                  boxShadow: '0 0 8px 3px hsl(var(--primary) / 0.5)'
                 }}
                 initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 2.8 }}
-              >
-                {/* Main dot with glow */}
-                <motion.div
-                  className="w-4 h-4 rounded-full bg-primary border-2 border-background shadow-lg relative"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  style={{ 
-                    boxShadow: '0 0 12px 4px hsl(var(--primary) / 0.4), 0 0 20px 8px hsl(var(--primary) / 0.2)'
-                  }}
-                >
-                  {/* Inner bright core */}
-                  <div className="absolute inset-1 rounded-full bg-primary-foreground/80" />
-                </motion.div>
-              </motion.div>
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ 
+                  scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+                  default: { delay: 2.8 }
+                }}
+              />
             )}
 
             {/* Course completion markers (small dots on the line) */}
