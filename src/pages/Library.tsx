@@ -214,7 +214,7 @@ const Library = () => {
 
   const CourseCard = ({ course, showProgress = false }: { course: CourseWithStats; showProgress?: boolean }) => (
     <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-md bg-card min-w-[280px] max-w-[320px] flex-shrink-0"
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border border-border/50 shadow-sm bg-card min-w-[280px] max-w-[320px] flex-shrink-0"
       onClick={() => navigate(`/course/${course.slug}`)}
     >
       <div className="h-44 relative overflow-hidden">
@@ -225,86 +225,53 @@ const Library = () => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/30 via-primary/20 to-accent/30 flex items-center justify-center">
-            <BookOpen className="h-16 w-16 text-primary/50" />
+          <div className="w-full h-full bg-gradient-to-b from-emerald-200/80 via-emerald-100/60 to-emerald-50/40 dark:from-emerald-900/40 dark:via-emerald-800/30 dark:to-emerald-700/20 flex items-center justify-center">
+            <BookOpen className="h-16 w-16 text-emerald-500 dark:text-emerald-400 stroke-[1.5]" />
           </div>
         )}
-        
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         
         {showProgress && course.progress !== undefined && (
-          <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+          <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1">
             {course.progress}%
-          </div>
-        )}
-        
-        {course.level && !showProgress && (
-          <Badge className={`absolute top-3 left-3 ${getLevelColor(course.level)} border-0 shadow-lg`}>
-            {course.level}
           </Badge>
         )}
         
-        <button 
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="text-white text-lg">+</span>
-        </button>
+        {course.level && !showProgress && (
+          <Badge className={`absolute top-3 left-3 ${getLevelColor(course.level)} border-0 shadow-lg px-3 py-1 rounded-md font-medium`}>
+            {course.level}
+          </Badge>
+        )}
       </div>
       
       <CardContent className="p-4">
-        <h3 className="font-semibold text-base mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+        <h3 className="font-semibold text-base mb-3 line-clamp-1 group-hover:text-primary transition-colors">
           {course.name}
         </h3>
         
-        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-          <span className="flex items-center gap-1">
-            <BookOpen className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+          <span className="flex items-center gap-1.5">
+            <BookOpen className="h-4 w-4" />
             {course.lessonCount}
           </span>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            {course.lessonCount} lessons
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-4 w-4" />
+            {estimatedHours(course.lessonCount)}h
           </span>
           {course.averageRating && (
             <span className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
               {course.averageRating.toFixed(1)}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            {course.enrollmentCount > 1000 
-              ? `${(course.enrollmentCount / 1000).toFixed(1)}k` 
-              : course.enrollmentCount}
-          </span>
         </div>
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={course.authorAvatar} />
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                {course.authorName?.charAt(0) || "E"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-muted-foreground truncate max-w-[80px]">
-              {course.authorName || "Emojilearn"}
-            </span>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs h-8 px-4 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/course/${course.slug}`);
-            }}
-          >
-            {showProgress ? "Continue" : "View"}
-            <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Users className="h-4 w-4" />
+          <span>
+            {course.enrollmentCount > 1000 
+              ? `${(course.enrollmentCount / 1000).toFixed(1)}k` 
+              : course.enrollmentCount} enrolled
+          </span>
         </div>
       </CardContent>
     </Card>
