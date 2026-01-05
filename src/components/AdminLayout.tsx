@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
+import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
 interface AdminLayoutProps {
   children: ReactNode;
   defaultSidebarCollapsed?: boolean;
@@ -248,14 +249,20 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
               </div>
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
-          >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Notification bell for moderators */}
+            {isModerator && !isAdmin && sidebarOpen && (
+              <ModeratorNotificationBell userId={userId} />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
 
         <ScrollArea className="h-[calc(100vh-200px)]">
