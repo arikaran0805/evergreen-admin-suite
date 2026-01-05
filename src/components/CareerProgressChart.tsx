@@ -636,6 +636,21 @@ export const CareerProgressChart = ({
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(142 76% 46%)" />
                 </linearGradient>
+                {/* Arrow marker for progress line end */}
+                <marker
+                  id="progressArrow"
+                  viewBox="0 0 10 10"
+                  refX="5"
+                  refY="5"
+                  markerWidth="4"
+                  markerHeight="4"
+                  orient="auto-start-reverse"
+                >
+                  <path
+                    d="M 0 0 L 10 5 L 0 10 z"
+                    fill="hsl(142 76% 46%)"
+                  />
+                </marker>
                 {/* Glow effect */}
                 <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="1.5" result="blur"/>
@@ -695,31 +710,7 @@ export const CareerProgressChart = ({
                 style={{ visibility: 'hidden' }}
               />
 
-              {/* Current progress dot with up arrow indicator */}
-              {interpolatedDotPosition && readinessPercent < 100 && (
-                <>
-                  {/* Simple solid dot */}
-                  <motion.circle
-                    key={`progress-dot-${animationKey}`}
-                    cx={interpolatedDotPosition.x}
-                    cy={interpolatedDotPosition.y}
-                    r="1.5"
-                    fill="hsl(var(--primary))"
-                    stroke="hsl(var(--background))"
-                    strokeWidth="0.5"
-                    vectorEffect="non-scaling-stroke"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ 
-                      delay: 2.3,
-                      duration: 0.3,
-                      ease: "easeOut"
-                    }}
-                  />
-                </>
-              )}
-
-              {/* Progress path (solid, gradient) - THE HERO LINE with drawing animation */}
+              {/* Progress path (solid, gradient) - THE HERO LINE with drawing animation and arrow */}
               <motion.path
                 key={`progress-${animationKey}`}
                 d={pathData.progressPath}
@@ -730,6 +721,7 @@ export const CareerProgressChart = ({
                 strokeLinejoin="round"
                 filter="url(#lineGlow)"
                 vectorEffect="non-scaling-stroke"
+                markerEnd="url(#progressArrow)"
                 initial={{ pathLength: 0 }}
                 animate={{ 
                   pathLength: 1,
@@ -856,33 +848,6 @@ export const CareerProgressChart = ({
                 }}
               />
             </svg>
-
-            {/* Up arrow indicator at current progress position */}
-            {interpolatedDotPosition && readinessPercent < 100 && (
-              <motion.div
-                key={`arrow-${animationKey}`}
-                className="absolute z-20 pointer-events-none"
-                style={{
-                  left: `${interpolatedDotPosition.x}%`,
-                  top: `${interpolatedDotPosition.y}%`,
-                  transform: 'translate(-50%, -100%)'
-                }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: [-8, -16, -8]
-                }}
-                transition={{
-                  opacity: { delay: 2.5, duration: 0.3 },
-                  y: { delay: 2.5, duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <ArrowUp className="h-5 w-5 text-primary drop-shadow-md" strokeWidth={2.5} />
-                </div>
-              </motion.div>
-            )}
-
             {/* Confetti burst for completed sections */}
             <AnimatePresence>
               {confettiBurst && (
