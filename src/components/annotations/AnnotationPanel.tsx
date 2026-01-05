@@ -100,15 +100,14 @@ const AnnotationPanel = ({
   const [filterAuthor, setFilterAuthor] = useState<FilterAuthor>("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Check if moderator can annotate the selected type
+  // Check if user can annotate the selected type
   const canAnnotateSelection = () => {
     if (isAdmin) return true;
     if (!isModerator) return false;
     if (!selectedText) return false;
     
-    // Moderators can only annotate paragraphs and code blocks
-    const type = selectedText.type || "paragraph";
-    return type === "paragraph" || type === "code";
+    // Moderators can annotate paragraphs, code blocks, and chat bubbles
+    return true;
   };
 
   const handleAddAnnotation = () => {
@@ -264,12 +263,6 @@ const AnnotationPanel = ({
                 )}
               </div>
               
-              {/* Show warning if moderator trying to annotate conversation */}
-              {isModerator && !isAdmin && selectedText.type === "conversation" && (
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded text-xs mb-3 text-amber-700 dark:text-amber-300">
-                  Moderators cannot annotate conversation bubbles. Only admins can add annotations here.
-                </div>
-              )}
               
               <div className="p-2 bg-primary/10 border-l-4 border-primary rounded text-sm mb-3 line-clamp-3">
                 "{selectedText.text}"
