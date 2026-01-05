@@ -73,8 +73,10 @@ export const CareerProgressChart = ({
   const [animationKey, setAnimationKey] = useState(0);
   const [isLineHovered, setIsLineHovered] = useState(false);
   const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number; key: number } | null>(null);
+  const [interpolatedDotPosition, setInterpolatedDotPosition] = useState<{ x: number; y: number } | null>(null);
   const lastCompletedHoverRef = useRef<string | null>(null);
   const chartAreaRef = useRef<HTMLDivElement>(null);
+  const progressPathRef = useRef<SVGPathElement>(null);
 
   const handleReplayAnimation = useCallback(() => {
     setAnimationKey(prev => prev + 1);
@@ -329,6 +331,23 @@ export const CareerProgressChart = ({
       setShowCelebration(true);
     }
   }, [readinessPercent]);
+
+  // Interpolate dot position along the actual SVG path curve
+  useEffect(() => {
+    if (!progressPathRef.current || pathData.currentX <= 0 || readinessPercent >= 100) {
+      setInterpolatedDotPosition(null);
+      return;
+    }
+
+    const path = progressPathRef.current;
+    const totalLength = path.getTotalLength();
+    
+    // Get the point at the end of the path (current progress position)
+    const point = path.getPointAtLength(totalLength);
+    
+    // Convert from SVG viewBox coordinates (0-100) to percentage
+    setInterpolatedDotPosition({ x: point.x, y: point.y });
+  }, [pathData.progressPath, pathData.currentX, readinessPercent, animationKey]);
 
   // Handle mouse movement for tooltip
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -666,14 +685,23 @@ export const CareerProgressChart = ({
                 />
               )}
 
-              {/* Pulse effect at current progress endpoint */}
-              {pathData.currentX > 0 && readinessPercent < 100 && (
+              {/* Hidden path for getPointAtLength interpolation */}
+              <path
+                ref={progressPathRef}
+                d={pathData.progressPath}
+                fill="none"
+                stroke="none"
+                style={{ visibility: 'hidden' }}
+              />
+
+              {/* Pulse effect at current progress endpoint - using interpolated position */}
+              {interpolatedDotPosition && readinessPercent < 100 && (
                 <>
                   {/* Outer pulsing ring */}
                   <motion.circle
                     key={`pulse-outer-${animationKey}`}
-                    cx={pathData.currentX}
-                    cy={pathData.currentY}
+                    cx={interpolatedDotPosition.x}
+                    cy={interpolatedDotPosition.y}
                     r="2"
                     fill="none"
                     stroke="hsl(var(--primary))"
@@ -694,8 +722,8 @@ export const CareerProgressChart = ({
                   {/* Middle pulsing ring */}
                   <motion.circle
                     key={`pulse-middle-${animationKey}`}
-                    cx={pathData.currentX}
-                    cy={pathData.currentY}
+                    cx={interpolatedDotPosition.x}
+                    cy={interpolatedDotPosition.y}
                     r="1.5"
                     fill="none"
                     stroke="hsl(var(--primary))"
@@ -716,8 +744,8 @@ export const CareerProgressChart = ({
                   {/* Glowing center dot */}
                   <motion.circle
                     key={`pulse-dot-glow-${animationKey}`}
-                    cx={pathData.currentX}
-                    cy={pathData.currentY}
+                    cx={interpolatedDotPosition.x}
+                    cy={interpolatedDotPosition.y}
                     r="1.8"
                     fill="hsl(var(--primary))"
                     filter="url(#lineGlow)"
@@ -737,8 +765,8 @@ export const CareerProgressChart = ({
                   {/* Solid center dot */}
                   <motion.circle
                     key={`pulse-dot-${animationKey}`}
-                    cx={pathData.currentX}
-                    cy={pathData.currentY}
+                    cx={interpolatedDotPosition.x}
+                    cy={interpolatedDotPosition.y}
                     r="1.2"
                     fill="hsl(var(--background))"
                     stroke="hsl(var(--primary))"
@@ -1129,24 +1157,6 @@ export const CareerProgressChart = ({
               </div>
             </div>
 
-            {/* Current progress indicator (glowing dot on the SVG path) */}
-            {pathData.currentX > 0 && readinessPercent < 100 && (
-              <motion.div
-                className="absolute z-40 w-3 h-3 rounded-full bg-primary border-2 border-background"
-                style={{ 
-                  left: `${pathData.currentX}%`, 
-                  top: `${pathData.currentY}%`,
-                  transform: 'translate(-50%, -50%)',
-                  boxShadow: '0 0 8px 3px hsl(var(--primary) / 0.5)'
-                }}
-                initial={{ scale: 0 }}
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ 
-                  scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
-                  default: { delay: 2.8 }
-                }}
-              />
-            )}
 
             {/* Course completion markers (small dots on the line) */}
             {pathData.courses.map((course, index) => {
