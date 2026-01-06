@@ -65,6 +65,7 @@ const AdminModeratorActivity = () => {
   // Dialog state
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MyAction | null>(null);
+  const [selectedReaction, setSelectedReaction] = useState<AdminReaction | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -272,14 +273,26 @@ const AdminModeratorActivity = () => {
 
   const openHistoryDialog = async (item: MyAction) => {
     setSelectedItem(item);
+    setSelectedReaction(null);
     setHistoryDialogOpen(true);
+    await fetchHistoryForContent(item.id);
+  };
+
+  const openHistoryDialogForReaction = async (reaction: AdminReaction) => {
+    setSelectedReaction(reaction);
+    setSelectedItem(null);
+    setHistoryDialogOpen(true);
+    await fetchHistoryForContent(reaction.content_id);
+  };
+
+  const fetchHistoryForContent = async (contentId: string) => {
     setHistoryLoading(true);
     
     try {
       const { data: history } = await supabase
         .from("approval_history")
         .select("id, action, feedback, created_at, performed_by")
-        .eq("content_id", item.id)
+        .eq("content_id", contentId)
         .order("created_at", { ascending: false });
 
       if (history && history.length > 0) {
@@ -309,15 +322,28 @@ const AdminModeratorActivity = () => {
     }
   };
 
-  const getEditUrl = (item: MyAction) => {
-    switch (item.type) {
-      case "post":
-        return `/admin/posts/${item.id}`;
-      case "course":
-        return `/admin/courses/${item.id}`;
-      default:
-        return null;
+  const getEditUrl = (item: MyAction | null, reaction: AdminReaction | null) => {
+    if (item) {
+      switch (item.type) {
+        case "post":
+          return `/admin/posts/${item.id}`;
+        case "course":
+          return `/admin/courses/${item.id}`;
+        default:
+          return null;
+      }
     }
+    if (reaction) {
+      switch (reaction.content_type) {
+        case "post":
+          return `/admin/posts/${reaction.content_id}`;
+        case "course":
+          return `/admin/courses/${reaction.content_id}`;
+        default:
+          return null;
+      }
+    }
+    return null;
   };
 
   const getStatusBadge = (status: string) => {
@@ -503,7 +529,8 @@ const AdminModeratorActivity = () => {
                       {adminReactions.map((reaction) => (
                         <div
                           key={reaction.id}
-                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => openHistoryDialogForReaction(reaction)}
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-3">
@@ -537,16 +564,19 @@ const AdminModeratorActivity = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="mt-3 p-3 bg-muted/50 rounded-md">
-                            {reaction.feedback ? (
-                              <p className="text-sm text-muted-foreground italic">
-                                "{reaction.feedback}"
-                              </p>
-                            ) : (
-                              <p className="text-sm text-muted-foreground/60 italic">
-                                No feedback provided
-                              </p>
-                            )}
+                          <div className="mt-3 p-3 bg-muted/50 rounded-md flex items-center justify-between">
+                            <div className="flex-1">
+                              {reaction.feedback ? (
+                                <p className="text-sm text-muted-foreground italic">
+                                  "{reaction.feedback}"
+                                </p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground/60 italic">
+                                  No feedback provided
+                                </p>
+                              )}
+                            </div>
+                            <History className="h-4 w-4 text-muted-foreground ml-2 flex-shrink-0" />
                           </div>
                         </div>
                       ))}
@@ -564,10 +594,11 @@ const AdminModeratorActivity = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {selectedItem && getTypeIcon(selectedItem.type)}
-                {selectedItem?.title || "Content Details"}
+                {selectedReaction && getTypeIcon(selectedReaction.content_type)}
+                {selectedItem?.title || selectedReaction?.content_title || "Content Details"}
               </DialogTitle>
               <DialogDescription className="flex items-center gap-2">
-                <span className="capitalize">{selectedItem?.type}</span>
+                <span className="capitalize">{selectedItem?.type || selectedReaction?.content_type}</span>
                 {selectedItem && (
                   <>
                     <span>•</span>
@@ -579,13 +610,13 @@ const AdminModeratorActivity = () => {
             
             <div className="space-y-4">
               {/* Action buttons */}
-              {selectedItem && getEditUrl(selectedItem) && (
+              {(selectedItem || selectedReaction) && getEditUrl(selectedItem, selectedReaction) && (
                 <div className="flex justify-end">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const url = getEditUrl(selectedItem);
+                      const url = getEditUrl(selectedItem, selectedReaction);
                       if (url) navigate(url);
                     }}
                   >
