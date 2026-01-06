@@ -14,8 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users } from "lucide-react";
-
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight } from "lucide-react";
 interface UserProfile {
   id: string;
   full_name: string | null;
@@ -369,234 +369,218 @@ const AdminCourseEditor = () => {
 
   const canPublishDirectly = isAdmin;
   const showSubmitForApproval = isModerator && !isAdmin;
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
   if (roleLoading || loading) {
     return (
-      <AdminLayout>
+      <AdminLayout defaultSidebarCollapsed>
         <AdminEditorSkeleton type="course" />
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate("/admin/courses")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Courses
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground">
-            {id ? "Edit Course" : "Create New Course"}
-          </h1>
-          {formData.status && formData.status !== "draft" && (
-            <ContentStatusBadge status={formData.status as ContentStatus} />
-          )}
-        </div>
-
-        <form onSubmit={(e) => handleSubmit(e, false)} className="grid gap-6 lg:grid-cols-3">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Course Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter course name"
-                    value={formData.name}
-                    onChange={(e) => {
-                      const name = e.target.value;
-                      setFormData({
-                        ...formData,
-                        name,
-                        slug: generateSlug(name),
-                      });
-                    }}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug *</Label>
-                  <Input
-                    id="slug"
-                    placeholder="course-slug"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <RichTextEditor
-                    value={formData.description}
-                    onChange={(value) => setFormData({ ...formData, description: value })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+    <AdminLayout defaultSidebarCollapsed>
+      <div className="flex gap-4 h-[calc(100vh-6rem)] overflow-hidden">
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate("/admin/courses")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Courses
+            </Button>
+            <h1 className="text-3xl font-bold">
+              {id ? "Edit Course" : "Create New Course"}
+            </h1>
+            {formData.status && formData.status !== "draft" && (
+              <ContentStatusBadge status={formData.status as ContentStatus} />
+            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Ownership & Assignment Card - Admin Only */}
-            {isAdmin && id && (
-              <Card className="border-primary/20">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Ownership & Assignment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Created By */}
-                  {authorInfo && (
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        Created by
-                      </Label>
-                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
-                        <span className="text-sm font-medium">
-                          {authorInfo.full_name || authorInfo.email.split("@")[0]}
-                        </span>
-                        {getRoleBadge(authorInfo.role)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Assign To */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                      <UserCog className="h-3 w-3" />
-                      Assign to
-                    </Label>
-                    <Select
-                      value={formData.assigned_to || "none"}
-                      onValueChange={(value) => setFormData({ ...formData, assigned_to: value === "none" ? "" : value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select user to assign" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Not assigned</SelectItem>
-                        {assignableUsers.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            <div className="flex items-center gap-2">
-                              <span>{user.full_name || user.email.split("@")[0]}</span>
-                              <span className="text-xs text-muted-foreground">
-                                ({user.role})
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Assigned users can edit this course
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Show ownership info for moderators (read-only) */}
-            {!isAdmin && id && (authorInfo || assigneeInfo) && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Ownership Info
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {authorInfo && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Created by:</span>
-                      <div className="flex items-center gap-2">
-                        <span>{authorInfo.full_name || authorInfo.email.split("@")[0]}</span>
-                        {getRoleBadge(authorInfo.role)}
-                      </div>
-                    </div>
-                  )}
-                  {assigneeInfo && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Assigned to:</span>
-                      <div className="flex items-center gap-2">
-                        <span>{assigneeInfo.full_name || assigneeInfo.email.split("@")[0]}</span>
-                        {getRoleBadge(assigneeInfo.role)}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Featured Image</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {formData.featured_image ? (
-                  <div className="relative">
-                    <img
-                      src={formData.featured_image}
-                      alt="Featured"
-                      className="w-full h-40 object-cover rounded-lg"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8"
-                      onClick={removeImage}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Image className="h-10 w-10 mx-auto text-muted-foreground/50" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Click to upload image
-                    </p>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                  accept="image/*"
-                  className="hidden"
+          {/* Course Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Course Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Course Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter course name"
+                  value={formData.name}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setFormData({
+                      ...formData,
+                      name,
+                      slug: generateSlug(name),
+                    });
+                  }}
+                  required
                 />
-                {formData.featured_image && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploading ? "Uploading..." : "Change Image"}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug *</Label>
+                <Input
+                  id="slug"
+                  placeholder="course-slug"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <RichTextEditor
+                  value={formData.description}
+                  onChange={(value) => setFormData({ ...formData, description: value })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Sidebar with Vertical Tab Toggle */}
+        <div className="flex-shrink-0 flex">
+          {/* Vertical Tab Toggle - Always visible */}
+          <button
+            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
+          >
+            <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${rightSidebarOpen ? 'rotate-180' : ''}`} />
+            <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
+              Settings
+            </span>
+          </button>
+
+          {/* Sidebar Content */}
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+            <div className={`p-4 border-b flex-shrink-0 ${!rightSidebarOpen ? 'hidden' : ''}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Settings className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm whitespace-nowrap">Course Settings</h3>
+              </div>
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                {canPublishDirectly ? (
+                  <Button onClick={(e) => handleSubmit(e, false)} className="w-full">
+                    <Save className="mr-2 h-4 w-4" />
+                    {id ? "Update Course" : "Create Course"}
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={(e) => handleSubmit(e, false)} variant="outline" className="w-full">
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Draft
+                    </Button>
+                    {showSubmitForApproval && (
+                      <Button onClick={(e) => handleSubmit(e, true)} className="w-full">
+                        <Send className="mr-2 h-4 w-4" />
+                        Submit for Approval
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/admin/courses")}
+                  className="w-full"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+            
+            <ScrollArea className={`flex-1 min-h-0 ${!rightSidebarOpen ? 'hidden' : ''}`}>
+              <div className="p-4 space-y-4">
+                {/* Ownership & Assignment Card - Admin Only */}
+                {isAdmin && id && (
+                  <div className="space-y-4 pb-4 border-b">
+                    <Label className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      Ownership & Assignment
+                    </Label>
+                    {/* Created By */}
+                    {authorInfo && (
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          Created by
+                        </Label>
+                        <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                          <span className="text-sm font-medium">
+                            {authorInfo.full_name || authorInfo.email.split("@")[0]}
+                          </span>
+                          {getRoleBadge(authorInfo.role)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Assign To */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <UserCog className="h-3 w-3" />
+                        Assign to
+                      </Label>
+                      <Select
+                        value={formData.assigned_to || "none"}
+                        onValueChange={(value) => setFormData({ ...formData, assigned_to: value === "none" ? "" : value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select user to assign" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Not assigned</SelectItem>
+                          {assignableUsers.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              <div className="flex items-center gap-2">
+                                <span>{user.full_name || user.email.split("@")[0]}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({user.role})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Assigned users can edit this course
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show ownership info for moderators (read-only) */}
+                {!isAdmin && id && (authorInfo || assigneeInfo) && (
+                  <div className="space-y-3 pb-4 border-b">
+                    <Label className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      Ownership Info
+                    </Label>
+                    {authorInfo && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Created by:</span>
+                        <div className="flex items-center gap-2">
+                          <span>{authorInfo.full_name || authorInfo.email.split("@")[0]}</span>
+                          {getRoleBadge(authorInfo.role)}
+                        </div>
+                      </div>
+                    )}
+                    {assigneeInfo && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Assigned to:</span>
+                        <div className="flex items-center gap-2">
+                          <span>{assigneeInfo.full_name || assigneeInfo.email.split("@")[0]}</span>
+                          {getRoleBadge(assigneeInfo.role)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Status - Only show to admins */}
                 {canPublishDirectly && (
                   <div className="space-y-2">
@@ -685,44 +669,63 @@ const AdminCourseEditor = () => {
                     />
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            <div className="flex flex-col gap-2">
-              {canPublishDirectly ? (
-                <Button type="submit" className="w-full">
-                  <Save className="mr-2 h-4 w-4" />
-                  {id ? "Update Course" : "Create Course"}
-                </Button>
-              ) : (
-                <>
-                  <Button type="submit" variant="outline" className="w-full">
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Draft
-                  </Button>
-                  {showSubmitForApproval && (
-                    <Button 
-                      type="button" 
-                      className="w-full"
-                      onClick={(e) => handleSubmit(e as any, true)}
+                {/* Featured Image */}
+                <div className="space-y-2 pt-4 border-t">
+                  <Label>Featured Image</Label>
+                  {formData.featured_image ? (
+                    <div className="relative">
+                      <img
+                        src={formData.featured_image}
+                        alt="Featured"
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={removeImage}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
                     >
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit for Approval
+                      <Image className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Click to upload
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  {formData.featured_image && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      <Upload className="mr-2 h-3 w-3" />
+                      {uploading ? "Uploading..." : "Change Image"}
                     </Button>
                   )}
-                </>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => navigate("/admin/courses")}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </form>
+                </div>
+              </div>
+            </ScrollArea>
+          </Card>
+        </div>
       </div>
     </AdminLayout>
   );
