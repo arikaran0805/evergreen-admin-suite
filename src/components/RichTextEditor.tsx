@@ -240,12 +240,15 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
       const rootRect = (quill.root as HTMLElement | null)?.getBoundingClientRect();
 
       if (bounds && rootRect && (bounds.width > 0 || bounds.height > 0)) {
+        const width = Math.max(bounds.width, 1);
+        const height = Math.max(bounds.height, 1);
+
         rect = {
           top: rootRect.top + bounds.top,
           left: rootRect.left + bounds.left,
-          width: bounds.width,
-          height: bounds.height,
-          bottom: rootRect.top + bounds.top + bounds.height,
+          width,
+          height,
+          bottom: rootRect.top + bounds.top + height,
         };
       } else {
         const domSelection = window.getSelection();
