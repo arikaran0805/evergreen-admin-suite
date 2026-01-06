@@ -31,6 +31,48 @@ interface MenuItem {
   badge?: number;
 }
 
+// Helper function to get page title from pathname
+const getPageTitle = (pathname: string): string => {
+  const pageTitles: Record<string, string> = {
+    "/admin": "Dashboard",
+    "/admin/posts": "Posts",
+    "/admin/courses": "Courses",
+    "/admin/courses-panel": "Courses Panel",
+    "/admin/tags": "Tags",
+    "/admin/authors": "Authors",
+    "/admin/users": "Users",
+    "/admin/comments": "Comments",
+    "/admin/media": "Media Library",
+    "/admin/monetization": "Monetization",
+    "/admin/pages": "Pages",
+    "/admin/redirects": "Redirects",
+    "/admin/api": "API Integrations",
+    "/admin/careers": "Careers",
+    "/admin/difficulty-levels": "Difficulty Levels",
+    "/admin/settings": "Settings",
+    "/admin/analytics": "Analytics",
+    "/admin/social-analytics": "Social Analytics",
+    "/admin/approvals": "Approvals",
+    "/admin/delete-requests": "Delete Requests",
+    "/admin/moderator-activity": "Moderator Activity",
+    "/admin/reports": "Reports",
+    "/admin/annotations": "Annotations",
+  };
+
+  // Check for exact match first
+  if (pageTitles[pathname]) {
+    return pageTitles[pathname];
+  }
+
+  // Check for dynamic routes
+  if (pathname.startsWith("/admin/posts/")) return "Edit Post";
+  if (pathname.startsWith("/admin/courses/")) return "Edit Course";
+  if (pathname.startsWith("/admin/careers/")) return "Edit Career";
+  if (pathname.startsWith("/admin/post-versions/")) return "Post Versions";
+
+  return "Admin";
+};
+
 const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
@@ -347,7 +389,10 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
       >
         {/* Top header bar with notification bell */}
         <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-          <div className="flex items-center justify-end h-14 px-8">
+          <div className="flex items-center justify-between h-14 px-8">
+            <h1 className="text-xl font-semibold text-foreground">
+              {getPageTitle(location.pathname)}
+            </h1>
             <NotificationDropdown 
               isAdmin={isAdmin} 
               isModerator={isModerator} 
