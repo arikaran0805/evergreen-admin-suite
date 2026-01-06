@@ -1,21 +1,30 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCourseVersions, CourseVersion } from "@/hooks/useCourseVersions";
+import { useCourseAnnotations } from "@/hooks/useCourseAnnotations";
 import AdminLayout from "@/components/AdminLayout";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
+import { AnnotationPanel, FloatingAnnotationPopup } from "@/components/annotations";
+import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import RichTextEditor from "@/components/RichTextEditor";
+import { ChatStyleEditor } from "@/components/chat-editor";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight, FileText, MessageCircle, Highlighter, Loader2, Check } from "lucide-react";
+import { isChatTranscript } from "@/lib/chatContent";
+
 interface UserProfile {
   id: string;
   full_name: string | null;
@@ -38,6 +47,7 @@ const AdminCourseEditor = () => {
   const [assignableUsers, setAssignableUsers] = useState<UserWithRole[]>([]);
   const [authorInfo, setAuthorInfo] = useState<UserWithRole | null>(null);
   const [assigneeInfo, setAssigneeInfo] = useState<UserWithRole | null>(null);
+  const [editorType, setEditorType] = useState<"rich" | "chat">("rich");
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -51,6 +61,26 @@ const AdminCourseEditor = () => {
     assigned_to: "" as string,
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
+  const [originalContent, setOriginalContent] = useState<string>("");
+  const [didSyncLatestVersion, setDidSyncLatestVersion] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [annotationMode, setAnnotationMode] = useState(false);
+  const [showVersioningNoteDialog, setShowVersioningNoteDialog] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [selectedText, setSelectedText] = useState<{
+    start: number;
+    end: number;
+    text: string;
+    type?: "paragraph" | "code" | "conversation";
+    bubbleIndex?: number;
+    rect?: { top: number; left: number; width: number; height: number; bottom: number };
+  } | null>(null);
+  const saveToAnnotateToastShownRef = useRef(false);
+  const previousContentRef = useRef<string>("");
+
+  // Version and annotation hooks
+  const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionAsDraft, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion, updateVersionNote } = useCourseVersions(id);
+  const { annotations, loading: annotationsLoading, createAnnotation, createReply, deleteReply, updateAnnotationStatus, deleteAnnotation } = useCourseAnnotations(id);
 
   // Get a list of popular icons for courses
   const courseIcons = [
@@ -80,7 +110,6 @@ const AdminCourseEditor = () => {
         
         await Promise.all(promises);
         
-        // Only set loading to false for new courses (edit loading handled in fetchCategory)
         if (!id) {
           setLoading(false);
         }
@@ -89,6 +118,28 @@ const AdminCourseEditor = () => {
       loadData();
     }
   }, [id, isAdmin, isModerator, roleLoading]);
+
+  // Reset version sync when navigating between courses
+  useEffect(() => {
+    setDidSyncLatestVersion(false);
+  }, [id]);
+
+  // Sync with latest version
+  useEffect(() => {
+    if (!id || versionsLoading || didSyncLatestVersion) return;
+    if (versions.length === 0) return;
+
+    const latest = versions[0];
+    setFormData((prev) => ({ ...prev, description: latest.content }));
+    setOriginalContent(latest.content);
+    previousContentRef.current = latest.content;
+
+    if (latest.content && isChatTranscript(latest.content)) {
+      setEditorType("chat");
+    }
+
+    setDidSyncLatestVersion(true);
+  }, [id, versionsLoading, versions, didSyncLatestVersion]);
 
   const fetchDifficultyLevels = async () => {
     try {
@@ -106,7 +157,6 @@ const AdminCourseEditor = () => {
 
   const fetchAssignableUsers = async () => {
     try {
-      // Get all admins and moderators
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
@@ -186,7 +236,6 @@ const AdminCourseEditor = () => {
       if (error) throw error;
       
       if (data) {
-        // Check if moderator is trying to edit someone else's course (and it's not assigned to them)
         if (isModerator && !isAdmin && data.author_id && data.author_id !== userId && data.assigned_to !== userId) {
           toast({
             title: "Access Denied",
@@ -198,10 +247,11 @@ const AdminCourseEditor = () => {
         }
 
         setOriginalAuthorId(data.author_id);
-        setFormData({
+        setFormData((prev) => ({
+          ...prev,
           name: data.name,
           slug: data.slug,
-          description: data.description || "",
+          description: prev.description || data.description || "",
           featured: data.featured || false,
           level: data.level || "Beginner",
           featured_image: data.featured_image || "",
@@ -209,15 +259,23 @@ const AdminCourseEditor = () => {
           learning_hours: (data as any).learning_hours || 0,
           status: data.status || "draft",
           assigned_to: (data as any).assigned_to || "",
-        });
+        }));
 
-        // Fetch author info
+        // Store original content for change detection
+        setOriginalContent((prev) => prev || (data.description || ""));
+        if (!previousContentRef.current) {
+          previousContentRef.current = data.description || "";
+        }
+
+        if (data.description && isChatTranscript(data.description)) {
+          setEditorType("chat");
+        }
+
         if (data.author_id) {
           const author = await fetchUserInfo(data.author_id);
           setAuthorInfo(author);
         }
 
-        // Fetch assignee info
         if ((data as any).assigned_to) {
           const assignee = await fetchUserInfo((data as any).assigned_to);
           setAssigneeInfo(assignee);
@@ -237,10 +295,8 @@ const AdminCourseEditor = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Determine status - Moderators can only create drafts or submit for approval
       let status = formData.status;
       if (isModerator && !isAdmin) {
-        // Moderators can only set draft or pending status
         if (submitForApproval) {
           status = "pending";
         } else {
@@ -249,6 +305,8 @@ const AdminCourseEditor = () => {
       } else if (submitForApproval) {
         status = "pending";
       }
+
+      const isPublishing = status === "published";
 
       const courseData: any = {
         name: formData.name,
@@ -263,7 +321,6 @@ const AdminCourseEditor = () => {
         author_id: originalAuthorId || session.user.id,
       };
 
-      // Only admins can set assigned_to
       if (isAdmin) {
         courseData.assigned_to = formData.assigned_to || null;
       }
@@ -277,6 +334,21 @@ const AdminCourseEditor = () => {
           .eq("id", id);
         
         if (error) throw error;
+
+        // Save version on publish
+        if (isPublishing) {
+          await saveVersionOnPublish(
+            formData.description,
+            editorType === "chat" ? "chat" : "rich-text"
+          );
+        } else if (formData.description !== previousContentRef.current) {
+          await saveVersionAsDraft(
+            formData.description,
+            editorType === "chat" ? "chat" : "rich-text"
+          );
+        }
+        previousContentRef.current = formData.description;
+
         toast({ title: "Course updated successfully" });
       } else {
         const { data: newCourse, error } = await supabase
@@ -287,10 +359,26 @@ const AdminCourseEditor = () => {
         
         if (error) throw error;
         courseId = newCourse.id;
+
+        // Create initial version
+        if (courseId) {
+          await supabase
+            .from("course_versions")
+            .insert({
+              course_id: courseId,
+              version_number: 0,
+              content: formData.description,
+              editor_type: editorType === "chat" ? "chat" : "rich-text",
+              edited_by: session.user.id,
+              editor_role: isAdmin ? "admin" : "moderator",
+              change_summary: "Initial version (v0)",
+              is_published: isPublishing,
+            });
+        }
+
         toast({ title: "Course created successfully" });
       }
 
-      // Record approval history if submitting for approval
       if (submitForApproval && courseId) {
         await supabase.from("approval_history").insert({
           content_type: "course",
@@ -367,11 +455,89 @@ const AdminCourseEditor = () => {
     return null;
   };
 
+  // Handle text selection for annotations
+  const handleTextSelection = useCallback((type: "paragraph" | "code" | "conversation" = "paragraph", bubbleIndex?: number) => {
+    if (!isAdmin && !isModerator) return;
+    
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const text = selection.toString();
+      const range = selection.getRangeAt(0);
+      setSelectedText({
+        start: range.startOffset,
+        end: range.endOffset,
+        text,
+        type,
+        bubbleIndex,
+      });
+    }
+  }, [isAdmin, isModerator]);
+
+  // Handle version actions
+  const handleRestoreVersion = async (version: any) => {
+    const restoredContent = await restoreVersion(version);
+    if (restoredContent) {
+      setFormData(prev => ({ ...prev, description: restoredContent }));
+      toast({
+        title: "Version Restored",
+        description: `Restored to version ${version.version_number}`,
+      });
+    }
+  };
+
+  const handlePublishVersion = async (version: any) => {
+    const success = await publishVersion(version.id, version.content);
+    if (success) {
+      setFormData(prev => ({ ...prev, description: version.content, status: "published" }));
+    }
+  };
+
+  // Handle annotation creation
+  const handleAddAnnotation = async (
+    selectionStart: number,
+    selectionEnd: number,
+    selectedTextStr: string,
+    comment: string,
+    annotationType?: "paragraph" | "code" | "conversation"
+  ) => {
+    const bubbleIndex = selectedText?.bubbleIndex;
+    
+    await createAnnotation(
+      selectionStart,
+      selectionEnd,
+      selectedTextStr,
+      comment,
+      editorType === "chat" ? "chat" : "rich-text",
+      bubbleIndex
+    );
+  };
+
   const canPublishDirectly = isAdmin;
   const showSubmitForApproval = isModerator && !isAdmin;
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
-  if (roleLoading || loading) {
+  // Create a mock version object for the current editor content
+  const currentEditorVersion = {
+    id: "current",
+    course_id: id || "",
+    version_number: versions.length > 0 ? Math.max(...versions.map(v => v.version_number)) + 1 : 1,
+    content: formData.description,
+    editor_type: editorType === "chat" ? "chat" : "rich-text",
+    edited_by: userId || "",
+    editor_role: isAdmin ? "admin" : "moderator",
+    created_at: new Date().toISOString(),
+    status: "draft",
+    change_summary: null,
+    versioning_note_type: null,
+    versioning_note_locked: false,
+    editor_profile: undefined,
+  } as CourseVersion;
+
+  const editorInitLoading =
+    roleLoading ||
+    loading ||
+    (id ? versionsLoading || (versions.length > 0 && !didSyncLatestVersion) : false);
+
+  if (editorInitLoading) {
     return (
       <AdminLayout defaultSidebarCollapsed>
         <AdminEditorSkeleton type="course" />
@@ -384,18 +550,75 @@ const AdminCourseEditor = () => {
       <div className="flex gap-4 h-[calc(100vh-6rem)] overflow-hidden">
         {/* Main Content Area */}
         <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/admin/courses")} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Courses
-            </Button>
-            <h1 className="text-3xl font-bold">
-              {id ? "Edit Course" : "Create New Course"}
-            </h1>
-            {formData.status && formData.status !== "draft" && (
-              <ContentStatusBadge status={formData.status as ContentStatus} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={() => navigate("/admin/courses")} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Courses
+              </Button>
+              <h1 className="text-3xl font-bold">
+                {id ? "Edit Course" : "Create New Course"}
+              </h1>
+              {formData.status && formData.status !== "draft" && (
+                <ContentStatusBadge status={formData.status as ContentStatus} />
+              )}
+            </div>
+
+            {/* Version and Annotation Controls */}
+            {id && (
+              <div className="flex items-center gap-3">
+                {/* Annotation Mode Toggle */}
+                {(isAdmin || isModerator) && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/30">
+                    <Highlighter className={`h-4 w-4 ${annotationMode ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-medium text-muted-foreground">Annotate</span>
+                    <Switch
+                      checked={annotationMode}
+                      onCheckedChange={setAnnotationMode}
+                      className="scale-75"
+                    />
+                  </div>
+                )}
+                <VersionHistoryPanel
+                  versions={versions as any}
+                  loading={versionsLoading}
+                  isAdmin={isAdmin}
+                  currentContent={formData.description}
+                  liveContent={originalContent}
+                  onRestore={handleRestoreVersion}
+                  onPublish={handlePublishVersion}
+                  onPreview={(version) => {
+                    toast({ title: "Preview", description: "Version preview coming soon" });
+                  }}
+                  onUpdateNote={updateVersionNote}
+                />
+                <AnnotationPanel
+                  annotations={annotations as any}
+                  loading={annotationsLoading}
+                  isAdmin={isAdmin}
+                  isModerator={isModerator}
+                  userId={userId}
+                  onAddAnnotation={handleAddAnnotation}
+                  onUpdateStatus={updateAnnotationStatus}
+                  onDelete={deleteAnnotation}
+                  onAddReply={createReply}
+                  onDeleteReply={deleteReply}
+                  selectedText={selectedText}
+                  onClearSelection={() => setSelectedText(null)}
+                />
+              </div>
             )}
           </div>
+
+          {/* Open annotations indicator */}
+          {annotations.filter(a => a.status === "open").length > 0 && !isAdmin && (
+            <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+              <Highlighter className="h-5 w-5 text-red-600" />
+              <span className="text-sm text-red-800 dark:text-red-200">
+                You have {annotations.filter(a => a.status === "open").length} pending feedback comments from admin. Check the Annotations panel.
+              </span>
+            </div>
+          )}
 
           {/* Course Details */}
           <Card>
@@ -433,11 +656,102 @@ const AdminCourseEditor = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <RichTextEditor
-                  value={formData.description}
-                  onChange={(value) => setFormData({ ...formData, description: value })}
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description">Description</Label>
+                  <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
+                    <TabsList className="h-9">
+                      <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
+                        <FileText className="w-3.5 h-3.5" />
+                        Rich Editor
+                      </TabsTrigger>
+                      <TabsTrigger value="chat" className="text-xs px-3 gap-1.5">
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Chat Style
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                <div className={`transition-all duration-300 rounded-lg ${annotationMode ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background [&_*]:cursor-crosshair' : ''}`}>
+                  {editorType === "rich" ? (
+                    <RichTextEditor
+                      value={formData.description}
+                      onChange={(value) => setFormData({ ...formData, description: value })}
+                      annotationMode={annotationMode}
+                      annotations={annotations.map(a => ({
+                        id: a.id,
+                        selection_start: a.selection_start,
+                        selection_end: a.selection_end,
+                        selected_text: a.selected_text,
+                        status: a.status,
+                      }))}
+                      onAnnotationClick={(annotation) => {
+                        const fullAnnotation = annotations.find(a => a.id === annotation.id);
+                        if (fullAnnotation) {
+                          setSelectedText({
+                            start: fullAnnotation.selection_start,
+                            end: fullAnnotation.selection_end,
+                            text: fullAnnotation.selected_text,
+                            type: "paragraph",
+                          });
+                        }
+                      }}
+                      onTextSelect={(selection) => {
+                        if (!annotationMode) return;
+                        if (!isAdmin && !isModerator) return;
+                        if (!id) {
+                          if (!saveToAnnotateToastShownRef.current) {
+                            saveToAnnotateToastShownRef.current = true;
+                            toast({
+                              title: "Save to annotate",
+                              description: "Create/save the course first, then you can add annotations.",
+                            });
+                          }
+                          return;
+                        }
+
+                        setSelectedText({
+                          start: selection.start,
+                          end: selection.end,
+                          text: selection.text,
+                          type: selection.type,
+                          rect: selection.rect,
+                        });
+                      }}
+                    />
+                  ) : (
+                    <ChatStyleEditor
+                      value={formData.description}
+                      onChange={(value) => setFormData({ ...formData, description: value })}
+                      courseType="python"
+                      placeholder="Start a conversation..."
+                      annotationMode={annotationMode}
+                      annotations={annotations.map(a => ({ bubble_index: a.bubble_index, status: a.status }))}
+                      onTextSelect={(selection) => {
+                        if (!annotationMode) return;
+                        if (!isAdmin && !isModerator) return;
+                        if (!id) {
+                          if (!saveToAnnotateToastShownRef.current) {
+                            saveToAnnotateToastShownRef.current = true;
+                            toast({
+                              title: "Save to annotate",
+                              description: "Create/save the course first, then you can add annotations.",
+                            });
+                          }
+                          return;
+                        }
+
+                        setSelectedText({
+                          start: selection.start,
+                          end: selection.end,
+                          text: selection.text,
+                          type: selection.type as "paragraph" | "code" | "conversation",
+                          bubbleIndex: selection.bubbleIndex,
+                          rect: selection.rect,
+                        });
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -466,10 +780,23 @@ const AdminCourseEditor = () => {
               {/* Action Buttons */}
               <div className="space-y-2">
                 {canPublishDirectly ? (
-                  <Button onClick={(e) => handleSubmit(e, false)} className="w-full">
-                    <Save className="mr-2 h-4 w-4" />
-                    {id ? "Update Course" : "Create Course"}
-                  </Button>
+                  <>
+                    <Button onClick={(e) => handleSubmit(e, false)} className="w-full">
+                      <Save className="mr-2 h-4 w-4" />
+                      {id ? "Update Course" : "Create Course"}
+                    </Button>
+                    {id && (
+                      <Button
+                        onClick={() => setShowVersioningNoteDialog(true)}
+                        disabled={loading}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        Save as Draft
+                      </Button>
+                    )}
+                  </>
                 ) : (
                   <>
                     <Button onClick={(e) => handleSubmit(e, false)} variant="outline" className="w-full">
@@ -727,6 +1054,44 @@ const AdminCourseEditor = () => {
           </Card>
         </div>
       </div>
+
+      {/* Versioning Note Dialog */}
+      <VersioningNoteDialog
+        open={showVersioningNoteDialog}
+        onOpenChange={setShowVersioningNoteDialog}
+        loading={savingDraft}
+        onSave={async (noteType: VersioningNoteType, changeSummary: string) => {
+          setSavingDraft(true);
+          try {
+            const saved = await saveVersionAsDraft(
+              formData.description,
+              editorType === "chat" ? "chat" : "rich-text",
+              changeSummary,
+              noteType
+            );
+
+            if (saved) {
+              previousContentRef.current = formData.description;
+              setShowVersioningNoteDialog(false);
+              toast({
+                title: "Draft saved",
+                description: "Saved as a private draft version (not live).",
+              });
+            }
+          } finally {
+            setSavingDraft(false);
+          }
+        }}
+      />
+
+      {/* Floating Annotation Popup */}
+      <FloatingAnnotationPopup
+        selectedText={selectedText}
+        onAddAnnotation={handleAddAnnotation}
+        onClose={() => setSelectedText(null)}
+        isAdmin={isAdmin}
+        isModerator={isModerator}
+      />
     </AdminLayout>
   );
 };
