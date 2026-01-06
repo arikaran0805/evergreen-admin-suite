@@ -1043,7 +1043,7 @@ const AdminPostEditor = () => {
               </div>
             </div>
             
-            <ScrollArea className={`flex-1 ${!rightSidebarOpen ? 'hidden' : ''}`}>
+            <ScrollArea className={`h-auto max-h-[calc(100vh-280px)] ${!rightSidebarOpen ? 'hidden' : ''}`}>
               <div className="p-4 space-y-4">
                 {/* Status - Only show to admins */}
                 {canPublishDirectly && (
