@@ -23,7 +23,8 @@ import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter, Settings } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
@@ -954,11 +955,11 @@ const AdminPostEditor = () => {
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
-        <div className="flex-shrink-0 flex sticky top-0 self-start">
+        <div className="flex-shrink-0 flex">
           {/* Vertical Tab Toggle - Always visible */}
           <button
             onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer self-stretch"
+            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
           >
             <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${rightSidebarOpen ? 'rotate-180' : ''}`} />
             <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
@@ -967,212 +968,218 @@ const AdminPostEditor = () => {
           </button>
 
           {/* Sidebar Content */}
-          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
-            <div className={`space-y-4 ${!rightSidebarOpen ? 'hidden' : ''}`}>
-            {/* Action Buttons */}
-            <div className="space-y-2">
-              {canPublishDirectly ? (
-                <>
-                  {/* Show Publish Changes with preview if editing existing post with changes */}
-                  {id && hasContentChanges && formData.status === "published" ? (
-                    <Button
-                      onClick={handlePublishWithPreview}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Publish Changes
-                    </Button>
-                  ) : (
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+            <div className={`p-4 border-b flex-shrink-0 ${!rightSidebarOpen ? 'hidden' : ''}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Settings className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm whitespace-nowrap">Post Settings</h3>
+              </div>
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                {canPublishDirectly ? (
+                  <>
+                    {id && hasContentChanges && formData.status === "published" ? (
+                      <Button
+                        onClick={handlePublishWithPreview}
+                        disabled={loading}
+                        className="w-full"
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Publish Changes
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleSubmit(false)}
+                        disabled={loading}
+                        className="w-full"
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        {id ? "Update" : "Publish"}
+                      </Button>
+                    )}
+                    {id && (
+                      <Button
+                        onClick={() => setShowVersioningNoteDialog(true)}
+                        disabled={loading}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        Save as Draft
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
                     <Button
                       onClick={() => handleSubmit(false)}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      <Save className="mr-2 h-4 w-4" />
-                      {id ? "Update" : "Publish"}
-                    </Button>
-                  )}
-                  {/* Save as draft option when editing */}
-                  {id && (
-                    <Button
-                      onClick={() => setShowVersioningNoteDialog(true)}
                       disabled={loading}
                       variant="outline"
                       className="w-full"
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      Save as Draft
+                      Save Draft
                     </Button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => handleSubmit(false)}
-                    disabled={loading}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Draft
-                  </Button>
-                  {showSubmitForApproval && (
-                    <Button
-                      onClick={() => handleSubmit(true)}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit for Approval
-                    </Button>
-                  )}
-                </>
-              )}
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/admin/posts")}
-                disabled={loading}
-                className="w-full"
-              >
-                Cancel
-              </Button>
-            </div>
-
-            {/* Status - Only show to admins */}
-            {canPublishDirectly && (
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                    {showSubmitForApproval && (
+                      <Button
+                        onClick={() => handleSubmit(true)}
+                        disabled={loading}
+                        className="w-full"
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Submit for Approval
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/admin/posts")}
+                  disabled={loading}
+                  className="w-full"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="pending">Pending Approval</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="changes_requested">Changes Requested</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div>
-              <Label htmlFor="category">Course</Label>
-              <Select 
-                value={formData.category_id || "none"} 
-                onValueChange={(value) => setFormData({ ...formData, category_id: value === "none" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a course" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No course</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="parent">Parent Lesson</Label>
-              <Select 
-                value={formData.parent_id} 
-                onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No parent (main lesson)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No parent (main lesson)</SelectItem>
-                  {mainLessons
-                    .filter(lesson => lesson.id !== id)
-                    .map((lesson) => (
-                      <SelectItem key={lesson.id} value={lesson.id}>
-                        {lesson.title}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="lesson_order">Lesson Order</Label>
-              <Input
-                id="lesson_order"
-                type="number"
-                min="0"
-                value={formData.lesson_order}
-                onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="featured_image">Featured Image URL</Label>
-              <Input
-                id="featured_image"
-                value={formData.featured_image}
-                onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-
-            <div>
-              <Label className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                Code Theme
-              </Label>
-              <Select 
-                value={formData.code_theme || "default"} 
-                onValueChange={(value) => setFormData({ ...formData, code_theme: value === "default" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Use site default" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Use site default</SelectItem>
-                  {CODE_THEMES.map((theme) => (
-                    <SelectItem key={theme.value} value={theme.value}>
-                      {theme.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Tags</Label>
-              <div className="flex gap-2 mb-2">
-                <Input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
-                  placeholder="Add a tag..."
-                />
-                <Button type="button" onClick={handleAddTag} size="sm">
-                  Add
+                  Cancel
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {selectedTags.map((tag) => (
-                  <Badge key={tag.id} variant="secondary" className="gap-1">
-                    {tag.name}
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => handleRemoveTag(tag.id)}
+            </div>
+            
+            <ScrollArea className={`flex-1 ${!rightSidebarOpen ? 'hidden' : ''}`}>
+              <div className="p-4 space-y-4">
+                {/* Status - Only show to admins */}
+                {canPublishDirectly && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select 
+                      value={formData.status} 
+                      onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="pending">Pending Approval</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="changes_requested">Changes Requested</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Course</Label>
+                  <Select 
+                    value={formData.category_id || "none"} 
+                    onValueChange={(value) => setFormData({ ...formData, category_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No course</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="parent">Parent Lesson</Label>
+                  <Select 
+                    value={formData.parent_id} 
+                    onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No parent (main lesson)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No parent (main lesson)</SelectItem>
+                      {mainLessons
+                        .filter(lesson => lesson.id !== id)
+                        .map((lesson) => (
+                          <SelectItem key={lesson.id} value={lesson.id}>
+                            {lesson.title}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lesson_order">Lesson Order</Label>
+                  <Input
+                    id="lesson_order"
+                    type="number"
+                    min="0"
+                    value={formData.lesson_order}
+                    onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="featured_image">Featured Image URL</Label>
+                  <Input
+                    id="featured_image"
+                    value={formData.featured_image}
+                    onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    Code Theme
+                  </Label>
+                  <Select 
+                    value={formData.code_theme || "default"} 
+                    onValueChange={(value) => setFormData({ ...formData, code_theme: value === "default" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Use site default" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Use site default</SelectItem>
+                      {CODE_THEMES.map((theme) => (
+                        <SelectItem key={theme.value} value={theme.value}>
+                          {theme.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
+                      placeholder="Add a tag..."
                     />
-                  </Badge>
-                ))}
+                    <Button type="button" onClick={handleAddTag} size="sm">
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTags.map((tag) => (
+                      <Badge key={tag.id} variant="secondary" className="gap-1">
+                        {tag.name}
+                        <X 
+                          className="h-3 w-3 cursor-pointer" 
+                          onClick={() => handleRemoveTag(tag.id)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-            </div>
+            </ScrollArea>
           </Card>
         </div>
       </div>
