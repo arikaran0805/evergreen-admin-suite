@@ -680,7 +680,7 @@ const AdminPostEditor = () => {
 
   return (
     <AdminLayout defaultSidebarCollapsed>
-      <div className="flex gap-4 h-full overflow-hidden">
+      <div className="flex gap-4 h-[calc(100vh-6rem)] overflow-hidden">
         {/* Main Content Area */}
         <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
           <div className="flex items-center justify-between">
@@ -968,7 +968,7 @@ const AdminPostEditor = () => {
           </button>
 
           {/* Sidebar Content */}
-          <Card className={`flex flex-col h-fit transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
             <div className={`p-4 border-b flex-shrink-0 ${!rightSidebarOpen ? 'hidden' : ''}`}>
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="h-4 w-4 text-primary" />
