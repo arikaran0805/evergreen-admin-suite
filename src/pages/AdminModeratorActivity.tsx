@@ -7,9 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   FileText, GraduationCap, Tags, Clock, CheckCircle, XCircle, 
-  MessageSquare, AlertCircle, RefreshCw
+  MessageSquare, AlertCircle, RefreshCw, History, ExternalLink
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -39,12 +47,26 @@ interface AdminReaction {
   admin_name?: string;
 }
 
+interface HistoryItem {
+  id: string;
+  action: string;
+  feedback: string | null;
+  created_at: string;
+  admin_name: string;
+}
+
 const AdminModeratorActivity = () => {
   const navigate = useNavigate();
   const { userId, isModerator, isAdmin, isLoading: roleLoading } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [myActions, setMyActions] = useState<MyAction[]>([]);
   const [adminReactions, setAdminReactions] = useState<AdminReaction[]>([]);
+  
+  // Dialog state
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MyAction | null>(null);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!roleLoading) {
@@ -248,6 +270,56 @@ const AdminModeratorActivity = () => {
     setAdminReactions(reactions);
   };
 
+  const openHistoryDialog = async (item: MyAction) => {
+    setSelectedItem(item);
+    setHistoryDialogOpen(true);
+    setHistoryLoading(true);
+    
+    try {
+      const { data: history } = await supabase
+        .from("approval_history")
+        .select("id, action, feedback, created_at, performed_by")
+        .eq("content_id", item.id)
+        .order("created_at", { ascending: false });
+
+      if (history && history.length > 0) {
+        const adminIds = [...new Set(history.map(h => h.performed_by))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", adminIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name || "Admin"]) || []);
+
+        setHistoryItems(history.map(h => ({
+          id: h.id,
+          action: h.action,
+          feedback: h.feedback,
+          created_at: h.created_at,
+          admin_name: profileMap.get(h.performed_by) || "Admin"
+        })));
+      } else {
+        setHistoryItems([]);
+      }
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      setHistoryItems([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const getEditUrl = (item: MyAction) => {
+    switch (item.type) {
+      case "post":
+        return `/admin/posts/${item.id}`;
+      case "course":
+        return `/admin/courses/${item.id}`;
+      default:
+        return null;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "published":
@@ -355,7 +427,8 @@ const AdminModeratorActivity = () => {
                       {myActions.map((action) => (
                         <div
                           key={`${action.type}-${action.id}`}
-                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => openHistoryDialog(action)}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -372,7 +445,10 @@ const AdminModeratorActivity = () => {
                                 </div>
                               </div>
                             </div>
-                            {getStatusBadge(action.status)}
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(action.status)}
+                              <History className="h-4 w-4 text-muted-foreground" />
+                            </div>
                           </div>
                           
                           {/* Admin feedback box - show when there's been any admin action */}
@@ -481,6 +557,120 @@ const AdminModeratorActivity = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* History Dialog */}
+        <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {selectedItem && getTypeIcon(selectedItem.type)}
+                {selectedItem?.title || "Content Details"}
+              </DialogTitle>
+              <DialogDescription className="flex items-center gap-2">
+                <span className="capitalize">{selectedItem?.type}</span>
+                {selectedItem && (
+                  <>
+                    <span>•</span>
+                    {getStatusBadge(selectedItem.status)}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Action buttons */}
+              {selectedItem && getEditUrl(selectedItem) && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const url = getEditUrl(selectedItem);
+                      if (url) navigate(url);
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Edit Content
+                  </Button>
+                </div>
+              )}
+
+              {/* History Timeline */}
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-4 flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  Admin Feedback History
+                </h4>
+                
+                <ScrollArea className="h-[300px]">
+                  {historyLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                    </div>
+                  ) : historyItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <AlertCircle className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                      <p className="text-sm text-muted-foreground">No admin feedback yet</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">
+                        Feedback will appear here once an admin reviews this content
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {historyItems.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className={`relative pl-6 pb-4 ${
+                            index !== historyItems.length - 1 ? "border-l-2 border-muted" : ""
+                          }`}
+                        >
+                          {/* Timeline dot */}
+                          <div className="absolute left-0 top-0 -translate-x-1/2 p-1 bg-background rounded-full border-2 border-muted">
+                            {getActionIcon(item.action)}
+                          </div>
+                          
+                          <div className="ml-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  item.action === "approved"
+                                    ? "bg-green-500/10 text-green-500 border-green-500/30"
+                                    : item.action === "rejected"
+                                    ? "bg-red-500/10 text-red-500 border-red-500/30"
+                                    : "bg-yellow-500/10 text-yellow-500 border-yellow-500/30"
+                                }
+                              >
+                                {formatActionLabel(item.action)}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                by {item.admin_name}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              {format(new Date(item.created_at), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                            {item.feedback ? (
+                              <div className="p-3 bg-muted/50 rounded-md">
+                                <p className="text-sm italic">"{item.feedback}"</p>
+                              </div>
+                            ) : (
+                              <div className="p-3 bg-muted/30 rounded-md">
+                                <p className="text-sm text-muted-foreground/60 italic">
+                                  No feedback provided
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
