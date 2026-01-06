@@ -86,6 +86,7 @@ interface RichTextEditorProps {
     end: number;
     text: string;
     type: "paragraph" | "code";
+    rect?: { top: number; left: number; width: number; height: number; bottom: number };
   }) => void;
 }
 
@@ -231,11 +232,28 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
       const formats = quill.getFormat(selection);
       const type: "paragraph" | "code" = formats["code-block"] ? "code" : "paragraph";
 
+      // Capture the selection rect immediately before it can be cleared
+      let rect: { top: number; left: number; width: number; height: number; bottom: number } | undefined;
+      const domSelection = window.getSelection();
+      if (domSelection && domSelection.rangeCount > 0) {
+        const domRect = domSelection.getRangeAt(0).getBoundingClientRect();
+        if (domRect && domRect.width > 0 && domRect.height > 0) {
+          rect = {
+            top: domRect.top,
+            left: domRect.left,
+            width: domRect.width,
+            height: domRect.height,
+            bottom: domRect.bottom,
+          };
+        }
+      }
+
       onTextSelect({
         start: selection.index,
         end: selection.index + selection.length,
         text,
         type,
+        rect,
       });
     },
     [onTextSelect]

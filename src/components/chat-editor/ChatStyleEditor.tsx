@@ -83,6 +83,7 @@ interface ChatStyleEditorProps {
     text: string;
     type: "conversation";
     bubbleIndex?: number;
+    rect?: { top: number; left: number; width: number; height: number; bottom: number };
   }) => void;
 }
 
@@ -1367,12 +1368,26 @@ const ChatStyleEditor = ({
 
     const range = selection.getRangeAt(0);
     
+    // Capture the selection rect immediately
+    let rect: { top: number; left: number; width: number; height: number; bottom: number } | undefined;
+    const domRect = range.getBoundingClientRect();
+    if (domRect && domRect.width > 0 && domRect.height > 0) {
+      rect = {
+        top: domRect.top,
+        left: domRect.left,
+        width: domRect.width,
+        height: domRect.height,
+        bottom: domRect.bottom,
+      };
+    }
+    
     onTextSelect({
       start: range.startOffset,
       end: range.endOffset,
       text,
       type: "conversation",
       bubbleIndex,
+      rect,
     });
   }, [onTextSelect]);
 
@@ -1381,6 +1396,8 @@ const ChatStyleEditor = ({
     if (!onTextSelect) return;
     if (!text || text.length < 2) return;
 
+    // For full bubble annotation, we don't have a specific selection rect
+    // The popup will try to use the window selection as fallback
     onTextSelect({
       start: 0,
       end: text.length,
