@@ -232,19 +232,34 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
       const formats = quill.getFormat(selection);
       const type: "paragraph" | "code" = formats["code-block"] ? "code" : "paragraph";
 
-      // Capture the selection rect immediately before it can be cleared
+      // Capture the selection rect immediately before it can be cleared.
+      // Prefer Quill's bounds (stable) and fall back to DOM Selection.
       let rect: { top: number; left: number; width: number; height: number; bottom: number } | undefined;
-      const domSelection = window.getSelection();
-      if (domSelection && domSelection.rangeCount > 0) {
-        const domRect = domSelection.getRangeAt(0).getBoundingClientRect();
-        if (domRect && domRect.width > 0 && domRect.height > 0) {
-          rect = {
-            top: domRect.top,
-            left: domRect.left,
-            width: domRect.width,
-            height: domRect.height,
-            bottom: domRect.bottom,
-          };
+
+      const bounds = quill.getBounds(selection.index, selection.length);
+      const rootRect = (quill.root as HTMLElement | null)?.getBoundingClientRect();
+
+      if (bounds && rootRect && (bounds.width > 0 || bounds.height > 0)) {
+        rect = {
+          top: rootRect.top + bounds.top,
+          left: rootRect.left + bounds.left,
+          width: bounds.width,
+          height: bounds.height,
+          bottom: rootRect.top + bounds.top + bounds.height,
+        };
+      } else {
+        const domSelection = window.getSelection();
+        if (domSelection && domSelection.rangeCount > 0) {
+          const domRect = domSelection.getRangeAt(0).getBoundingClientRect();
+          if (domRect && (domRect.width > 0 || domRect.height > 0)) {
+            rect = {
+              top: domRect.top,
+              left: domRect.left,
+              width: domRect.width,
+              height: domRect.height,
+              bottom: domRect.bottom,
+            };
+          }
         }
       }
 
