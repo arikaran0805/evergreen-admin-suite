@@ -23,7 +23,7 @@ import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
@@ -115,6 +115,7 @@ const AdminPostEditor = () => {
   const [showVersioningNoteDialog, setShowVersioningNoteDialog] = useState(false);
   const [dismissedAdminBanner, setDismissedAdminBanner] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"settings" | "annotations">("settings");
   const [savingDraft, setSavingDraft] = useState(false);
   const [annotationMode, setAnnotationMode] = useState(false);
   const saveToAnnotateToastShownRef = useRef(false);
@@ -713,21 +714,9 @@ const AdminPostEditor = () => {
               )}
             </div>
             
-            {/* Version and Annotation Controls */}
+            {/* Version Controls */}
             {id && (
               <div className="flex items-center gap-3">
-                {/* Annotation Mode Toggle */}
-                {(isAdmin || isModerator) && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/30">
-                    <Highlighter className={`h-4 w-4 ${annotationMode ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="text-xs font-medium text-muted-foreground">Annotate</span>
-                    <Switch
-                      checked={annotationMode}
-                      onCheckedChange={setAnnotationMode}
-                      className="scale-75"
-                    />
-                  </div>
-                )}
                 <VersionHistoryPanel
                   versions={versions}
                   loading={versionsLoading}
@@ -738,20 +727,6 @@ const AdminPostEditor = () => {
                   onPublish={handlePublishVersion}
                   onPreview={handlePreviewVersion}
                   onUpdateNote={updateVersionNote}
-                />
-                <AnnotationPanel
-                  annotations={annotations}
-                  loading={annotationsLoading}
-                  isAdmin={isAdmin}
-                  isModerator={isModerator}
-                  userId={userId}
-                  onAddAnnotation={handleAddAnnotation}
-                  onUpdateStatus={updateAnnotationStatus}
-                  onDelete={deleteAnnotation}
-                  onAddReply={createReply}
-                  onDeleteReply={deleteReply}
-                  selectedText={selectedText}
-                  onClearSelection={() => setSelectedText(null)}
                 />
               </div>
             )}
@@ -953,22 +928,70 @@ const AdminPostEditor = () => {
           </div>
         </div>
 
-        {/* Right Sidebar with Vertical Tab Toggle */}
+        {/* Right Sidebar with Vertical Tab Toggles */}
         <div className="flex-shrink-0 flex sticky top-0 self-start">
-          {/* Vertical Tab Toggle - Always visible */}
-          <button
-            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer self-stretch"
-          >
-            <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${rightSidebarOpen ? 'rotate-180' : ''}`} />
-            <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
-              Settings
-            </span>
-          </button>
+          {/* Vertical Tab Toggles - Always visible */}
+          <div className="flex flex-col">
+            {/* Settings Tab */}
+            <button
+              onClick={() => {
+                if (activeSidebarTab === "settings" && rightSidebarOpen) {
+                  setRightSidebarOpen(false);
+                } else {
+                  setActiveSidebarTab("settings");
+                  setRightSidebarOpen(true);
+                }
+              }}
+              className={`flex flex-col items-center justify-start gap-1 py-3 px-1 border-y border-l rounded-tl-md transition-colors cursor-pointer ${
+                activeSidebarTab === "settings" && rightSidebarOpen 
+                  ? 'bg-primary/10 border-primary/30' 
+                  : 'bg-muted/50 hover:bg-muted'
+              }`}
+            >
+              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${activeSidebarTab === "settings" && rightSidebarOpen ? 'rotate-180' : ''}`} />
+              <span className={`text-[10px] font-medium [writing-mode:vertical-lr] rotate-180 select-none ${
+                activeSidebarTab === "settings" && rightSidebarOpen ? 'text-primary' : 'text-muted-foreground'
+              }`}>
+                Settings
+              </span>
+            </button>
+
+            {/* Annotations Tab - Only show for existing posts and admins/moderators */}
+            {id && (isAdmin || isModerator) && (
+              <button
+                onClick={() => {
+                  if (activeSidebarTab === "annotations" && rightSidebarOpen) {
+                    setRightSidebarOpen(false);
+                  } else {
+                    setActiveSidebarTab("annotations");
+                    setRightSidebarOpen(true);
+                  }
+                }}
+                className={`flex flex-col items-center justify-start gap-1 py-3 px-1 border-b border-l rounded-bl-md transition-colors cursor-pointer ${
+                  activeSidebarTab === "annotations" && rightSidebarOpen 
+                    ? 'bg-primary/10 border-primary/30' 
+                    : 'bg-muted/50 hover:bg-muted'
+                }`}
+              >
+                <Highlighter className={`h-4 w-4 ${activeSidebarTab === "annotations" && rightSidebarOpen ? 'text-primary' : 'text-muted-foreground'}`} />
+                <span className={`text-[10px] font-medium [writing-mode:vertical-lr] rotate-180 select-none ${
+                  activeSidebarTab === "annotations" && rightSidebarOpen ? 'text-primary' : 'text-muted-foreground'
+                }`}>
+                  Annotations
+                </span>
+                {annotations.filter(a => a.status === "open").length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
+                    {annotations.filter(a => a.status === "open").length}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
 
           {/* Sidebar Content */}
           <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72 p-4' : 'w-0 overflow-hidden border-0 p-0'}`}>
-            <div className={`space-y-4 ${!rightSidebarOpen ? 'hidden' : ''}`}>
+            {/* Settings Tab Content */}
+            <div className={`space-y-4 ${!rightSidebarOpen || activeSidebarTab !== "settings" ? 'hidden' : ''}`}>
             {/* Action Buttons */}
             <div className="space-y-2">
               {canPublishDirectly ? (
@@ -1172,6 +1195,95 @@ const AdminPostEditor = () => {
                 ))}
               </div>
             </div>
+            </div>
+
+            {/* Annotations Tab Content */}
+            <div className={`space-y-4 h-full flex flex-col ${!rightSidebarOpen || activeSidebarTab !== "annotations" ? 'hidden' : ''}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Highlighter className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-sm">Annotations</h3>
+                </div>
+                {/* Annotation Mode Toggle */}
+                <div className="flex items-center gap-2 px-2 py-1 rounded-lg border border-border bg-muted/30">
+                  <span className="text-[10px] font-medium text-muted-foreground">Mode</span>
+                  <Switch
+                    checked={annotationMode}
+                    onCheckedChange={setAnnotationMode}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+
+              {annotationMode && (
+                <div className="p-2 bg-primary/5 rounded-lg border border-primary/20 text-xs text-primary">
+                  Select text in the editor to add annotations
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto -mx-4 px-4">
+                {annotations.length === 0 ? (
+                  <div className="text-center text-muted-foreground text-sm py-8">
+                    <Highlighter className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No annotations yet</p>
+                    <p className="text-xs mt-1">Enable annotation mode and select text to add feedback</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {annotations.map((annotation) => (
+                      <div
+                        key={annotation.id}
+                        className={`p-3 rounded-lg border text-sm ${
+                          annotation.status === "open" 
+                            ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800" 
+                            : "bg-muted/50 border-border"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <span className="font-medium text-xs truncate flex-1">
+                            "{annotation.selected_text.slice(0, 30)}..."
+                          </span>
+                          <Badge 
+                            variant={annotation.status === "open" ? "destructive" : "secondary"} 
+                            className="text-[10px] shrink-0"
+                          >
+                            {annotation.status}
+                          </Badge>
+                        </div>
+                        <p className="text-muted-foreground text-xs line-clamp-2">{annotation.comment}</p>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(annotation.created_at).toLocaleDateString()}
+                          </span>
+                          <div className="flex gap-1">
+                            {annotation.status === "open" && isAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-[10px]"
+                                onClick={() => updateAnnotationStatus(annotation.id, "resolved")}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Resolve
+                              </Button>
+                            )}
+                            {isAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
+                                onClick={() => deleteAnnotation(annotation.id)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         </div>
