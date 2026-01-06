@@ -661,6 +661,104 @@ export type Database = {
         }
         Relationships: []
       }
+      course_annotation_replies: {
+        Row: {
+          annotation_id: string
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          annotation_id: string
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          annotation_id?: string
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_annotation_replies_annotation_id_fkey"
+            columns: ["annotation_id"]
+            isOneToOne: false
+            referencedRelation: "course_annotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_annotations: {
+        Row: {
+          author_id: string
+          bubble_index: number | null
+          comment: string
+          course_id: string
+          created_at: string
+          editor_type: string | null
+          id: string
+          selected_text: string
+          selection_end: number
+          selection_start: number
+          status: string
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          author_id: string
+          bubble_index?: number | null
+          comment: string
+          course_id: string
+          created_at?: string
+          editor_type?: string | null
+          id?: string
+          selected_text: string
+          selection_end: number
+          selection_start: number
+          status?: string
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          bubble_index?: number | null
+          comment?: string
+          course_id?: string
+          created_at?: string
+          editor_type?: string | null
+          id?: string
+          selected_text?: string
+          selection_end?: number
+          selection_start?: number
+          status?: string
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_annotations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_annotations_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "course_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           course_id: string
@@ -738,6 +836,62 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_versions: {
+        Row: {
+          change_summary: string | null
+          content: string
+          course_id: string
+          created_at: string
+          edited_by: string
+          editor_role: string | null
+          editor_type: string | null
+          id: string
+          is_published: boolean | null
+          status: string
+          version_number: number
+          versioning_note_locked: boolean
+          versioning_note_type: string | null
+        }
+        Insert: {
+          change_summary?: string | null
+          content: string
+          course_id: string
+          created_at?: string
+          edited_by: string
+          editor_role?: string | null
+          editor_type?: string | null
+          id?: string
+          is_published?: boolean | null
+          status?: string
+          version_number?: number
+          versioning_note_locked?: boolean
+          versioning_note_type?: string | null
+        }
+        Update: {
+          change_summary?: string | null
+          content?: string
+          course_id?: string
+          created_at?: string
+          edited_by?: string
+          editor_role?: string | null
+          editor_type?: string | null
+          id?: string
+          is_published?: boolean | null
+          status?: string
+          version_number?: number
+          versioning_note_locked?: boolean
+          versioning_note_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_versions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
