@@ -106,6 +106,7 @@ const AdminPostEditor = () => {
     text: string;
     type?: "paragraph" | "code" | "conversation";
     bubbleIndex?: number;
+    rect?: { top: number; left: number; width: number; height: number; bottom: number };
   } | null>(null);
   const [previewVersion, setPreviewVersion] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -908,6 +909,7 @@ const AdminPostEditor = () => {
                      end: selection.end,
                      text: selection.text,
                      type: selection.type,
+                     rect: selection.rect,
                    });
                  }}
               />
@@ -942,6 +944,7 @@ const AdminPostEditor = () => {
                     text: selection.text,
                     type: selection.type,
                     bubbleIndex: selection.bubbleIndex,
+                    rect: selection.rect,
                   });
                 }}
               />

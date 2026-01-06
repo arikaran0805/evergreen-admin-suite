@@ -12,6 +12,7 @@ interface FloatingAnnotationPopupProps {
     text: string;
     type?: "paragraph" | "code" | "conversation";
     bubbleIndex?: number;
+    rect?: { top: number; left: number; width: number; height: number; bottom: number };
   } | null;
   onAddAnnotation: (
     selectionStart: number,
@@ -52,12 +53,17 @@ const FloatingAnnotationPopup = ({
     }
 
     const update = () => {
-      // Capture the selection rect if it's still available (it may disappear after clicking the popup)
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const rect = selection.getRangeAt(0).getBoundingClientRect();
-        if (rect && (rect.width !== 0 || rect.height !== 0)) {
-          lastRectRef.current = rect;
+      // First priority: use the pre-captured rect passed from the parent
+      if (selectedText.rect && selectedText.rect.width > 0 && selectedText.rect.height > 0) {
+        lastRectRef.current = selectedText.rect as DOMRect;
+      } else {
+        // Fallback: try to capture the selection rect if it's still available
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const rect = selection.getRangeAt(0).getBoundingClientRect();
+          if (rect && (rect.width !== 0 || rect.height !== 0)) {
+            lastRectRef.current = rect;
+          }
         }
       }
 
