@@ -375,8 +375,8 @@ const AdminModeratorActivity = () => {
                             {getStatusBadge(action.status)}
                           </div>
                           
-                          {/* Admin feedback box */}
-                          {action.latestFeedback && action.latestFeedback.feedback && (
+                          {/* Admin feedback box - show when there's been any admin action */}
+                          {action.latestFeedback && (
                             <div className="mt-3 ml-12 p-3 bg-muted/60 border-l-4 border-primary/50 rounded-r-md">
                               <div className="flex items-center gap-2 mb-1">
                                 <MessageSquare className="h-3.5 w-3.5 text-primary" />
@@ -387,9 +387,15 @@ const AdminModeratorActivity = () => {
                                   • {format(new Date(action.latestFeedback.created_at), "MMM d, yyyy")}
                                 </span>
                               </div>
-                              <p className="text-sm text-foreground/80 italic">
-                                "{action.latestFeedback.feedback}"
-                              </p>
+                              {action.latestFeedback.feedback ? (
+                                <p className="text-sm text-foreground/80 italic">
+                                  "{action.latestFeedback.feedback}"
+                                </p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground/60 italic">
+                                  No feedback provided
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
