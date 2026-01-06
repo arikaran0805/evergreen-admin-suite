@@ -455,13 +455,17 @@ const AdminModeratorActivity = () => {
                               </p>
                             </div>
                           </div>
-                          {reaction.feedback && (
-                            <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                          <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                            {reaction.feedback ? (
                               <p className="text-sm text-muted-foreground italic">
                                 "{reaction.feedback}"
                               </p>
-                            </div>
-                          )}
+                            ) : (
+                              <p className="text-sm text-muted-foreground/60 italic">
+                                No feedback provided
+                              </p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
