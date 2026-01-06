@@ -968,7 +968,7 @@ const AdminPostEditor = () => {
           </button>
 
           {/* Sidebar Content */}
-          <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+          <Card className={`flex flex-col h-fit transition-all duration-300 rounded-l-none border-l-0 ${rightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
             <div className={`p-4 border-b flex-shrink-0 ${!rightSidebarOpen ? 'hidden' : ''}`}>
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="h-4 w-4 text-primary" />
@@ -1043,7 +1043,7 @@ const AdminPostEditor = () => {
               </div>
             </div>
             
-            <ScrollArea className={`h-auto max-h-[calc(100vh-280px)] ${!rightSidebarOpen ? 'hidden' : ''}`}>
+            <ScrollArea className={`flex-1 min-h-0 ${!rightSidebarOpen ? 'hidden' : ''}`}>
               <div className="p-4 space-y-4">
                 {/* Status - Only show to admins */}
                 {canPublishDirectly && (
