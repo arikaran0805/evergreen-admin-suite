@@ -54,7 +54,7 @@ const FloatingAnnotationPopup = ({
 
     const update = () => {
       // First priority: use the pre-captured rect passed from the parent
-      if (selectedText.rect && selectedText.rect.width > 0 && selectedText.rect.height > 0) {
+      if (selectedText.rect && (selectedText.rect.width > 0 || selectedText.rect.height > 0)) {
         lastRectRef.current = selectedText.rect as DOMRect;
       } else {
         // Fallback: try to capture the selection rect if it's still available
