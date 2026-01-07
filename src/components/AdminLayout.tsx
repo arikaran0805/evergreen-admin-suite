@@ -169,36 +169,6 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
           sidebarOpen ? "pl-64" : "pl-[68px]"
         }`}
       >
-        {/* Top header bar */}
-        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-          <div className="flex items-center justify-between h-16 px-8">
-            <div className="flex flex-col">
-              <h1 className="text-xl font-semibold text-foreground">
-                {pageTitle}
-              </h1>
-              {pageSubtitle && (
-                <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {/* Global Search */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search..." 
-                  className="pl-9 w-64 h-9 bg-muted/50 border-transparent focus:border-primary focus:bg-background"
-                />
-              </div>
-              
-              <NotificationDropdown 
-                isAdmin={isAdmin} 
-                isModerator={isModerator} 
-                userId={userId} 
-              />
-            </div>
-          </div>
-        </div>
         
         <div className="p-8">{children}</div>
       </main>
