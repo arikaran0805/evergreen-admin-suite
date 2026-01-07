@@ -257,54 +257,51 @@ const AdminSidebar = ({
     >
       {/* Header */}
       <div className="p-3 border-b border-sidebar-border">
-        <div className="flex flex-col gap-3">
-          {/* Avatar and user info */}
-          <div className={cn("flex items-center", isOpen ? "gap-3" : "justify-center")}>
-            <Avatar className={cn("shrink-0 ring-2 ring-primary/20", isOpen ? "h-10 w-10" : "h-9 w-9")}>
+        <div 
+          className={cn(
+            "flex items-center justify-between bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors",
+            !isOpen && "justify-center p-2"
+          )}
+          onClick={onToggle}
+        >
+          <div className={cn("flex items-center", isOpen ? "gap-3" : "")}>
+            <Avatar className={cn("shrink-0 ring-2 ring-primary/20", isOpen ? "h-9 w-9" : "h-8 w-8")}>
               <AvatarImage 
                 src={userProfile?.avatar_url || undefined} 
                 alt={userProfile?.full_name || "Admin"} 
               />
-              <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+              <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
                 {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
               </AvatarFallback>
             </Avatar>
             {isOpen && (
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-semibold text-sidebar-foreground truncate text-sm">
-                  {userProfile?.full_name || "Admin User"}
-                </span>
-                <Badge 
-                  className="w-fit text-[10px] px-2 py-0 bg-primary/10 text-primary border-primary/20 font-medium"
-                  variant="outline"
-                >
-                  Admin
-                </Badge>
-              </div>
+              <span className="font-semibold text-sidebar-foreground text-sm">
+                {userProfile?.full_name || "Admin"}
+              </span>
             )}
-            {isOpen && <AdminContentNotificationBell userId={userId} />}
           </div>
-          
-          {/* Toggle button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={onToggle}
-            className={cn(
-              "w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-medium",
-              !isOpen && "px-0"
-            )}
-          >
+          <div className={cn(
+            "flex items-center justify-center h-7 w-7 rounded-md bg-background shadow-sm border border-border",
+            !isOpen && "ml-2"
+          )}>
             {isOpen ? (
-              <>
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Collapse
-              </>
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
-          </Button>
+          </div>
         </div>
+        {isOpen && (
+          <div className="flex items-center justify-between mt-2 px-1">
+            <Badge 
+              className="text-[10px] px-2 py-0 bg-primary/10 text-primary border-primary/20 font-medium"
+              variant="outline"
+            >
+              Admin
+            </Badge>
+            <AdminContentNotificationBell userId={userId} />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
