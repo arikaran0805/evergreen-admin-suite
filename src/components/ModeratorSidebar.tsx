@@ -161,31 +161,28 @@ const ModeratorSidebar = ({
       <div className="p-3 border-b border-sidebar-border">
         <div 
           className={cn(
-            "flex items-center justify-between bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors",
-            !isOpen && "justify-center p-2"
+            "flex items-center bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors",
+            isOpen ? "justify-between" : "justify-center"
           )}
           onClick={onToggle}
         >
-          <div className={cn("flex items-center", isOpen ? "gap-3" : "")}>
-            <Avatar className={cn("shrink-0 ring-2 ring-accent/20", isOpen ? "h-9 w-9" : "h-8 w-8")}>
-              <AvatarImage 
-                src={userProfile?.avatar_url || undefined} 
-                alt={userProfile?.full_name || "Moderator"} 
-              />
-              <AvatarFallback className="bg-accent text-accent-foreground font-semibold text-xs">
-                {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
-              </AvatarFallback>
-            </Avatar>
-            {isOpen && (
+          {isOpen && (
+            <div className="flex items-center gap-3">
+              <Avatar className="shrink-0 ring-2 ring-accent/20 h-9 w-9">
+                <AvatarImage 
+                  src={userProfile?.avatar_url || undefined} 
+                  alt={userProfile?.full_name || "Moderator"} 
+                />
+                <AvatarFallback className="bg-accent text-accent-foreground font-semibold text-xs">
+                  {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
+                </AvatarFallback>
+              </Avatar>
               <span className="font-semibold text-sidebar-foreground text-sm">
                 {userProfile?.full_name || "Moderator"}
               </span>
-            )}
-          </div>
-          <div className={cn(
-            "flex items-center justify-center h-7 w-7 rounded-md bg-background shadow-sm border border-border",
-            !isOpen && "ml-2"
-          )}>
+            </div>
+          )}
+          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-background shadow-sm border border-border">
             {isOpen ? (
               <ChevronLeft className="h-4 w-4 text-muted-foreground" />
             ) : (
