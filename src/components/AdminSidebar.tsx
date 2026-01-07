@@ -4,7 +4,7 @@ import {
   MessageSquare, Image, DollarSign, Link2, Key, Briefcase,
   Settings, BarChart3, Share2, LogOut, Home, GraduationCap,
   ClipboardCheck, Trash2, Flag, MessageSquarePlus, 
-  ChevronLeft, ChevronRight, Bell, X
+  ChevronLeft, ChevronRight, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -299,7 +299,21 @@ const AdminSidebar = ({
             >
               Admin
             </Badge>
-            <AdminContentNotificationBell userId={userId} />
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                onClick={() => {
+                  // Trigger global search dialog
+                  const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
+                  document.dispatchEvent(event);
+                }}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+              <AdminContentNotificationBell userId={userId} />
+            </div>
           </div>
         )}
       </div>
