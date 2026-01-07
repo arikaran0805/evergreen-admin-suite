@@ -27,27 +27,30 @@ interface ActivityLog {
 interface TrendData {
   current: number;
   previous: number;
+  change: number;
   trend: "up" | "down" | "neutral";
   percentage: number;
+}
+
+interface KpiTrendStats {
+  totalUsers: TrendData;
+  activeUsers: TrendData;
+  totalPosts: TrendData;
+  pendingApprovals: TrendData;
+  reportedContent: TrendData;
+  revenue: TrendData;
 }
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [stats, setStats] = useState<{
-    totalUsers: TrendData;
-    activeUsers: TrendData;
-    totalPosts: TrendData;
-    pendingApprovals: number;
-    reportedContent: number;
-    revenue: number;
-  }>({
-    totalUsers: { current: 0, previous: 0, trend: "neutral", percentage: 0 },
-    activeUsers: { current: 0, previous: 0, trend: "neutral", percentage: 0 },
-    totalPosts: { current: 0, previous: 0, trend: "neutral", percentage: 0 },
-    pendingApprovals: 0,
-    reportedContent: 0,
-    revenue: 0,
+  const [stats, setStats] = useState<KpiTrendStats>({
+    totalUsers: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
+    activeUsers: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
+    totalPosts: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
+    pendingApprovals: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
+    reportedContent: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
+    revenue: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
   });
   const [criticalAlerts, setCriticalAlerts] = useState<{
     pendingPosts: number;
@@ -102,19 +105,23 @@ const AdminDashboard = () => {
   };
 
   const calculateTrend = (current: number, previous: number): TrendData => {
-    if (previous === 0) return { current, previous, trend: "neutral", percentage: 0 };
-    const percentage = Math.round(((current - previous) / previous) * 100);
+    const change = current - previous;
+    if (change === 0) return { current, previous, change: 0, trend: "neutral", percentage: 0 };
+    const percentage = previous === 0 ? (current > 0 ? 100 : 0) : Math.round((Math.abs(change) / previous) * 100);
     return {
       current,
       previous,
-      trend: percentage > 0 ? "up" : percentage < 0 ? "down" : "neutral",
-      percentage: Math.abs(percentage),
+      change,
+      trend: change > 0 ? "up" : "down",
+      percentage,
     };
   };
 
   const fetchStats = async () => {
     try {
       const now = new Date();
+      const oneDayAgo = subDays(now, 1);
+      const twoDaysAgo = subDays(now, 2);
       const sevenDaysAgo = subDays(now, 7);
       const fourteenDaysAgo = subDays(now, 14);
 
@@ -135,11 +142,17 @@ const AdminDashboard = () => {
         .gte("created_at", fourteenDaysAgo.toISOString())
         .lt("created_at", sevenDaysAgo.toISOString());
 
-      // Active users (users with recent lesson progress or post views)
-      const { count: activeUsers } = await supabase
+      // Active users this week vs previous week
+      const { count: activeUsersThisWeek } = await supabase
         .from("lesson_progress")
         .select("user_id", { count: "exact", head: true })
         .gte("viewed_at", sevenDaysAgo.toISOString());
+
+      const { count: activeUsersPrevWeek } = await supabase
+        .from("lesson_progress")
+        .select("user_id", { count: "exact", head: true })
+        .gte("viewed_at", fourteenDaysAgo.toISOString())
+        .lt("viewed_at", sevenDaysAgo.toISOString());
 
       // Total posts
       const { count: totalPosts } = await supabase
@@ -157,25 +170,54 @@ const AdminDashboard = () => {
         .gte("created_at", fourteenDaysAgo.toISOString())
         .lt("created_at", sevenDaysAgo.toISOString());
 
-      // Pending approvals
-      const { count: pendingApprovals } = await supabase
+      // Pending approvals - today vs yesterday
+      const { count: pendingApprovalsNow } = await supabase
         .from("posts")
         .select("*", { count: "exact", head: true })
         .eq("status", "pending");
 
-      // Reported content
-      const { count: reportedContent } = await supabase
+      // Reported content - today vs yesterday
+      const { count: reportedContentNow } = await supabase
         .from("content_reports")
         .select("*", { count: "exact", head: true })
         .eq("status", "pending");
 
+      const { count: reportsAddedToday } = await supabase
+        .from("content_reports")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", oneDayAgo.toISOString());
+
+      const { count: reportsResolvedToday } = await supabase
+        .from("content_reports")
+        .select("*", { count: "exact", head: true })
+        .neq("status", "pending")
+        .gte("updated_at", oneDayAgo.toISOString());
+
+      // Calculate reported content trend based on net change today
+      const reportedNetChange = (reportsAddedToday || 0) - (reportsResolvedToday || 0);
+
       setStats({
         totalUsers: calculateTrend(totalUsers || 0, (totalUsers || 0) - (newUsersThisWeek || 0)),
-        activeUsers: calculateTrend(activeUsers || 0, 0),
-        totalPosts: calculateTrend(totalPosts || 0, (totalPosts || 0) - (postsThisWeek || 0)),
-        pendingApprovals: pendingApprovals || 0,
-        reportedContent: reportedContent || 0,
-        revenue: 0,
+        activeUsers: calculateTrend(activeUsersThisWeek || 0, activeUsersPrevWeek || 0),
+        totalPosts: {
+          ...calculateTrend(totalPosts || 0, (totalPosts || 0) - (postsThisWeek || 0)),
+          change: postsThisWeek || 0,
+        },
+        pendingApprovals: {
+          current: pendingApprovalsNow || 0,
+          previous: 0,
+          change: pendingApprovalsNow || 0,
+          trend: (pendingApprovalsNow || 0) > 0 ? "up" : "neutral",
+          percentage: 0,
+        },
+        reportedContent: {
+          current: reportedContentNow || 0,
+          previous: 0,
+          change: reportedNetChange,
+          trend: reportedNetChange > 0 ? "up" : reportedNetChange < 0 ? "down" : "neutral",
+          percentage: 0,
+        },
+        revenue: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -268,12 +310,63 @@ const AdminDashboard = () => {
     }
   };
 
-  const TrendIndicator = ({ trend, percentage }: { trend: "up" | "down" | "neutral"; percentage: number }) => {
-    if (trend === "neutral") return null;
+  // KPI Trend Indicator Component
+  interface TrendIndicatorProps {
+    data: TrendData;
+    type: "users" | "active" | "posts" | "pending" | "reported" | "revenue";
+    invertColors?: boolean;
+  }
+
+  const KpiTrendIndicator = ({ data, type, invertColors = false }: TrendIndicatorProps) => {
+    const { trend, change, percentage } = data;
+
+    // For pending and reported, increase is bad (red), decrease is good (green)
+    const isPositive = invertColors ? trend === "down" : trend === "up";
+    const isNegative = invertColors ? trend === "up" : trend === "down";
+
+    const colorClass = isPositive 
+      ? "text-emerald-600 dark:text-emerald-400" 
+      : isNegative 
+        ? "text-red-500 dark:text-red-400" 
+        : "text-muted-foreground";
+
+    const formatChange = () => {
+      const sign = change > 0 ? "+" : "";
+      switch (type) {
+        case "users":
+          return `${sign}${change} this week`;
+        case "active":
+          if (percentage > 0) return `${sign}${percentage}% vs last week`;
+          return `${sign}${change} users`;
+        case "posts":
+          if (percentage > 0) return `${sign}${change} this week (+${percentage}%)`;
+          return `${sign}${change} this week`;
+        case "pending":
+          if (change > 0) return `+${change} today`;
+          if (change < 0) return `${change} resolved`;
+          return "No change";
+        case "reported":
+          if (change > 0) return `+${change} today`;
+          if (change < 0) return `${Math.abs(change)} resolved`;
+          return "No change";
+        case "revenue":
+          if (change === 0) return "No change";
+          return `${sign}$${Math.abs(change).toLocaleString()} this month`;
+        default:
+          return `${sign}${change}`;
+      }
+    };
+
+    const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : null;
+
     return (
-      <div className={`flex items-center gap-1 text-xs ${trend === "up" ? "text-emerald-600" : "text-red-500"}`}>
-        {trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-        <span>{percentage}%</span>
+      <div 
+        className={`flex items-center gap-1 text-xs mt-1 ${colorClass}`}
+        title="Compared to previous period"
+      >
+        {TrendIcon && <TrendIcon className="h-3 w-3" />}
+        {trend === "neutral" && <span className="text-muted-foreground">—</span>}
+        <span>{formatChange()}</span>
       </div>
     );
   };
@@ -329,7 +422,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.totalUsers.current.toLocaleString()}</div>
-              <TrendIndicator trend={stats.totalUsers.trend} percentage={stats.totalUsers.percentage} />
+              <KpiTrendIndicator data={stats.totalUsers} type="users" />
             </CardContent>
           </Card>
 
@@ -342,7 +435,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.activeUsers.current.toLocaleString()}</div>
-              <TrendIndicator trend={stats.activeUsers.trend} percentage={stats.activeUsers.percentage} />
+              <KpiTrendIndicator data={stats.activeUsers} type="active" />
             </CardContent>
           </Card>
 
@@ -355,7 +448,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.totalPosts.current.toLocaleString()}</div>
-              <TrendIndicator trend={stats.totalPosts.trend} percentage={stats.totalPosts.percentage} />
+              <KpiTrendIndicator data={stats.totalPosts} type="posts" />
             </CardContent>
           </Card>
 
@@ -367,7 +460,8 @@ const AdminDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stats.pendingApprovals}</div>
+              <div className="text-2xl font-bold text-foreground">{stats.pendingApprovals.current}</div>
+              <KpiTrendIndicator data={stats.pendingApprovals} type="pending" invertColors />
             </CardContent>
           </Card>
 
@@ -379,7 +473,8 @@ const AdminDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stats.reportedContent}</div>
+              <div className="text-2xl font-bold text-foreground">{stats.reportedContent.current}</div>
+              <KpiTrendIndicator data={stats.reportedContent} type="reported" invertColors />
             </CardContent>
           </Card>
 
@@ -391,7 +486,8 @@ const AdminDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">${stats.revenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-foreground">${stats.revenue.current.toLocaleString()}</div>
+              <KpiTrendIndicator data={stats.revenue} type="revenue" />
             </CardContent>
           </Card>
         </div>
