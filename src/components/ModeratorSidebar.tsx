@@ -3,7 +3,7 @@ import {
   LayoutDashboard, BookOpen, Tags, 
   MessageSquare, Image, GraduationCap,
   LogOut, Home, MessageSquarePlus, 
-  ChevronRight, X, FileText, Activity
+  ChevronLeft, ChevronRight, X, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -158,20 +158,21 @@ const ModeratorSidebar = ({
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-between">
-          {isOpen ? (
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-accent/20">
-                <AvatarImage 
-                  src={userProfile?.avatar_url || undefined} 
-                  alt={userProfile?.full_name || "Moderator"} 
-                />
-                <AvatarFallback className="bg-accent text-accent-foreground font-semibold">
-                  {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col min-w-0">
+      <div className="p-3 border-b border-sidebar-border">
+        <div className="flex flex-col gap-3">
+          {/* Avatar and user info */}
+          <div className={cn("flex items-center", isOpen ? "gap-3" : "justify-center")}>
+            <Avatar className={cn("shrink-0 ring-2 ring-accent/20", isOpen ? "h-10 w-10" : "h-9 w-9")}>
+              <AvatarImage 
+                src={userProfile?.avatar_url || undefined} 
+                alt={userProfile?.full_name || "Moderator"} 
+              />
+              <AvatarFallback className="bg-accent text-accent-foreground font-semibold text-sm">
+                {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
+              </AvatarFallback>
+            </Avatar>
+            {isOpen && (
+              <div className="flex flex-col min-w-0 flex-1">
                 <span className="font-semibold text-sidebar-foreground truncate text-sm">
                   {userProfile?.full_name || "Moderator"}
                 </span>
@@ -182,32 +183,29 @@ const ModeratorSidebar = ({
                   Moderator
                 </Badge>
               </div>
-            </div>
-          ) : (
-            <Avatar className="h-9 w-9 mx-auto ring-2 ring-accent/20">
-              <AvatarImage 
-                src={userProfile?.avatar_url || undefined} 
-                alt={userProfile?.full_name || "Moderator"} 
-              />
-              <AvatarFallback className="bg-accent text-accent-foreground font-semibold text-sm">
-                {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
-              </AvatarFallback>
-            </Avatar>
-          )}
+            )}
+            {isOpen && <ModeratorNotificationBell userId={userId} />}
+          </div>
           
-          {isOpen && (
-            <div className="flex items-center gap-1 shrink-0">
-              <ModeratorNotificationBell userId={userId} />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggle}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          {/* Toggle button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onToggle}
+            className={cn(
+              "w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-medium",
+              !isOpen && "px-0"
+            )}
+          >
+            {isOpen ? (
+              <>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Collapse
+              </>
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
 
