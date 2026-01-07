@@ -256,20 +256,21 @@ const AdminSidebar = ({
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-between">
-          {isOpen ? (
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary/20">
-                <AvatarImage 
-                  src={userProfile?.avatar_url || undefined} 
-                  alt={userProfile?.full_name || "Admin"} 
-                />
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col min-w-0">
+      <div className="p-3 border-b border-sidebar-border">
+        <div className="flex flex-col gap-3">
+          {/* Avatar and user info */}
+          <div className={cn("flex items-center", isOpen ? "gap-3" : "justify-center")}>
+            <Avatar className={cn("shrink-0 ring-2 ring-primary/20", isOpen ? "h-10 w-10" : "h-9 w-9")}>
+              <AvatarImage 
+                src={userProfile?.avatar_url || undefined} 
+                alt={userProfile?.full_name || "Admin"} 
+              />
+              <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+                {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
+              </AvatarFallback>
+            </Avatar>
+            {isOpen && (
+              <div className="flex flex-col min-w-0 flex-1">
                 <span className="font-semibold text-sidebar-foreground truncate text-sm">
                   {userProfile?.full_name || "Admin User"}
                 </span>
@@ -280,32 +281,29 @@ const AdminSidebar = ({
                   Admin
                 </Badge>
               </div>
-            </div>
-          ) : (
-            <Avatar className="h-9 w-9 mx-auto ring-2 ring-primary/20">
-              <AvatarImage 
-                src={userProfile?.avatar_url || undefined} 
-                alt={userProfile?.full_name || "Admin"} 
-              />
-              <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
-                {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
-              </AvatarFallback>
-            </Avatar>
-          )}
+            )}
+            {isOpen && <AdminContentNotificationBell userId={userId} />}
+          </div>
           
-          {isOpen && (
-            <div className="flex items-center gap-1 shrink-0">
-              <AdminContentNotificationBell userId={userId} />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggle}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          {/* Toggle button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onToggle}
+            className={cn(
+              "w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-medium",
+              !isOpen && "px-0"
+            )}
+          >
+            {isOpen ? (
+              <>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Collapse
+              </>
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
 
@@ -349,16 +347,6 @@ const AdminSidebar = ({
           {isOpen && <span className="text-sm font-medium">Logout</span>}
         </button>
         
-        {!isOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="w-full h-9 mt-2 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
       </div>
     </aside>
   );
