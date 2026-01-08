@@ -5,10 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
 import AdminDashboard from "./AdminDashboard";
 import ModeratorDashboard from "./ModeratorDashboard";
+import SeniorModeratorDashboard from "./SeniorModeratorDashboard";
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSeniorModerator, setIsSeniorModerator] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,7 +37,7 @@ const Admin = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .in("role", ["admin", "moderator"]);
+        .in("role", ["admin", "senior_moderator", "moderator"]);
 
       if (roleError) throw roleError;
 
@@ -51,10 +53,12 @@ const Admin = () => {
 
       const roles = roleData.map((r) => r.role);
       const hasAdmin = roles.includes("admin");
+      const hasSeniorModerator = roles.includes("senior_moderator");
       const hasModerator = roles.includes("moderator");
       
       setIsAdmin(hasAdmin);
-      setIsModerator(hasModerator && !hasAdmin);
+      setIsSeniorModerator(hasSeniorModerator && !hasAdmin);
+      setIsModerator(hasModerator && !hasAdmin && !hasSeniorModerator);
       setLoading(false);
     } catch (error: any) {
       toast({
@@ -79,6 +83,10 @@ const Admin = () => {
   // Route to appropriate dashboard based on role
   if (isAdmin) {
     return <AdminDashboard />;
+  }
+
+  if (isSeniorModerator) {
+    return <SeniorModeratorDashboard />;
   }
 
   if (isModerator) {
