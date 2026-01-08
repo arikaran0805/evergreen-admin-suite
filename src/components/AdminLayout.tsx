@@ -7,6 +7,7 @@ import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import AdminSidebar from "@/components/AdminSidebar";
 import ModeratorSidebar from "@/components/ModeratorSidebar";
+import SeniorModeratorSidebar from "@/components/SeniorModeratorSidebar";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
@@ -87,8 +88,8 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const location = useLocation();
-  const { isAdmin, isModerator, userId } = useUserRole();
-  const { notifications } = useAdminNotifications(isAdmin, userId);
+  const { isAdmin, isSeniorModerator, isModerator, userId } = useUserRole();
+  const { notifications } = useAdminNotifications(isAdmin || isSeniorModerator, userId);
   const { getUnreadCount, markBadgeSeen } = useAdminBadgeReads(userId);
 
   const badgeKeyMap: Record<string, string> = useMemo(() => ({
@@ -153,6 +154,14 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
           userId={userId}
           notifications={notifications}
           getBadgeCount={getBadgeCount}
+        />
+      ) : isSeniorModerator ? (
+        <SeniorModeratorSidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          userProfile={userProfile}
+          userId={userId}
+          getBadgeCount={(key) => getBadgeCount(key, notifications[key as keyof typeof notifications] as number || 0)}
         />
       ) : isModerator ? (
         <ModeratorSidebar

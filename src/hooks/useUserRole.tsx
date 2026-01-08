@@ -8,6 +8,7 @@ interface UserRoleState {
   userId: string | null;
   roles: AppRole[];
   isAdmin: boolean;
+  isSeniorModerator: boolean;
   isModerator: boolean;
   isLoading: boolean;
   error: string | null;
@@ -18,6 +19,7 @@ export const useUserRole = () => {
     userId: null,
     roles: [],
     isAdmin: false,
+    isSeniorModerator: false,
     isModerator: false,
     isLoading: true,
     error: null,
@@ -36,6 +38,7 @@ export const useUserRole = () => {
               userId: null,
               roles: [],
               isAdmin: false,
+              isSeniorModerator: false,
               isModerator: false,
               isLoading: false,
               error: null,
@@ -58,6 +61,7 @@ export const useUserRole = () => {
             userId: session.user.id,
             roles,
             isAdmin: roles.includes("admin"),
+            isSeniorModerator: roles.includes("senior_moderator"),
             isModerator: roles.includes("moderator"),
             isLoading: false,
             error: null,
