@@ -153,11 +153,20 @@ const AdminAuthors = () => {
     switch (role) {
       case "admin":
         return "default";
+      case "senior_moderator":
+        return "outline";
       case "moderator":
         return "secondary";
       default:
         return "outline";
     }
+  };
+
+  const getRoleBadgeStyle = (role: string) => {
+    if (role === "senior_moderator") {
+      return "border-[#D4AF37] text-[#D4AF37] bg-transparent";
+    }
+    return "";
   };
 
   const filteredUsers = users.filter(
@@ -232,10 +241,10 @@ const AdminAuthors = () => {
                             <Badge
                               key={index}
                               variant={getRoleBadgeVariant(roleObj.role)}
-                              className="capitalize"
+                              className={`capitalize ${getRoleBadgeStyle(roleObj.role)}`}
                             >
                               <Shield className="h-3 w-3 mr-1" />
-                              {roleObj.role}
+                              {roleObj.role === "senior_moderator" ? "Senior Mod" : roleObj.role}
                             </Badge>
                           ))
                         ) : (
@@ -301,6 +310,12 @@ const AdminAuthors = () => {
                       <span className="text-xs text-muted-foreground">Can manage content</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="senior_moderator">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-[#D4AF37] text-[#D4AF37]">Senior Mod</Badge>
+                      <span className="text-xs text-muted-foreground">Advanced moderation</span>
+                    </div>
+                  </SelectItem>
                   <SelectItem value="admin">
                     <div className="flex items-center gap-2">
                       <Badge>Admin</Badge>
@@ -319,6 +334,15 @@ const AdminAuthors = () => {
                   <li>Manage all users and roles</li>
                   <li>Edit all content</li>
                   <li>Access analytics and settings</li>
+                </ul>
+              )}
+              {selectedRole === "senior_moderator" && (
+                <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                  <li>Full approval queue access</li>
+                  <li>Manage posts, courses, tags, pages</li>
+                  <li>Comments, annotations, media moderation</li>
+                  <li>Content analytics (limited)</li>
+                  <li>View users (no role control)</li>
                 </ul>
               )}
               {selectedRole === "moderator" && (
