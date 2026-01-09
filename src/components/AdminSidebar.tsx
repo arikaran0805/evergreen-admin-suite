@@ -75,8 +75,8 @@ const AdminSidebar = ({
   };
 
   const isActive = (path: string) => {
-    if (path === "/admin") {
-      return location.pathname === "/admin";
+    if (path === "/admin/dashboard") {
+      return location.pathname === "/admin/dashboard" || location.pathname === "/admin";
     }
     return location.pathname.startsWith(path);
   };
@@ -85,7 +85,7 @@ const AdminSidebar = ({
   const overviewSection: MenuSection = {
     title: "Overview",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+      { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
     ],
   };
 
@@ -302,7 +302,6 @@ const AdminSidebar = ({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
                 onClick={() => {
-                  // Trigger global search dialog
                   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
                   document.dispatchEvent(event);
                 }}

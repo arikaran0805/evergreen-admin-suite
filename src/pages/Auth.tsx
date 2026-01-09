@@ -56,7 +56,7 @@ const Auth = () => {
 
       if (session && event === "SIGNED_IN") {
         setTimeout(() => {
-          checkAdminAndRedirect(session.user.id);
+          checkRoleAndRedirect(session.user.id);
         }, 0);
       }
     });
@@ -64,21 +64,20 @@ const Auth = () => {
     // Listener is set up; now check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && !isRecoveryLink()) {
-        checkAdminAndRedirect(session.user.id);
+        checkRoleAndRedirect(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const checkAdminAndRedirect = async (userId: string) => {
+  const checkRoleAndRedirect = async (userId: string) => {
     try {
-      const { data: roleData, error } = await supabase
+      const { data: rolesData, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin", "senior_moderator", "moderator"]);
 
       if (error) {
         toast({
@@ -90,8 +89,15 @@ const Auth = () => {
         return;
       }
 
-      if (roleData) {
-        navigate("/admin");
+      const roles = rolesData?.map(r => r.role) || [];
+
+      // Priority: admin > senior_moderator > moderator > regular user
+      if (roles.includes("admin")) {
+        navigate("/admin/dashboard");
+      } else if (roles.includes("senior_moderator")) {
+        navigate("/senior-moderator/dashboard");
+      } else if (roles.includes("moderator")) {
+        navigate("/moderator/dashboard");
       } else {
         navigate("/");
       }
@@ -170,7 +176,7 @@ const Auth = () => {
       });
 
       if (data.user) {
-        await checkAdminAndRedirect(data.user.id);
+        await checkRoleAndRedirect(data.user.id);
       }
     } catch (error: any) {
       toast({
@@ -226,7 +232,7 @@ const Auth = () => {
 
       if (data.user) {
         setTimeout(async () => {
-          await checkAdminAndRedirect(data.user!.id);
+          await checkRoleAndRedirect(data.user!.id);
         }, 500);
       }
     } catch (error: any) {
