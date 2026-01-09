@@ -1,9 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
-  LayoutDashboard, BookOpen, Tags, 
-  MessageSquare, Image, GraduationCap,
-  LogOut, Home, MessageSquarePlus, 
-  ChevronLeft, ChevronRight, X, Activity
+  LayoutDashboard, BookOpen, 
+  MessageSquare, ClipboardList,
+  LogOut, Home, Activity,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,8 +58,8 @@ const ModeratorSidebar = ({
   };
 
   const isActive = (path: string) => {
-    if (path === "/admin") {
-      return location.pathname === "/admin";
+    if (path === "/moderator/dashboard") {
+      return location.pathname === "/moderator/dashboard" || location.pathname === "/moderator";
     }
     return location.pathname.startsWith(path);
   };
@@ -68,27 +68,24 @@ const ModeratorSidebar = ({
   const overviewSection: MenuSection = {
     title: "Overview",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+      { icon: LayoutDashboard, label: "Dashboard", path: "/moderator/dashboard" },
     ],
   };
 
-  // Section 2: My Work
-  const workSection: MenuSection = {
-    title: "My Work",
+  // Section 2: Content
+  const contentSection: MenuSection = {
+    title: "Content",
     items: [
-      { icon: BookOpen, label: "Posts", path: "/admin/posts" },
-      { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
-      { icon: Tags, label: "Tags", path: "/admin/tags" },
+      { icon: BookOpen, label: "My Content", path: "/moderator/content" },
     ],
   };
 
-  // Section 3: Moderation
-  const moderationSection: MenuSection = {
-    title: "Moderation",
+  // Section 3: Review
+  const reviewSection: MenuSection = {
+    title: "Review",
     items: [
-      { icon: MessageSquare, label: "Comments", path: "/admin/comments" },
-      { icon: MessageSquarePlus, label: "Annotations", path: "/admin/annotations" },
-      { icon: Image, label: "Media Library", path: "/admin/media" },
+      { icon: ClipboardList, label: "Review Queue", path: "/moderator/review" },
+      { icon: MessageSquare, label: "Comments", path: "/moderator/comments" },
     ],
   };
 
@@ -96,11 +93,11 @@ const ModeratorSidebar = ({
   const activitySection: MenuSection = {
     title: "Activity",
     items: [
-      { icon: Activity, label: "My Activity", path: "/admin/activity" },
+      { icon: Activity, label: "My Activity", path: "/moderator/activity" },
     ],
   };
 
-  const sections = [overviewSection, workSection, moderationSection, activitySection];
+  const sections = [overviewSection, contentSection, reviewSection, activitySection];
 
   const renderMenuItem = (item: MenuItem) => {
     const active = isActive(item.path);

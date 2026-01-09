@@ -7,19 +7,30 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { useEffect, useRef } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { ThemeProvider } from "next-themes";
+
+// Public Pages
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import Library from "./pages/Library";
 import Arcade from "./pages/Arcade";
-
-
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
+import TagPosts from "./pages/TagPosts";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import NotFound from "./pages/NotFound";
+import AccessDenied from "./pages/AccessDenied";
+
+// Layouts
+import { AdminLayout, SeniorModeratorLayout, ModeratorLayout } from "./components/layouts";
+import ProtectedRoute from "./components/routing/ProtectedRoute";
+
+// Admin Pages
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminPosts from "./pages/AdminPosts";
 import AdminPostEditor from "./pages/AdminPostEditor";
 import AdminPages from "./pages/AdminPages";
@@ -29,7 +40,6 @@ import AdminCareers from "./pages/AdminCareers";
 import AdminCareerEditor from "./pages/AdminCareerEditor";
 import AdminComments from "./pages/AdminComments";
 import AdminUsers from "./pages/AdminUsers";
-import AdminPlaceholder from "./pages/AdminPlaceholder";
 import AdminAuthors from "./pages/AdminAuthors";
 import AdminMedia from "./pages/AdminMedia";
 import AdminMonetization from "./pages/AdminMonetization";
@@ -45,10 +55,10 @@ import AdminModeratorActivity from "./pages/AdminModeratorActivity";
 import AdminReports from "./pages/AdminReports";
 import AdminPostVersions from "./pages/AdminPostVersions";
 import AdminAnnotations from "./pages/AdminAnnotations";
-import TagPosts from "./pages/TagPosts";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import NotFound from "./pages/NotFound";
+
+// Role-specific Dashboards
+import SeniorModeratorDashboard from "./pages/SeniorModeratorDashboard";
+import ModeratorDashboard from "./pages/ModeratorDashboard";
 
 const queryClient = new QueryClient();
 
@@ -75,20 +85,19 @@ const AppContent = () => {
     }
   }, [location.hash, location.search, location.pathname, navigate]);
 
-
-  
-  // Prevent scroll to top when navigating between admin pages
+  // Prevent scroll to top when navigating between admin/moderator pages
   useEffect(() => {
     const prevPath = prevLocationRef.current;
     const currentPath = location.pathname;
     
-    // Only scroll to top if:
-    // 1. Moving from non-admin to non-admin page
-    // 2. Moving from admin to non-admin page
-    // Don't scroll if both previous and current are admin pages
-    const bothAreAdmin = prevPath.startsWith('/admin') && currentPath.startsWith('/admin');
+    const isAdminPath = (path: string) => 
+      path.startsWith('/admin') || 
+      path.startsWith('/senior-moderator') || 
+      path.startsWith('/moderator');
     
-    if (!bothAreAdmin && !currentPath.startsWith('/admin')) {
+    const bothAreAdminPaths = isAdminPath(prevPath) && isAdminPath(currentPath);
+    
+    if (!bothAreAdminPaths && !isAdminPath(currentPath)) {
       window.scrollTo(0, 0);
     }
     
@@ -100,12 +109,12 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/course/:slug" element={<CourseDetail />} />
         <Route path="/library" element={<Library />} />
         <Route path="/arcade" element={<Arcade />} />
-        
         <Route path="/practice-lab" element={<Navigate to="/profile?tab=practice" replace />} />
         <Route path="/tag/:slug" element={<TagPosts />} />
         <Route path="/about" element={<About />} />
@@ -115,37 +124,99 @@ const AppContent = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/approvals" element={<AdminApprovals />} />
-        <Route path="/admin/delete-requests" element={<AdminDeleteRequests />} />
-        <Route path="/admin/posts" element={<AdminPosts />} />
-        <Route path="/admin/posts/new" element={<AdminPostEditor />} />
-        <Route path="/admin/posts/edit/:id" element={<AdminPostEditor />} />
-        <Route path="/admin/posts/:id/versions" element={<AdminPostVersions />} />
-        <Route path="/admin/pages" element={<AdminPages />} />
-        <Route path="/admin/courses" element={<AdminCoursesPanel />} />
-        <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
-        <Route path="/admin/courses/:id" element={<AdminCourseEditor />} />
-        <Route path="/admin/careers" element={<AdminCareers />} />
-        <Route path="/admin/careers/new" element={<AdminCareerEditor />} />
-        <Route path="/admin/careers/:id" element={<AdminCareerEditor />} />
-        <Route path="/admin/comments" element={<AdminComments />} />
-        <Route path="/admin/annotations" element={<AdminAnnotations />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/tags" element={<AdminTags />} />
-        <Route path="/admin/authors" element={<AdminAuthors />} />
-        <Route path="/admin/media" element={<AdminMedia />} />
-        <Route path="/admin/monetization" element={<AdminMonetization />} />
-        <Route path="/admin/redirects" element={<AdminRedirects />} />
-        <Route path="/admin/api" element={<AdminAPI />} />
-        <Route path="/admin/analytics" element={<AdminAnalytics />} />
-        <Route path="/admin/social-analytics" element={<AdminSocialAnalytics />} />
-        <Route path="/admin/activity" element={<AdminModeratorActivity />} />
-        <Route path="/admin/reports" element={<AdminReports />} />
-        <Route path="/admin/seo" element={<Navigate to="/admin/settings" replace />} />
-        <Route path="/admin/ad-settings" element={<Navigate to="/admin/api" replace />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="/access-denied" element={<AccessDenied />} />
+
+        {/* Admin Routes - Admin ONLY */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/*" element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminLayout>
+              <Routes>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="approvals" element={<AdminApprovals />} />
+                <Route path="delete-requests" element={<AdminDeleteRequests />} />
+                <Route path="posts" element={<AdminPosts />} />
+                <Route path="posts/new" element={<AdminPostEditor />} />
+                <Route path="posts/edit/:id" element={<AdminPostEditor />} />
+                <Route path="posts/:id/versions" element={<AdminPostVersions />} />
+                <Route path="pages" element={<AdminPages />} />
+                <Route path="courses" element={<AdminCoursesPanel />} />
+                <Route path="courses/new" element={<AdminCourseEditor />} />
+                <Route path="courses/:id" element={<AdminCourseEditor />} />
+                <Route path="careers" element={<AdminCareers />} />
+                <Route path="careers/new" element={<AdminCareerEditor />} />
+                <Route path="careers/:id" element={<AdminCareerEditor />} />
+                <Route path="comments" element={<AdminComments />} />
+                <Route path="annotations" element={<AdminAnnotations />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="tags" element={<AdminTags />} />
+                <Route path="authors" element={<AdminAuthors />} />
+                <Route path="media" element={<AdminMedia />} />
+                <Route path="monetization" element={<AdminMonetization />} />
+                <Route path="redirects" element={<AdminRedirects />} />
+                <Route path="api" element={<AdminAPI />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="social-analytics" element={<AdminSocialAnalytics />} />
+                <Route path="activity" element={<AdminModeratorActivity />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="seo" element={<Navigate to="/admin/settings" replace />} />
+                <Route path="ad-settings" element={<Navigate to="/admin/api" replace />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Senior Moderator Routes - Admin + Senior Moderator */}
+        <Route path="/senior-moderator" element={<Navigate to="/senior-moderator/dashboard" replace />} />
+        <Route path="/senior-moderator/*" element={
+          <ProtectedRoute allowedRoles={["admin", "senior_moderator"]}>
+            <SeniorModeratorLayout>
+              <Routes>
+                <Route path="dashboard" element={<SeniorModeratorDashboard />} />
+                <Route path="approvals" element={<AdminApprovals />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="posts" element={<AdminPosts />} />
+                <Route path="posts/new" element={<AdminPostEditor />} />
+                <Route path="posts/edit/:id" element={<AdminPostEditor />} />
+                <Route path="courses" element={<AdminCoursesPanel />} />
+                <Route path="courses/new" element={<AdminCourseEditor />} />
+                <Route path="courses/:id" element={<AdminCourseEditor />} />
+                <Route path="tags" element={<AdminTags />} />
+                <Route path="pages" element={<AdminPages />} />
+                <Route path="comments" element={<AdminComments />} />
+                <Route path="annotations" element={<AdminAnnotations />} />
+                <Route path="media" element={<AdminMedia />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="activity" element={<AdminModeratorActivity />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SeniorModeratorLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Moderator Routes - Admin + Senior Moderator + Moderator */}
+        <Route path="/moderator" element={<Navigate to="/moderator/dashboard" replace />} />
+        <Route path="/moderator/*" element={
+          <ProtectedRoute allowedRoles={["admin", "senior_moderator", "moderator"]}>
+            <ModeratorLayout>
+              <Routes>
+                <Route path="dashboard" element={<ModeratorDashboard />} />
+                <Route path="content" element={<AdminPosts />} />
+                <Route path="posts/new" element={<AdminPostEditor />} />
+                <Route path="posts/edit/:id" element={<AdminPostEditor />} />
+                <Route path="review" element={<AdminApprovals />} />
+                <Route path="comments" element={<AdminComments />} />
+                <Route path="activity" element={<AdminModeratorActivity />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ModeratorLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Catch-all */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

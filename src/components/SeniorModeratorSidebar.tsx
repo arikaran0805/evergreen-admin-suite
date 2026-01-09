@@ -4,7 +4,7 @@ import {
   MessageSquare, Image, GraduationCap,
   LogOut, Home, MessageSquarePlus, 
   ChevronLeft, ChevronRight, CheckSquare,
-  BarChart3, Users, Gavel
+  BarChart3, Users, Gavel, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -62,8 +62,8 @@ const SeniorModeratorSidebar = ({
   };
 
   const isActive = (path: string) => {
-    if (path === "/admin") {
-      return location.pathname === "/admin";
+    if (path === "/senior-moderator/dashboard") {
+      return location.pathname === "/senior-moderator/dashboard" || location.pathname === "/senior-moderator";
     }
     return location.pathname.startsWith(path);
   };
@@ -72,7 +72,7 @@ const SeniorModeratorSidebar = ({
   const overviewSection: MenuSection = {
     title: "Overview",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+      { icon: LayoutDashboard, label: "Dashboard", path: "/senior-moderator/dashboard" },
     ],
   };
 
@@ -80,7 +80,8 @@ const SeniorModeratorSidebar = ({
   const approvalSection: MenuSection = {
     title: "Approval Queue",
     items: [
-      { icon: CheckSquare, label: "Approvals", path: "/admin/approvals", badge: getBadgeCount?.("approvals") },
+      { icon: CheckSquare, label: "Approvals", path: "/senior-moderator/approvals", badge: getBadgeCount?.("approvals") },
+      { icon: Gavel, label: "Reports", path: "/senior-moderator/reports", badge: getBadgeCount?.("reports") },
     ],
   };
 
@@ -88,10 +89,10 @@ const SeniorModeratorSidebar = ({
   const contentSection: MenuSection = {
     title: "Content",
     items: [
-      { icon: BookOpen, label: "Posts", path: "/admin/posts" },
-      { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
-      { icon: Tags, label: "Tags", path: "/admin/tags" },
-      { icon: FileText, label: "Pages", path: "/admin/pages" },
+      { icon: BookOpen, label: "Posts", path: "/senior-moderator/posts" },
+      { icon: GraduationCap, label: "Courses", path: "/senior-moderator/courses" },
+      { icon: Tags, label: "Tags", path: "/senior-moderator/tags" },
+      { icon: FileText, label: "Pages", path: "/senior-moderator/pages" },
     ],
   };
 
@@ -99,10 +100,9 @@ const SeniorModeratorSidebar = ({
   const moderationSection: MenuSection = {
     title: "Moderation",
     items: [
-      { icon: MessageSquare, label: "Comments", path: "/admin/comments" },
-      { icon: MessageSquarePlus, label: "Annotations", path: "/admin/annotations" },
-      { icon: Image, label: "Media Library", path: "/admin/media" },
-      { icon: Gavel, label: "Reports", path: "/admin/reports", badge: getBadgeCount?.("reports") },
+      { icon: MessageSquare, label: "Comments", path: "/senior-moderator/comments" },
+      { icon: MessageSquarePlus, label: "Annotations", path: "/senior-moderator/annotations" },
+      { icon: Image, label: "Media Library", path: "/senior-moderator/media" },
     ],
   };
 
@@ -110,15 +110,16 @@ const SeniorModeratorSidebar = ({
   const analyticsSection: MenuSection = {
     title: "Analytics",
     items: [
-      { icon: BarChart3, label: "Content Analytics", path: "/admin/analytics" },
+      { icon: BarChart3, label: "Content Analytics", path: "/senior-moderator/analytics" },
     ],
   };
 
-  // Section 6: Users (View Only)
-  const usersSection: MenuSection = {
-    title: "Users",
+  // Section 6: Activity
+  const activitySection: MenuSection = {
+    title: "Activity",
     items: [
-      { icon: Users, label: "Users", path: "/admin/users" },
+      { icon: Activity, label: "Activity Log", path: "/senior-moderator/activity" },
+      { icon: Users, label: "Users", path: "/senior-moderator/users" },
     ],
   };
 
@@ -128,7 +129,7 @@ const SeniorModeratorSidebar = ({
     contentSection, 
     moderationSection, 
     analyticsSection,
-    usersSection
+    activitySection
   ];
 
   const renderMenuItem = (item: MenuItem) => {
