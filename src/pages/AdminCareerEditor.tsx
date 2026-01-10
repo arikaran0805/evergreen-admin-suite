@@ -22,7 +22,7 @@ import {
   Target, TrendingUp, Zap, Move, Send
 } from "lucide-react";
 import * as Icons from "lucide-react";
-import AdminLayout from "@/components/AdminLayout";
+import { AdminLayout } from "@/components/layouts";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import {
   ChartConfig,

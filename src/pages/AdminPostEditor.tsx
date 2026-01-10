@@ -14,7 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
-import AdminLayout from "@/components/AdminLayout";
+import { AdminLayout } from "@/components/layouts";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";

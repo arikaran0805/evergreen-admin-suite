@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
-import AdminLayout from "@/components/AdminLayout";
+import { AdminLayout } from "@/components/layouts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

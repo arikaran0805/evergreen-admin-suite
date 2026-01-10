@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCourseVersions, CourseVersion } from "@/hooks/useCourseVersions";
 import { useCourseAnnotations } from "@/hooks/useCourseAnnotations";
-import AdminLayout from "@/components/AdminLayout";
+import { AdminLayout } from "@/components/layouts";
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
