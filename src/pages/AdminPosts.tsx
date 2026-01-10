@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import { Plus, Edit, Trash2, Eye, Info, User, UserCog, Shield, Send } from "lucide-react";
 import {
@@ -356,14 +356,12 @@ const AdminPosts = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="text-center">Loading...</div>
-      </AdminLayout>
+      <div className="text-center">Loading...</div>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Manage Posts</h1>
@@ -562,7 +560,7 @@ const AdminPosts = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
 
