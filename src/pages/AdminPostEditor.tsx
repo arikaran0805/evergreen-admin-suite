@@ -14,7 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
-import { AdminLayout } from "@/components/layouts";
+
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
@@ -672,15 +672,12 @@ const AdminPostEditor = () => {
 
   if (editorInitLoading) {
     return (
-      <AdminLayout defaultSidebarCollapsed>
-        <AdminEditorSkeleton type="post" />
-      </AdminLayout>
+      <AdminEditorSkeleton type="post" />
     );
   }
 
   return (
-    <AdminLayout defaultSidebarCollapsed>
-      <div className="flex gap-4 h-[calc(100vh-6rem)] overflow-hidden">
+    <div className="flex gap-4 h-[calc(100vh-6rem)] overflow-hidden">
         {/* Main Content Area */}
         <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
           <div className="flex items-center justify-between">
@@ -1182,7 +1179,6 @@ const AdminPostEditor = () => {
             </ScrollArea>
           </Card>
         </div>
-      </div>
 
       {/* Version Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
@@ -1310,7 +1306,7 @@ const AdminPostEditor = () => {
         isAdmin={isAdmin}
         isModerator={isModerator}
       />
-    </AdminLayout>
+    </div>
   );
 };
 

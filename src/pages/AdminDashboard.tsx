@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { 
   Users, FileText, AlertTriangle, TrendingUp, TrendingDown, 
   DollarSign, Shield, Settings, Trash2, UserCog, Search,
@@ -373,19 +373,16 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      </div>
     );
   }
 
   const totalCriticalAlerts = criticalAlerts.pendingPosts + criticalAlerts.deleteRequests + criticalAlerts.reportedComments;
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -670,7 +667,6 @@ const AdminDashboard = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

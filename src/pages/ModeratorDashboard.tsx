@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { 
   FileText, Clock, CheckCircle, XCircle, Edit, UserCheck,
   AlertTriangle, MessageSquare, Image, BookOpen, Flag, Eye
@@ -275,19 +275,16 @@ const ModeratorDashboard = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      </div>
     );
   }
 
   const currentQueue = workQueue[activeTab as keyof typeof workQueue] || [];
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <div>
@@ -529,7 +526,6 @@ const ModeratorDashboard = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

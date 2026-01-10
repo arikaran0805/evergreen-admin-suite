@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -270,11 +270,10 @@ const AdminAnalytics = () => {
     }
   };
 
-  if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Analytics Dashboard</h1>
@@ -457,7 +456,6 @@ const AdminAnalytics = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/layouts";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -360,11 +360,11 @@ const AdminAPI = () => {
   };
 
   if (loading) {
-    return <AdminLayout><div className="p-6">Loading...</div></AdminLayout>;
+    return <div className="p-6">Loading...</div>;
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">API & Integrations</h1>
@@ -862,7 +862,7 @@ const AdminAPI = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminLayout>
+    </>
   );
 };
 
