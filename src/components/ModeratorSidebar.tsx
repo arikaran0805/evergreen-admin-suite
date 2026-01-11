@@ -1,19 +1,10 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, BookOpen, 
-  MessageSquare, ClipboardList,
-  LogOut, Home, Activity,
-  ChevronLeft, ChevronRight
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+/**
+ * ModeratorSidebar - Moderator Role Sidebar
+ * Imports ONLY moderator.sidebar.ts configuration
+ */
+import RoleSidebar from "@/components/RoleSidebar";
+import { moderatorSidebarConfig } from "@/sidebar/moderator.sidebar";
 import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
-import { cn } from "@/lib/utils";
 
 interface ModeratorSidebarProps {
   isOpen: boolean;
@@ -22,220 +13,22 @@ interface ModeratorSidebarProps {
   userId: string | null;
 }
 
-interface MenuItem {
-  icon: React.ElementType;
-  label: string;
-  path: string;
-}
-
-interface MenuSection {
-  title: string;
-  items: MenuItem[];
-}
-
-const ModeratorSidebar = ({ 
-  isOpen, 
-  onToggle, 
-  userProfile, 
-  userId
+const ModeratorSidebar = ({
+  isOpen,
+  onToggle,
+  userProfile,
+  userId,
 }: ModeratorSidebarProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({ title: "Logged out successfully" });
-      navigate("/auth");
-    } catch (error: any) {
-      toast({
-        title: "Error logging out",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const isActive = (path: string) => {
-    if (path === "/moderator/dashboard") {
-      return location.pathname === "/moderator/dashboard" || location.pathname === "/moderator";
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  // Section 1: Overview
-  const overviewSection: MenuSection = {
-    title: "Overview",
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/moderator/dashboard" },
-    ],
-  };
-
-  // Section 2: Content
-  const contentSection: MenuSection = {
-    title: "Content",
-    items: [
-      { icon: BookOpen, label: "My Content", path: "/moderator/content" },
-    ],
-  };
-
-  // Section 3: Review
-  const reviewSection: MenuSection = {
-    title: "Review",
-    items: [
-      { icon: ClipboardList, label: "Review Queue", path: "/moderator/review" },
-      { icon: MessageSquare, label: "Comments", path: "/moderator/comments" },
-    ],
-  };
-
-  // Section 4: Activity
-  const activitySection: MenuSection = {
-    title: "Activity",
-    items: [
-      { icon: Activity, label: "My Activity", path: "/moderator/activity" },
-    ],
-  };
-
-  const sections = [overviewSection, contentSection, reviewSection, activitySection];
-
-  const renderMenuItem = (item: MenuItem) => {
-    const active = isActive(item.path);
-    
-    return (
-      <Link key={item.path} to={item.path}>
-        <div
-          className={cn(
-            "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-            active
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-          )}
-        >
-          <item.icon className={cn(
-            "h-[18px] w-[18px] shrink-0",
-            active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-sidebar-foreground"
-          )} />
-          {isOpen && (
-            <span className={cn(
-              "flex-1 text-sm font-medium truncate",
-              active ? "text-primary-foreground" : ""
-            )}>
-              {item.label}
-            </span>
-          )}
-        </div>
-      </Link>
-    );
-  };
-
-  const renderSection = (section: MenuSection, index: number) => (
-    <div key={section.title} className={cn(index > 0 && "mt-6")}>
-      {isOpen && (
-        <div className="px-3 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-            {section.title}
-          </span>
-        </div>
-      )}
-      {!isOpen && index > 0 && (
-        <Separator className="mx-2 mb-2 bg-sidebar-border/50" />
-      )}
-      <div className="space-y-0.5">
-        {section.items.map(renderMenuItem)}
-      </div>
-    </div>
-  );
-
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-50 h-screen border-r border-sidebar-border bg-sidebar transition-all duration-300 flex flex-col",
-        isOpen ? "w-64" : "w-[68px]"
-      )}
-    >
-      {/* Header */}
-      <div className="p-3 border-b border-sidebar-border">
-        <div 
-          className={cn(
-            "flex items-center bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors",
-            isOpen ? "justify-between" : "justify-center"
-          )}
-          onClick={onToggle}
-        >
-          {isOpen && (
-            <div className="flex items-center gap-3">
-              <Avatar className="shrink-0 ring-2 ring-accent/20 h-9 w-9">
-                <AvatarImage 
-                  src={userProfile?.avatar_url || undefined} 
-                  alt={userProfile?.full_name || "Moderator"} 
-                />
-                <AvatarFallback className="bg-accent text-accent-foreground font-semibold text-xs">
-                  {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
-                </AvatarFallback>
-              </Avatar>
-              <span className="font-semibold text-sidebar-foreground text-sm">
-                {userProfile?.full_name || "Moderator"}
-              </span>
-            </div>
-          )}
-          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-background shadow-sm border border-border">
-            {isOpen ? (
-              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
-        </div>
-        {isOpen && (
-          <div className="flex items-center justify-between mt-2 px-1">
-            <Badge 
-              className="text-[10px] px-2 py-0 bg-accent/10 text-accent border-accent/20 font-medium"
-              variant="outline"
-            >
-              Moderator
-            </Badge>
-            <ModeratorNotificationBell userId={userId} />
-          </div>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <ScrollArea className="flex-1 px-2 py-4">
-        <nav className="space-y-1">
-          {sections.map((section, index) => renderSection(section, index))}
-        </nav>
-      </ScrollArea>
-
-      {/* Footer */}
-      <div className="p-2 border-t border-sidebar-border mt-auto">
-        <Link to="/">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-all duration-200">
-            <Home className="h-[18px] w-[18px]" />
-            {isOpen && <span className="text-sm font-medium">Back to Site</span>}
-          </div>
-        </Link>
-        
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-all duration-200"
-        >
-          <LogOut className="h-[18px] w-[18px]" />
-          {isOpen && <span className="text-sm font-medium">Logout</span>}
-        </button>
-        
-        {!isOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="w-full h-9 mt-2 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-    </aside>
+    <RoleSidebar
+      config={moderatorSidebarConfig}
+      isOpen={isOpen}
+      onToggle={onToggle}
+      userProfile={userProfile}
+      userId={userId}
+      notificationBell={<ModeratorNotificationBell userId={userId} />}
+      basePath="/moderator"
+    />
   );
 };
 
