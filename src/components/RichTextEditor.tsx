@@ -1,16 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import Prism from "prismjs";
-import "prismjs/themes/prism.css";
-import "prismjs/components/prism-python";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-typescript";
-import "prismjs/components/prism-sql";
-import "prismjs/components/prism-json";
-import "prismjs/components/prism-bash";
-import "prismjs/components/prism-css";
-import "prismjs/components/prism-markup";
+import Prism from "@/lib/prism";
 import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb, Eye, EyeOff, Columns, Keyboard, Bold, Italic, Underline, Strikethrough, Code, Link, Highlighter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
