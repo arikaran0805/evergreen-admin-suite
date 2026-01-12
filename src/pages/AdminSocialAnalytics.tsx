@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Twitter, Facebook, Instagram, Linkedin, Youtube, Github, TrendingUp, Share2, Mail, Copy, MessageCircle } from "lucide-react";
@@ -127,10 +127,10 @@ const AdminSocialAnalytics = () => {
     setTotalShares(data.length);
   };
 
-  if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Social Media Analytics</h1>
@@ -369,7 +369,7 @@ const AdminSocialAnalytics = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 
