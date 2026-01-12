@@ -21,6 +21,8 @@ const ModeratorRoutes = () => {
     <ModeratorGuard>
       <ModeratorLayout>
         <Routes>
+          {/* Index route renders dashboard at /moderator */}
+          <Route index element={<ModeratorDashboard />} />
           <Route path="dashboard" element={<ModeratorDashboard />} />
           <Route path="content" element={<AdminPosts />} />
           <Route path="posts/new" element={<AdminPostEditor />} />

@@ -40,6 +40,8 @@ const AdminRoutes = () => {
     <AdminGuard>
       <AdminLayout>
         <Routes>
+          {/* Index route renders dashboard at /admin */}
+          <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="approvals" element={<AdminApprovals />} />
           <Route path="delete-requests" element={<AdminDeleteRequests />} />

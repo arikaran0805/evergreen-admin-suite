@@ -30,6 +30,8 @@ const SeniorModeratorRoutes = () => {
     <SeniorModeratorGuard>
       <SeniorModeratorLayout>
         <Routes>
+          {/* Index route renders dashboard at /senior-moderator */}
+          <Route index element={<SeniorModeratorDashboard />} />
           <Route path="dashboard" element={<SeniorModeratorDashboard />} />
           <Route path="approvals" element={<AdminApprovals />} />
           <Route path="reports" element={<AdminReports />} />
