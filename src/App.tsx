@@ -62,16 +62,9 @@ const AppContent = () => {
         {/* Public Routes */}
         {publicRoutes}
 
-        {/* Admin Routes - /admin/* */}
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        {/* Role Routes - Each role has ONE root route with index routes */}
         <Route path="/admin/*" element={<AdminRoutes />} />
-
-        {/* Senior Moderator Routes - /senior-moderator/* */}
-        <Route path="/senior-moderator" element={<Navigate to="/senior-moderator/dashboard" replace />} />
         <Route path="/senior-moderator/*" element={<SeniorModeratorRoutes />} />
-
-        {/* Moderator Routes - /moderator/* */}
-        <Route path="/moderator" element={<Navigate to="/moderator/dashboard" replace />} />
         <Route path="/moderator/*" element={<ModeratorRoutes />} />
       </Routes>
     </>
