@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,10 +170,10 @@ const AdminPages = () => {
     setDialogOpen(true);
   };
 
-  if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-foreground">Static Pages</h1>
@@ -283,7 +283,7 @@ const AdminPages = () => {
           ))}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

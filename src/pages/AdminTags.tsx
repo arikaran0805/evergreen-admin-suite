@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { Plus, Pencil, Trash2, Tag, Search } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -231,14 +231,12 @@ const AdminTags = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="text-center py-12">Loading tags...</div>
-      </AdminLayout>
+      <div className="text-center py-12">Loading tags...</div>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -417,7 +415,7 @@ const AdminTags = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminLayout>
+    </>
   );
 };
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/layouts";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Layers } from "lucide-react";
 import AdminCoursesTab from "@/components/admin/AdminCoursesTab";
@@ -57,10 +57,10 @@ const AdminCoursesPanel = () => {
     setSearchParams({ tab: value });
   };
 
-  if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-foreground">Courses Panel</h1>
 
@@ -89,7 +89,7 @@ const AdminCoursesPanel = () => {
           )}
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 
