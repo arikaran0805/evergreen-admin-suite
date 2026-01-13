@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCourseVersions, CourseVersion } from "@/hooks/useCourseVersions";
 import { useCourseAnnotations } from "@/hooks/useCourseAnnotations";
-import { AdminLayout } from "@/components/layouts";
+
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
@@ -538,15 +538,11 @@ const AdminCourseEditor = () => {
     (id ? versionsLoading || (versions.length > 0 && !didSyncLatestVersion) : false);
 
   if (editorInitLoading) {
-    return (
-      <AdminLayout defaultSidebarCollapsed>
-        <AdminEditorSkeleton type="course" />
-      </AdminLayout>
-    );
+    return <AdminEditorSkeleton type="course" />;
   }
 
   return (
-    <AdminLayout defaultSidebarCollapsed>
+    <>
       <div className="flex gap-4 h-[calc(100vh-6rem)] overflow-hidden">
         {/* Main Content Area */}
         <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
@@ -1092,7 +1088,7 @@ const AdminCourseEditor = () => {
         isAdmin={isAdmin}
         isModerator={isModerator}
       />
-    </AdminLayout>
+    </>
   );
 };
 
