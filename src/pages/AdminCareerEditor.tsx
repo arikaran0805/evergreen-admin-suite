@@ -22,7 +22,7 @@ import {
   Target, TrendingUp, Zap, Move, Send
 } from "lucide-react";
 import * as Icons from "lucide-react";
-import { AdminLayout } from "@/components/layouts";
+
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
 import {
   ChartConfig,
@@ -816,16 +816,14 @@ const AdminCareerEditor = () => {
 
   if (loading && id) {
     return (
-      <AdminLayout defaultSidebarCollapsed>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-pulse text-muted-foreground">Loading career...</div>
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-pulse text-muted-foreground">Loading career...</div>
+      </div>
     );
   }
 
   return (
-    <AdminLayout defaultSidebarCollapsed>
+    <>
       <div className="flex flex-col h-[calc(100vh-6rem)]">
         {/* Header with Tabs inline */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
@@ -1670,7 +1668,7 @@ const AdminCareerEditor = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
 
