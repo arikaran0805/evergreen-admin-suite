@@ -8,7 +8,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { ThemeProvider } from "next-themes";
 
 // Route Compositions
-import { AdminRoutes, SeniorModeratorRoutes, ModeratorRoutes, publicRoutes } from "@/routes";
+import { AdminRoutes, SuperModeratorRoutes, SeniorModeratorRoutes, ModeratorRoutes, publicRoutes } from "@/routes";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +42,7 @@ const AppContent = () => {
     
     const isAdminPath = (path: string) => 
       path.startsWith('/admin') || 
+      path.startsWith('/super-moderator') ||
       path.startsWith('/senior-moderator') || 
       path.startsWith('/moderator');
     
@@ -64,6 +65,7 @@ const AppContent = () => {
 
         {/* Role Routes - Each role has ONE root route with index routes */}
         <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route path="/super-moderator/*" element={<SuperModeratorRoutes />} />
         <Route path="/senior-moderator/*" element={<SeniorModeratorRoutes />} />
         <Route path="/moderator/*" element={<ModeratorRoutes />} />
       </Routes>

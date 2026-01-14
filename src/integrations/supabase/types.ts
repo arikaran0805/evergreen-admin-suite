@@ -398,6 +398,38 @@ export type Database = {
           },
         ]
       }
+      career_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          career_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          career_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          career_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_assignments_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       career_courses: {
         Row: {
           career_id: string
@@ -901,6 +933,7 @@ export type Database = {
           assigned_to: string | null
           author_id: string | null
           created_at: string
+          default_senior_moderator: string | null
           description: string | null
           featured: boolean | null
           featured_image: string | null
@@ -917,6 +950,7 @@ export type Database = {
           assigned_to?: string | null
           author_id?: string | null
           created_at?: string
+          default_senior_moderator?: string | null
           description?: string | null
           featured?: boolean | null
           featured_image?: string | null
@@ -933,6 +967,7 @@ export type Database = {
           assigned_to?: string | null
           author_id?: string | null
           created_at?: string
+          default_senior_moderator?: string | null
           description?: string | null
           featured?: boolean | null
           featured_image?: string | null
@@ -2079,6 +2114,18 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      owns_career: {
+        Args: { _career_id: string; _user_id: string }
+        Returns: boolean
+      }
+      owns_course_via_career: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
+      owns_post_via_career: {
+        Args: { _post_id: string; _user_id: string }
         Returns: boolean
       }
     }
