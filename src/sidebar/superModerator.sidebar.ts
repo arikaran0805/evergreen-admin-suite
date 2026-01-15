@@ -4,7 +4,7 @@
  * URL prefix: /super-moderator/*
  * 
  * Super Moderator is a CAREER OWNER - manages assigned careers
- * and all courses/posts within those careers.
+ * Power-Level Color: Royal Purple #5B3CC4
  */
 import {
   LayoutDashboard,
@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import type { SidebarConfig, SidebarSection } from "./types";
 
-// Section 1: Overview - maps to /super-moderator/dashboard
+// Section 1: Overview
 const overviewSection: SidebarSection = {
   title: "Overview",
   items: [
@@ -33,7 +33,7 @@ const overviewSection: SidebarSection = {
   ],
 };
 
-// Section 2: Approval Queue - maps to /super-moderator/approvals, /super-moderator/reports
+// Section 2: Approval Queue
 const approvalSection: SidebarSection = {
   title: "Approval Queue",
   items: [
@@ -49,29 +49,22 @@ const careerSection: SidebarSection = {
     { icon: Briefcase, label: "My Careers", path: "/super-moderator/careers" },
     { icon: GraduationCap, label: "Courses", path: "/super-moderator/courses" },
     { icon: BookOpen, label: "Posts", path: "/super-moderator/posts" },
-  ],
-};
-
-// Section 4: Content - maps to tags, pages
-const contentSection: SidebarSection = {
-  title: "Content",
-  items: [
     { icon: Tags, label: "Tags", path: "/super-moderator/tags" },
     { icon: FileText, label: "Pages", path: "/super-moderator/pages" },
   ],
 };
 
-// Section 5: Moderation - maps to comments, annotations, media
+// Section 4: Moderation
 const moderationSection: SidebarSection = {
   title: "Moderation",
   items: [
+    { icon: Image, label: "Media Library", path: "/super-moderator/media" },
     { icon: MessageSquare, label: "Comments", path: "/super-moderator/comments" },
     { icon: MessageSquarePlus, label: "Annotations", path: "/super-moderator/annotations" },
-    { icon: Image, label: "Media Library", path: "/super-moderator/media" },
   ],
 };
 
-// Section 6: Team Management
+// Section 5: Team
 const teamSection: SidebarSection = {
   title: "Team",
   items: [
@@ -80,7 +73,7 @@ const teamSection: SidebarSection = {
   ],
 };
 
-// Section 7: Analytics - maps to /super-moderator/analytics
+// Section 6: Analytics
 const analyticsSection: SidebarSection = {
   title: "Analytics",
   items: [
@@ -94,21 +87,22 @@ export const superModeratorSidebarConfig: SidebarConfig = {
     overviewSection,
     approvalSection,
     careerSection,
-    contentSection,
     moderationSection,
     teamSection,
     analyticsSection,
   ],
   roleLabel: "Super Moderator",
   roleColor: {
-    badge: "text-[#8B5CF6]",
-    badgeBg: "bg-transparent",
-    badgeBorder: "border-[#8B5CF6]",
-    iconActive: "text-primary-foreground",
-    iconDefault: "text-[#8B5CF6]",
-    avatarRing: "ring-[#8B5CF6]/30",
-    avatarBg: "bg-[#8B5CF6]/10",
-    avatarText: "text-[#8B5CF6]",
+    // Royal Purple #5B3CC4
+    badge: "text-[#5B3CC4]",
+    badgeBg: "bg-[#5B3CC4]/10",
+    badgeBorder: "border-[#5B3CC4]/20",
+    iconActive: "text-white",
+    iconDefault: "text-muted-foreground",
+    avatarRing: "ring-[#5B3CC4]/30",
+    avatarBg: "bg-[#5B3CC4]",
+    avatarText: "text-white",
+    activeBackground: "bg-[#5B3CC4]",
   },
 };
 

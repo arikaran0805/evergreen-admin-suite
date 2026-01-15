@@ -2,6 +2,8 @@
  * Admin Sidebar Configuration
  * Maps 1:1 with admin.routes.tsx
  * URL prefix: /admin/*
+ * 
+ * Power-Level Color: Burgundy #8B1E1E
  */
 import {
   LayoutDashboard,
@@ -23,6 +25,8 @@ import {
   Trash2,
   Flag,
   MessageSquarePlus,
+  Activity,
+  Shield,
 } from "lucide-react";
 import type { SidebarConfig, SidebarSection } from "./types";
 
@@ -65,6 +69,7 @@ const analyticsSection: SidebarSection = {
   items: [
     { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
     { icon: Share2, label: "Social Analytics", path: "/admin/social-analytics" },
+    { icon: Activity, label: "Activity Log", path: "/admin/activity" },
   ],
 };
 
@@ -73,7 +78,7 @@ const systemSection: SidebarSection = {
   title: "System & Business",
   items: [
     { icon: Users, label: "Users", path: "/admin/users" },
-    { icon: Settings, label: "Roles & Permissions", path: "/admin/authors" },
+    { icon: Shield, label: "Roles & Permissions", path: "/admin/authors" },
     { icon: DollarSign, label: "Monetization", path: "/admin/monetization" },
     { icon: Link2, label: "Redirects", path: "/admin/redirects" },
     { icon: Key, label: "API & Integrations", path: "/admin/api" },
@@ -95,14 +100,16 @@ export const adminSidebarConfig: SidebarConfig = {
   ],
   roleLabel: "Admin",
   roleColor: {
-    badge: "text-primary",
-    badgeBg: "bg-primary/10",
-    badgeBorder: "border-primary/20",
-    iconActive: "text-primary-foreground",
+    // Burgundy #8B1E1E
+    badge: "text-[#8B1E1E]",
+    badgeBg: "bg-[#8B1E1E]/10",
+    badgeBorder: "border-[#8B1E1E]/20",
+    iconActive: "text-white",
     iconDefault: "text-muted-foreground",
-    avatarRing: "ring-primary/20",
-    avatarBg: "bg-primary",
-    avatarText: "text-primary-foreground",
+    avatarRing: "ring-[#8B1E1E]/30",
+    avatarBg: "bg-[#8B1E1E]",
+    avatarText: "text-white",
+    activeBackground: "bg-[#8B1E1E]",
   },
 };
 

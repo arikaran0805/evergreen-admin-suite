@@ -2,9 +2,11 @@
  * ModeratorSidebar - Moderator Role Sidebar
  * INDEPENDENT implementation - does NOT use shared RoleSidebar
  * Imports ONLY moderator.sidebar.ts configuration
+ * 
+ * Power-Level Color: Action Blue #2563EB
  */
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, LogOut, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,8 @@ const ModeratorSidebar = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const { sections, roleLabel, roleColor } = moderatorSidebarConfig;
 
   const handleLogout = async () => {
     try {
@@ -73,12 +77,12 @@ const ModeratorSidebar = ({
         >
           {isOpen && (
             <div className="flex items-center gap-3">
-              <Avatar className="shrink-0 ring-2 h-9 w-9 ring-blue-500/20">
+              <Avatar className={cn("shrink-0 ring-2 h-9 w-9", roleColor.avatarRing)}>
                 <AvatarImage
                   src={userProfile?.avatar_url || undefined}
                   alt={userProfile?.full_name || "Moderator"}
                 />
-                <AvatarFallback className="font-semibold text-xs bg-blue-500 text-white">
+                <AvatarFallback className={cn("font-semibold text-xs", roleColor.avatarBg, roleColor.avatarText)}>
                   {userProfile?.full_name?.charAt(0)?.toUpperCase() || "M"}
                 </AvatarFallback>
               </Avatar>
@@ -98,12 +102,23 @@ const ModeratorSidebar = ({
         {isOpen && (
           <div className="flex items-center justify-between mt-2 px-1">
             <Badge
-              className="text-[10px] px-2 py-0 font-medium bg-blue-500/10 text-blue-600 border-blue-500/20"
+              className={cn("text-[10px] px-2 py-0 font-medium", roleColor.badgeBg, roleColor.badge, roleColor.badgeBorder)}
               variant="outline"
             >
-              Moderator
+              {roleLabel}
             </Badge>
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                onClick={() => {
+                  const event = new KeyboardEvent("keydown", { key: "k", metaKey: true });
+                  document.dispatchEvent(event);
+                }}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
               <ModeratorNotificationBell userId={userId} />
             </div>
           </div>
@@ -113,7 +128,7 @@ const ModeratorSidebar = ({
       {/* Navigation */}
       <ScrollArea className="flex-1 px-2 py-4">
         <nav className="space-y-1">
-          {moderatorSidebarConfig.sections.map((section, sectionIndex) => (
+          {sections.map((section, sectionIndex) => (
             <div key={section.title} className={cn(sectionIndex > 0 && "mt-6")}>
               {isOpen && (
                 <div className="px-3 mb-2">
@@ -135,14 +150,14 @@ const ModeratorSidebar = ({
                         className={cn(
                           "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                           active
-                            ? "bg-blue-500 text-white shadow-sm"
+                            ? cn(roleColor.activeBackground, "text-white shadow-sm")
                             : "text-sidebar-foreground hover:bg-sidebar-accent/60"
                         )}
                       >
                         <item.icon
                           className={cn(
                             "h-[18px] w-[18px] shrink-0",
-                            active ? "text-white" : "text-muted-foreground group-hover:text-sidebar-foreground"
+                            active ? roleColor.iconActive : "text-muted-foreground group-hover:text-sidebar-foreground"
                           )}
                         />
                         {isOpen && (

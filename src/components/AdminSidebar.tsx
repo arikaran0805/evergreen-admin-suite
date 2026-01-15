@@ -2,9 +2,11 @@
  * AdminSidebar - Admin Role Sidebar
  * INDEPENDENT implementation - does NOT use shared RoleSidebar
  * Imports ONLY admin.sidebar.ts configuration
+ * 
+ * Power-Level Color: Burgundy #8B1E1E
  */
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, LogOut, ChevronLeft, ChevronRight, Search, Settings } from "lucide-react";
+import { Home, LogOut, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +49,8 @@ const AdminSidebar = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const { roleColor } = adminSidebarConfig;
 
   // Map notification keys to path-based keys
   const notificationMap: Record<string, number> = {
@@ -108,12 +112,12 @@ const AdminSidebar = ({
         >
           {isOpen && (
             <div className="flex items-center gap-3">
-              <Avatar className="shrink-0 ring-2 h-9 w-9 ring-primary/20">
+              <Avatar className={cn("shrink-0 ring-2 h-9 w-9", roleColor.avatarRing)}>
                 <AvatarImage
                   src={userProfile?.avatar_url || undefined}
                   alt={userProfile?.full_name || "Admin"}
                 />
-                <AvatarFallback className="font-semibold text-xs bg-primary text-primary-foreground">
+                <AvatarFallback className={cn("font-semibold text-xs", roleColor.avatarBg, roleColor.avatarText)}>
                   {userProfile?.full_name?.charAt(0)?.toUpperCase() || "A"}
                 </AvatarFallback>
               </Avatar>
@@ -133,7 +137,7 @@ const AdminSidebar = ({
         {isOpen && (
           <div className="flex items-center justify-between mt-2 px-1">
             <Badge
-              className="text-[10px] px-2 py-0 font-medium bg-primary/10 text-primary border-primary/20"
+              className={cn("text-[10px] px-2 py-0 font-medium", roleColor.badgeBg, roleColor.badge, roleColor.badgeBorder)}
               variant="outline"
             >
               Admin
@@ -182,14 +186,14 @@ const AdminSidebar = ({
                         className={cn(
                           "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                           active
-                            ? "bg-primary text-primary-foreground shadow-sm"
+                            ? cn(roleColor.activeBackground, "text-white shadow-sm")
                             : "text-sidebar-foreground hover:bg-sidebar-accent/60"
                         )}
                       >
                         <item.icon
                           className={cn(
                             "h-[18px] w-[18px] shrink-0",
-                            active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-sidebar-foreground"
+                            active ? roleColor.iconActive : "text-muted-foreground group-hover:text-sidebar-foreground"
                           )}
                         />
                         {isOpen && (
@@ -197,7 +201,7 @@ const AdminSidebar = ({
                             <span
                               className={cn(
                                 "flex-1 text-sm font-medium truncate",
-                                active ? "text-primary-foreground" : ""
+                                active ? "text-white" : ""
                               )}
                             >
                               {item.label}
@@ -234,7 +238,7 @@ const AdminSidebar = ({
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 mb-1",
                 isActive(item.path)
-                  ? "bg-primary text-primary-foreground"
+                  ? cn(roleColor.activeBackground, "text-white")
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
               )}
             >
