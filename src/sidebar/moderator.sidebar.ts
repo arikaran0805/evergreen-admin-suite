@@ -2,6 +2,8 @@
  * Moderator Sidebar Configuration
  * Maps 1:1 with moderator.routes.tsx
  * URL prefix: /moderator/*
+ * 
+ * Power-Level Color: Action Blue #2563EB
  */
 import {
   LayoutDashboard,
@@ -12,7 +14,7 @@ import {
 } from "lucide-react";
 import type { SidebarConfig, SidebarSection } from "./types";
 
-// Section 1: Overview - maps to /moderator/dashboard
+// Section 1: Overview
 const overviewSection: SidebarSection = {
   title: "Overview",
   items: [
@@ -20,7 +22,7 @@ const overviewSection: SidebarSection = {
   ],
 };
 
-// Section 2: Content - maps to /moderator/content
+// Section 2: Content
 const contentSection: SidebarSection = {
   title: "Content",
   items: [
@@ -28,7 +30,7 @@ const contentSection: SidebarSection = {
   ],
 };
 
-// Section 3: Review - maps to /moderator/review, /moderator/comments
+// Section 3: Review
 const reviewSection: SidebarSection = {
   title: "Review",
   items: [
@@ -37,7 +39,7 @@ const reviewSection: SidebarSection = {
   ],
 };
 
-// Section 4: Activity - maps to /moderator/activity
+// Section 4: Activity
 const activitySection: SidebarSection = {
   title: "Activity",
   items: [
@@ -54,14 +56,16 @@ export const moderatorSidebarConfig: SidebarConfig = {
   ],
   roleLabel: "Moderator",
   roleColor: {
-    badge: "text-accent",
-    badgeBg: "bg-accent/10",
-    badgeBorder: "border-accent/20",
-    iconActive: "text-primary-foreground",
+    // Action Blue #2563EB
+    badge: "text-[#2563EB]",
+    badgeBg: "bg-[#2563EB]/10",
+    badgeBorder: "border-[#2563EB]/20",
+    iconActive: "text-white",
     iconDefault: "text-muted-foreground",
-    avatarRing: "ring-accent/20",
-    avatarBg: "bg-accent",
-    avatarText: "text-accent-foreground",
+    avatarRing: "ring-[#2563EB]/30",
+    avatarBg: "bg-[#2563EB]",
+    avatarText: "text-white",
+    activeBackground: "bg-[#2563EB]",
   },
 };
 

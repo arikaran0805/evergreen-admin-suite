@@ -29,5 +29,6 @@ export interface SidebarConfig {
     avatarRing: string;
     avatarBg: string;
     avatarText: string;
+    activeBackground: string;
   };
 }

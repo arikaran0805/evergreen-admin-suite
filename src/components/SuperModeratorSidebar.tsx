@@ -1,5 +1,11 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+/**
+ * SuperModeratorSidebar - Super Moderator Role Sidebar
+ * INDEPENDENT implementation - does NOT use shared RoleSidebar
+ * Imports ONLY superModerator.sidebar.ts configuration
+ * 
+ * Power-Level Color: Royal Purple #5B3CC4
+ */
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { superModeratorSidebarConfig } from "@/sidebar/superModerator.sidebar";
@@ -7,13 +13,16 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   ChevronLeft,
   ChevronRight,
   Home,
   LogOut,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
 
 interface SuperModeratorSidebarProps {
   isOpen: boolean;
@@ -38,6 +47,8 @@ const SuperModeratorSidebar = ({
   const location = useLocation();
   const { toast } = useToast();
 
+  const { sections, roleLabel, roleColor } = superModeratorSidebarConfig;
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -52,10 +63,14 @@ const SuperModeratorSidebar = ({
   };
 
   const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + "/");
+    const dashboardPath = "/super-moderator/dashboard";
+    if (path === dashboardPath) {
+      return location.pathname === dashboardPath || location.pathname === "/super-moderator";
+    }
+    return location.pathname.startsWith(path);
   };
 
-  const getItemBadge = (path: string) => {
+  const getItemBadge = (path: string): number | undefined => {
     if (getBadgeCount) {
       const count = getBadgeCount(path);
       return count > 0 ? count : undefined;
@@ -63,104 +78,133 @@ const SuperModeratorSidebar = ({
     return undefined;
   };
 
-  const { sections, roleLabel, roleColor } = superModeratorSidebarConfig;
-
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col",
-        isOpen ? "w-64" : "w-16"
+        "fixed left-0 top-0 z-50 h-screen border-r border-sidebar-border bg-sidebar transition-all duration-300 flex flex-col",
+        isOpen ? "w-64" : "w-[68px]"
       )}
     >
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-        {isOpen && (
-          <div className="flex items-center gap-3">
-            <Avatar className={cn("h-8 w-8", roleColor.avatarRing, "ring-2")}>
-              <AvatarImage src={userProfile?.avatar_url || undefined} />
-              <AvatarFallback className={cn(roleColor.avatarBg, roleColor.avatarText)}>
-                {userProfile?.full_name?.charAt(0) || userProfile?.email?.charAt(0) || "S"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium truncate max-w-[120px]">
-                {userProfile?.full_name || userProfile?.email || "Super Mod"}
+      <div className="p-3 border-b border-sidebar-border">
+        <div
+          className={cn(
+            "flex items-center bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors",
+            isOpen ? "justify-between" : "justify-center"
+          )}
+          onClick={onToggle}
+        >
+          {isOpen && (
+            <div className="flex items-center gap-3">
+              <Avatar className={cn("shrink-0 ring-2 h-9 w-9", roleColor.avatarRing)}>
+                <AvatarImage
+                  src={userProfile?.avatar_url || undefined}
+                  alt={userProfile?.full_name || "Super Moderator"}
+                />
+                <AvatarFallback className={cn("font-semibold text-xs", roleColor.avatarBg, roleColor.avatarText)}>
+                  {userProfile?.full_name?.charAt(0)?.toUpperCase() || "S"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-semibold text-sidebar-foreground text-sm">
+                {userProfile?.full_name || "Super Moderator"}
               </span>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[10px] px-1.5 py-0 h-4 w-fit",
-                  roleColor.badge,
-                  roleColor.badgeBorder
-                )}
+            </div>
+          )}
+          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-background shadow-sm border border-border">
+            {isOpen ? (
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+        </div>
+        {isOpen && (
+          <div className="flex items-center justify-between mt-2 px-1">
+            <Badge
+              className={cn("text-[10px] px-2 py-0 font-medium", roleColor.badgeBg, roleColor.badge, roleColor.badgeBorder)}
+              variant="outline"
+            >
+              {roleLabel}
+            </Badge>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                onClick={() => {
+                  const event = new KeyboardEvent("keydown", { key: "k", metaKey: true });
+                  document.dispatchEvent(event);
+                }}
               >
-                {roleLabel}
-              </Badge>
+                <Search className="h-4 w-4" />
+              </Button>
+              <ModeratorNotificationBell userId={userId || null} />
             </div>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="h-8 w-8"
-        >
-          {isOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </Button>
       </div>
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-2 py-4">
-        <nav className="space-y-6">
+        <nav className="space-y-1">
           {sections.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
+            <div key={section.title} className={cn(sectionIndex > 0 && "mt-6")}>
               {isOpen && (
-                <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {section.title}
-                </h3>
+                <div className="px-3 mb-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                    {section.title}
+                  </span>
+                </div>
               )}
-              <div className="space-y-1">
-                {section.items.map((item, itemIndex) => {
-                  const Icon = item.icon;
+              {!isOpen && sectionIndex > 0 && (
+                <Separator className="mx-2 mb-2 bg-sidebar-border/50" />
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
                   const active = isActive(item.path);
-                  const badgeCount = getItemBadge(item.path);
+                  const badge = getItemBadge(item.path);
 
                   return (
-                    <Button
-                      key={itemIndex}
-                      variant={active ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start gap-3 relative",
-                        !isOpen && "justify-center px-2",
-                        active && "bg-[#8B5CF6]/10 text-[#8B5CF6] hover:bg-[#8B5CF6]/20"
-                      )}
-                      onClick={() => navigate(item.path)}
-                    >
-                      <Icon
+                    <Link key={item.path} to={item.path}>
+                      <div
                         className={cn(
-                          "h-4 w-4 shrink-0",
-                          active ? roleColor.iconActive : roleColor.iconDefault
+                          "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                          active
+                            ? cn(roleColor.activeBackground, "text-white shadow-sm")
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/60"
                         )}
-                      />
-                      {isOpen && (
-                        <>
-                          <span className="truncate">{item.label}</span>
-                          {badgeCount !== undefined && (
-                            <Badge
-                              variant="destructive"
-                              className="ml-auto h-5 min-w-[20px] px-1.5 text-[10px]"
-                            >
-                              {badgeCount}
-                            </Badge>
+                      >
+                        <item.icon
+                          className={cn(
+                            "h-[18px] w-[18px] shrink-0",
+                            active ? roleColor.iconActive : "text-muted-foreground group-hover:text-sidebar-foreground"
                           )}
-                        </>
-                      )}
-                      {!isOpen && badgeCount !== undefined && (
-                        <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
-                          {badgeCount}
-                        </span>
-                      )}
-                    </Button>
+                        />
+                        {isOpen && (
+                          <>
+                            <span
+                              className={cn(
+                                "flex-1 text-sm font-medium truncate",
+                                active ? "text-white" : ""
+                              )}
+                            >
+                              {item.label}
+                            </span>
+                            {badge && badge > 0 && (
+                              <Badge
+                                variant="destructive"
+                                className="h-5 min-w-5 px-1.5 text-[10px] font-semibold"
+                              >
+                                {badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                        {!isOpen && badge && badge > 0 && (
+                          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
+                        )}
+                      </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -170,26 +214,32 @@ const SuperModeratorSidebar = ({
       </ScrollArea>
 
       {/* Footer */}
-      <div className="border-t border-border p-2 space-y-1">
-        <Button
-          variant="ghost"
-          className={cn("w-full justify-start gap-3", !isOpen && "justify-center px-2")}
-          onClick={() => navigate("/")}
-        >
-          <Home className="h-4 w-4 shrink-0" />
-          {isOpen && <span>Back to Site</span>}
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10",
-            !isOpen && "justify-center px-2"
-          )}
+      <div className="p-2 border-t border-sidebar-border mt-auto">
+        <Link to="/">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-all duration-200">
+            <Home className="h-[18px] w-[18px]" />
+            {isOpen && <span className="text-sm font-medium">Back to Site</span>}
+          </div>
+        </Link>
+
+        <button
           onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-all duration-200"
         >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {isOpen && <span>Logout</span>}
-        </Button>
+          <LogOut className="h-[18px] w-[18px]" />
+          {isOpen && <span className="text-sm font-medium">Logout</span>}
+        </button>
+
+        {!isOpen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="w-full h-9 mt-2 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </aside>
   );
