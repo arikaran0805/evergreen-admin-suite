@@ -23,15 +23,14 @@ import { GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface Post {
+interface Lesson {
   id: string;
   title: string;
   lesson_order: number;
-  category_id: string | null;
-  parent_id: string | null;
+  course_id: string;
 }
 
-interface Category {
+interface Course {
   id: string;
   name: string;
 }
@@ -62,10 +61,10 @@ function SortableItem({ id, title, order }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-md mb-2"
+      className="flex items-center gap-3 p-3 bg-white dark:bg-background border border-border rounded-md mb-2"
     >
       <button
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
         {...attributes}
         {...listeners}
       >
@@ -74,19 +73,16 @@ function SortableItem({ id, title, order }: SortableItemProps) {
       <div className="flex-1">
         <p className="font-medium text-sm">{title}</p>
       </div>
-      <span className="text-xs text-gray-500">Order: {order}</span>
+      <span className="text-xs text-muted-foreground">Order: {order}</span>
     </div>
   );
 }
 
 export default function LessonReorder() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [mainLessons, setMainLessons] = useState<Post[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showSubLessons, setShowSubLessons] = useState(false);
-  const [selectedParentId, setSelectedParentId] = useState<string>("");
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -97,75 +93,48 @@ export default function LessonReorder() {
   );
 
   useEffect(() => {
-    fetchCategories();
+    fetchCourses();
   }, []);
 
   useEffect(() => {
-    if (selectedCategoryId) {
-      fetchMainLessons();
-      fetchPosts();
+    if (selectedCourseId) {
+      fetchLessons();
     }
-  }, [selectedCategoryId, showSubLessons, selectedParentId]);
+  }, [selectedCourseId]);
 
-  const fetchMainLessons = async () => {
-    if (!selectedCategoryId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, title, lesson_order, category_id, parent_id")
-        .eq("category_id", selectedCategoryId)
-        .is("parent_id", null)
-        .order("lesson_order", { ascending: true });
-
-      if (error) throw error;
-      setMainLessons(data || []);
-    } catch (error: any) {
-      console.error("Error fetching main lessons:", error);
-    }
-  };
-
-  const fetchCategories = async () => {
+  const fetchCourses = async () => {
     try {
       const { data, error } = await supabase
         .from("courses")
-        .select("*")
+        .select("id, name")
+        .is("deleted_at", null)
         .order("name");
 
       if (error) throw error;
-      setCategories(data || []);
+      setCourses(data || []);
       
       if (data && data.length > 0) {
-        setSelectedCategoryId(data[0].id);
+        setSelectedCourseId(data[0].id);
       }
     } catch (error: any) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching courses:", error);
     }
   };
 
-  const fetchPosts = async () => {
-    if (!selectedCategoryId) return;
+  const fetchLessons = async () => {
+    if (!selectedCourseId) return;
     
     setLoading(true);
     try {
-      const query = supabase
-        .from("posts")
-        .select("id, title, lesson_order, category_id, parent_id")
-        .eq("category_id", selectedCategoryId)
-        .order("lesson_order", { ascending: true })
-        .order("created_at", { ascending: true });
-
-      // Filter based on whether we're showing main lessons or sub-lessons
-      if (showSubLessons && selectedParentId) {
-        query.eq("parent_id", selectedParentId);
-      } else if (!showSubLessons) {
-        query.is("parent_id", null);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await (supabase
+        .from("course_lessons" as any)
+        .select("id, title, lesson_order, course_id")
+        .eq("course_id", selectedCourseId)
+        .is("deleted_at", null)
+        .order("lesson_order", { ascending: true }) as unknown as Promise<{ data: Lesson[] | null; error: any }>);
 
       if (error) throw error;
-      setPosts(data || []);
+      setLessons(data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -181,7 +150,7 @@ export default function LessonReorder() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setPosts((items) => {
+      setLessons((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
 
@@ -195,18 +164,18 @@ export default function LessonReorder() {
     }
   };
 
-  const updateLessonOrders = async (orderedPosts: Post[]) => {
+  const updateLessonOrders = async (orderedLessons: Lesson[]) => {
     try {
-      const updates = orderedPosts.map((post, index) => ({
-        id: post.id,
-        lesson_order: index + 1,
+      const updates = orderedLessons.map((lesson, index) => ({
+        id: lesson.id,
+        lesson_order: index,
       }));
 
       for (const update of updates) {
-        const { error } = await supabase
-          .from("posts")
+        const { error } = await (supabase
+          .from("course_lessons" as any)
           .update({ lesson_order: update.lesson_order })
-          .eq("id", update.id);
+          .eq("id", update.id) as unknown as Promise<{ error: any }>);
 
         if (error) throw error;
       }
@@ -223,27 +192,27 @@ export default function LessonReorder() {
       });
       
       // Refresh to get correct order
-      fetchPosts();
+      fetchLessons();
     }
   };
 
   const handleAutoSequence = async () => {
-    if (!selectedCategoryId) return;
+    if (!selectedCourseId) return;
     
     try {
       setLoading(true);
       
-      // Update all posts in the category to sequential order
-      const updates = posts.map((post, index) => ({
-        id: post.id,
-        lesson_order: index + 1,
+      // Update all lessons in the course to sequential order
+      const updates = lessons.map((lesson, index) => ({
+        id: lesson.id,
+        lesson_order: index,
       }));
 
       for (const update of updates) {
-        const { error } = await supabase
-          .from("posts")
+        const { error } = await (supabase
+          .from("course_lessons" as any)
           .update({ lesson_order: update.lesson_order })
-          .eq("id", update.id);
+          .eq("id", update.id) as unknown as Promise<{ error: any }>);
 
         if (error) throw error;
       }
@@ -253,7 +222,7 @@ export default function LessonReorder() {
         description: "Lesson orders reset to sequential numbering",
       });
       
-      await fetchPosts();
+      await fetchLessons();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -273,84 +242,38 @@ export default function LessonReorder() {
       <CardContent>
         <div className="mb-4 space-y-3">
           <div className="flex gap-3">
-            <Select value={selectedCategoryId} onValueChange={(value) => {
-              setSelectedCategoryId(value);
-              setShowSubLessons(false);
-              setSelectedParentId("");
-            }}>
+            <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a course" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
+                {courses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Button
               onClick={handleAutoSequence}
-              disabled={loading || posts.length === 0}
+              disabled={loading || lessons.length === 0}
               variant="outline"
             >
               Auto-Sequence
             </Button>
           </div>
-          
-          <div className="flex gap-3">
-            <Select 
-              value={showSubLessons ? "sub" : "main"} 
-              onValueChange={(value) => {
-                setShowSubLessons(value === "sub");
-                if (value === "main") setSelectedParentId("");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="main">Main Lessons</SelectItem>
-                <SelectItem value="sub">Sub-Lessons</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {showSubLessons && (
-              <Select 
-                value={selectedParentId} 
-                onValueChange={setSelectedParentId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parent lesson" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mainLessons.map((lesson) => (
-                    <SelectItem key={lesson.id} value={lesson.id}>
-                      {lesson.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
         </div>
 
         {loading ? (
           <p className="text-center text-muted-foreground py-8">Loading lessons...</p>
-        ) : posts.length === 0 ? (
+        ) : lessons.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            {showSubLessons && !selectedParentId 
-              ? "Select a parent lesson to view its sub-lessons"
-              : showSubLessons 
-                ? "No sub-lessons found for this parent lesson"
-                : "No main lessons found in this category"}
+            No lessons found in this course
           </p>
         ) : (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground mb-3">
-              {showSubLessons 
-                ? "Drag and drop to reorder sub-lessons within this main lesson"
-                : "Drag and drop to reorder main lessons"}
+              Drag and drop to reorder lessons
             </p>
             <DndContext
               sensors={sensors}
@@ -358,15 +281,15 @@ export default function LessonReorder() {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={posts.map((p) => p.id)}
+                items={lessons.map((l) => l.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {posts.map((post, index) => (
+                {lessons.map((lesson, index) => (
                   <SortableItem
-                    key={post.id}
-                    id={post.id}
-                    title={post.title}
-                    order={index + 1}
+                    key={lesson.id}
+                    id={lesson.id}
+                    title={lesson.title}
+                    order={index}
                   />
                 ))}
               </SortableContext>

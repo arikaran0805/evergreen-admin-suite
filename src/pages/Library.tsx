@@ -180,12 +180,13 @@ const Library = () => {
                     .eq("course_id", course.id)
                     .eq("user_id", userId)
                     .eq("completed", true),
-                  supabase
-                    .from("posts")
+                  (supabase
+                    .from("course_lessons" as any)
                     .select("id, title, lesson_order")
-                    .eq("category_id", course.id)
-                    .eq("status", "published")
-                    .order("lesson_order", { ascending: true }),
+                    .eq("course_id", course.id)
+                    .eq("is_published", true)
+                    .is("deleted_at", null)
+                    .order("lesson_order", { ascending: true }) as unknown as Promise<{ data: { id: string; title: string; lesson_order: number }[] | null; error: any }>),
                   supabase
                     .from("lesson_progress")
                     .select("lesson_id")
