@@ -73,7 +73,64 @@ interface Post {
   slug: string;
   status: string;
   post_type: string | null;
+  post_rank: string;
+  lesson_id: string;
 }
+
+interface SortablePostProps {
+  post: Post;
+  onEditPost: (postId: string) => void;
+}
+
+const SortablePost = ({ post, onEditPost }: SortablePostProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: post.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 p-2 bg-background rounded border cursor-pointer hover:bg-muted/50 transition-colors ${
+        isDragging ? "border-primary shadow-sm" : ""
+      }`}
+    >
+      <button
+        className="cursor-grab active:cursor-grabbing touch-none p-0.5 hover:bg-muted rounded"
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+      </button>
+      <div className="flex-1 flex items-center gap-2" onClick={() => onEditPost(post.id)}>
+        {post.post_type === "main" || !post.post_type ? (
+          <BookOpen className="h-3.5 w-3.5 text-primary" />
+        ) : (
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+        <span className="text-sm flex-1 truncate">{post.title}</span>
+        <Badge
+          variant={post.status === "published" ? "default" : "secondary"}
+          className="text-[10px]"
+        >
+          {post.status}
+        </Badge>
+      </div>
+    </div>
+  );
+};
 
 interface SortableItemProps {
   lesson: Lesson;
@@ -84,6 +141,7 @@ interface SortableItemProps {
   onTogglePublish: (lesson: Lesson) => void;
   onCreatePost: (lessonId: string) => void;
   onEditPost: (postId: string) => void;
+  onReorderPosts: (lessonId: string, posts: Post[], movedPostId: string, newIndex: number) => void;
   basePath: string;
 }
 
@@ -96,6 +154,7 @@ const SortableItem = ({
   onTogglePublish,
   onCreatePost,
   onEditPost,
+  onReorderPosts,
   basePath,
 }: SortableItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -108,14 +167,34 @@ const SortableItem = ({
     isDragging,
   } = useSortable({ id: lesson.id });
 
+  const postSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const mainPost = posts.find((p) => p.post_type === "main" || !p.post_type);
-  const subPosts = posts.filter((p) => p.post_type === "sub");
+  // Sort posts by post_rank
+  const sortedPosts = [...posts].sort((a, b) => 
+    (a.post_rank || 'a').localeCompare(b.post_rank || 'a')
+  );
+
+  const handlePostDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = sortedPosts.findIndex((p) => p.id === active.id);
+      const newIndex = sortedPosts.findIndex((p) => p.id === over.id);
+      const newPosts = arrayMove(sortedPosts, oldIndex, newIndex);
+      onReorderPosts(lesson.id, newPosts, active.id as string, newIndex);
+    }
+  };
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -201,46 +280,31 @@ const SortableItem = ({
 
         <CollapsibleContent>
           <div className="ml-8 mt-2 space-y-2 pb-2">
-            {posts.length === 0 ? (
+            {sortedPosts.length === 0 ? (
               <div className="text-center py-4 text-sm text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
                 No posts in this lesson yet
               </div>
             ) : (
-              <div className="space-y-1.5">
-                {mainPost && (
-                  <div
-                    className="flex items-center gap-2 p-2 bg-background rounded border cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => onEditPost(mainPost.id)}
-                  >
-                    <BookOpen className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-sm font-medium flex-1 truncate">
-                      {mainPost.title}
-                    </span>
-                    <Badge
-                      variant={mainPost.status === "published" ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {mainPost.status}
-                    </Badge>
+              <DndContext
+                sensors={postSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handlePostDragEnd}
+              >
+                <SortableContext
+                  items={sortedPosts.map((p) => p.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-1.5">
+                    {sortedPosts.map((post) => (
+                      <SortablePost
+                        key={post.id}
+                        post={post}
+                        onEditPost={onEditPost}
+                      />
+                    ))}
                   </div>
-                )}
-                {subPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="flex items-center gap-2 p-2 bg-background rounded border cursor-pointer hover:bg-muted/50 transition-colors ml-4"
-                    onClick={() => onEditPost(post.id)}
-                  >
-                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm flex-1 truncate">{post.title}</span>
-                    <Badge
-                      variant={post.status === "published" ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {post.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
             <Button
               variant="outline"
@@ -308,14 +372,15 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       const typedLessons = (lessonsData || []) as Lesson[];
       setLessons(typedLessons);
 
-      // Fetch posts for all lessons
+      // Fetch posts for all lessons ordered by post_rank
       if (typedLessons.length > 0) {
         const lessonIds = typedLessons.map((l) => l.id);
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
-          .select("id, title, slug, status, post_type, lesson_id")
+          .select("id, title, slug, status, post_type, lesson_id, post_rank")
           .in("lesson_id", lessonIds)
-          .is("deleted_at", null);
+          .is("deleted_at", null)
+          .order("post_rank");
 
         if (postsError) throw postsError;
 
@@ -380,6 +445,50 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
         });
         fetchLessons(); // Revert on error
       }
+    }
+  };
+
+  const handleReorderPosts = async (
+    lessonId: string,
+    newPosts: Post[],
+    movedPostId: string,
+    newIndex: number
+  ) => {
+    // Optimistically update local state
+    setLessonPosts(prev => ({
+      ...prev,
+      [lessonId]: newPosts
+    }));
+
+    // Calculate new post_rank for the moved item
+    const prevRank = newIndex > 0 ? newPosts[newIndex - 1].post_rank : null;
+    const nextRank = newIndex < newPosts.length - 1 ? newPosts[newIndex + 1].post_rank : null;
+    const newRank = generateRankBetween(prevRank, nextRank);
+
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ post_rank: newRank })
+        .eq("id", movedPostId);
+
+      if (error) throw error;
+
+      // Update local state with new rank
+      setLessonPosts(prev => ({
+        ...prev,
+        [lessonId]: prev[lessonId].map(p =>
+          p.id === movedPostId ? { ...p, post_rank: newRank } : p
+        )
+      }));
+
+      toast({ title: "Post order updated" });
+    } catch (error: any) {
+      toast({
+        title: "Error updating post order",
+        description: error.message,
+        variant: "destructive",
+      });
+      fetchLessons(); // Revert on error
     }
   };
 
@@ -602,6 +711,7 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
                         onTogglePublish={handleTogglePublish}
                         onCreatePost={handleCreatePost}
                         onEditPost={handleEditPost}
+                        onReorderPosts={handleReorderPosts}
                         basePath={basePath}
                       />
                     ))}
