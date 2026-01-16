@@ -22,7 +22,7 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import AdminContentNotificationBell from "@/components/AdminContentNotificationBell";
+import RoleNotificationBell from "@/components/RoleNotificationBell";
 
 interface SuperModeratorSidebarProps {
   isOpen: boolean;
@@ -138,7 +138,7 @@ const SuperModeratorSidebar = ({
                >
                  <Search className="h-4 w-4" />
                </Button>
-               <AdminContentNotificationBell userId={userId || null} basePath="/super-moderator" />
+               <RoleNotificationBell />
              </div>
           </div>
         )}
