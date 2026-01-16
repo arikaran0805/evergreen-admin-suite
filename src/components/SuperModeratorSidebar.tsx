@@ -22,7 +22,7 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
+import AdminContentNotificationBell from "@/components/AdminContentNotificationBell";
 
 interface SuperModeratorSidebarProps {
   isOpen: boolean;
@@ -135,11 +135,11 @@ const SuperModeratorSidebar = ({
                   const event = new KeyboardEvent("keydown", { key: "k", metaKey: true });
                   document.dispatchEvent(event);
                 }}
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-              <ModeratorNotificationBell userId={userId || null} />
-            </div>
+               >
+                 <Search className="h-4 w-4" />
+               </Button>
+               <AdminContentNotificationBell userId={userId || null} basePath="/super-moderator" />
+             </div>
           </div>
         )}
       </div>
