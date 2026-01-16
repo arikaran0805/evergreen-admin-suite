@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -25,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight, FileText, MessageCircle, Highlighter, Loader2, Check } from "lucide-react";
 import { isChatTranscript } from "@/lib/chatContent";
+import LessonManager from "@/components/LessonManager";
 
 interface UserProfile {
   id: string;
@@ -39,8 +40,18 @@ interface UserWithRole extends UserProfile {
 const AdminCourseEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
+  
+  // Determine base path from current route
+  const basePath = location.pathname.startsWith("/super-moderator")
+    ? "/super-moderator"
+    : location.pathname.startsWith("/senior-moderator")
+    ? "/senior-moderator"
+    : location.pathname.startsWith("/moderator")
+    ? "/moderator"
+    : "/admin";
   
   // Get sidebar context to collapse when editing/annotating
   const { collapseSidebar } = useAdminSidebar();
@@ -769,6 +780,11 @@ const AdminCourseEditor = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Lesson Manager - Only show when editing existing course */}
+          {id && (
+            <LessonManager courseId={id} basePath={basePath} />
+          )}
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
