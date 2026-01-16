@@ -14,6 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
+import { useAdminSidebar } from "@/contexts/AdminSidebarContext";
 
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
@@ -78,6 +79,10 @@ const AdminPostEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
+  
+  // Get sidebar context to collapse when editing/annotating
+  const { collapseSidebar } = useAdminSidebar();
+  
   const [loading, setLoading] = useState(!!id);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
@@ -127,6 +132,19 @@ const AdminPostEditor = () => {
 
   // Auto-save draft hook - saves content to localStorage with debounce
   const draftKey = id ? `post_${id}` : `new_post_${formData.slug || 'untitled'}`;
+  
+  // Collapse sidebar when editing a post (has id) or when annotation mode is activated
+  useEffect(() => {
+    if (id) {
+      collapseSidebar();
+    }
+  }, [id, collapseSidebar]);
+  
+  useEffect(() => {
+    if (annotationMode) {
+      collapseSidebar();
+    }
+  }, [annotationMode, collapseSidebar]);
   const { loadDraft, clearDraft, status: autoSaveStatus } = useAutoSaveDraft(draftKey, formData.content, true);
 
   // Load draft on mount for new posts or if content is empty

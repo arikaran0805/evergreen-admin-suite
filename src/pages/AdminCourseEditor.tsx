@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCourseVersions, CourseVersion } from "@/hooks/useCourseVersions";
 import { useCourseAnnotations } from "@/hooks/useCourseAnnotations";
+import { useAdminSidebar } from "@/contexts/AdminSidebarContext";
 
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
@@ -40,6 +41,10 @@ const AdminCourseEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
+  
+  // Get sidebar context to collapse when editing/annotating
+  const { collapseSidebar } = useAdminSidebar();
+  
   const [loading, setLoading] = useState(!!id);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +82,19 @@ const AdminCourseEditor = () => {
   } | null>(null);
   const saveToAnnotateToastShownRef = useRef(false);
   const previousContentRef = useRef<string>("");
+  
+  // Collapse sidebar when editing a course (has id) or when annotation mode is activated
+  useEffect(() => {
+    if (id) {
+      collapseSidebar();
+    }
+  }, [id, collapseSidebar]);
+  
+  useEffect(() => {
+    if (annotationMode) {
+      collapseSidebar();
+    }
+  }, [annotationMode, collapseSidebar]);
 
   // Version and annotation hooks
   const { versions, loading: versionsLoading, metadata, saveVersion, saveVersionAsDraft, saveVersionOnPublish, createInitialVersion, publishVersion, restoreVersion, updateVersionNote } = useCourseVersions(id);
