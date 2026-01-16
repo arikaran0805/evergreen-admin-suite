@@ -781,9 +781,27 @@ const AdminCourseEditor = () => {
             </CardContent>
           </Card>
 
-          {/* Lesson Manager - Only show when editing existing course */}
-          {id && (
+          {/* Lesson Manager */}
+          {id ? (
             <LessonManager courseId={id} basePath={basePath} />
+          ) : (
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Lesson Manager
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-medium mb-1">Save the course first</p>
+                  <p className="text-xs">
+                    Create or save this course to start adding lessons and organizing content.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
