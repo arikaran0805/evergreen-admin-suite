@@ -1,36 +1,38 @@
 /**
  * ViewAsRoleSelector - Admin-only UI to preview other role dashboards
  * 
- * Displays in admin sidebar and allows quick switching between role views.
+ * Opens a dialog popup with role options when clicked.
  */
+import { useState } from "react";
 import { Eye, EyeOff, Shield, Users, UserCog, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, getRoleDashboardPath, type AppRole } from "@/hooks/useAuth";
 import { useViewAsRole } from "@/contexts/ViewAsRoleContext";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 // Available roles to view as (excluding admin since that's the actual role)
-const VIEW_AS_ROLES: { role: AppRole; label: string; icon: typeof Shield }[] = [
-  { role: "super_moderator", label: "Super Moderator", icon: Shield },
-  { role: "senior_moderator", label: "Senior Moderator", icon: UserCog },
-  { role: "moderator", label: "Moderator", icon: Users },
-  { role: "user", label: "User", icon: User },
+const VIEW_AS_ROLES: { role: AppRole; label: string; icon: typeof Shield; color: string }[] = [
+  { role: "super_moderator", label: "Super Moderator", icon: Shield, color: "text-purple-600 dark:text-purple-400" },
+  { role: "senior_moderator", label: "Senior Moderator", icon: UserCog, color: "text-blue-600 dark:text-blue-400" },
+  { role: "moderator", label: "Moderator", icon: Users, color: "text-green-600 dark:text-green-400" },
+  { role: "user", label: "User", icon: User, color: "text-gray-600 dark:text-gray-400" },
 ];
 
 interface ViewAsRoleSelectorProps {
   isOpen?: boolean;
+  onOpenDialog?: () => void;
 }
 
-const ViewAsRoleSelector = ({ isOpen = true }: ViewAsRoleSelectorProps) => {
+const ViewAsRoleSelector = ({ isOpen = true, onOpenDialog }: ViewAsRoleSelectorProps) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { activeRole } = useAuth();
   const { viewAsRole, isViewingAs, startViewingAs, stopViewingAs } = useViewAsRole();
   const navigate = useNavigate();
@@ -42,93 +44,90 @@ const ViewAsRoleSelector = ({ isOpen = true }: ViewAsRoleSelectorProps) => {
 
   const handleViewAs = (role: AppRole) => {
     startViewingAs(role);
+    setDialogOpen(false);
     // Navigate to that role's dashboard
     navigate(getRoleDashboardPath(role));
   };
 
   const handleExitViewAs = () => {
     stopViewingAs();
+    setDialogOpen(false);
     // Return to admin dashboard
     navigate("/admin/dashboard");
   };
 
-  if (!isOpen) {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-8 w-8",
-              isViewingAs && "text-amber-500 bg-amber-500/10"
-            )}
-          >
-            {isViewingAs ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuLabel>View as Role</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {VIEW_AS_ROLES.map(({ role, label, icon: Icon }) => (
-            <DropdownMenuItem
-              key={role}
-              onClick={() => handleViewAs(role)}
-              className={cn(viewAsRole === role && "bg-accent")}
-            >
-              <Icon className="h-4 w-4 mr-2" />
-              {label}
-            </DropdownMenuItem>
-          ))}
-          {isViewingAs && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExitViewAs} className="text-destructive">
-                <EyeOff className="h-4 w-4 mr-2" />
-                Exit View Mode
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
+  const handleOpenDialog = () => {
+    setDialogOpen(true);
+    onOpenDialog?.();
+  };
 
   return (
-    <div className="px-3 py-2">
-      <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-        <Eye className="h-3 w-3" />
-        View as Role
-      </div>
-      <div className="space-y-1">
-        {VIEW_AS_ROLES.map(({ role, label, icon: Icon }) => (
-          <Button
-            key={role}
-            variant={viewAsRole === role ? "secondary" : "ghost"}
-            size="sm"
-            className={cn(
-              "w-full justify-start text-xs h-7",
-              viewAsRole === role && "bg-accent"
-            )}
-            onClick={() => handleViewAs(role)}
-          >
-            <Icon className="h-3 w-3 mr-2" />
-            {label}
-          </Button>
-        ))}
-        {isViewingAs && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-xs h-7 text-destructive hover:text-destructive"
-            onClick={handleExitViewAs}
-          >
-            <EyeOff className="h-3 w-3 mr-2" />
-            Exit View Mode
-          </Button>
+    <>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-background">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-muted-foreground" />
+              View as Role
+            </DialogTitle>
+            <DialogDescription>
+              Preview how other roles see their dashboard. Your actual permissions remain unchanged.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 py-4">
+            {VIEW_AS_ROLES.map(({ role, label, icon: Icon, color }) => (
+              <Button
+                key={role}
+                variant={viewAsRole === role ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start h-12 text-base",
+                  viewAsRole === role && "bg-accent border border-border"
+                )}
+                onClick={() => handleViewAs(role)}
+              >
+                <Icon className={cn("h-5 w-5 mr-3", color)} />
+                {label}
+                {viewAsRole === role && (
+                  <span className="ml-auto text-xs text-muted-foreground">Currently viewing</span>
+                )}
+              </Button>
+            ))}
+          </div>
+
+          {isViewingAs && (
+            <div className="pt-2 border-t">
+              <Button
+                variant="outline"
+                className="w-full justify-center text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleExitViewAs}
+              >
+                <EyeOff className="h-4 w-4 mr-2" />
+                Exit View Mode
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Sidebar trigger button - matches settings item style */}
+      <button
+        onClick={handleOpenDialog}
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200",
+          isViewingAs 
+            ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20" 
+            : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
         )}
-      </div>
-    </div>
+      >
+        <Eye className="h-[18px] w-[18px]" />
+        {isOpen && (
+          <span className="text-sm font-medium">
+            {isViewingAs ? `Viewing: ${VIEW_AS_ROLES.find(r => r.role === viewAsRole)?.label}` : "View as Role"}
+          </span>
+        )}
+      </button>
+    </>
   );
 };
 
