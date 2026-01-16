@@ -230,21 +230,11 @@ const AdminSidebar = ({
         </nav>
       </ScrollArea>
 
-      {/* View as Role Feature */}
-      {isOpen && (
-        <>
-          <Separator className="my-2" />
-          <ViewAsRoleSelector isOpen={isOpen} />
-        </>
-      )}
-      {!isOpen && (
-        <div className="p-2 border-t border-sidebar-border">
-          <ViewAsRoleSelector isOpen={isOpen} />
-        </div>
-      )}
-
       {/* Footer */}
       <div className="p-2 border-t border-sidebar-border mt-auto">
+        {/* View as Role - above Settings */}
+        <ViewAsRoleSelector isOpen={isOpen} />
+        
         {/* Settings */}
         {isOpen && adminFooterItems.map((item) => (
           <Link key={item.path} to={item.path}>
