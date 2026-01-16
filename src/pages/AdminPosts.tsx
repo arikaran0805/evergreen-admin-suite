@@ -37,7 +37,6 @@ interface Post {
   published_at: string | null;
   created_at: string;
   updated_at: string;
-  parent_id: string | null;
   category_id: string | null;
   author_id: string;
   assigned_to: string | null;
@@ -163,7 +162,7 @@ const AdminPosts = () => {
       let query = supabase
         .from("posts")
         .select(
-          "id, title, slug, status, published_at, created_at, updated_at, parent_id, category_id, author_id, assigned_to, courses:category_id(slug)"
+          "id, title, slug, status, published_at, created_at, updated_at, category_id, author_id, assigned_to, courses:category_id(slug)"
         );
 
       // Moderators see their own posts AND posts assigned to them
