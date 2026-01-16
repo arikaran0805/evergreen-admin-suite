@@ -7,8 +7,8 @@
  * - No cross-role access or implicit inheritance
  * - Role context drives: sidebar, routes, permissions, search, notifications
  */
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
+import { Session, User, RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -86,6 +86,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAuthenticated: false,
     error: null,
   });
+  
+  const invalidationChannelRef = useRef<RealtimeChannel | null>(null);
 
   /**
    * Fetch user roles from database and resolve primary role
@@ -188,6 +190,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return state.activeRole === role;
   }, [state.activeRole]);
 
+  /**
+   * Subscribe to session invalidation events for the current user
+   */
+  const subscribeToSessionInvalidation = useCallback((userId: string) => {
+    // Clean up existing subscription
+    if (invalidationChannelRef.current) {
+      supabase.removeChannel(invalidationChannelRef.current);
+    }
+
+    const channel = supabase
+      .channel(`session-invalidation-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'session_invalidations',
+          filter: `user_id=eq.${userId}`,
+        },
+        async (payload) => {
+          console.log('Session invalidated due to role change:', payload);
+          // Force sign out when session is invalidated
+          await supabase.auth.signOut();
+          // Redirect to auth page with message
+          window.location.href = '/auth?reason=role_changed';
+        }
+      )
+      .subscribe();
+
+    invalidationChannelRef.current = channel;
+  }, []);
+
   // Initialize auth on mount
   useEffect(() => {
     let cancelled = false;
@@ -196,6 +230,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!cancelled) {
         await initializeAuth(session);
+        // Subscribe to session invalidation if authenticated
+        if (session?.user) {
+          subscribeToSessionInvalidation(session.user.id);
+        }
       }
     };
 
@@ -208,6 +246,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         // Handle sign out
         if (event === "SIGNED_OUT") {
+          // Clean up invalidation subscription
+          if (invalidationChannelRef.current) {
+            supabase.removeChannel(invalidationChannelRef.current);
+            invalidationChannelRef.current = null;
+          }
+          
           setState({
             userId: null,
             user: null,
@@ -227,6 +271,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setTimeout(() => {
             if (!cancelled) {
               initializeAuth(session);
+              // Subscribe to session invalidation
+              if (session?.user) {
+                subscribeToSessionInvalidation(session.user.id);
+              }
             }
           }, 0);
         }
@@ -236,8 +284,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => {
       cancelled = true;
       subscription.unsubscribe();
+      // Clean up invalidation subscription
+      if (invalidationChannelRef.current) {
+        supabase.removeChannel(invalidationChannelRef.current);
+      }
     };
-  }, [initializeAuth]);
+  }, [initializeAuth, subscribeToSessionInvalidation]);
 
   const value: AuthContextValue = {
     ...state,

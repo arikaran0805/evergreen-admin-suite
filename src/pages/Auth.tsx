@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Github, Apple } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Github, Apple, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,9 +22,9 @@ const Auth = () => {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const searchParams = new URLSearchParams(window.location.search);
+    const urlSearchParams = new URLSearchParams(window.location.search);
 
-    const type = hashParams.get("type") ?? searchParams.get("type");
+    const type = hashParams.get("type") ?? urlSearchParams.get("type");
     const hasRecoveryTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
 
     // Some email clients/redirects can drop the `type=recovery` param; tokens are a reliable fallback.
@@ -34,6 +36,9 @@ const Auth = () => {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Check if user was redirected due to role change
+  const roleChangedReason = searchParams.get("reason") === "role_changed";
 
   useEffect(() => {
     const isRecoveryLink = () => {
@@ -394,6 +399,16 @@ const Auth = () => {
             </div>
             <span className="text-2xl font-bold text-foreground">BlogHub</span>
           </Link>
+
+          {/* Role change notification alert */}
+          {roleChangedReason && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Your role has been changed by an administrator. Please log in again to continue with your updated permissions.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {passwordRecoveryMode ? (
             /* Set New Password Form */
