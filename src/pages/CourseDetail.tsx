@@ -372,13 +372,25 @@ const CourseDetail = () => {
       if (postsError) throw postsError;
       
       // Cast to Post[] with proper typing
-      const typedPosts = (postsData || []).map(p => ({
+      let typedPosts = (postsData || []).map(p => ({
         ...p,
         lesson_id: p.lesson_id as string | null,
         post_rank: p.post_rank as string | null,
         post_type: p.post_type as string | null,
         profiles: p.profiles as { full_name: string | null }
       })) as Post[];
+      
+      // For regular users, filter out posts whose parent lesson is unpublished
+      if (!showAllStatuses) {
+        const publishedLessonIds = new Set(
+          (lessonsData || [])
+            .filter(lesson => lesson.is_published === true)
+            .map(lesson => lesson.id)
+        );
+        typedPosts = typedPosts.filter(post => 
+          post.lesson_id === null || publishedLessonIds.has(post.lesson_id)
+        );
+      }
       
       setPosts(typedPosts);
     } catch (error: any) {
