@@ -77,6 +77,7 @@ interface Post {
 interface SortableItemProps {
   lesson: Lesson;
   posts: Post[];
+  index: number;
   onEdit: (lesson: Lesson) => void;
   onDelete: (lesson: Lesson) => void;
   onTogglePublish: (lesson: Lesson) => void;
@@ -88,6 +89,7 @@ interface SortableItemProps {
 const SortableItem = ({
   lesson,
   posts,
+  index,
   onEdit,
   onDelete,
   onTogglePublish,
@@ -143,7 +145,7 @@ const SortableItem = ({
                     {lesson.title}
                   </span>
                   <Badge variant="outline" className="text-[10px] shrink-0">
-                    #{lesson.lesson_order + 1}
+                    #{index + 1}
                   </Badge>
                   {!lesson.is_published && (
                     <Badge variant="secondary" className="text-[10px] shrink-0">
@@ -586,11 +588,12 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-2">
-                    {lessons.map((lesson) => (
+                    {lessons.map((lesson, index) => (
                       <SortableItem
                         key={lesson.id}
                         lesson={lesson}
                         posts={lessonPosts[lesson.id] || []}
+                        index={index}
                         onEdit={openEditDialog}
                         onDelete={openDeleteDialog}
                         onTogglePublish={handleTogglePublish}
