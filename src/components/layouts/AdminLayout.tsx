@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -78,7 +78,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const location = useLocation();
-  const { userId } = useUserRole();
+  const { userId } = useAuth();
   const { notifications } = useAdminNotifications(true, userId);
   const { getUnreadCount, markBadgeSeen } = useAdminBadgeReads(userId);
 

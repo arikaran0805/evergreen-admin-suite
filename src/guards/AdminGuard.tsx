@@ -1,6 +1,6 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AdminGuardProps {
   children: ReactNode;
@@ -8,26 +8,18 @@ interface AdminGuardProps {
 
 /**
  * AdminGuard - Protects routes that require admin role ONLY.
- * Does not allow senior_moderator or moderator access.
+ * 
+ * SINGLE-ROLE ENFORCEMENT:
+ * - Only users with activeRole === "admin" can access
+ * - No role inheritance (super_moderator, etc. cannot access)
+ * - Redirects to /access-denied for unauthorized users
  */
 const AdminGuard = ({ children }: AdminGuardProps) => {
-  const { roles, isLoading, userId } = useUserRole();
+  const { activeRole, isLoading, isAuthenticated, userId } = useAuth();
   const location = useLocation();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!userId) {
-        setIsAuthorized(false);
-        return;
-      }
-      // Admin ONLY
-      const hasPermission = roles.includes("admin");
-      setIsAuthorized(hasPermission);
-    }
-  }, [isLoading, roles, userId]);
-
-  if (isLoading || isAuthorized === null) {
+  // Show loading state while checking auth
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Verifying access...</div>
@@ -35,11 +27,13 @@ const AdminGuard = ({ children }: AdminGuardProps) => {
     );
   }
 
-  if (!userId) {
+  // Redirect to auth if not logged in
+  if (!isAuthenticated || !userId) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (!isAuthorized) {
+  // STRICT: Only admin role can access /admin/* routes
+  if (activeRole !== "admin") {
     return <Navigate to="/access-denied" state={{ from: location }} replace />;
   }
 

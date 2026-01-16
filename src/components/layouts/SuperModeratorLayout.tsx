@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import SuperModeratorSidebar from "@/components/SuperModeratorSidebar";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import { cn } from "@/lib/utils";
@@ -46,8 +46,8 @@ const SuperModeratorLayout = ({
     avatar_url?: string | null;
   } | null>(null);
 
-  const { userId, isSuperModerator, isAdmin } = useUserRole();
-  const { notifications } = useAdminNotifications(isAdmin || isSuperModerator, userId);
+  const { userId, activeRole } = useAuth();
+  const { notifications } = useAdminNotifications(activeRole === "super_moderator", userId);
   const { markBadgeSeen, getUnreadCount } = useAdminBadgeReads(userId);
 
   useEffect(() => {

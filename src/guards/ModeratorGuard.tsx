@@ -1,35 +1,25 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ModeratorGuardProps {
   children: ReactNode;
 }
 
 /**
- * ModeratorGuard - Protects routes for admin, senior_moderator, and moderator roles.
+ * ModeratorGuard - Protects routes that require moderator role ONLY.
+ * 
+ * SINGLE-ROLE ENFORCEMENT:
+ * - Only users with activeRole === "moderator" can access
+ * - No role inheritance (admin/super_moderator/senior_moderator cannot access)
+ * - Redirects to /access-denied for unauthorized users
  */
 const ModeratorGuard = ({ children }: ModeratorGuardProps) => {
-  const { roles, isLoading, userId } = useUserRole();
+  const { activeRole, isLoading, isAuthenticated, userId } = useAuth();
   const location = useLocation();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!userId) {
-        setIsAuthorized(false);
-        return;
-      }
-      // Admin + Senior Moderator + Moderator
-      const hasPermission = 
-        roles.includes("admin") || 
-        roles.includes("senior_moderator") || 
-        roles.includes("moderator");
-      setIsAuthorized(hasPermission);
-    }
-  }, [isLoading, roles, userId]);
-
-  if (isLoading || isAuthorized === null) {
+  // Show loading state while checking auth
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Verifying access...</div>
@@ -37,11 +27,13 @@ const ModeratorGuard = ({ children }: ModeratorGuardProps) => {
     );
   }
 
-  if (!userId) {
+  // Redirect to auth if not logged in
+  if (!isAuthenticated || !userId) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (!isAuthorized) {
+  // STRICT: Only moderator role can access /moderator/* routes
+  if (activeRole !== "moderator") {
     return <Navigate to="/access-denied" state={{ from: location }} replace />;
   }
 

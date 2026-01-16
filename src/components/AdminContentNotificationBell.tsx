@@ -192,7 +192,7 @@ const AdminContentNotificationBell = ({
               variant="ghost"
               size="sm"
               className="w-full text-xs"
-              onClick={() => navigate("/admin/approvals")}
+              onClick={() => navigate(`${basePath}/approvals`)}
             >
               View approval queue
             </Button>
