@@ -843,6 +843,7 @@ export type Database = {
           id: string
           is_published: boolean | null
           lesson_order: number
+          lesson_rank: string | null
           title: string
           updated_at: string
         }
@@ -855,6 +856,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           lesson_order?: number
+          lesson_rank?: string | null
           title: string
           updated_at?: string
         }
@@ -867,6 +869,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           lesson_order?: number
+          lesson_rank?: string | null
           title?: string
           updated_at?: string
         }
@@ -1750,6 +1753,7 @@ export type Database = {
           id: string
           lesson_id: string | null
           lesson_order: number | null
+          post_rank: string | null
           post_type: string | null
           published_at: string | null
           slug: string
@@ -1773,6 +1777,7 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           lesson_order?: number | null
+          post_rank?: string | null
           post_type?: string | null
           published_at?: string | null
           slug: string
@@ -1796,6 +1801,7 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           lesson_order?: number | null
+          post_rank?: string | null
           post_type?: string | null
           published_at?: string | null
           slug?: string

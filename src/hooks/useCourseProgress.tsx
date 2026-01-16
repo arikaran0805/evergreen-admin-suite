@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface CourseProgress {
   totalLessons: number;
+  publishedLessons: number;
   viewedLessons: number;
   completedLessons: number;
   percentage: number;
@@ -17,6 +18,7 @@ interface LessonStatus {
 export const useCourseProgress = (courseId: string | undefined) => {
   const [progress, setProgress] = useState<CourseProgress>({
     totalLessons: 0,
+    publishedLessons: 0,
     viewedLessons: 0,
     completedLessons: 0,
     percentage: 0,
@@ -40,12 +42,26 @@ export const useCourseProgress = (courseId: string | undefined) => {
         .eq('course_id', courseId)
         .is('deleted_at', null);
 
+      // Get published lessons count
+      const { count: publishedLessons } = await supabase
+        .from("course_lessons" as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('course_id', courseId)
+        .eq('is_published', true)
+        .is('deleted_at', null);
+
       if (!user) {
+        const total = totalLessons || 0;
+        const published = publishedLessons || 0;
+        // Progress is based on published lessons / total lessons (capped at 100%)
+        const percentage = total > 0 ? Math.min(100, Math.round((published / total) * 100)) : 0;
+        
         setProgress({
-          totalLessons: totalLessons || 0,
+          totalLessons: total,
+          publishedLessons: published,
           viewedLessons: 0,
           completedLessons: 0,
-          percentage: 0,
+          percentage,
         });
         setLessonStatuses(new Map());
         setLoading(false);
@@ -62,7 +78,10 @@ export const useCourseProgress = (courseId: string | undefined) => {
       const viewedLessons = progressData?.length || 0;
       const completedLessons = progressData?.filter(p => p.completed).length || 0;
       const total = totalLessons || 0;
-      const percentage = total > 0 ? Math.round((viewedLessons / total) * 100) : 0;
+      const published = publishedLessons || 0;
+      
+      // Progress is based on published lessons / total lessons (capped at 100%)
+      const percentage = total > 0 ? Math.min(100, Math.round((published / total) * 100)) : 0;
 
       // Build lesson status map
       const statusMap = new Map<string, LessonStatus>();
@@ -77,6 +96,7 @@ export const useCourseProgress = (courseId: string | undefined) => {
 
       setProgress({
         totalLessons: total,
+        publishedLessons: published,
         viewedLessons,
         completedLessons,
         percentage,

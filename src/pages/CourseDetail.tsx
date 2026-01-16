@@ -48,6 +48,15 @@ interface Course {
   status: string;
 }
 
+interface CourseLesson {
+  id: string;
+  title: string;
+  description: string | null;
+  lesson_rank: string;
+  is_published: boolean;
+  course_id: string;
+}
+
 interface Post {
   id: string;
   title: string;
@@ -58,7 +67,9 @@ interface Post {
   updated_at: string;
   status: string;
   content?: string;
-  lesson_order: number | null;
+  lesson_id: string | null;
+  post_rank: string | null;
+  post_type: string | null;
   code_theme?: string | null;
   profiles: {
     full_name: string | null;
@@ -96,7 +107,9 @@ const CourseDetail = () => {
   const isPreviewMode = searchParams.get("preview") === "true";
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
+  const [lessons, setLessons] = useState<CourseLesson[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [expandedLessons, setExpandedLessons] = useState<Set<string>>(new Set());
   const [recentCourses, setRecentCourses] = useState<any[]>([]);
   const [allTags, setAllTags] = useState<Array<{id: string; name: string; slug: string}>>([]);
   const [loading, setLoading] = useState(true);
@@ -201,9 +214,17 @@ const CourseDetail = () => {
   // Auto-select lesson from URL query param (supports browser back/forward)
   useEffect(() => {
     if (lessonSlug && posts.length > 0) {
-      const lessonToSelect = posts.find(p => p.slug === lessonSlug);
-      if (lessonToSelect && selectedPost?.slug !== lessonSlug) {
-        fetchPostContent(lessonToSelect);
+      const postToSelect = posts.find(p => p.slug === lessonSlug);
+      if (postToSelect && selectedPost?.slug !== lessonSlug) {
+        // Expand the parent lesson
+        if (postToSelect.lesson_id) {
+          setExpandedLessons(prev => {
+            const newSet = new Set(prev);
+            newSet.add(postToSelect.lesson_id!);
+            return newSet;
+          });
+        }
+        fetchPostContent(postToSelect);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
@@ -298,7 +319,26 @@ const CourseDetail = () => {
       }
       setCourse(courseData);
 
-      // Fetch posts in this course
+      // Fetch lessons from course_lessons table, ordered by lesson_rank
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from("course_lessons")
+        .select("id, title, description, lesson_rank, is_published, course_id")
+        .eq("course_id", courseData.id)
+        .is("deleted_at", null)
+        .order("lesson_rank", { ascending: true });
+
+      if (lessonsError) throw lessonsError;
+      
+      // Type the lessons data properly using unknown first
+      const typedLessons = (lessonsData || []) as unknown as CourseLesson[];
+      setLessons(typedLessons);
+
+      // Auto-expand first lesson if there are lessons
+      if (typedLessons.length > 0) {
+        setExpandedLessons(new Set([typedLessons[0].id]));
+      }
+
+      // Fetch posts in this course, ordered by post_rank
       // Regular users only see published posts
       // Admins/moderators in preview mode can see all posts
       
@@ -312,13 +352,14 @@ const CourseDetail = () => {
           featured_image,
           published_at,
           updated_at,
-          lesson_order,
+          lesson_id,
+          post_rank,
+          post_type,
           status,
           profiles:author_id (full_name)
         `)
         .eq("category_id", courseData.id)
-        .order("lesson_order", { ascending: true })
-        .order("created_at", { ascending: true });
+        .order("post_rank", { ascending: true });
 
       // Filter to only published posts for regular users
       if (!showAllStatuses) {
@@ -328,7 +369,17 @@ const CourseDetail = () => {
       const { data: postsData, error: postsError } = await postsQuery;
 
       if (postsError) throw postsError;
-      setPosts(postsData || []);
+      
+      // Cast to Post[] with proper typing
+      const typedPosts = (postsData || []).map(p => ({
+        ...p,
+        lesson_id: p.lesson_id as string | null,
+        post_rank: p.post_rank as string | null,
+        post_type: p.post_type as string | null,
+        profiles: p.profiles as { full_name: string | null }
+      })) as Post[];
+      
+      setPosts(typedPosts);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -499,6 +550,15 @@ const CourseDetail = () => {
       navigate(`/course/${slug}?lesson=${lessonSlug}`);
     };
     
+    // Expand the lesson containing this post
+    if (post.lesson_id) {
+      setExpandedLessons(prev => {
+        const newSet = new Set(prev);
+        newSet.add(post.lesson_id!);
+        return newSet;
+      });
+    }
+    
     fetchPostContent(post);
     updateUrlWithLesson(post.slug);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -657,31 +717,69 @@ const CourseDetail = () => {
     ? posts.findIndex(p => p.id === selectedPost.id)
     : -1;
 
-  // Build ordered lesson list (now just a flat list ordered by lesson_order)
-  const getOrderedLessons = () => {
-    return [...posts].sort((a, b) => (a.lesson_order || 0) - (b.lesson_order || 0));
+  // Build ordered lesson list - now using lessons and posts with lexicographic ranking
+  const getOrderedPosts = () => {
+    return [...posts].sort((a, b) => {
+      const rankA = a.post_rank || 'zzz';
+      const rankB = b.post_rank || 'zzz';
+      return rankA.localeCompare(rankB);
+    });
   };
 
-  const orderedLessons = getOrderedLessons();
+  // Get posts for a specific lesson, ordered by post_rank
+  const getPostsForLesson = (lessonId: string) => {
+    return posts
+      .filter(p => p.lesson_id === lessonId)
+      .sort((a, b) => {
+        const rankA = a.post_rank || 'zzz';
+        const rankB = b.post_rank || 'zzz';
+        return rankA.localeCompare(rankB);
+      });
+  };
+
+  // Get all posts in order for navigation (flattened from lessons)
+  const getAllOrderedPosts = () => {
+    const result: Post[] = [];
+    lessons.forEach(lesson => {
+      const lessonPosts = getPostsForLesson(lesson.id);
+      result.push(...lessonPosts);
+    });
+    return result;
+  };
+
+  const orderedPosts = getAllOrderedPosts();
   const currentOrderedIndex = selectedPost 
-    ? orderedLessons.findIndex(p => p.id === selectedPost.id)
+    ? orderedPosts.findIndex(p => p.id === selectedPost.id)
     : -1;
     
   const hasPrevious = currentOrderedIndex > 0;
-  const hasNext = currentOrderedIndex < orderedLessons.length - 1 && currentOrderedIndex !== -1;
+  const hasNext = currentOrderedIndex < orderedPosts.length - 1 && currentOrderedIndex !== -1;
 
   const handlePrevious = () => {
     if (hasPrevious) {
-      const prevLesson = orderedLessons[currentOrderedIndex - 1];
-      fetchPostContent(prevLesson);
+      const prevPost = orderedPosts[currentOrderedIndex - 1];
+      handleLessonClick(prevPost);
     }
   };
 
   const handleNext = () => {
     if (hasNext) {
-      const nextLesson = orderedLessons[currentOrderedIndex + 1];
-      fetchPostContent(nextLesson);
+      const nextPost = orderedPosts[currentOrderedIndex + 1];
+      handleLessonClick(nextPost);
     }
+  };
+
+  // Toggle lesson expansion
+  const toggleLessonExpansion = (lessonId: string) => {
+    setExpandedLessons(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(lessonId)) {
+        newSet.delete(lessonId);
+      } else {
+        newSet.add(lessonId);
+      }
+      return newSet;
+    });
   };
 
   if (loading || roleLoading) {
@@ -768,50 +866,98 @@ const CourseDetail = () => {
                   <BookOpen className="h-5 w-5 text-green-700" />
                   <h2 className="font-semibold text-lg text-green-900">Course Lessons</h2>
                 </div>
-                {user && progress.totalLessons > 0 && (
+                {progress.totalLessons > 0 && (
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs text-green-700 mb-1">
-                      <span>{progress.viewedLessons}/{progress.totalLessons} lessons</span>
-                      <span>{progress.percentage}%</span>
+                      <span>{progress.publishedLessons}/{progress.totalLessons} lessons</span>
+                      <span>{Math.min(100, progress.percentage)}%</span>
                     </div>
-                    <Progress value={progress.percentage} className="h-1.5 bg-green-200 [&>div]:bg-green-600" />
+                    <Progress value={Math.min(100, progress.percentage)} className="h-1.5 bg-green-200 [&>div]:bg-green-600" />
                   </div>
                 )}
               </div>
               
               <ScrollArea className="h-[calc(100vh-200px)]">
                 <nav className="p-2">
-                  {orderedLessons.length > 0 ? (
-                    orderedLessons.map((post, index) => {
-                      const isActive = selectedPost?.id === post.id;
+                  {lessons.length > 0 ? (
+                    lessons.map((lesson, lessonIndex) => {
+                      const lessonPosts = getPostsForLesson(lesson.id);
+                      const isExpanded = expandedLessons.has(lesson.id);
+                      const hasActivePost = lessonPosts.some(p => p.id === selectedPost?.id);
                       
                       return (
-                        <div key={post.id} className="mb-1">
+                        <div key={lesson.id} className="mb-1">
+                          {/* Lesson Header (Parent) */}
                           <div
-                            onClick={() => handleLessonClick(post)}
+                            onClick={() => toggleLessonExpansion(lesson.id)}
                             className={`rounded-lg cursor-pointer transition-all duration-300 ${
-                              isActive
-                                ? 'bg-green-600 shadow-md' 
+                              hasActivePost
+                                ? 'bg-green-100 border border-green-300' 
                                 : 'hover:bg-green-100'
                             }`}
                           >
-                            <div className="px-3 py-2.5 flex items-center">
-                              <span className={`text-xs font-medium mr-2 ${
-                                isActive ? 'text-white/70' : 'text-green-600'
-                              }`}>
-                                {index + 1}.
-                              </span>
-                              <h3 
-                                className={`text-sm font-medium flex-1 transition-colors ${
-                                  isActive
-                                    ? 'text-white' 
-                                    : 'text-green-900'
-                                }`}
-                              >
-                                {post.title}
-                              </h3>
+                            <div className="px-3 py-2.5 flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <h3 className="text-sm font-medium text-green-900">
+                                  {lesson.title}
+                                </h3>
+                              </div>
+                              <ChevronDown 
+                                className={`h-4 w-4 text-green-600 transition-transform duration-200 ${
+                                  isExpanded ? 'rotate-180' : ''
+                                }`} 
+                              />
                             </div>
                           </div>
+                          
+                          {/* Posts (Children) - Dropdown */}
+                          {isExpanded && lessonPosts.length > 0 && (
+                            <div className="ml-3 mt-1 border-l-2 border-green-200 pl-2">
+                              {lessonPosts.map((post) => {
+                                const isActive = selectedPost?.id === post.id;
+                                
+                                return (
+                                  <div
+                                    key={post.id}
+                                    onClick={() => handleLessonClick(post)}
+                                    className={`rounded-lg cursor-pointer transition-all duration-300 mb-1 ${
+                                      isActive
+                                        ? 'bg-green-600 shadow-md' 
+                                        : 'hover:bg-green-100'
+                                    }`}
+                                  >
+                                    <div className="px-3 py-2 flex items-center gap-2">
+                                      <h4 
+                                        className={`text-sm flex-1 transition-colors ${
+                                          isActive
+                                            ? 'text-white font-medium' 
+                                            : 'text-green-800'
+                                        }`}
+                                      >
+                                        {post.title}
+                                      </h4>
+                                      {post.post_type && post.post_type !== 'content' && (
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                          isActive 
+                                            ? 'bg-white/20 text-white' 
+                                            : 'bg-green-200 text-green-700'
+                                        }`}>
+                                          {post.post_type}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Empty lesson message */}
+                          {isExpanded && lessonPosts.length === 0 && (
+                            <div className="ml-3 mt-1 border-l-2 border-green-200 pl-2">
+                              <p className="text-xs text-green-500 py-2 px-3">No posts yet</p>
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -1102,7 +1248,7 @@ const CourseDetail = () => {
                             <ChevronLeft className="h-5 w-5" />
                             <div className="text-left">
                               <div className="text-xs text-muted-foreground">Previous</div>
-                              <div className="font-semibold truncate max-w-[200px]">{orderedLessons[currentOrderedIndex - 1]?.title}</div>
+                              <div className="font-semibold truncate max-w-[200px]">{orderedPosts[currentOrderedIndex - 1]?.title}</div>
                             </div>
                           </Button>
                         ) : (
@@ -1116,7 +1262,7 @@ const CourseDetail = () => {
                           >
                             <div className="text-right">
                               <div className="text-xs">Next Lesson</div>
-                              <div className="font-semibold truncate max-w-[200px]">{orderedLessons[currentOrderedIndex + 1]?.title}</div>
+                              <div className="font-semibold truncate max-w-[200px]">{orderedPosts[currentOrderedIndex + 1]?.title}</div>
                             </div>
                             <ChevronRight className="h-5 w-5" />
                           </Button>
