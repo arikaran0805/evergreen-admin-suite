@@ -382,7 +382,16 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const newOrder = lessons.length;
+      // Get the max lesson_order from ALL lessons (including soft-deleted) to avoid unique constraint violation
+      const { data: maxOrderData } = await supabase
+        .from("course_lessons")
+        .select("lesson_order")
+        .eq("course_id", courseId)
+        .order("lesson_order", { ascending: false })
+        .limit(1)
+        .single();
+
+      const newOrder = maxOrderData ? maxOrderData.lesson_order + 1 : 0;
 
       const { error } = await supabase.from("course_lessons").insert({
         course_id: courseId,
