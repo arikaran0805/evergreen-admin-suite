@@ -62,19 +62,20 @@ const Arcade = () => {
         .eq("user_id", session.user.id)
         .eq("completed", true);
 
-      // Fetch all lessons
+      // Fetch all lessons from course_lessons table
       const { data: lessons } = await supabase
-        .from("posts")
-        .select("id, category_id")
-        .eq("status", "published");
+        .from("course_lessons" as any)
+        .select("id, course_id")
+        .eq("is_published", true)
+        .is("deleted_at", null) as { data: { id: string; course_id: string }[] | null };
 
       if (lessonProgress && lessons) {
         const lessonCountByCourse: Record<string, number> = {};
         const completedByCourse: Record<string, number> = {};
 
         lessons.forEach(lesson => {
-          if (lesson.category_id) {
-            lessonCountByCourse[lesson.category_id] = (lessonCountByCourse[lesson.category_id] || 0) + 1;
+          if (lesson.course_id) {
+            lessonCountByCourse[lesson.course_id] = (lessonCountByCourse[lesson.course_id] || 0) + 1;
           }
         });
 

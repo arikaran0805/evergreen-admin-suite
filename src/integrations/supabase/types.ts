@@ -435,21 +435,27 @@ export type Database = {
           career_id: string
           course_id: string
           created_at: string
+          deleted_at: string | null
           id: string
+          is_primary: boolean | null
           skill_contributions: Json | null
         }
         Insert: {
           career_id: string
           course_id: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_primary?: boolean | null
           skill_contributions?: Json | null
         }
         Update: {
           career_id?: string
           course_id?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_primary?: boolean | null
           skill_contributions?: Json | null
         }
         Relationships: [
@@ -827,6 +833,53 @@ export type Database = {
           },
         ]
       }
+      course_lessons: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_published: boolean | null
+          lesson_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          lesson_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          lesson_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_reviews: {
         Row: {
           course_id: string
@@ -934,6 +987,7 @@ export type Database = {
           author_id: string | null
           created_at: string
           default_senior_moderator: string | null
+          deleted_at: string | null
           description: string | null
           featured: boolean | null
           featured_image: string | null
@@ -951,6 +1005,7 @@ export type Database = {
           author_id?: string | null
           created_at?: string
           default_senior_moderator?: string | null
+          deleted_at?: string | null
           description?: string | null
           featured?: boolean | null
           featured_image?: string | null
@@ -968,6 +1023,7 @@ export type Database = {
           author_id?: string | null
           created_at?: string
           default_senior_moderator?: string | null
+          deleted_at?: string | null
           description?: string | null
           featured?: boolean | null
           featured_image?: string | null
@@ -1052,6 +1108,7 @@ export type Database = {
         Row: {
           completed: boolean
           course_id: string
+          course_lesson_id: string | null
           id: string
           lesson_id: string
           user_id: string
@@ -1060,6 +1117,7 @@ export type Database = {
         Insert: {
           completed?: boolean
           course_id: string
+          course_lesson_id?: string | null
           id?: string
           lesson_id: string
           user_id: string
@@ -1068,6 +1126,7 @@ export type Database = {
         Update: {
           completed?: boolean
           course_id?: string
+          course_lesson_id?: string | null
           id?: string
           lesson_id?: string
           user_id?: string
@@ -1079,6 +1138,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_progress_course_lesson_id_fkey"
+            columns: ["course_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
             referencedColumns: ["id"]
           },
           {
@@ -1670,60 +1736,85 @@ export type Database = {
       }
       posts: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           assigned_to: string | null
           author_id: string
           category_id: string | null
           code_theme: string | null
           content: string
           created_at: string
+          deleted_at: string | null
           excerpt: string | null
           featured_image: string | null
           id: string
+          lesson_id: string | null
           lesson_order: number | null
           parent_id: string | null
+          post_type: string | null
           published_at: string | null
           slug: string
           status: string
+          submitted_at: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           author_id: string
           category_id?: string | null
           code_theme?: string | null
           content: string
           created_at?: string
+          deleted_at?: string | null
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          lesson_id?: string | null
           lesson_order?: number | null
           parent_id?: string | null
+          post_type?: string | null
           published_at?: string | null
           slug: string
           status?: string
+          submitted_at?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           author_id?: string
           category_id?: string | null
           code_theme?: string | null
           content?: string
           created_at?: string
+          deleted_at?: string | null
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          lesson_id?: string | null
           lesson_order?: number | null
           parent_id?: string | null
+          post_type?: string | null
           published_at?: string | null
           slug?: string
           status?: string
+          submitted_at?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_posts_lesson_id"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_author_id_fkey"
             columns: ["author_id"]
