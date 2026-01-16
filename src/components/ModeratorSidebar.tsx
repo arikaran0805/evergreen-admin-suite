@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { moderatorSidebarConfig } from "@/sidebar/moderator.sidebar";
-import ModeratorNotificationBell from "@/components/ModeratorNotificationBell";
+import RoleNotificationBell from "@/components/RoleNotificationBell";
 
 interface ModeratorSidebarProps {
   isOpen: boolean;
@@ -119,7 +119,7 @@ const ModeratorSidebar = ({
               >
                 <Search className="h-4 w-4" />
               </Button>
-              <ModeratorNotificationBell userId={userId} />
+              <RoleNotificationBell />
             </div>
           </div>
         )}

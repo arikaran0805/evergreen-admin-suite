@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { adminSidebarConfig, adminFooterItems } from "@/sidebar/admin.sidebar";
-import AdminContentNotificationBell from "@/components/AdminContentNotificationBell";
+import RoleNotificationBell from "@/components/RoleNotificationBell";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -154,7 +154,7 @@ const AdminSidebar = ({
               >
                 <Search className="h-4 w-4" />
               </Button>
-              <AdminContentNotificationBell userId={userId} />
+              <RoleNotificationBell />
             </div>
           </div>
         )}
