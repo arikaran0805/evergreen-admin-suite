@@ -22,8 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight, FileText, MessageCircle, Highlighter, Loader2, Check } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight, FileText, MessageCircle, Highlighter, Loader2, Check, BookOpen } from "lucide-react";
 import { isChatTranscript } from "@/lib/chatContent";
 import LessonManager from "@/components/LessonManager";
 
@@ -645,164 +645,189 @@ const AdminCourseEditor = () => {
             </div>
           )}
 
-          {/* Course Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Course Name *</Label>
-                <Input
-                  id="name"
-                  placeholder="Enter course name"
-                  value={formData.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    setFormData({
-                      ...formData,
-                      name,
-                      slug: generateSlug(name),
-                    });
-                  }}
-                  required
-                />
-              </div>
+          {/* Main Tabs */}
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="details" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                Course Details
+              </TabsTrigger>
+              <TabsTrigger value="description" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Description
+              </TabsTrigger>
+            </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
-                <Input
-                  id="slug"
-                  placeholder="course-slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  required
-                />
-              </div>
+            {/* Course Details Tab */}
+            <div className="hidden data-[state=active]:block" data-state={undefined}>
+            </div>
+            <TabsContent value="details" className="space-y-4 mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Course Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Enter course name"
+                      value={formData.name}
+                      onChange={(e) => {
+                        const name = e.target.value;
+                        setFormData({
+                          ...formData,
+                          name,
+                          slug: generateSlug(name),
+                        });
+                      }}
+                      required
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="description">Description</Label>
-                  <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
-                    <TabsList className="h-9">
-                      <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
-                        <FileText className="w-3.5 h-3.5" />
-                        Rich Editor
-                      </TabsTrigger>
-                      <TabsTrigger value="chat" className="text-xs px-3 gap-1.5">
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        Chat Style
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-                <div className={`transition-all duration-300 rounded-lg ${annotationMode ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background [&_*]:cursor-crosshair' : ''}`}>
-                  {editorType === "rich" ? (
-                    <RichTextEditor
-                      value={formData.description}
-                      onChange={(value) => setFormData({ ...formData, description: value })}
-                      annotationMode={annotationMode}
-                      annotations={annotations.map(a => ({
-                        id: a.id,
-                        selection_start: a.selection_start,
-                        selection_end: a.selection_end,
-                        selected_text: a.selected_text,
-                        status: a.status,
-                      }))}
-                      onAnnotationClick={(annotation) => {
-                        const fullAnnotation = annotations.find(a => a.id === annotation.id);
-                        if (fullAnnotation) {
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">Slug *</Label>
+                    <Input
+                      id="slug"
+                      placeholder="course-slug"
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      required
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Lesson Manager */}
+              {id ? (
+                <LessonManager courseId={id} basePath={basePath} />
+              ) : (
+                <Card className="border-dashed">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Lesson Manager
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-6 text-muted-foreground">
+                      <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-medium mb-1">Save the course first</p>
+                      <p className="text-xs">
+                        Create or save this course to start adding lessons and organizing content.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Description Tab */}
+            <TabsContent value="description" className="space-y-4 mt-0">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Description</CardTitle>
+                    <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
+                      <TabsList className="h-9">
+                        <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
+                          <FileText className="w-3.5 h-3.5" />
+                          Rich Editor
+                        </TabsTrigger>
+                        <TabsTrigger value="chat" className="text-xs px-3 gap-1.5">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Chat Style
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className={`transition-all duration-300 rounded-lg ${annotationMode ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background [&_*]:cursor-crosshair' : ''}`}>
+                    {editorType === "rich" ? (
+                      <RichTextEditor
+                        value={formData.description}
+                        onChange={(value) => setFormData({ ...formData, description: value })}
+                        annotationMode={annotationMode}
+                        annotations={annotations.map(a => ({
+                          id: a.id,
+                          selection_start: a.selection_start,
+                          selection_end: a.selection_end,
+                          selected_text: a.selected_text,
+                          status: a.status,
+                        }))}
+                        onAnnotationClick={(annotation) => {
+                          const fullAnnotation = annotations.find(a => a.id === annotation.id);
+                          if (fullAnnotation) {
+                            setSelectedText({
+                              start: fullAnnotation.selection_start,
+                              end: fullAnnotation.selection_end,
+                              text: fullAnnotation.selected_text,
+                              type: "paragraph",
+                            });
+                          }
+                        }}
+                        onTextSelect={(selection) => {
+                          if (!annotationMode) return;
+                          if (!isAdmin && !isModerator) return;
+                          if (!id) {
+                            if (!saveToAnnotateToastShownRef.current) {
+                              saveToAnnotateToastShownRef.current = true;
+                              toast({
+                                title: "Save to annotate",
+                                description: "Create/save the course first, then you can add annotations.",
+                              });
+                            }
+                            return;
+                          }
+
                           setSelectedText({
-                            start: fullAnnotation.selection_start,
-                            end: fullAnnotation.selection_end,
-                            text: fullAnnotation.selected_text,
-                            type: "paragraph",
+                            start: selection.start,
+                            end: selection.end,
+                            text: selection.text,
+                            type: selection.type,
+                            rect: selection.rect,
                           });
-                        }
-                      }}
-                      onTextSelect={(selection) => {
-                        if (!annotationMode) return;
-                        if (!isAdmin && !isModerator) return;
-                        if (!id) {
-                          if (!saveToAnnotateToastShownRef.current) {
-                            saveToAnnotateToastShownRef.current = true;
-                            toast({
-                              title: "Save to annotate",
-                              description: "Create/save the course first, then you can add annotations.",
-                            });
+                        }}
+                      />
+                    ) : (
+                      <ChatStyleEditor
+                        value={formData.description}
+                        onChange={(value) => setFormData({ ...formData, description: value })}
+                        courseType="python"
+                        placeholder="Start a conversation..."
+                        annotationMode={annotationMode}
+                        annotations={annotations.map(a => ({ bubble_index: a.bubble_index, status: a.status }))}
+                        onTextSelect={(selection) => {
+                          if (!annotationMode) return;
+                          if (!isAdmin && !isModerator) return;
+                          if (!id) {
+                            if (!saveToAnnotateToastShownRef.current) {
+                              saveToAnnotateToastShownRef.current = true;
+                              toast({
+                                title: "Save to annotate",
+                                description: "Create/save the course first, then you can add annotations.",
+                              });
+                            }
+                            return;
                           }
-                          return;
-                        }
 
-                        setSelectedText({
-                          start: selection.start,
-                          end: selection.end,
-                          text: selection.text,
-                          type: selection.type,
-                          rect: selection.rect,
-                        });
-                      }}
-                    />
-                  ) : (
-                    <ChatStyleEditor
-                      value={formData.description}
-                      onChange={(value) => setFormData({ ...formData, description: value })}
-                      courseType="python"
-                      placeholder="Start a conversation..."
-                      annotationMode={annotationMode}
-                      annotations={annotations.map(a => ({ bubble_index: a.bubble_index, status: a.status }))}
-                      onTextSelect={(selection) => {
-                        if (!annotationMode) return;
-                        if (!isAdmin && !isModerator) return;
-                        if (!id) {
-                          if (!saveToAnnotateToastShownRef.current) {
-                            saveToAnnotateToastShownRef.current = true;
-                            toast({
-                              title: "Save to annotate",
-                              description: "Create/save the course first, then you can add annotations.",
-                            });
-                          }
-                          return;
-                        }
-
-                        setSelectedText({
-                          start: selection.start,
-                          end: selection.end,
-                          text: selection.text,
-                          type: selection.type as "paragraph" | "code" | "conversation",
-                          bubbleIndex: selection.bubbleIndex,
-                          rect: selection.rect,
-                        });
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Lesson Manager */}
-          {id ? (
-            <LessonManager courseId={id} basePath={basePath} />
-          ) : (
-            <Card className="border-dashed">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Lesson Manager
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-6 text-muted-foreground">
-                  <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-medium mb-1">Save the course first</p>
-                  <p className="text-xs">
-                    Create or save this course to start adding lessons and organizing content.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                          setSelectedText({
+                            start: selection.start,
+                            end: selection.end,
+                            text: selection.text,
+                            type: selection.type as "paragraph" | "code" | "conversation",
+                            bubbleIndex: selection.bubbleIndex,
+                            rect: selection.rect,
+                          });
+                        }}
+                      />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Right Sidebar with Vertical Tab Toggle */}
