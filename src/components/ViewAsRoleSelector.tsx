@@ -16,6 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 // Available roles to view as (excluding admin since that's the actual role)
@@ -60,6 +65,30 @@ const ViewAsRoleSelector = ({ isOpen = true, onOpenDialog }: ViewAsRoleSelectorP
     setDialogOpen(true);
     onOpenDialog?.();
   };
+
+  const currentViewingLabel = VIEW_AS_ROLES.find(r => r.role === viewAsRole)?.label;
+  const tooltipText = isViewingAs 
+    ? `Viewing as: ${currentViewingLabel}` 
+    : "View as Role";
+
+  const triggerButton = (
+    <button
+      onClick={handleOpenDialog}
+      className={cn(
+        "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200",
+        isViewingAs 
+          ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20" 
+          : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+      )}
+    >
+      <Eye className={cn("h-[18px] w-[18px] shrink-0", isViewingAs && "animate-pulse")} />
+      {isOpen && (
+        <span className="text-sm font-medium truncate">
+          {isViewingAs ? `Viewing: ${currentViewingLabel}` : "View as Role"}
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <>
@@ -110,23 +139,22 @@ const ViewAsRoleSelector = ({ isOpen = true, onOpenDialog }: ViewAsRoleSelectorP
         </DialogContent>
       </Dialog>
 
-      {/* Sidebar trigger button - matches settings item style */}
-      <button
-        onClick={handleOpenDialog}
-        className={cn(
-          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200",
-          isViewingAs 
-            ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20" 
-            : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
-        )}
-      >
-        <Eye className="h-[18px] w-[18px]" />
-        {isOpen && (
-          <span className="text-sm font-medium">
-            {isViewingAs ? `Viewing: ${VIEW_AS_ROLES.find(r => r.role === viewAsRole)?.label}` : "View as Role"}
-          </span>
-        )}
-      </button>
+      {/* Sidebar trigger button - with tooltip when collapsed */}
+      {!isOpen ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {triggerButton}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="bg-popover text-popover-foreground border">
+            <p className="font-medium">{tooltipText}</p>
+            {isViewingAs && (
+              <p className="text-xs text-muted-foreground">Click to change or exit</p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        triggerButton
+      )}
     </>
   );
 };
