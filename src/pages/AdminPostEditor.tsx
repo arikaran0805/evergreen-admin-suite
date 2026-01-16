@@ -85,6 +85,7 @@ const AdminPostEditor = () => {
   
   const [loading, setLoading] = useState(!!id);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [courseLessons, setCourseLessons] = useState<{ id: string; title: string; lesson_order: number }[]>([]);
   const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -97,6 +98,7 @@ const AdminPostEditor = () => {
     content: "",
     featured_image: "",
     category_id: "",
+    lesson_id: "" as string,
     status: "draft" as "draft" | "published" | "pending" | "rejected" | "changes_requested",
     lesson_order: 0,
     parent_id: "none",
@@ -198,6 +200,15 @@ const AdminPostEditor = () => {
     }
   }, [id, isAdmin, isModerator, roleLoading]);
 
+  // Fetch lessons when course changes
+  useEffect(() => {
+    if (formData.category_id) {
+      fetchCourseLessons(formData.category_id);
+    } else {
+      setCourseLessons([]);
+    }
+  }, [formData.category_id]);
+
   // Reset version sync when navigating between posts
   useEffect(() => {
     setDidSyncLatestVersion(false);
@@ -269,6 +280,27 @@ const AdminPostEditor = () => {
     }
   };
 
+  const fetchCourseLessons = async (courseId: string) => {
+    if (!courseId) {
+      setCourseLessons([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("course_lessons")
+        .select("id, title, lesson_order")
+        .eq("course_id", courseId)
+        .is("deleted_at", null)
+        .order("lesson_order");
+
+      if (error) throw error;
+      setCourseLessons(data || []);
+    } catch (error: any) {
+      console.error("Error fetching course lessons:", error);
+      setCourseLessons([]);
+    }
+  };
+
   const fetchPostTags = async (postId: string) => {
     try {
       const { data, error } = await supabase
@@ -320,6 +352,7 @@ const AdminPostEditor = () => {
           content: prev.content ? prev.content : (data.content || ""),
           featured_image: data.featured_image || "",
           category_id: data.category_id || "",
+          lesson_id: data.lesson_id || "",
           status: (data.status as any) || "draft",
           lesson_order: data.lesson_order || 0,
           parent_id: data.parent_id || "none",
@@ -380,6 +413,7 @@ const AdminPostEditor = () => {
         content: validated.content,
         featured_image: validated.featured_image || null,
         category_id: validated.category_id || null,
+        lesson_id: formData.lesson_id || null,
         status: validated.status,
         author_id: originalAuthorId || session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
@@ -1086,7 +1120,7 @@ const AdminPostEditor = () => {
                   <Label htmlFor="category">Course</Label>
                   <Select 
                     value={formData.category_id || "none"} 
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value === "none" ? "" : value })}
+                    onValueChange={(value) => setFormData({ ...formData, category_id: value === "none" ? "" : value, lesson_id: "" })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a course" />
@@ -1101,6 +1135,31 @@ const AdminPostEditor = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.category_id && courseLessons.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="lesson">Lesson</Label>
+                    <Select 
+                      value={formData.lesson_id || "none"} 
+                      onValueChange={(value) => setFormData({ ...formData, lesson_id: value === "none" ? "" : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a lesson" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No lesson</SelectItem>
+                        {courseLessons.map((lesson, index) => (
+                          <SelectItem key={lesson.id} value={lesson.id}>
+                            #{index + 1} - {lesson.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Assign this post to a lesson in the course
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="parent">Parent Lesson</Label>
