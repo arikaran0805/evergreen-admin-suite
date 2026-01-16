@@ -393,7 +393,7 @@ const SortableMessageItem = ({
           isEditing={isEditing}
           isEditMode={isEditMode}
           onEdit={(id, content, freeformData) => onEdit(id, content, undefined, undefined, freeformData)}
-          onStartEdit={onStartEdit}
+          onStartEdit={annotationMode ? () => {} : onStartEdit}
           onEndEdit={onEndEdit}
           onDelete={onDelete}
           onMoveUp={onMoveUp}
@@ -401,6 +401,7 @@ const SortableMessageItem = ({
           isFirst={isFirst}
           isLast={isLast}
           dragHandleProps={{ ...attributes, ...listeners }}
+          annotationMode={annotationMode}
         />
       </div>
     );
@@ -415,12 +416,13 @@ const SortableMessageItem = ({
             message={message}
             isEditing={isEditing}
             onEdit={onEdit}
-            onStartEdit={onStartEdit}
+            onStartEdit={annotationMode ? () => {} : onStartEdit}
             onEndEdit={onEndEdit}
             index={index}
+            annotationMode={annotationMode}
           />
         </div>
-        {isEditMode && !isEditing && <ActionButtons />}
+        {isEditMode && !isEditing && !annotationMode && <ActionButtons />}
       </div>
     );
   }
@@ -438,7 +440,7 @@ const SortableMessageItem = ({
       )}
     >
       {/* Action buttons - position based on bubble side */}
-      {isEditMode && !isEditing && <ActionButtons />}
+      {isEditMode && !isEditing && !annotationMode && <ActionButtons />}
       
       {/* Main bubble content */}
       <div className="flex-1 min-w-0">
@@ -448,10 +450,11 @@ const SortableMessageItem = ({
           isMentor={isMentor}
           isEditing={isEditing}
           onEdit={onEdit}
-          onStartEdit={onStartEdit}
+          onStartEdit={annotationMode ? () => {} : onStartEdit}
           onEndEdit={onEndEdit}
           codeTheme={codeTheme}
           hasOpenAnnotations={hasOpenAnnotations}
+          annotationMode={annotationMode}
         />
       </div>
     </div>
@@ -1536,8 +1539,8 @@ const ChatStyleEditor = ({
         )}
       </div>
 
-      {/* Input area (only in edit mode) */}
-      {mode === "edit" && (
+      {/* Input area (only in edit mode and not in annotation mode) */}
+      {mode === "edit" && !annotationMode && (
         <div className="border-t border-border bg-muted/30 p-4">
           {/* Speaker toggle with icon pickers and view mode toggle */}
           <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">

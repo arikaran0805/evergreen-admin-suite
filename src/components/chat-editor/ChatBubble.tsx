@@ -50,6 +50,7 @@ interface ChatBubbleProps {
   dragHandleProps?: any;
   codeTheme?: string;
   hasOpenAnnotations?: boolean;
+  annotationMode?: boolean;
 }
 
 const ChatBubble = ({
@@ -64,6 +65,7 @@ const ChatBubble = ({
   dragHandleProps,
   codeTheme,
   hasOpenAnnotations,
+  annotationMode,
 }: ChatBubbleProps) => {
   const [editContent, setEditContent] = useState(message.content);
   const [viewModeState, setViewModeState] = useState<'edit' | 'preview' | 'split'>('edit');

@@ -36,6 +36,7 @@ interface TakeawayBlockProps {
   onStartEdit: (id: string) => void;
   onEndEdit: () => void;
   index?: number; // For staggered animation
+  annotationMode?: boolean;
 }
 
 const TakeawayBlock = ({
@@ -45,6 +46,7 @@ const TakeawayBlock = ({
   onStartEdit,
   onEndEdit,
   index = 0,
+  annotationMode,
 }: TakeawayBlockProps) => {
   const [editContent, setEditContent] = useState(message.content);
   const [editTitle, setEditTitle] = useState(message.takeawayTitle || "One-Line Takeaway for Learners");
