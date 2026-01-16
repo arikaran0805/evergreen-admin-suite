@@ -1,13 +1,11 @@
-import { ReactNode, useState, useEffect, useMemo } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
-import NotificationDropdown from "@/components/NotificationDropdown";
 import AdminSidebar from "@/components/AdminSidebar";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { AdminSidebarProvider, useAdminSidebar } from "@/contexts/AdminSidebarContext";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -74,8 +72,8 @@ const getPageSubtitle = (pathname: string): string => {
   return subtitles[pathname] || "";
 };
 
-const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
-  const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
+const AdminLayoutContent = ({ children }: { children: ReactNode }) => {
+  const { sidebarOpen, toggleSidebar } = useAdminSidebar();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const location = useLocation();
   const { userId } = useAuth();
@@ -137,7 +135,7 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
     <div className="min-h-screen bg-background flex w-full">
       <AdminSidebar
         isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onToggle={toggleSidebar}
         userProfile={userProfile}
         userId={userId}
         notifications={notifications}
@@ -152,6 +150,14 @@ const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutP
         <div className="p-8">{children}</div>
       </main>
     </div>
+  );
+};
+
+const AdminLayout = ({ children, defaultSidebarCollapsed = false }: AdminLayoutProps) => {
+  return (
+    <AdminSidebarProvider defaultOpen={!defaultSidebarCollapsed}>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminSidebarProvider>
   );
 };
 
