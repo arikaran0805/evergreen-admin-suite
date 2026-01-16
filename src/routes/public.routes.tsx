@@ -37,6 +37,7 @@ export const publicRoutes = [
   <Route key="reset-password" path="/reset-password" element={<ResetPassword />} />,
   <Route key="profile" path="/profile" element={<Profile />} />,
   <Route key="access-denied" path="/access-denied" element={<AccessDenied />} />,
+  <Route key="unauthorized" path="/unauthorized" element={<AccessDenied />} />,
   <Route key="not-found" path="*" element={<NotFound />} />,
 ];
 

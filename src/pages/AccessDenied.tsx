@@ -1,25 +1,47 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShieldX, Home, ArrowLeft } from "lucide-react";
-import { useUserRole } from "@/hooks/useUserRole";
+import { ShieldX, Home, ArrowLeft, LogIn } from "lucide-react";
+import { useAuth, getRoleDashboardPath, AppRole } from "@/hooks/useAuth";
 
+/**
+ * AccessDenied / Unauthorized Page
+ * 
+ * Shown when:
+ * - User tries to access a role-protected route without proper activeRole
+ * - Cross-role access is attempted (e.g., admin trying to access /moderator/*)
+ * 
+ * SECURITY: Does not expose what role is required, only shows user's current role
+ */
 const AccessDenied = () => {
   const navigate = useNavigate();
-  const { isAdmin, isSeniorModerator, isModerator, userId } = useUserRole();
+  const location = useLocation();
+  const { activeRole, isAuthenticated, userId } = useAuth();
 
-  const getHomeRoute = () => {
-    if (isAdmin) return "/admin/dashboard";
-    if (isSeniorModerator) return "/senior-moderator/dashboard";
-    if (isModerator) return "/moderator/dashboard";
-    return "/";
+  // Get the role-appropriate dashboard path
+  const getDashboardPath = (): string => {
+    return getRoleDashboardPath(activeRole);
   };
 
-  const getRoleName = () => {
-    if (isAdmin) return "Admin";
-    if (isSeniorModerator) return "Senior Moderator";
-    if (isModerator) return "Moderator";
-    return "User";
+  // Format role name for display
+  const formatRoleName = (role: AppRole | null): string => {
+    if (!role) return "User";
+    return role
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
+
+  // Determine which role route was attempted (for user-friendly messaging)
+  const getAttemptedArea = (): string | null => {
+    const pathname = location.state?.from?.pathname || "";
+    if (pathname.startsWith("/admin")) return "Admin";
+    if (pathname.startsWith("/super-moderator")) return "Super Moderator";
+    if (pathname.startsWith("/senior-moderator")) return "Senior Moderator";
+    if (pathname.startsWith("/moderator")) return "Moderator";
+    return null;
+  };
+
+  const attemptedArea = getAttemptedArea();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -36,12 +58,24 @@ const AccessDenied = () => {
           <h1 className="text-3xl font-bold text-foreground">Access Denied</h1>
           <p className="text-muted-foreground">
             You don't have permission to access this page.
-            {userId && (
-              <span className="block mt-2 text-sm">
-                Current role: <span className="font-medium text-foreground">{getRoleName()}</span>
-              </span>
-            )}
           </p>
+          
+          {/* Role information for authenticated users */}
+          {isAuthenticated && userId && (
+            <div className="mt-4 p-4 rounded-lg bg-muted/50 text-sm space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-muted-foreground">Your role:</span>
+                <span className="font-semibold text-foreground">
+                  {formatRoleName(activeRole)}
+                </span>
+              </div>
+              {attemptedArea && (
+                <p className="text-xs text-muted-foreground">
+                  The {attemptedArea} area requires a different role.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -54,12 +88,22 @@ const AccessDenied = () => {
             <ArrowLeft className="w-4 h-4" />
             Go Back
           </Button>
-          <Button asChild className="gap-2">
-            <Link to={getHomeRoute()}>
-              <Home className="w-4 h-4" />
-              Go to Dashboard
-            </Link>
-          </Button>
+          
+          {isAuthenticated ? (
+            <Button asChild className="gap-2">
+              <Link to={getDashboardPath()}>
+                <Home className="w-4 h-4" />
+                {activeRole ? "Go to Dashboard" : "Go Home"}
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="gap-2">
+              <Link to="/auth" state={{ from: location.state?.from }}>
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Link>
+            </Button>
+          )}
         </div>
 
         {/* Help text */}
