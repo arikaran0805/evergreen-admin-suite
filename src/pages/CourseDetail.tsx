@@ -893,7 +893,9 @@ const CourseDetail = () => {
               <ScrollArea className="h-[calc(100vh-200px)]">
                 <nav className="p-2">
                   {lessons.length > 0 ? (
-                    lessons.map((lesson, lessonIndex) => {
+                    lessons
+                      .filter(lesson => (isPreviewMode && (isAdmin || isModerator)) || lesson.is_published)
+                      .map((lesson, lessonIndex) => {
                       const lessonPosts = getPostsForLesson(lesson.id);
                       const isExpanded = expandedLessons.has(lesson.id);
                       const hasActivePost = lessonPosts.some(p => p.id === selectedPost?.id);
