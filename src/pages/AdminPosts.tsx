@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import LessonReorder from "@/components/LessonReorder";
 import {
   Table,
   TableBody,
@@ -375,12 +374,6 @@ const AdminPosts = () => {
         </Button>
       </div>
 
-      {/* Lesson Reorder Section */}
-      {!moderatorOnly && (
-        <div className="mb-8">
-          <LessonReorder />
-        </div>
-      )}
 
       <Card>
         <CardHeader>
