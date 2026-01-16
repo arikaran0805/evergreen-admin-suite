@@ -826,69 +826,71 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
 
   return (
     <div className="rich-text-editor" ref={containerRef} onMouseUp={handleTextSelection} onKeyUp={handleTextSelection} onFocus={handleEditorFocus}>
-      {/* View mode toggle and keyboard shortcuts */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        {/* Keyboard shortcuts popover - left side */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground">
-              <Keyboard className="w-3 h-3" />
-              Shortcuts
+      {/* View mode toggle and keyboard shortcuts - hide in annotation mode */}
+      {!annotationMode && (
+        <div className="flex items-center justify-between mb-2 px-1">
+          {/* Keyboard shortcuts popover - left side */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground">
+                <Keyboard className="w-3 h-3" />
+                Shortcuts
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 bg-popover border border-border shadow-lg z-50" align="start">
+              <div className="space-y-1">
+                <h4 className="font-medium text-sm mb-2">Keyboard Shortcuts</h4>
+                {KEYBOARD_SHORTCUTS.map((shortcut) => (
+                  <div key={shortcut.action} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{shortcut.action}</span>
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">{shortcut.keys}</kbd>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* View mode toggle - right side */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewModeChange('edit')}
+              className={cn(
+                "h-7 px-2 text-xs gap-1",
+                viewMode === 'edit' && "bg-primary/10 text-primary"
+              )}
+            >
+              <EyeOff className="w-3 h-3" />
+              Edit
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-3 bg-popover border border-border shadow-lg z-50" align="start">
-            <div className="space-y-1">
-              <h4 className="font-medium text-sm mb-2">Keyboard Shortcuts</h4>
-              {KEYBOARD_SHORTCUTS.map((shortcut) => (
-                <div key={shortcut.action} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{shortcut.action}</span>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">{shortcut.keys}</kbd>
-                </div>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-        
-        {/* View mode toggle - right side */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleViewModeChange('edit')}
-            className={cn(
-              "h-7 px-2 text-xs gap-1",
-              viewMode === 'edit' && "bg-primary/10 text-primary"
-            )}
-          >
-            <EyeOff className="w-3 h-3" />
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleViewModeChange('split')}
-            className={cn(
-              "h-7 px-2 text-xs gap-1",
-              viewMode === 'split' && "bg-primary/10 text-primary"
-            )}
-          >
-            <Columns className="w-3 h-3" />
-            Split
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleViewModeChange('preview')}
-            className={cn(
-              "h-7 px-2 text-xs gap-1",
-              viewMode === 'preview' && "bg-primary/10 text-primary"
-            )}
-          >
-            <Eye className="w-3 h-3" />
-            Preview
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewModeChange('split')}
+              className={cn(
+                "h-7 px-2 text-xs gap-1",
+                viewMode === 'split' && "bg-primary/10 text-primary"
+              )}
+            >
+              <Columns className="w-3 h-3" />
+              Split
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewModeChange('preview')}
+              className={cn(
+                "h-7 px-2 text-xs gap-1",
+                viewMode === 'preview' && "bg-primary/10 text-primary"
+              )}
+            >
+              <Eye className="w-3 h-3" />
+              Preview
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       
       
       {/* Editor / Preview based on view mode */}
@@ -912,6 +914,7 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
                   placeholder={stablePlaceholder}
                   className="bg-background h-full split-view-editor"
                   preserveWhitespace
+                  readOnly={annotationMode}
                 />
               </div>
             </ResizablePanel>
@@ -976,6 +979,7 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
           placeholder={stablePlaceholder}
           className="bg-background"
           preserveWhitespace
+          readOnly={annotationMode}
         />
       )}
       

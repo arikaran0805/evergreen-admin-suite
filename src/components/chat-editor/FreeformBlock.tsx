@@ -38,6 +38,7 @@ interface FreeformBlockProps {
   isFirst: boolean;
   isLast: boolean;
   dragHandleProps?: any;
+  annotationMode?: boolean;
 }
 
 export const FreeformBlock = ({
@@ -53,6 +54,7 @@ export const FreeformBlock = ({
   isFirst,
   isLast,
   dragHandleProps,
+  annotationMode,
 }: FreeformBlockProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
