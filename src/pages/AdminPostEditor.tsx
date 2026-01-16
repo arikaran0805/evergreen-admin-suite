@@ -53,7 +53,6 @@ const postSchema = z.object({
   featured_image: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   category_id: z.string().uuid().optional().or(z.literal("")),
   status: z.enum(["draft", "published", "pending", "rejected", "changes_requested"]),
-  lesson_order: z.number().int().min(0).optional(),
 });
 
 interface Category {
@@ -85,7 +84,7 @@ const AdminPostEditor = () => {
   
   const [loading, setLoading] = useState(!!id);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [courseLessons, setCourseLessons] = useState<{ id: string; title: string; lesson_order: number }[]>([]);
+  const [courseLessons, setCourseLessons] = useState<{ id: string; title: string; lesson_rank: string | null }[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -99,7 +98,6 @@ const AdminPostEditor = () => {
     category_id: "",
     lesson_id: "" as string,
     status: "draft" as "draft" | "published" | "pending" | "rejected" | "changes_requested",
-    lesson_order: 0,
     code_theme: "" as string,
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
@@ -288,10 +286,10 @@ const AdminPostEditor = () => {
     try {
       const { data, error } = await supabase
         .from("course_lessons")
-        .select("id, title, lesson_order")
+        .select("id, title, lesson_rank")
         .eq("course_id", courseId)
         .is("deleted_at", null)
-        .order("lesson_order");
+        .order("lesson_rank");
 
       if (error) throw error;
       setCourseLessons(data || []);
@@ -354,7 +352,6 @@ const AdminPostEditor = () => {
           category_id: data.category_id || "",
           lesson_id: data.lesson_id || "",
           status: (data.status as any) || "draft",
-          lesson_order: data.lesson_order || 0,
           code_theme: data.code_theme || "",
         }));
 
@@ -416,7 +413,6 @@ const AdminPostEditor = () => {
         status: validated.status,
         author_id: originalAuthorId || session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
-        lesson_order: validated.lesson_order || 0,
         code_theme: formData.code_theme || null,
       };
 
