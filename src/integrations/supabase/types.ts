@@ -1828,6 +1828,30 @@ export type Database = {
         }
         Relationships: []
       }
+      session_invalidations: {
+        Row: {
+          created_by: string | null
+          id: string
+          invalidated_at: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_by?: string | null
+          id?: string
+          invalidated_at?: string
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          created_by?: string | null
+          id?: string
+          invalidated_at?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           announcement_bg_color: string | null
