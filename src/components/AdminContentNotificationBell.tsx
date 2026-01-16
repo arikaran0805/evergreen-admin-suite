@@ -14,9 +14,14 @@ import { cn } from "@/lib/utils";
 
 interface AdminContentNotificationBellProps {
   userId: string | null;
+  /** Route prefix for role dashboards, e.g. "/admin" or "/super-moderator" */
+  basePath?: string;
 }
 
-const AdminContentNotificationBell = ({ userId }: AdminContentNotificationBellProps) => {
+const AdminContentNotificationBell = ({
+  userId,
+  basePath = "/admin",
+}: AdminContentNotificationBellProps) => {
   const navigate = useNavigate();
   const {
     notifications,
@@ -36,22 +41,22 @@ const AdminContentNotificationBell = ({ userId }: AdminContentNotificationBellPr
     if (notification.content_id && notification.content_type) {
       switch (notification.content_type) {
         case "post":
-          navigate(`/admin/posts/edit/${notification.content_id}`);
+          navigate(`${basePath}/posts/edit/${notification.content_id}`);
           return;
         case "course":
-          navigate(`/admin/courses/edit/${notification.content_id}`);
+          navigate(`${basePath}/courses/${notification.content_id}`);
           return;
         case "career":
-          navigate(`/admin/careers/edit/${notification.content_id}`);
+          navigate(`${basePath}/careers/${notification.content_id}`);
           return;
         case "tag":
-          navigate("/admin/tags");
+          navigate(`${basePath}/tags`);
           return;
       }
     }
-    
+
     // Fallback to approvals page
-    navigate("/admin/approvals");
+    navigate(`${basePath}/approvals`);
   };
 
   const getNotificationIcon = (type: string) => {
