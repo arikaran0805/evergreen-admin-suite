@@ -1752,7 +1752,6 @@ export type Database = {
           featured_image: string | null
           id: string
           lesson_id: string | null
-          lesson_order: number | null
           post_rank: string | null
           post_type: string | null
           published_at: string | null
@@ -1776,7 +1775,6 @@ export type Database = {
           featured_image?: string | null
           id?: string
           lesson_id?: string | null
-          lesson_order?: number | null
           post_rank?: string | null
           post_type?: string | null
           published_at?: string | null
@@ -1800,7 +1798,6 @@ export type Database = {
           featured_image?: string | null
           id?: string
           lesson_id?: string | null
-          lesson_order?: number | null
           post_rank?: string | null
           post_type?: string | null
           published_at?: string | null

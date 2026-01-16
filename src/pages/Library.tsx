@@ -182,11 +182,11 @@ const Library = () => {
                     .eq("completed", true),
                   (supabase
                     .from("course_lessons" as any)
-                    .select("id, title, lesson_order")
+                    .select("id, title, lesson_rank")
                     .eq("course_id", course.id)
                     .eq("is_published", true)
                     .is("deleted_at", null)
-                    .order("lesson_order", { ascending: true }) as unknown as Promise<{ data: { id: string; title: string; lesson_order: number }[] | null; error: any }>),
+                    .order("lesson_rank", { ascending: true }) as unknown as Promise<{ data: { id: string; title: string; lesson_rank: string | null }[] | null; error: any }>),
                   supabase
                     .from("lesson_progress")
                     .select("lesson_id")
@@ -204,7 +204,7 @@ const Library = () => {
                 const completedIds = new Set(completedLessonIds?.map(l => l.lesson_id) || []);
                 const nextLessonData = allLessons?.find(lesson => !completedIds.has(lesson.id));
                 const nextLesson = nextLessonData 
-                  ? { title: nextLessonData.title, order: nextLessonData.lesson_order || 0 }
+                  ? { title: nextLessonData.title, order: allLessons?.indexOf(nextLessonData) ?? 0 }
                   : null;
                 
                 return { ...course, progress, nextLesson };
