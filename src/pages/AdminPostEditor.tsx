@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,6 +75,7 @@ interface Tag {
 
 const AdminPostEditor = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isModerator, userId, isLoading: roleLoading } = useUserRole();
@@ -196,6 +197,22 @@ const AdminPostEditor = () => {
       loadData();
     }
   }, [id, isAdmin, isModerator, roleLoading]);
+
+  // Auto-populate course and lesson from URL query params (when navigating from LessonManager)
+  useEffect(() => {
+    if (!id && !roleLoading && (isAdmin || isModerator)) {
+      const courseIdFromUrl = searchParams.get('courseId');
+      const lessonIdFromUrl = searchParams.get('lessonId');
+      
+      if (courseIdFromUrl || lessonIdFromUrl) {
+        setFormData(prev => ({
+          ...prev,
+          category_id: courseIdFromUrl || prev.category_id,
+          lesson_id: lessonIdFromUrl || prev.lesson_id,
+        }));
+      }
+    }
+  }, [id, searchParams, roleLoading, isAdmin, isModerator]);
 
   // Fetch lessons when course changes
   useEffect(() => {
@@ -1143,16 +1160,6 @@ const AdminPostEditor = () => {
                 )}
 
 
-                <div className="space-y-2">
-                  <Label htmlFor="lesson_order">Lesson Order</Label>
-                  <Input
-                    id="lesson_order"
-                    type="number"
-                    min="0"
-                    value={formData.lesson_order}
-                    onChange={(e) => setFormData({ ...formData, lesson_order: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="featured_image">Featured Image URL</Label>
