@@ -50,6 +50,7 @@ const AdminSettings = () => {
   const [ogImage, setOgImage] = useState("");
   const [ogTitle, setOgTitle] = useState("");
   const [ogDescription, setOgDescription] = useState("");
+  const [codeTheme, setCodeTheme] = useState("tomorrow");
 
   // Notification preferences
   const { preferences: notificationPrefs, loading: notifPrefsLoading } = useNotificationPreferences(userId);
@@ -112,6 +113,7 @@ const AdminSettings = () => {
       setOgImage(data.og_image || "");
       setOgTitle(data.og_title || "");
       setOgDescription(data.og_description || "");
+      setCodeTheme(data.code_theme || "tomorrow");
     }
   };
 
@@ -158,6 +160,7 @@ const AdminSettings = () => {
         og_image: ogImage,
         og_title: ogTitle,
         og_description: ogDescription,
+        code_theme: codeTheme,
       };
 
       if (settingsId) {
@@ -262,6 +265,8 @@ const AdminSettings = () => {
             onLogoUpload={handleLogoUpload}
             uploadingLogo={uploadingLogo}
             readOnly={isReadOnly}
+            codeTheme={codeTheme}
+            setCodeTheme={(v) => { setCodeTheme(v); setHasChanges(true); }}
           />
         );
       case "email":

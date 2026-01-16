@@ -24,10 +24,9 @@ import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Palette, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter, Settings } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter, Settings } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1167,28 +1166,6 @@ const AdminPostEditor = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Palette className="h-4 w-4" />
-                    Code Theme
-                  </Label>
-                  <Select 
-                    value={formData.code_theme || "default"} 
-                    onValueChange={(value) => setFormData({ ...formData, code_theme: value === "default" ? "" : value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Use site default" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="default">Use site default</SelectItem>
-                      {CODE_THEMES.map((theme) => (
-                        <SelectItem key={theme.value} value={theme.value}>
-                          {theme.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-2">
                   <Label>Tags</Label>

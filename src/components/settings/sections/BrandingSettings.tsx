@@ -1,9 +1,17 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Palette, Upload, Image, Trash2, Eye } from "lucide-react";
+import { Palette, Upload, Image, Trash2, Eye, Code } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CODE_THEMES, CodeTheme } from "@/hooks/useCodeTheme";
 
 interface BrandingSettingsProps {
   logoUrl: string;
@@ -12,6 +20,8 @@ interface BrandingSettingsProps {
   onLogoUpload: (file: File) => Promise<void>;
   uploadingLogo: boolean;
   readOnly?: boolean;
+  codeTheme?: string;
+  setCodeTheme?: (value: string) => void;
 }
 
 const BrandingSettings = ({
@@ -21,6 +31,8 @@ const BrandingSettings = ({
   onLogoUpload,
   uploadingLogo,
   readOnly = false,
+  codeTheme = "",
+  setCodeTheme,
 }: BrandingSettingsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
@@ -195,6 +207,45 @@ const BrandingSettings = ({
               />
               <span className="text-xs text-[#1E1E1E]/40">Champagne Gold (Admin indicators only)</span>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Code Theme */}
+      <Card className="border-[#E8EBE7] shadow-sm rounded-2xl overflow-hidden">
+        <CardHeader className="bg-[#FAFBF9] border-b border-[#E8EBE7]">
+          <CardTitle className="flex items-center gap-2 text-[#0F2A1D]">
+            <Code className="h-5 w-5 text-[#1E4D3A]" />
+            Code Theme
+          </CardTitle>
+          <CardDescription className="text-[#1E1E1E]/50">
+            Default syntax highlighting theme for code blocks
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-[#1E1E1E]">Theme</Label>
+            <Select 
+              value={codeTheme || "tomorrow"} 
+              onValueChange={(value) => setCodeTheme?.(value)}
+              disabled={readOnly}
+            >
+              <SelectTrigger className="w-full max-w-xs border-[#E8EBE7]">
+                <SelectValue placeholder="Select a theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {CODE_THEMES.map((theme) => (
+                  <SelectItem key={theme.value} value={theme.value}>
+                    <div className="flex flex-col">
+                      <span>{theme.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-[#1E1E1E]/40">
+              This theme will be used for all code blocks across the site
+            </p>
           </div>
         </CardContent>
       </Card>
