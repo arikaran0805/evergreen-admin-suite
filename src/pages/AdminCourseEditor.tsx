@@ -652,15 +652,17 @@ const AdminCourseEditor = () => {
                 <BookOpen className="h-4 w-4" />
                 Course Details
               </TabsTrigger>
-              <TabsTrigger value="description" className="gap-2">
+              <TabsTrigger value="lessons" className="gap-2">
                 <FileText className="h-4 w-4" />
+                Lessons
+              </TabsTrigger>
+              <TabsTrigger value="description" className="gap-2">
+                <MessageCircle className="h-4 w-4" />
                 Description
               </TabsTrigger>
             </TabsList>
 
             {/* Course Details Tab */}
-            <div className="hidden data-[state=active]:block" data-state={undefined}>
-            </div>
             <TabsContent value="details" className="space-y-4 mt-0">
               <Card>
                 <CardHeader>
@@ -697,8 +699,10 @@ const AdminCourseEditor = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
 
-              {/* Lesson Manager */}
+            {/* Lessons Tab */}
+            <TabsContent value="lessons" className="space-y-4 mt-0">
               {id ? (
                 <LessonManager courseId={id} basePath={basePath} />
               ) : (
