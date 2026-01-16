@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdSettings } from "@/hooks/useAdSettings";
@@ -21,7 +22,7 @@ import SEOHead from "@/components/SEOHead";
 import CourseStructuredData from "@/components/CourseStructuredData";
 import ContentWithCodeCopy from "@/components/ContentWithCodeCopy";
 import CourseReviewDialog from "@/components/CourseReviewDialog";
-import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck, CheckCircle, Circle, AlertTriangle } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, ChevronDown, BookOpen, Users, Mail, Tag, Search, ThumbsUp, Share2, MessageSquare, Calendar, MoreVertical, Bookmark, BookmarkCheck, Flag, Edit, Star, UserPlus, UserCheck, CheckCircle, Circle, AlertTriangle, Info, List } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1273,16 +1274,84 @@ const CourseDetail = () => {
                     </div>
                   </>
                 ) : (
-                  <>
-                    {/* Course Header - No banner */}
-                    <div className="mb-8">
-                      <h2 className="text-4xl font-bold mb-4 text-foreground">{course.name}</h2>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Users className="h-5 w-5" />
-                          <span className="text-lg font-semibold">{courseStats.enrollmentCount.toLocaleString()} enrolled</span>
+                  <Tabs defaultValue="details" className="w-full">
+                    <TabsList className="mb-6">
+                      <TabsTrigger value="details" className="gap-2">
+                        <Info className="h-4 w-4" />
+                        Course Details
+                      </TabsTrigger>
+                      <TabsTrigger value="lessons" className="gap-2">
+                        <List className="h-4 w-4" />
+                        Lessons ({lessons.length})
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* Course Details Tab */}
+                    <TabsContent value="details">
+                      {/* Course Header */}
+                      <div className="mb-8">
+                        <h2 className="text-4xl font-bold mb-4 text-foreground">{course.name}</h2>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Users className="h-5 w-5" />
+                            <span className="text-lg font-semibold">{courseStats.enrollmentCount.toLocaleString()} enrolled</span>
+                          </div>
+                          {courseStats.averageRating > 0 && (
+                            <CourseReviewDialog
+                              reviews={courseReviews}
+                              averageRating={courseStats.averageRating}
+                              reviewCount={courseStats.reviewCount}
+                              userReview={courseStats.userReview}
+                              isEnrolled={courseStats.isEnrolled}
+                              isAuthenticated={!!user}
+                              onSubmitReview={submitReview}
+                              onDeleteReview={deleteReview}
+                            >
+                              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                                <span className="text-lg font-semibold">{courseStats.averageRating.toFixed(1)}</span>
+                                <span className="text-sm">({courseStats.reviewCount} reviews)</span>
+                              </button>
+                            </CourseReviewDialog>
+                          )}
                         </div>
-                        {courseStats.averageRating > 0 && (
+                        {/* Enroll/Unenroll Button */}
+                        <div className="flex items-center gap-2">
+                          {courseStats.isEnrolled ? (
+                            <Button
+                              variant="outline"
+                              onClick={handleUnenroll}
+                              disabled={enrolling}
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              {enrolling ? "Processing..." : "Enrolled"}
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={handleEnroll}
+                              disabled={enrolling}
+                              className="bg-primary hover:bg-primary/90"
+                            >
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              {enrolling ? "Enrolling..." : "Enroll Now"}
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            onClick={() => toggleBookmark(course?.id)}
+                          >
+                            {isBookmarked(course?.id) ? (
+                              <>
+                                <BookmarkCheck className="h-4 w-4 mr-2 text-primary" />
+                                Saved
+                              </>
+                            ) : (
+                              <>
+                                <Bookmark className="h-4 w-4 mr-2" />
+                                Save Course
+                              </>
+                            )}
+                          </Button>
                           <CourseReviewDialog
                             reviews={courseReviews}
                             averageRating={courseStats.averageRating}
@@ -1293,94 +1362,118 @@ const CourseDetail = () => {
                             onSubmitReview={submitReview}
                             onDeleteReview={deleteReview}
                           >
-                            <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                              <span className="text-lg font-semibold">{courseStats.averageRating.toFixed(1)}</span>
-                              <span className="text-sm">({courseStats.reviewCount} reviews)</span>
-                            </button>
+                            <Button variant="outline">
+                              <Star className="h-4 w-4 mr-2" />
+                              {courseStats.userReview ? "Update Review" : "Rate Course"}
+                            </Button>
                           </CourseReviewDialog>
-                        )}
+                        </div>
                       </div>
-                      {/* Enroll/Unenroll Button */}
-                      <div className="flex items-center gap-2">
-                        {courseStats.isEnrolled ? (
-                          <Button
-                            variant="outline"
-                            onClick={handleUnenroll}
-                            disabled={enrolling}
-                          >
-                            <UserCheck className="h-4 w-4 mr-2" />
-                            {enrolling ? "Processing..." : "Enrolled"}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={handleEnroll}
-                            disabled={enrolling}
-                            className="bg-primary hover:bg-primary/90"
-                          >
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            {enrolling ? "Enrolling..." : "Enroll Now"}
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          onClick={() => toggleBookmark(course?.id)}
-                        >
-                          {isBookmarked(course?.id) ? (
-                            <>
-                              <BookmarkCheck className="h-4 w-4 mr-2 text-primary" />
-                              Saved
-                            </>
-                          ) : (
-                            <>
-                              <Bookmark className="h-4 w-4 mr-2" />
-                              Save Course
-                            </>
-                          )}
-                        </Button>
-                        <CourseReviewDialog
-                          reviews={courseReviews}
-                          averageRating={courseStats.averageRating}
-                          reviewCount={courseStats.reviewCount}
-                          userReview={courseStats.userReview}
-                          isEnrolled={courseStats.isEnrolled}
-                          isAuthenticated={!!user}
-                          onSubmitReview={submitReview}
-                          onDeleteReview={deleteReview}
-                        >
-                          <Button variant="outline">
-                            <Star className="h-4 w-4 mr-2" />
-                            {courseStats.userReview ? "Update Review" : "Rate Course"}
-                          </Button>
-                        </CourseReviewDialog>
-                      </div>
-                    </div>
 
-                    {/* Course Overview - Default View */}
-                    {course.description && (
-                      <div className="py-4 mb-8">
-                        <div 
-                          className="prose prose-lg max-w-none text-foreground leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: course.description }}
-                        />
+                      {/* Course Slug */}
+                      <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
+                        <p className="text-sm text-muted-foreground mb-1">Course URL</p>
+                        <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                          /course/{course.slug}
+                        </code>
                       </div>
-                    )}
 
-                    {posts.length > 0 && (
-                      <div className="mt-8 p-6 bg-primary/5 rounded-lg border border-primary/20">
-                        <h3 className="font-bold text-xl mb-3">Ready to Get Started?</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Select a lesson from the sidebar to begin your learning journey!
+                      {/* Course Description */}
+                      {course.description && (
+                        <div className="py-4 mb-8">
+                          <h3 className="text-xl font-semibold mb-4">Description</h3>
+                          <div 
+                            className="prose prose-lg max-w-none text-foreground leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: course.description }}
+                          />
+                        </div>
+                      )}
+
+                      {posts.length > 0 && (
+                        <div className="mt-8 p-6 bg-primary/5 rounded-lg border border-primary/20">
+                          <h3 className="font-bold text-xl mb-3">Ready to Get Started?</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Select a lesson from the sidebar or go to the Lessons tab to begin!
+                          </p>
+                          <Button 
+                            className="bg-primary hover:bg-primary/90 shadow-md w-full sm:w-auto"
+                            onClick={() => handleLessonClick(posts[0])}
+                          >
+                            Start First Lesson
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* Lessons Tab */}
+                    <TabsContent value="lessons">
+                      <div className="mb-6">
+                        <h3 className="text-2xl font-bold mb-2">Course Lessons</h3>
+                        <p className="text-muted-foreground">
+                          {lessons.length} lessons • {posts.length} posts
                         </p>
-                        <Button 
-                          className="bg-primary hover:bg-primary/90 shadow-md w-full sm:w-auto"
-                          onClick={() => handleLessonClick(posts[0])}
-                        >
-                          Start First Lesson
-                        </Button>
                       </div>
-                    )}
-                  </>
+
+                      {lessons.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No lessons available yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {lessons.map((lesson, lessonIndex) => {
+                            const lessonPosts = getPostsForLesson(lesson.id);
+                            
+                            return (
+                              <div key={lesson.id} className="border rounded-lg overflow-hidden">
+                                <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <Badge variant="outline" className="text-xs">
+                                      #{lessonIndex + 1}
+                                    </Badge>
+                                    <h4 className="font-semibold">{lesson.title}</h4>
+                                    {!lesson.is_published && (
+                                      <Badge variant="secondary" className="text-xs">Draft</Badge>
+                                    )}
+                                  </div>
+                                  <span className="text-sm text-muted-foreground">
+                                    {lessonPosts.length} post{lessonPosts.length !== 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                                {lesson.description && (
+                                  <p className="px-4 py-2 text-sm text-muted-foreground border-t bg-background">
+                                    {lesson.description}
+                                  </p>
+                                )}
+                                {lessonPosts.length > 0 && (
+                                  <div className="divide-y">
+                                    {lessonPosts.map((post) => (
+                                      <div 
+                                        key={post.id}
+                                        className="px-4 py-3 flex items-center justify-between hover:bg-muted/20 cursor-pointer transition-colors"
+                                        onClick={() => handleLessonClick(post)}
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <BookOpen className="h-4 w-4 text-muted-foreground" />
+                                          <span className="text-sm">{post.title}</span>
+                                          {post.post_type && post.post_type !== 'content' && (
+                                            <Badge variant="secondary" className="text-[10px]">
+                                              {post.post_type}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 )}
               </CardContent>
             </Card>
