@@ -1750,7 +1750,6 @@ export type Database = {
           id: string
           lesson_id: string | null
           lesson_order: number | null
-          parent_id: string | null
           post_type: string | null
           published_at: string | null
           slug: string
@@ -1774,7 +1773,6 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           lesson_order?: number | null
-          parent_id?: string | null
           post_type?: string | null
           published_at?: string | null
           slug: string
@@ -1798,7 +1796,6 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           lesson_order?: number | null
-          parent_id?: string | null
           post_type?: string | null
           published_at?: string | null
           slug?: string
@@ -1827,13 +1824,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]

@@ -58,7 +58,6 @@ interface Post {
   updated_at: string;
   status: string;
   content?: string;
-  parent_id: string | null;
   lesson_order: number | null;
   code_theme?: string | null;
   profiles: {
@@ -204,15 +203,6 @@ const CourseDetail = () => {
     if (lessonSlug && posts.length > 0) {
       const lessonToSelect = posts.find(p => p.slug === lessonSlug);
       if (lessonToSelect && selectedPost?.slug !== lessonSlug) {
-        // Directly fetch content and set state without triggering another URL update
-        if (lessonToSelect.parent_id) {
-          setExpandedParents(new Set([lessonToSelect.parent_id]));
-        } else {
-          const hasChildren = posts.some(p => p.parent_id === lessonToSelect.id);
-          if (hasChildren) {
-            setExpandedParents(new Set([lessonToSelect.id]));
-          }
-        }
         fetchPostContent(lessonToSelect);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -323,7 +313,6 @@ const CourseDetail = () => {
           published_at,
           updated_at,
           lesson_order,
-          parent_id,
           status,
           profiles:author_id (full_name)
         `)
@@ -505,56 +494,14 @@ const CourseDetail = () => {
   };
 
   const handleLessonClick = (post: Post) => {
-    // Check if this lesson has children
-    const hasChildren = posts.some(p => p.parent_id === post.id);
-    
     // Helper to update URL with lesson slug (adds to browser history)
     const updateUrlWithLesson = (lessonSlug: string) => {
       navigate(`/course/${slug}?lesson=${lessonSlug}`);
     };
     
-    // If clicking a sub-lesson, only keep its parent expanded
-    if (post.parent_id) {
-      setExpandedParents(new Set([post.parent_id]));
-      fetchPostContent(post);
-      updateUrlWithLesson(post.slug);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (hasChildren) {
-      // Check if a child of this parent is currently selected
-      const hasActiveChild = selectedPost?.parent_id === post.id;
-      const isCurrentlyExpanded = expandedParents.has(post.id);
-      
-      // If child is active, load parent content but keep expanded
-      if (isCurrentlyExpanded && hasActiveChild) {
-        fetchPostContent(post);
-        updateUrlWithLesson(post.slug);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-      
-      setExpandedParents(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(post.id)) {
-          newSet.delete(post.id);
-        } else {
-          newSet.clear();
-          newSet.add(post.id);
-        }
-        return newSet;
-      });
-      // Only load content if expanding (not collapsing) and not already selected
-      if (!isCurrentlyExpanded && selectedPost?.id !== post.id) {
-        fetchPostContent(post);
-        updateUrlWithLesson(post.slug);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } else {
-      // If clicking a main lesson without children, close all
-      setExpandedParents(new Set());
-      fetchPostContent(post);
-      updateUrlWithLesson(post.slug);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    fetchPostContent(post);
+    updateUrlWithLesson(post.slug);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleParentExpansion = (parentId: string, e: React.MouseEvent) => {
@@ -710,18 +657,9 @@ const CourseDetail = () => {
     ? posts.findIndex(p => p.id === selectedPost.id)
     : -1;
 
-  // Build ordered lesson list considering hierarchy
+  // Build ordered lesson list (now just a flat list ordered by lesson_order)
   const getOrderedLessons = () => {
-    const mainLessons = posts.filter(post => !post.parent_id);
-    const orderedLessons: Post[] = [];
-    
-    mainLessons.forEach(mainLesson => {
-      orderedLessons.push(mainLesson);
-      const subLessons = posts.filter(post => post.parent_id === mainLesson.id);
-      orderedLessons.push(...subLessons);
-    });
-    
-    return orderedLessons;
+    return [...posts].sort((a, b) => (a.lesson_order || 0) - (b.lesson_order || 0));
   };
 
   const orderedLessons = getOrderedLessons();
@@ -735,14 +673,6 @@ const CourseDetail = () => {
   const handlePrevious = () => {
     if (hasPrevious) {
       const prevLesson = orderedLessons[currentOrderedIndex - 1];
-      
-      // Only keep the previous lesson's parent expanded if it's a sub-lesson
-      if (prevLesson.parent_id) {
-        setExpandedParents(new Set([prevLesson.parent_id]));
-      } else {
-        setExpandedParents(new Set());
-      }
-      
       fetchPostContent(prevLesson);
     }
   };
@@ -750,14 +680,6 @@ const CourseDetail = () => {
   const handleNext = () => {
     if (hasNext) {
       const nextLesson = orderedLessons[currentOrderedIndex + 1];
-      
-      // Only keep the next lesson's parent expanded if it's a sub-lesson
-      if (nextLesson.parent_id) {
-        setExpandedParents(new Set([nextLesson.parent_id]));
-      } else {
-        setExpandedParents(new Set());
-      }
-      
       fetchPostContent(nextLesson);
     }
   };
@@ -859,101 +781,40 @@ const CourseDetail = () => {
               
               <ScrollArea className="h-[calc(100vh-200px)]">
                 <nav className="p-2">
-                  {posts.length > 0 ? (
-                    (() => {
-                      // Group posts by parent
-                      const mainLessons = posts.filter(post => !post.parent_id);
-                      const subLessonsMap = new Map<string, Post[]>();
+                  {orderedLessons.length > 0 ? (
+                    orderedLessons.map((post, index) => {
+                      const isActive = selectedPost?.id === post.id;
                       
-                      posts.forEach(post => {
-                        if (post.parent_id) {
-                          if (!subLessonsMap.has(post.parent_id)) {
-                            subLessonsMap.set(post.parent_id, []);
-                          }
-                          subLessonsMap.get(post.parent_id)!.push(post);
-                        }
-                      });
-
-                      return mainLessons.map((post) => {
-                        const hasChildren = subLessonsMap.has(post.id);
-                        const isExpanded = expandedParents.has(post.id);
-                        const isMainLessonActive = selectedPost?.id === post.id;
-                        const hasActiveChild = selectedPost?.parent_id === post.id;
-                        
-                        return (
-                          <div key={post.id} className="mb-1">
-                            {/* Main Lesson */}
-                            <div
-                              className={`rounded-lg transition-all duration-300 ${
-                                isMainLessonActive
-                                  ? 'bg-green-600 shadow-md' 
-                                  : hasActiveChild
-                                  ? 'bg-green-200'
-                                  : 'hover:bg-green-100'
-                              }`}
-                            >
-                              <div className="px-3 py-2.5 flex items-center justify-between">
-                                <h3 
-                                  onClick={() => handleLessonClick(post)}
-                                  className={`text-sm font-medium flex-1 cursor-pointer transition-colors ${
-                                    isMainLessonActive
-                                      ? 'text-white' 
-                                      : hasActiveChild
-                                      ? 'text-green-900 font-semibold'
-                                      : 'text-green-900'
-                                  }`}
-                                >
-                                  {post.title}
-                                </h3>
-                                {hasChildren && (
-                                  <button
-                                    onClick={(e) => toggleParentExpansion(post.id, e)}
-                                    className={`ml-2 p-1 rounded hover:bg-green-300 transition-all duration-300 ${
-                                      isExpanded ? 'rotate-180' : ''
-                                    } ${
-                                      isMainLessonActive 
-                                        ? 'text-white hover:bg-green-700' 
-                                        : hasActiveChild
-                                        ? 'text-green-900'
-                                        : 'text-green-700'
-                                    }`}
-                                  >
-                                    <ChevronDown className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
+                      return (
+                        <div key={post.id} className="mb-1">
+                          <div
+                            onClick={() => handleLessonClick(post)}
+                            className={`rounded-lg cursor-pointer transition-all duration-300 ${
+                              isActive
+                                ? 'bg-green-600 shadow-md' 
+                                : 'hover:bg-green-100'
+                            }`}
+                          >
+                            <div className="px-3 py-2.5 flex items-center">
+                              <span className={`text-xs font-medium mr-2 ${
+                                isActive ? 'text-white/70' : 'text-green-600'
+                              }`}>
+                                {index + 1}.
+                              </span>
+                              <h3 
+                                className={`text-sm font-medium flex-1 transition-colors ${
+                                  isActive
+                                    ? 'text-white' 
+                                    : 'text-green-900'
+                                }`}
+                              >
+                                {post.title}
+                              </h3>
                             </div>
-                            
-                            {/* Sub-lessons - only show when expanded */}
-                            {hasChildren && isExpanded && (
-                              <div className="ml-4 mt-1 pl-3 border-l-2 border-green-300 space-y-1 animate-accordion-down">
-                                {subLessonsMap.get(post.id)!.map((subPost) => (
-                                  <div
-                                    key={subPost.id}
-                                    onClick={() => handleLessonClick(subPost)}
-                                    className={`rounded-lg cursor-pointer transition-all duration-200 ${
-                                      selectedPost?.id === subPost.id 
-                                        ? 'bg-green-600 shadow-md scale-[1.02]' 
-                                        : 'hover:bg-green-100'
-                                    }`}
-                                  >
-                                    <div className="px-3 py-2">
-                                      <h3 className={`text-sm transition-colors ${
-                                        selectedPost?.id === subPost.id 
-                                          ? 'text-white font-medium'
-                                          : 'text-green-700'
-                                      }`}>
-                                        {subPost.title}
-                                      </h3>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
-                        );
-                      });
-                    })()
+                        </div>
+                      );
+                    })
                   ) : (
                     <p className="text-sm text-green-700 p-4">No lessons available yet</p>
                   )}

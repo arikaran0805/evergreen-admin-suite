@@ -54,7 +54,6 @@ const postSchema = z.object({
   category_id: z.string().uuid().optional().or(z.literal("")),
   status: z.enum(["draft", "published", "pending", "rejected", "changes_requested"]),
   lesson_order: z.number().int().min(0).optional(),
-  parent_id: z.string().uuid().optional().or(z.literal("")).or(z.literal("none")),
 });
 
 interface Category {
@@ -86,7 +85,6 @@ const AdminPostEditor = () => {
   const [loading, setLoading] = useState(!!id);
   const [categories, setCategories] = useState<Category[]>([]);
   const [courseLessons, setCourseLessons] = useState<{ id: string; title: string; lesson_order: number }[]>([]);
-  const [mainLessons, setMainLessons] = useState<Post[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -101,7 +99,6 @@ const AdminPostEditor = () => {
     lesson_id: "" as string,
     status: "draft" as "draft" | "published" | "pending" | "rejected" | "changes_requested",
     lesson_order: 0,
-    parent_id: "none",
     code_theme: "" as string,
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
@@ -181,7 +178,7 @@ const AdminPostEditor = () => {
     if (!roleLoading && (isAdmin || isModerator)) {
       const loadData = async () => {
         // Fetch all data in parallel
-        const promises = [fetchCategories(), fetchMainLessons(), fetchTags()];
+        const promises = [fetchCategories(), fetchTags()];
 
         if (id) {
           promises.push(fetchPost(id));
@@ -251,20 +248,6 @@ const AdminPostEditor = () => {
     }
   };
 
-  const fetchMainLessons = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, title, category_id")
-        .is("parent_id", null)
-        .order("title");
-
-      if (error) throw error;
-      setMainLessons(data || []);
-    } catch (error: any) {
-      console.error("Error fetching main lessons:", error);
-    }
-  };
 
   const fetchTags = async () => {
     try {
@@ -355,7 +338,6 @@ const AdminPostEditor = () => {
           lesson_id: data.lesson_id || "",
           status: (data.status as any) || "draft",
           lesson_order: data.lesson_order || 0,
-          parent_id: data.parent_id || "none",
           code_theme: data.code_theme || "",
         }));
 
@@ -418,7 +400,6 @@ const AdminPostEditor = () => {
         author_id: originalAuthorId || session.user.id,
         published_at: validated.status === "published" ? new Date().toISOString() : null,
         lesson_order: validated.lesson_order || 0,
-        parent_id: validated.parent_id && validated.parent_id !== "" && validated.parent_id !== "none" ? validated.parent_id : null,
         code_theme: formData.code_theme || null,
       };
 
@@ -1161,27 +1142,6 @@ const AdminPostEditor = () => {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="parent">Parent Lesson</Label>
-                  <Select 
-                    value={formData.parent_id} 
-                    onValueChange={(value) => setFormData({ ...formData, parent_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="No parent (main lesson)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No parent (main lesson)</SelectItem>
-                      {mainLessons
-                        .filter(lesson => lesson.id !== id)
-                        .map((lesson) => (
-                          <SelectItem key={lesson.id} value={lesson.id}>
-                            {lesson.title}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="lesson_order">Lesson Order</Label>
