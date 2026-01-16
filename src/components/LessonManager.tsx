@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { generateRankBetween, getRankForLast } from "@/lib/lexoRank";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,7 @@ interface Lesson {
   id: string;
   title: string;
   description: string | null;
-  lesson_order: number;
+  lesson_rank: string;
   is_published: boolean;
   created_at: string;
 }
@@ -294,13 +295,13 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
     try {
       setLoading(true);
 
-      // Fetch lessons
+      // Fetch lessons ordered by lesson_rank
       const { data: lessonsData, error: lessonsError } = await supabase
         .from("course_lessons")
         .select("*")
         .eq("course_id", courseId)
         .is("deleted_at", null)
-        .order("lesson_order");
+        .order("lesson_rank");
 
       if (lessonsError) throw lessonsError;
 
@@ -351,16 +352,25 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       const newLessons = arrayMove(lessons, oldIndex, newIndex);
       setLessons(newLessons);
 
-      // Update order in database
+      // Calculate new lesson_rank for the moved item
+      const movedLesson = newLessons[newIndex];
+      const prevRank = newIndex > 0 ? newLessons[newIndex - 1].lesson_rank : null;
+      const nextRank = newIndex < newLessons.length - 1 ? newLessons[newIndex + 1].lesson_rank : null;
+      const newRank = generateRankBetween(prevRank, nextRank);
+
       try {
-        await Promise.all(
-          newLessons.map((lesson, index) =>
-            supabase
-              .from("course_lessons")
-              .update({ lesson_order: index })
-              .eq("id", lesson.id)
-          )
-        );
+        const { error } = await supabase
+          .from("course_lessons")
+          .update({ lesson_rank: newRank })
+          .eq("id", movedLesson.id);
+
+        if (error) throw error;
+        
+        // Update local state with new rank
+        setLessons(prev => prev.map(l => 
+          l.id === movedLesson.id ? { ...l, lesson_rank: newRank } : l
+        ));
+        
         toast({ title: "Lesson order updated" });
       } catch (error: any) {
         toast({
@@ -384,22 +394,15 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Get the max lesson_order from ALL lessons (including soft-deleted) to avoid unique constraint violation
-      const { data: maxOrderData } = await supabase
-        .from("course_lessons")
-        .select("lesson_order")
-        .eq("course_id", courseId)
-        .order("lesson_order", { ascending: false })
-        .limit(1)
-        .single();
-
-      const newOrder = maxOrderData ? maxOrderData.lesson_order + 1 : 0;
+      // Get the last lesson_rank to append new lesson at the end
+      const lastRank = lessons.length > 0 ? lessons[lessons.length - 1].lesson_rank : null;
+      const newRank = getRankForLast(lastRank);
 
       const { error } = await supabase.from("course_lessons").insert({
         course_id: courseId,
         title: formData.title.trim(),
         description: formData.description.trim() || null,
-        lesson_order: newOrder,
+        lesson_rank: newRank,
         is_published: false,
         created_by: session.user.id,
       });

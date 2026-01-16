@@ -19,14 +19,15 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { GripVertical } from "lucide-react";
+import { GripVertical, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { generateRankBetween, generateInitialRanks } from "@/lib/lexoRank";
 
 interface Lesson {
   id: string;
   title: string;
-  lesson_order: number;
+  lesson_rank: string;
   course_id: string;
 }
 
@@ -38,10 +39,11 @@ interface Course {
 interface SortableItemProps {
   id: string;
   title: string;
-  order: number;
+  rank: string;
+  index: number;
 }
 
-function SortableItem({ id, title, order }: SortableItemProps) {
+function SortableItem({ id, title, rank, index }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -61,7 +63,7 @@ function SortableItem({ id, title, order }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 p-3 bg-white dark:bg-background border border-border rounded-md mb-2"
+      className="flex items-center gap-3 p-3 bg-background border border-border rounded-md mb-2"
     >
       <button
         className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
@@ -73,7 +75,10 @@ function SortableItem({ id, title, order }: SortableItemProps) {
       <div className="flex-1">
         <p className="font-medium text-sm">{title}</p>
       </div>
-      <span className="text-xs text-muted-foreground">Order: {order}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">#{index + 1}</span>
+        <span className="text-[10px] text-muted-foreground/60 font-mono">{rank}</span>
+      </div>
     </div>
   );
 }
@@ -126,15 +131,15 @@ export default function LessonReorder() {
     
     setLoading(true);
     try {
-      const { data, error } = await (supabase
-        .from("course_lessons" as any)
-        .select("id, title, lesson_order, course_id")
+      const { data, error } = await supabase
+        .from("course_lessons")
+        .select("id, title, lesson_rank, course_id")
         .eq("course_id", selectedCourseId)
         .is("deleted_at", null)
-        .order("lesson_order", { ascending: true }) as unknown as Promise<{ data: Lesson[] | null; error: any }>);
+        .order("lesson_rank", { ascending: true });
 
       if (error) throw error;
-      setLessons(data || []);
+      setLessons((data as Lesson[]) || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -146,87 +151,79 @@ export default function LessonReorder() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setLessons((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+      const oldIndex = lessons.findIndex((item) => item.id === active.id);
+      const newIndex = lessons.findIndex((item) => item.id === over.id);
 
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        
-        // Update lesson_order for all affected items
-        updateLessonOrders(newItems);
-        
-        return newItems;
-      });
-    }
-  };
+      const newItems = arrayMove(lessons, oldIndex, newIndex);
+      setLessons(newItems);
 
-  const updateLessonOrders = async (orderedLessons: Lesson[]) => {
-    try {
-      const updates = orderedLessons.map((lesson, index) => ({
-        id: lesson.id,
-        lesson_order: index,
-      }));
+      // Calculate new rank for the moved item
+      const movedLesson = newItems[newIndex];
+      const prevRank = newIndex > 0 ? newItems[newIndex - 1].lesson_rank : null;
+      const nextRank = newIndex < newItems.length - 1 ? newItems[newIndex + 1].lesson_rank : null;
+      const newRank = generateRankBetween(prevRank, nextRank);
 
-      for (const update of updates) {
-        const { error } = await (supabase
-          .from("course_lessons" as any)
-          .update({ lesson_order: update.lesson_order })
-          .eq("id", update.id) as unknown as Promise<{ error: any }>);
+      try {
+        const { error } = await supabase
+          .from("course_lessons")
+          .update({ lesson_rank: newRank })
+          .eq("id", movedLesson.id);
 
         if (error) throw error;
-      }
 
-      toast({
-        title: "Success",
-        description: "Lesson order updated successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update lesson order",
-        variant: "destructive",
-      });
-      
-      // Refresh to get correct order
-      fetchLessons();
+        // Update local state with new rank
+        setLessons(prev => prev.map(l => 
+          l.id === movedLesson.id ? { ...l, lesson_rank: newRank } : l
+        ));
+
+        toast({
+          title: "Success",
+          description: "Lesson order updated",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: "Failed to update lesson order",
+          variant: "destructive",
+        });
+        fetchLessons();
+      }
     }
   };
 
-  const handleAutoSequence = async () => {
-    if (!selectedCourseId) return;
+  const handleRebalanceRanks = async () => {
+    if (!selectedCourseId || lessons.length === 0) return;
     
     try {
       setLoading(true);
       
-      // Update all lessons in the course to sequential order
-      const updates = lessons.map((lesson, index) => ({
-        id: lesson.id,
-        lesson_order: index,
-      }));
-
-      for (const update of updates) {
-        const { error } = await (supabase
-          .from("course_lessons" as any)
-          .update({ lesson_order: update.lesson_order })
-          .eq("id", update.id) as unknown as Promise<{ error: any }>);
-
-        if (error) throw error;
-      }
+      // Generate new evenly distributed ranks
+      const newRanks = generateInitialRanks(lessons.length);
+      
+      // Update all lessons with new ranks
+      await Promise.all(
+        lessons.map((lesson, index) =>
+          supabase
+            .from("course_lessons")
+            .update({ lesson_rank: newRanks[index] })
+            .eq("id", lesson.id)
+        )
+      );
 
       toast({
         title: "Success",
-        description: "Lesson orders reset to sequential numbering",
+        description: "Lesson ranks rebalanced for optimal spacing",
       });
       
       await fetchLessons();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to reset lesson orders",
+        description: "Failed to rebalance lesson ranks",
         variant: "destructive",
       });
     } finally {
@@ -255,11 +252,13 @@ export default function LessonReorder() {
               </SelectContent>
             </Select>
             <Button
-              onClick={handleAutoSequence}
+              onClick={handleRebalanceRanks}
               disabled={loading || lessons.length === 0}
               variant="outline"
+              className="shrink-0"
             >
-              Auto-Sequence
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Rebalance
             </Button>
           </div>
         </div>
@@ -273,7 +272,7 @@ export default function LessonReorder() {
         ) : (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground mb-3">
-              Drag and drop to reorder lessons
+              Drag and drop to reorder lessons. Ranks are automatically calculated.
             </p>
             <DndContext
               sensors={sensors}
@@ -289,7 +288,8 @@ export default function LessonReorder() {
                     key={lesson.id}
                     id={lesson.id}
                     title={lesson.title}
-                    order={index}
+                    rank={lesson.lesson_rank}
+                    index={index}
                   />
                 ))}
               </SortableContext>
