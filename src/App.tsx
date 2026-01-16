@@ -7,6 +7,8 @@ import { useEffect, useRef } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ViewAsRoleProvider } from "@/contexts/ViewAsRoleContext";
+import ViewAsRoleBanner from "@/components/ViewAsRoleBanner";
 
 // Route Compositions
 import { AdminRoutes, SuperModeratorRoutes, SeniorModeratorRoutes, ModeratorRoutes, publicRoutes } from "@/routes";
@@ -58,6 +60,7 @@ const AppContent = () => {
   
   return (
     <>
+      <ViewAsRoleBanner />
       <Toaster />
       <Sonner />
       <Routes>
@@ -80,7 +83,9 @@ const App = () => (
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
-            <AppContent />
+            <ViewAsRoleProvider>
+              <AppContent />
+            </ViewAsRoleProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

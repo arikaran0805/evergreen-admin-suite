@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { adminSidebarConfig, adminFooterItems } from "@/sidebar/admin.sidebar";
 import RoleNotificationBell from "@/components/RoleNotificationBell";
+import ViewAsRoleSelector from "@/components/ViewAsRoleSelector";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -228,6 +229,19 @@ const AdminSidebar = ({
           ))}
         </nav>
       </ScrollArea>
+
+      {/* View as Role Feature */}
+      {isOpen && (
+        <>
+          <Separator className="my-2" />
+          <ViewAsRoleSelector isOpen={isOpen} />
+        </>
+      )}
+      {!isOpen && (
+        <div className="p-2 border-t border-sidebar-border">
+          <ViewAsRoleSelector isOpen={isOpen} />
+        </div>
+      )}
 
       {/* Footer */}
       <div className="p-2 border-t border-sidebar-border mt-auto">

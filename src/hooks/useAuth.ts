@@ -6,3 +6,4 @@
  */
 export { useAuth, getRoleDashboardPath } from "@/contexts/AuthContext";
 export type { AppRole, AuthState } from "@/contexts/AuthContext";
+export { useViewAsRole } from "@/contexts/ViewAsRoleContext";
