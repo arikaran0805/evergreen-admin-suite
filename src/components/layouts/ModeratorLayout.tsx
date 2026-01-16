@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import ModeratorSidebar from "@/components/ModeratorSidebar";
 
 interface ModeratorLayoutProps {
@@ -29,7 +29,7 @@ const ModeratorLayout = ({ children, defaultSidebarCollapsed = false }: Moderato
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const location = useLocation();
-  const { userId } = useUserRole();
+  const { userId } = useAuth();
 
   useEffect(() => {
     fetchUserProfile();
