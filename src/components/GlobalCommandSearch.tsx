@@ -287,13 +287,13 @@ export function GlobalCommandSearch({ open, onOpenChange }: CommandSearchProps) 
           shouldFilter={false}
         >
           {/* Search Input */}
-          <div className="relative flex items-center border-b border-border/50">
+          <div className="relative">
             <CommandInput
               placeholder="Search anything…"
               value={search}
               onValueChange={setSearch}
               className={cn(
-                "h-14 text-base border-0",
+                "h-14 text-base border-0 pr-14",
                 "placeholder:text-muted-foreground/60",
                 "focus:ring-0 focus:outline-none"
               )}
@@ -301,7 +301,7 @@ export function GlobalCommandSearch({ open, onOpenChange }: CommandSearchProps) 
                 caretColor: `hsl(${FOREST_GREEN})`,
               }}
             />
-            <span className="absolute right-4 text-xs text-muted-foreground/50 font-medium">
+            <span className="pointer-events-none absolute right-12 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50 font-medium">
               {shortcutKey} + K
             </span>
           </div>
