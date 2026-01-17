@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { seniorModeratorSidebarConfig } from "@/sidebar/seniorModerator.sidebar";
 import RoleNotificationBell from "@/components/RoleNotificationBell";
+import { openGlobalCommandSearch } from "@/hooks/useGlobalCommandSearch";
 
 interface SeniorModeratorSidebarProps {
   isOpen: boolean;
@@ -119,10 +120,7 @@ const SeniorModeratorSidebar = ({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-                onClick={() => {
-                  const event = new KeyboardEvent("keydown", { key: "k", metaKey: true });
-                  document.dispatchEvent(event);
-                }}
+                onClick={openGlobalCommandSearch}
               >
                 <Search className="h-4 w-4" />
               </Button>
