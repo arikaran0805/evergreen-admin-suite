@@ -67,6 +67,9 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   const [showAddSeniorModDialog, setShowAddSeniorModDialog] = useState<string | null>(null);
   const [showAddModeratorDialog, setShowAddModeratorDialog] = useState<string | null>(null);
 
+  // State for all existing course assignments (to prevent duplicates across teams)
+  const [allCourseAssignments, setAllCourseAssignments] = useState<{ user_id: string; course_id: string; role: string }[]>([]);
+
   const fetchCanvasData = async () => {
     try {
       setLoading(true);
@@ -103,7 +106,25 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (careerCoursesError) throw careerCoursesError;
 
-      // Fetch course assignments for this team
+      // Get course IDs for this career
+      const courseIds = (careerCoursesData || [])
+        .filter((cc: any) => cc.course)
+        .map((cc: any) => cc.course.id);
+
+      // Fetch ALL course assignments for these courses (across all teams) to prevent duplicates
+      let allAssignmentsData: { user_id: string; course_id: string; role: string }[] = [];
+      if (courseIds.length > 0) {
+        const { data: allAssignments, error: allAssignmentsError } = await supabase
+          .from("course_assignments")
+          .select("user_id, course_id, role")
+          .in("course_id", courseIds);
+
+        if (allAssignmentsError) throw allAssignmentsError;
+        allAssignmentsData = allAssignments || [];
+      }
+      setAllCourseAssignments(allAssignmentsData);
+
+      // Fetch course assignments for this team (for display)
       const { data: courseAssignmentsData, error: courseAssignmentsError } = await supabase
         .from("course_assignments")
         .select("*")
@@ -331,16 +352,16 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
-  const getAvailableUsers = (courseId: string) => {
-    const course = courses.find((c) => c.id === courseId);
-    if (!course) return allUsers;
+  // Filter available users for a course based on role - checks ALL assignments across teams
+  const getAvailableUsersForRole = (courseId: string, role: "senior_moderator" | "moderator") => {
+    // Get users already assigned to this course with this role (across all teams)
+    const assignedUserIds = new Set(
+      allCourseAssignments
+        .filter((a) => a.course_id === courseId && a.role === role)
+        .map((a) => a.user_id)
+    );
 
-    const assignedIds = new Set([
-      ...course.seniorModerators.map((sm) => sm.user_id),
-      ...course.moderators.map((m) => m.user_id),
-    ]);
-
-    return allUsers.filter((u) => !assignedIds.has(u.id));
+    return allUsers.filter((u) => !assignedUserIds.has(u.id));
   };
 
   if (loading) {
@@ -651,7 +672,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
                 {showAddSeniorModDialog &&
-                  getAvailableUsers(showAddSeniorModDialog).map((user) => (
+                  getAvailableUsersForRole(showAddSeniorModDialog, "senior_moderator").map((user) => (
                     <CommandItem
                       key={user.id}
                       value={user.email}
@@ -695,7 +716,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
                 {showAddModeratorDialog &&
-                  getAvailableUsers(showAddModeratorDialog).map((user) => (
+                  getAvailableUsersForRole(showAddModeratorDialog, "moderator").map((user) => (
                     <CommandItem
                       key={user.id}
                       value={user.email}
