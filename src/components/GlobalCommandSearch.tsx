@@ -41,9 +41,11 @@ import {
   Edit,
   Crown,
   Lock,
+  FolderOpen,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserAssignments } from "@/hooks/useUserAssignments";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -197,7 +199,14 @@ const getCommandsForRole = (
 export function GlobalCommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const { activeRole, signOut } = useAuth();
+  const { activeRole, signOut, user } = useAuth();
+
+  // Fetch user's assignments for ownership-based visibility
+  const {
+    getAssignedCareers,
+    getAssignedCourses,
+    isLoading: assignmentsLoading,
+  } = useUserAssignments(user?.id || null, activeRole);
 
   // Get role-aware commands
   const commands = useMemo(() => {
@@ -208,21 +217,86 @@ export function GlobalCommandSearch({ open, onOpenChange }: CommandSearchProps) 
     });
   }, [activeRole, signOut, navigate, onOpenChange]);
 
+  // Generate dynamic content commands based on assignments
+  const contentCommands = useMemo((): CommandItemData[] => {
+    if (activeRole === "admin" || !activeRole || activeRole === "user") {
+      return [];
+    }
+
+    const contentItems: CommandItemData[] = [];
+
+    // Super Moderators: show assigned careers and courses within those careers
+    if (activeRole === "super_moderator") {
+      const careers = getAssignedCareers();
+      const courses = getAssignedCourses();
+
+      careers.forEach((career) => {
+        contentItems.push({
+          id: `career-${career.id}`,
+          label: career.name,
+          description: "Career",
+          icon: Briefcase,
+          path: `/super-moderator/careers/${career.id}`,
+          category: "content",
+          keywords: ["career", career.slug],
+        });
+      });
+
+      courses.forEach((course) => {
+        contentItems.push({
+          id: `course-${course.id}`,
+          label: course.name,
+          description: "Course",
+          icon: GraduationCap,
+          path: `/super-moderator/courses/${course.id}`,
+          category: "content",
+          keywords: ["course", course.slug],
+        });
+      });
+    }
+
+    // Senior Moderators and Moderators: show assigned courses only
+    if (activeRole === "senior_moderator" || activeRole === "moderator") {
+      const courses = getAssignedCourses();
+      const basePath = activeRole === "senior_moderator" ? "/senior-moderator" : "/moderator";
+
+      courses.forEach((course) => {
+        contentItems.push({
+          id: `course-${course.id}`,
+          label: course.name,
+          description: "Assigned Course",
+          icon: GraduationCap,
+          path: `${basePath}/courses/${course.id}`,
+          category: "content",
+          keywords: ["course", course.slug],
+        });
+      });
+    }
+
+    return contentItems;
+  }, [activeRole, getAssignedCareers, getAssignedCourses]);
+
+  // Combine all commands
+  const allCommands = useMemo(() => {
+    return [...commands, ...contentCommands];
+  }, [commands, contentCommands]);
+
   // Filter commands based on search
   const filteredCommands = useMemo(() => {
-    if (!search.trim()) return commands;
+    if (!search.trim()) return allCommands;
     
     const query = search.toLowerCase();
-    return commands.filter((cmd) => {
+    return allCommands.filter((cmd) => {
       const labelMatch = cmd.label.toLowerCase().includes(query);
       const descMatch = cmd.description?.toLowerCase().includes(query);
       const keywordMatch = cmd.keywords?.some((k) => k.toLowerCase().includes(query));
       return labelMatch || descMatch || keywordMatch;
     });
-  }, [commands, search]);
+  }, [allCommands, search]);
 
   // Group commands by category
   const navigationCommands = filteredCommands.filter((c) => c.category === "navigation");
+  const contentFilteredCommands = filteredCommands.filter((c) => c.category === "content");
   const actionCommands = filteredCommands.filter((c) => c.category === "actions");
 
   // Handle keyboard shortcut (Cmd+K / Ctrl+K)
@@ -351,10 +425,50 @@ export function GlobalCommandSearch({ open, onOpenChange }: CommandSearchProps) 
               </CommandGroup>
             )}
 
+            {/* Content Group - Assigned Careers/Courses */}
+            {contentFilteredCommands.length > 0 && (
+              <>
+                {navigationCommands.length > 0 && <CommandSeparator className="my-2" />}
+                <CommandGroup heading="Your Content">
+                  {contentFilteredCommands.map((item) => (
+                    <CommandItem
+                      key={item.id}
+                      value={item.id}
+                      onSelect={() => handleSelect(item)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer",
+                        "transition-all duration-150",
+                        "aria-selected:bg-[hsl(142_50%_11%/0.08)]",
+                        "dark:aria-selected:bg-[hsl(142_50%_11%/0.15)]"
+                      )}
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60">
+                        <item.icon className="h-4 w-4 text-foreground/70" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{item.label}</span>
+                          <FolderOpen
+                            className="h-3 w-3"
+                            style={{ color: `hsl(${CHAMPAGNE_GOLD})` }}
+                          />
+                        </div>
+                        {item.description && (
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+
             {/* Actions Group */}
             {actionCommands.length > 0 && (
               <>
-                {navigationCommands.length > 0 && <CommandSeparator className="my-2" />}
+                {(navigationCommands.length > 0 || contentFilteredCommands.length > 0) && <CommandSeparator className="my-2" />}
                 <CommandGroup heading="Actions">
                   {actionCommands.map((item) => (
                     <CommandItem
