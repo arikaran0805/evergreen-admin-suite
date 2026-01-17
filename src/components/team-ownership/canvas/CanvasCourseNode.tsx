@@ -24,26 +24,38 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { GraduationCap, UserCog, Users, Plus, X, Star } from "lucide-react";
 import type { CourseWithAssignments, CourseAssignment, UserProfile } from "../types";
 
+interface CourseAssignmentGlobal {
+  user_id: string;
+  course_id: string;
+  role: string;
+}
+
 interface CanvasCourseNodeProps {
   course: CourseWithAssignments;
   teamId: string;
   allUsers: UserProfile[];
+  allCourseAssignments?: CourseAssignmentGlobal[];
   onRefresh: () => void;
 }
 
-const CanvasCourseNode = ({ course, teamId, allUsers, onRefresh }: CanvasCourseNodeProps) => {
+const CanvasCourseNode = ({ course, teamId, allUsers, allCourseAssignments = [], onRefresh }: CanvasCourseNodeProps) => {
   const { userId } = useAuth();
   const { toast } = useToast();
   const [showAddSeniorModDialog, setShowAddSeniorModDialog] = useState(false);
   const [showAddModeratorDialog, setShowAddModeratorDialog] = useState(false);
   const [assignmentToRemove, setAssignmentToRemove] = useState<CourseAssignment | null>(null);
 
-  // Filter available users for each role
-  const assignedUserIds = new Set([
-    ...course.seniorModerators.map((sm) => sm.user_id),
-    ...course.moderators.map((m) => m.user_id),
-  ]);
-  const availableUsers = allUsers.filter((u) => !assignedUserIds.has(u.id));
+  // Filter available users for a specific role - checks ALL assignments across teams
+  const getAvailableUsersForRole = (role: "senior_moderator" | "moderator") => {
+    // Get users already assigned to this course with this role (across all teams)
+    const assignedUserIds = new Set(
+      allCourseAssignments
+        .filter((a) => a.course_id === course.id && a.role === role)
+        .map((a) => a.user_id)
+    );
+
+    return allUsers.filter((u) => !assignedUserIds.has(u.id));
+  };
 
   const handleAddAssignment = async (selectedUserId: string, role: "senior_moderator" | "moderator") => {
     try {
@@ -270,7 +282,7 @@ const CanvasCourseNode = ({ course, teamId, allUsers, onRefresh }: CanvasCourseN
             <CommandList>
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
-                {availableUsers.map((user) => (
+                {getAvailableUsersForRole("senior_moderator").map((user) => (
                   <CommandItem
                     key={user.id}
                     value={user.email}
@@ -308,7 +320,7 @@ const CanvasCourseNode = ({ course, teamId, allUsers, onRefresh }: CanvasCourseN
             <CommandList>
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
-                {availableUsers.map((user) => (
+                {getAvailableUsersForRole("moderator").map((user) => (
                   <CommandItem
                     key={user.id}
                     value={user.email}

@@ -13,11 +13,18 @@ import { GraduationCap, Plus } from "lucide-react";
 import type { CourseWithAssignments, UserProfile } from "../types";
 import CanvasCourseNode from "./CanvasCourseNode";
 
+interface CourseAssignmentGlobal {
+  user_id: string;
+  course_id: string;
+  role: string;
+}
+
 interface CanvasCourseLayerProps {
   teamId: string;
   courses: CourseWithAssignments[];
   availableCourses: { id: string; name: string; slug: string }[];
   allUsers: UserProfile[];
+  allCourseAssignments?: CourseAssignmentGlobal[];
   onRefresh: () => void;
 }
 
@@ -26,6 +33,7 @@ const CanvasCourseLayer = ({
   courses,
   availableCourses,
   allUsers,
+  allCourseAssignments = [],
   onRefresh,
 }: CanvasCourseLayerProps) => {
   const { userId } = useAuth();
@@ -93,6 +101,7 @@ const CanvasCourseLayer = ({
                   course={course}
                   teamId={teamId}
                   allUsers={allUsers}
+                  allCourseAssignments={allCourseAssignments}
                   onRefresh={onRefresh}
                 />
               ))}
