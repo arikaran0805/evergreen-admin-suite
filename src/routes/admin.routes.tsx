@@ -28,7 +28,7 @@ import AdminModeratorActivity from "@/pages/AdminModeratorActivity";
 import AdminReports from "@/pages/AdminReports";
 import AdminPostVersions from "@/pages/AdminPostVersions";
 import AdminAnnotations from "@/pages/AdminAnnotations";
-import AdminAssignments from "@/pages/AdminAssignments";
+import AdminAssignmentLogs from "@/pages/AdminAssignmentLogs";
 import AdminTeamOwnership from "@/pages/AdminTeamOwnership";
 import NotFound from "@/pages/NotFound";
 
@@ -63,7 +63,7 @@ const AdminRoutes = () => {
           <Route path="users" element={<AdminUsers />} />
           <Route path="tags" element={<AdminTags />} />
           <Route path="authors" element={<AdminAuthors />} />
-          <Route path="assignments" element={<AdminAssignments />} />
+          <Route path="assignments" element={<AdminAssignmentLogs />} />
           <Route path="team-ownership" element={<AdminTeamOwnership />} />
           <Route path="media" element={<AdminMedia />} />
           <Route path="monetization" element={<AdminMonetization />} />
