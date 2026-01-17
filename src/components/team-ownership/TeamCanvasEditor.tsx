@@ -114,12 +114,9 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (courseAssignmentsError) throw courseAssignmentsError;
 
-      // Filter courses that are assigned to this team
-      const assignedCourseIds = new Set(courseAssignmentsData?.map((ca) => ca.course_id) || []);
-
-      // Build courses with assignments
+      // Build courses with assignments - show ALL courses from career (like create page)
       const coursesList: CourseWithAssignments[] = (careerCoursesData || [])
-        .filter((cc: any) => cc.course && assignedCourseIds.has(cc.course.id))
+        .filter((cc: any) => cc.course)
         .map((cc: any) => {
           const courseId = cc.course.id;
           const assignments = courseAssignmentsData?.filter((ca) => ca.course_id === courseId) || [];
