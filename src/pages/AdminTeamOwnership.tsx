@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminSidebar } from "@/contexts/AdminSidebarContext";
 import TeamCard from "@/components/team-ownership/TeamCard";
 import TeamCanvasEditor from "@/components/team-ownership/TeamCanvasEditor";
 import NewTeamCanvas from "@/components/team-ownership/NewTeamCanvas";
@@ -14,6 +15,7 @@ import type { Team, Career } from "@/components/team-ownership/types";
 const AdminTeamOwnership = () => {
   const { userId } = useAuth();
   const { toast } = useToast();
+  const { collapseSidebar, setSidebarOpen } = useAdminSidebar();
   const [teams, setTeams] = useState<Team[]>([]);
   const [careers, setCareers] = useState<Career[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,24 +136,37 @@ const AdminTeamOwnership = () => {
   }, [filteredTeams]);
 
   const handleTeamDoubleClick = (team: Team) => {
+    collapseSidebar();
     setSelectedTeam(team);
+  };
+
+  const handleOpenNewTeamCanvas = () => {
+    collapseSidebar();
+    setShowNewTeamCanvas(true);
   };
 
   const handleCloseCanvas = () => {
     setSelectedTeam(null);
+    setSidebarOpen(true);
     fetchData();
   };
 
   const handleNewTeamCreated = () => {
     setShowNewTeamCanvas(false);
+    setSidebarOpen(true);
     fetchData();
+  };
+
+  const handleCloseNewTeamCanvas = () => {
+    setShowNewTeamCanvas(false);
+    setSidebarOpen(true);
   };
 
   // Show New Team Canvas
   if (showNewTeamCanvas) {
     return (
       <NewTeamCanvas
-        onClose={() => setShowNewTeamCanvas(false)}
+        onClose={handleCloseNewTeamCanvas}
         onTeamCreated={handleNewTeamCreated}
       />
     );
@@ -188,7 +203,7 @@ const AdminTeamOwnership = () => {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setShowNewTeamCanvas(true)}>
+          <Button onClick={handleOpenNewTeamCanvas}>
             <Plus className="h-4 w-4 mr-2" />
             New Team
           </Button>
@@ -261,7 +276,7 @@ const AdminTeamOwnership = () => {
           <p className="text-muted-foreground mb-6">
             Click the "New Team" button to create your first team
           </p>
-          <Button onClick={() => setShowNewTeamCanvas(true)}>
+          <Button onClick={handleOpenNewTeamCanvas}>
             <Plus className="h-4 w-4 mr-2" />
             Create First Team
           </Button>
@@ -285,7 +300,7 @@ const AdminTeamOwnership = () => {
                   </span>
                 </div>
                 <button
-                  onClick={() => setShowNewTeamCanvas(true)}
+                  onClick={handleOpenNewTeamCanvas}
                   className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                   title="Add new team"
                 >
