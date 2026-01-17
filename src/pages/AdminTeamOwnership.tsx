@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,12 +17,22 @@ const AdminTeamOwnership = () => {
   const { userId } = useAuth();
   const { toast } = useToast();
   const { collapseSidebar, setSidebarOpen } = useAdminSidebar();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [teams, setTeams] = useState<Team[]>([]);
   const [careers, setCareers] = useState<Career[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [showNewTeamCanvas, setShowNewTeamCanvas] = useState(false);
+
+  // Derive view state from URL params
+  const editingTeamId = searchParams.get("edit");
+  const isCreating = searchParams.get("new") === "true";
+
+  // Find the team being edited
+  const selectedTeam = useMemo(() => {
+    if (!editingTeamId) return null;
+    return teams.find((t) => t.id === editingTeamId) || null;
+  }, [editingTeamId, teams]);
 
   const fetchData = async () => {
     try {
@@ -111,6 +122,15 @@ const AdminTeamOwnership = () => {
     fetchData();
   }, []);
 
+  // Collapse/expand sidebar based on URL state
+  useEffect(() => {
+    if (editingTeamId || isCreating) {
+      collapseSidebar();
+    } else {
+      setSidebarOpen(true);
+    }
+  }, [editingTeamId, isCreating]);
+
   const filteredTeams = useMemo(() => {
     if (!searchQuery.trim()) return teams;
     const query = searchQuery.toLowerCase();
@@ -136,34 +156,29 @@ const AdminTeamOwnership = () => {
   }, [filteredTeams]);
 
   const handleTeamDoubleClick = (team: Team) => {
-    collapseSidebar();
-    setSelectedTeam(team);
+    setSearchParams({ edit: team.id });
   };
 
   const handleOpenNewTeamCanvas = () => {
-    collapseSidebar();
-    setShowNewTeamCanvas(true);
+    setSearchParams({ new: "true" });
   };
 
   const handleCloseCanvas = () => {
-    setSelectedTeam(null);
-    setSidebarOpen(true);
+    setSearchParams({});
     fetchData();
   };
 
   const handleNewTeamCreated = () => {
-    setShowNewTeamCanvas(false);
-    setSidebarOpen(true);
+    setSearchParams({});
     fetchData();
   };
 
   const handleCloseNewTeamCanvas = () => {
-    setShowNewTeamCanvas(false);
-    setSidebarOpen(true);
+    setSearchParams({});
   };
 
   // Show New Team Canvas
-  if (showNewTeamCanvas) {
+  if (isCreating) {
     return (
       <NewTeamCanvas
         onClose={handleCloseNewTeamCanvas}
@@ -173,7 +188,7 @@ const AdminTeamOwnership = () => {
   }
 
   // Show existing Team Canvas Editor
-  if (selectedTeam) {
+  if (editingTeamId && selectedTeam) {
     return (
       <TeamCanvasEditor
         team={selectedTeam}
@@ -181,6 +196,28 @@ const AdminTeamOwnership = () => {
         onRefresh={fetchData}
       />
     );
+  }
+
+  // If we have an edit param but team not found (still loading or invalid)
+  if (editingTeamId && !selectedTeam && loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <div className="flex flex-col items-center gap-6 py-12">
+          <Skeleton className="h-20 w-64 rounded-xl" />
+          <Skeleton className="h-32 w-96 rounded-xl" />
+          <Skeleton className="h-48 w-full max-w-4xl rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // If edit param exists but team not found after loading, clear the param
+  if (editingTeamId && !selectedTeam && !loading) {
+    setSearchParams({});
   }
 
   return (
