@@ -797,6 +797,41 @@ export type Database = {
           },
         ]
       }
+      course_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          course_id: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          course_id: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          course_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           course_id: string
@@ -2219,6 +2254,18 @@ export type Database = {
       }
       has_role: {
         Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_assigned_to_course: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_assigned_to_course_with_role: {
+        Args: {
+          _course_id: string
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
