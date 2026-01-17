@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MoreVertical, Edit2, Archive, Copy, Users, GraduationCap, UserCog, Clock } from "lucide-react";
+import { MoreVertical, Edit2, Archive, Copy, Users, GraduationCap, UserCog, Clock, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Team } from "./types";
 
@@ -41,6 +41,7 @@ const TeamCard = ({ team, onDoubleClick, onRefresh }: TeamCardProps) => {
   const { toast } = useToast();
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newName, setNewName] = useState(team.name);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -117,6 +118,44 @@ const TeamCard = ({ team, onDoubleClick, onRefresh }: TeamCardProps) => {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      setIsUpdating(true);
+      
+      // First delete all course assignments for this team
+      await supabase
+        .from("course_assignments")
+        .delete()
+        .eq("team_id", team.id);
+      
+      // Delete all career assignments for this team
+      await supabase
+        .from("career_assignments")
+        .delete()
+        .eq("team_id", team.id);
+      
+      // Delete the team
+      const { error } = await supabase
+        .from("teams")
+        .delete()
+        .eq("id", team.id);
+
+      if (error) throw error;
+
+      toast({ title: "Team deleted", description: `${team.name} has been permanently deleted` });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting team",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   return (
     <>
       <div
@@ -156,10 +195,16 @@ const TeamCard = ({ team, onDoubleClick, onRefresh }: TeamCardProps) => {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setShowArchiveDialog(true)}
-                className="text-destructive focus:text-destructive"
               >
                 <Archive className="h-4 w-4 mr-2" />
                 Archive team
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete team
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -257,6 +302,29 @@ const TeamCard = ({ team, onDoubleClick, onRefresh }: TeamCardProps) => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleArchive} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {isUpdating ? "Archiving..." : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Team Permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{team.name}" and remove all assignments. This action cannot be undone.
+              {team.courseCount > 0 && (
+                <span className="block mt-2 text-destructive font-medium">
+                  Warning: This team has {team.courseCount} course(s) and {team.seniorModeratorCount + team.moderatorCount} moderator(s) assigned.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isUpdating ? "Deleting..." : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
