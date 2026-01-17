@@ -6,6 +6,7 @@ import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import AdminSidebar from "@/components/AdminSidebar";
 import { AdminSidebarProvider, useAdminSidebar } from "@/contexts/AdminSidebarContext";
+import { GlobalCommandSearch } from "@/components/GlobalCommandSearch";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -75,6 +76,7 @@ const getPageSubtitle = (pathname: string): string => {
 const AdminLayoutContent = ({ children }: { children: ReactNode }) => {
   const { sidebarOpen, toggleSidebar } = useAdminSidebar();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
+  const [commandSearchOpen, setCommandSearchOpen] = useState(false);
   const location = useLocation();
   const { userId } = useAuth();
   const { notifications } = useAdminNotifications(true, userId);
@@ -132,24 +134,27 @@ const AdminLayoutContent = ({ children }: { children: ReactNode }) => {
   const pageSubtitle = getPageSubtitle(location.pathname);
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <AdminSidebar
-        isOpen={sidebarOpen}
-        onToggle={toggleSidebar}
-        userProfile={userProfile}
-        userId={userId}
-        notifications={notifications}
-        getBadgeCount={getBadgeCount}
-      />
+    <>
+      <GlobalCommandSearch open={commandSearchOpen} onOpenChange={setCommandSearchOpen} />
+      <div className="min-h-screen bg-background flex w-full">
+        <AdminSidebar
+          isOpen={sidebarOpen}
+          onToggle={toggleSidebar}
+          userProfile={userProfile}
+          userId={userId}
+          notifications={notifications}
+          getBadgeCount={getBadgeCount}
+        />
 
-      <main
-        className={`flex-1 min-w-0 transition-all duration-300 ${
-          sidebarOpen ? "pl-64" : "pl-[68px]"
-        }`}
-      >
-        <div className="p-8">{children}</div>
-      </main>
-    </div>
+        <main
+          className={`flex-1 min-w-0 transition-all duration-300 ${
+            sidebarOpen ? "pl-64" : "pl-[68px]"
+          }`}
+        >
+          <div className="p-8">{children}</div>
+        </main>
+      </div>
+    </>
   );
 };
 

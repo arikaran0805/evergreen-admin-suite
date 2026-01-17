@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import ModeratorSidebar from "@/components/ModeratorSidebar";
+import { GlobalCommandSearch } from "@/components/GlobalCommandSearch";
 
 interface ModeratorLayoutProps {
   children: ReactNode;
@@ -28,6 +29,7 @@ const getPageTitle = (pathname: string): string => {
 const ModeratorLayout = ({ children, defaultSidebarCollapsed = false }: ModeratorLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
+  const [commandSearchOpen, setCommandSearchOpen] = useState(false);
   const location = useLocation();
   const { userId } = useAuth();
 
@@ -52,22 +54,25 @@ const ModeratorLayout = ({ children, defaultSidebarCollapsed = false }: Moderato
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <ModeratorSidebar
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        userProfile={userProfile}
-        userId={userId}
-      />
+    <>
+      <GlobalCommandSearch open={commandSearchOpen} onOpenChange={setCommandSearchOpen} />
+      <div className="min-h-screen bg-background flex w-full">
+        <ModeratorSidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          userProfile={userProfile}
+          userId={userId}
+        />
 
-      <main
-        className={`flex-1 min-w-0 transition-all duration-300 ${
-          sidebarOpen ? "pl-64" : "pl-[68px]"
-        }`}
-      >
-        <div className="p-8">{children}</div>
-      </main>
-    </div>
+        <main
+          className={`flex-1 min-w-0 transition-all duration-300 ${
+            sidebarOpen ? "pl-64" : "pl-[68px]"
+          }`}
+        >
+          <div className="p-8">{children}</div>
+        </main>
+      </div>
+    </>
   );
 };
 

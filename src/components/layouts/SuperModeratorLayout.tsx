@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { useAdminBadgeReads } from "@/hooks/useAdminBadgeReads";
 import { cn } from "@/lib/utils";
+import { GlobalCommandSearch } from "@/components/GlobalCommandSearch";
 
 interface SuperModeratorLayoutProps {
   children: ReactNode;
@@ -40,6 +41,7 @@ const SuperModeratorLayout = ({
 }: SuperModeratorLayoutProps) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
+  const [commandSearchOpen, setCommandSearchOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     full_name?: string | null;
     email?: string;
@@ -110,28 +112,31 @@ const SuperModeratorLayout = ({
   const pageTitle = getPageTitle(location.pathname);
 
   return (
-    <div className="min-h-screen bg-background">
-      <SuperModeratorSidebar
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        userProfile={userProfile}
-        userId={userId}
-        getBadgeCount={getBadgeCount}
-      />
-      <main
-        className={cn(
-          "min-h-screen transition-all duration-300",
-          sidebarOpen ? "pl-64" : "pl-16"
-        )}
-      >
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
+    <>
+      <GlobalCommandSearch open={commandSearchOpen} onOpenChange={setCommandSearchOpen} />
+      <div className="min-h-screen bg-background">
+        <SuperModeratorSidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          userProfile={userProfile}
+          userId={userId}
+          getBadgeCount={getBadgeCount}
+        />
+        <main
+          className={cn(
+            "min-h-screen transition-all duration-300",
+            sidebarOpen ? "pl-64" : "pl-16"
+          )}
+        >
+          <div className="p-6">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
+            </div>
+            {children}
           </div>
-          {children}
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { COMMAND_SEARCH_EVENT } from "@/hooks/useGlobalCommandSearch";
 import {
   Command,
   CommandEmpty,
@@ -224,18 +225,28 @@ export function GlobalCommandSearch({ open, onOpenChange }: CommandSearchProps) 
   const navigationCommands = filteredCommands.filter((c) => c.category === "navigation");
   const actionCommands = filteredCommands.filter((c) => c.category === "actions");
 
-  // Handle keyboard shortcut
+  // Handle keyboard shortcut (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        onOpenChange(!open);
+        onOpenChange(true);
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onOpenChange]);
+  }, [onOpenChange]);
+
+  // Listen for custom event to open command search (from sidebars, etc.)
+  useEffect(() => {
+    const handleCustomOpen = () => {
+      onOpenChange(true);
+    };
+
+    window.addEventListener(COMMAND_SEARCH_EVENT, handleCustomOpen);
+    return () => window.removeEventListener(COMMAND_SEARCH_EVENT, handleCustomOpen);
+  }, [onOpenChange]);
 
   const handleSelect = useCallback(
     (item: CommandItemData) => {
