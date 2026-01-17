@@ -148,19 +148,26 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
 
         // Generate unique team name
         const baseName = `${selectedCareer.name} Team`;
-        const { data: existingTeams } = await supabase
-          .from("teams")
-          .select("name")
-          .eq("career_id", selectedCareer.id);
+        try {
+          const { data: existingTeams, error: existingTeamsError } = await supabase
+            .from("teams")
+            .select("name")
+            .eq("career_id", selectedCareer.id);
 
-        const existingNames = new Set((existingTeams || []).map((t) => t.name));
-        let uniqueName = baseName;
-        let counter = 2;
-        while (existingNames.has(uniqueName)) {
-          uniqueName = `${baseName} ${counter}`;
-          counter++;
+          if (existingTeamsError) throw existingTeamsError;
+
+          const existingNames = new Set((existingTeams || []).map((t) => t.name));
+          let uniqueName = baseName;
+          let counter = 2;
+          while (existingNames.has(uniqueName)) {
+            uniqueName = `${baseName} ${counter}`;
+            counter++;
+          }
+          setTeamName(uniqueName);
+        } catch {
+          // If we can't read existing teams (e.g. permissions), fall back to a random suffix
+          setTeamName(`${baseName} ${Math.floor(1000 + Math.random() * 9000)}`);
         }
-        setTeamName(uniqueName);
       } catch (error: any) {
         toast({
           title: "Error loading courses",
@@ -315,18 +322,48 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
     try {
       setSaving(true);
 
-      // Create the team
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .insert({
-          name: teamName.trim(),
-          career_id: selectedCareer.id,
-          created_by: userId,
-        })
-        .select()
-        .single();
+      // Create the team (auto-resolve duplicate team names)
+      const insertTeam = async (name: string) =>
+        supabase
+          .from("teams")
+          .insert({
+            name,
+            career_id: selectedCareer.id,
+            created_by: userId,
+          })
+          .select()
+          .single();
+
+      const isDuplicateTeamName = (err: any) => {
+        const msg = `${err?.message || ""} ${err?.details || ""}`;
+        return (
+          !!err &&
+          (err.code === "23505" || msg.includes("teams_name_career_id_key"))
+        );
+      };
+
+      const baseName = teamName.trim();
+      let nameToUse = baseName;
+      let teamData: any = null;
+      let teamError: any = null;
+
+      // Try a few times in case of race conditions or manual duplicate names
+      for (let attempt = 0; attempt < 5; attempt++) {
+        ({ data: teamData, error: teamError } = await insertTeam(nameToUse));
+
+        if (!isDuplicateTeamName(teamError)) break;
+
+        // Pick a new suffix and retry
+        const suffix = Math.floor(1000 + Math.random() * 9000);
+        nameToUse = `${baseName} ${suffix}`;
+      }
 
       if (teamError) throw teamError;
+      if (!teamData) throw new Error("Failed to create team");
+
+      // Keep UI in sync with the actual saved name
+      if (nameToUse !== baseName) setTeamName(nameToUse);
+
 
       // Create career assignments for super moderators
       if (superModerators.length > 0) {
@@ -389,7 +426,7 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
       const totalAssignments = superModerators.length + assignments.length;
       toast({
         title: "Team created",
-        description: `${teamName} has been created with ${totalAssignments} assignment(s)`,
+        description: `${nameToUse} has been created with ${totalAssignments} assignment(s)`,
       });
 
       onTeamCreated();
