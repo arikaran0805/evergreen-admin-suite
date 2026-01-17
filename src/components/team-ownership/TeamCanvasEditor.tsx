@@ -175,14 +175,23 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   }, [team.id]);
 
   const handleSaveName = async () => {
-    if (!editedName.trim() || editedName === team.name) {
+    const trimmed = editedName.trim();
+
+    if (!trimmed) return;
+
+    // Role assignments are saved immediately; this button primarily saves the team name.
+    if (trimmed === team.name) {
+      toast({
+        title: "No pending changes",
+        description: "Team roles are saved automatically.",
+      });
       return;
     }
 
     try {
       const { error } = await supabase
         .from("teams")
-        .update({ name: editedName.trim() })
+        .update({ name: trimmed })
         .eq("id", team.id);
 
       if (error) throw error;
@@ -447,10 +456,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handleSaveName}
-            disabled={!editedName.trim() || editedName === team.name}
-          >
+          <Button onClick={handleSaveName} disabled={!editedName.trim()}>
             Update Team
           </Button>
           <Button
