@@ -1,4 +1,15 @@
-import { useState, useEffect } from "react";
+/**
+ * Team Canvas Editor - Full team management experience
+ * 
+ * Features:
+ * - Editable team name
+ * - Career display
+ * - Super Moderator assignments
+ * - Course assignments with Senior/Moderator roles
+ * - Persistent User Pool sidebar for drag-drop style selections
+ * - All assignments save immediately
+ */
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,20 +30,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
   ArrowLeft,
   Archive,
   Shield,
@@ -41,8 +39,15 @@ import {
   Plus,
   Star,
   X,
+  Briefcase,
+  CheckCircle2,
 } from "lucide-react";
 import type { Team, UserProfile, CourseWithAssignments, SuperModeratorAssignment } from "./types";
+import UserPoolSidebar from "./UserPoolSidebar";
+
+interface UserWithRole extends UserProfile {
+  role?: "admin" | "super_moderator" | "senior_moderator" | "moderator" | "user" | null;
+}
 
 interface TeamCanvasEditorProps {
   team: Team;
@@ -60,25 +65,69 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   // Data states
   const [superModerators, setSuperModerators] = useState<SuperModeratorAssignment[]>([]);
   const [courses, setCourses] = useState<CourseWithAssignments[]>([]);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-
-  // Dialog states
-  const [showAddSuperModDialog, setShowAddSuperModDialog] = useState(false);
-  const [showAddSeniorModDialog, setShowAddSeniorModDialog] = useState<string | null>(null);
-  const [showAddModeratorDialog, setShowAddModeratorDialog] = useState<string | null>(null);
+  const [allUsers, setAllUsers] = useState<UserWithRole[]>([]);
 
   // State for all existing course assignments (to prevent duplicates across teams)
   const [allCourseAssignments, setAllCourseAssignments] = useState<{ user_id: string; course_id: string; role: string }[]>([]);
+
+  // User Pool selection state
+  const [selectedTarget, setSelectedTarget] = useState<{
+    type: "super_moderator" | "senior_moderator" | "moderator";
+    courseId?: string;
+  } | null>(null);
+
+  // Computed sets for sidebar
+  const assignedSuperModeratorIds = useMemo(() => {
+    return new Set(superModerators.map((sm) => sm.user_id));
+  }, [superModerators]);
+
+  const assignedSeniorModeratorIds = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    courses.forEach((course) => {
+      const ids = new Set(course.seniorModerators.map((sm) => sm.user_id));
+      // Also add from allCourseAssignments (global)
+      allCourseAssignments
+        .filter((a) => a.course_id === course.id && a.role === "senior_moderator")
+        .forEach((a) => ids.add(a.user_id));
+      map.set(course.id, ids);
+    });
+    return map;
+  }, [courses, allCourseAssignments]);
+
+  const assignedModeratorIds = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    courses.forEach((course) => {
+      const ids = new Set(course.moderators.map((m) => m.user_id));
+      // Also add from allCourseAssignments (global)
+      allCourseAssignments
+        .filter((a) => a.course_id === course.id && a.role === "moderator")
+        .forEach((a) => ids.add(a.user_id));
+      map.set(course.id, ids);
+    });
+    return map;
+  }, [courses, allCourseAssignments]);
 
   const fetchCanvasData = async (showLoader = true) => {
     try {
       if (showLoader) setLoading(true);
 
-      // Fetch all users
+      // Fetch all users with their roles
       const { data: usersData } = await supabase
         .from("profiles")
         .select("id, email, full_name, avatar_url");
-      setAllUsers(usersData || []);
+      
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+      
+      const rolesMap = new Map<string, string>();
+      rolesData?.forEach((r) => rolesMap.set(r.user_id, r.role));
+      
+      const usersWithRoles: UserWithRole[] = (usersData || []).map((u) => ({
+        ...u,
+        role: rolesMap.get(u.id) as any || null,
+      }));
+      setAllUsers(usersWithRoles);
 
       // Fetch super moderators assigned to this team
       const { data: superModsData, error: superModsError } = await supabase
@@ -132,7 +181,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (courseAssignmentsError) throw courseAssignmentsError;
 
-      // Build courses with assignments - show ALL courses from career (like create page)
+      // Build courses with assignments - show ALL courses from career
       const coursesList: CourseWithAssignments[] = (careerCoursesData || [])
         .filter((cc: any) => cc.course)
         .map((cc: any) => {
@@ -179,7 +228,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
     if (!trimmed) return;
 
-    // Role assignments are saved immediately; this button primarily saves the team name.
     if (trimmed === team.name) {
       toast({
         title: "No pending changes",
@@ -196,7 +244,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (error) throw error;
 
-      toast({ title: "Team updated" });
+      toast({ title: "Team name updated" });
       onRefresh();
     } catch (error: any) {
       toast({
@@ -227,33 +275,70 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
-  // Super Moderator handlers
-  const handleAddSuperModerator = async (selectedUserId: string) => {
+  // Handle user selection from the sidebar
+  const handleSelectUserFromPool = async (
+    selectedUserId: string,
+    targetType: "super_moderator" | "senior_moderator" | "moderator",
+    courseId?: string
+  ) => {
     try {
-      const { data, error } = await supabase.from("career_assignments").insert({
-        user_id: selectedUserId,
-        career_id: team.career_id,
-        team_id: team.id,
-        assigned_by: userId,
-      }).select().single();
+      if (targetType === "super_moderator") {
+        const { data, error } = await supabase.from("career_assignments").insert({
+          user_id: selectedUserId,
+          career_id: team.career_id,
+          team_id: team.id,
+          assigned_by: userId,
+        }).select().single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Update local state without refetching
-      const user = allUsers.find((u) => u.id === selectedUserId);
-      setSuperModerators((prev) => [...prev, { ...data, user }]);
-      
-      toast({ title: "Super Moderator added" });
-      setShowAddSuperModDialog(false);
+        const user = allUsers.find((u) => u.id === selectedUserId);
+        setSuperModerators((prev) => [...prev, { ...data, user }]);
+        toast({ title: "Super Moderator added" });
+      } else if (courseId) {
+        const course = courses.find((c) => c.id === courseId);
+        const isFirstSenior = targetType === "senior_moderator" && course?.seniorModerators.length === 0;
+
+        const { data, error } = await supabase.from("course_assignments").insert({
+          user_id: selectedUserId,
+          course_id: courseId,
+          team_id: team.id,
+          role: targetType,
+          is_default_manager: isFirstSenior,
+          assigned_by: userId,
+        }).select().single();
+
+        if (error) throw error;
+
+        const user = allUsers.find((u) => u.id === selectedUserId);
+        const newAssignment = { ...data, user };
+
+        setCourses((prev) =>
+          prev.map((c) => {
+            if (c.id !== courseId) return c;
+            if (targetType === "senior_moderator") {
+              return { ...c, seniorModerators: [...c.seniorModerators, newAssignment] };
+            } else {
+              return { ...c, moderators: [...c.moderators, newAssignment] };
+            }
+          })
+        );
+
+        setAllCourseAssignments((prev) => [...prev, { user_id: selectedUserId, course_id: courseId, role: targetType }]);
+        toast({ title: `${targetType === "senior_moderator" ? "Senior Moderator" : "Moderator"} added` });
+      }
+
+      setSelectedTarget(null);
     } catch (error: any) {
       toast({
-        title: "Error adding super moderator",
+        title: "Error adding assignment",
         description: error.message,
         variant: "destructive",
       });
     }
   };
 
+  // Remove handlers
   const handleRemoveSuperModerator = async (assignmentId: string) => {
     try {
       const { error } = await supabase
@@ -263,9 +348,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (error) throw error;
 
-      // Update local state without refetching
       setSuperModerators((prev) => prev.filter((sm) => sm.id !== assignmentId));
-      
       toast({ title: "Super Moderator removed" });
     } catch (error: any) {
       toast({
@@ -276,63 +359,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
-  const getAvailableSuperModUsers = () => {
-    const assignedIds = new Set(superModerators.map((sm) => sm.user_id));
-    return allUsers.filter((u) => !assignedIds.has(u.id));
-  };
-
-  // Course assignment handlers
-  const handleAddModerator = async (
-    courseId: string,
-    selectedUserId: string,
-    role: "senior_moderator" | "moderator"
-  ) => {
-    try {
-      const course = courses.find((c) => c.id === courseId);
-      const isFirstSenior = role === "senior_moderator" && course?.seniorModerators.length === 0;
-
-      const { data, error } = await supabase.from("course_assignments").insert({
-        user_id: selectedUserId,
-        course_id: courseId,
-        team_id: team.id,
-        role,
-        is_default_manager: isFirstSenior,
-        assigned_by: userId,
-      }).select().single();
-
-      if (error) throw error;
-
-      // Update local state without refetching
-      const user = allUsers.find((u) => u.id === selectedUserId);
-      const newAssignment = { ...data, user };
-      
-      setCourses((prev) =>
-        prev.map((c) => {
-          if (c.id !== courseId) return c;
-          if (role === "senior_moderator") {
-            return { ...c, seniorModerators: [...c.seniorModerators, newAssignment] };
-          } else {
-            return { ...c, moderators: [...c.moderators, newAssignment] };
-          }
-        })
-      );
-      
-      // Also update allCourseAssignments to prevent duplicate selections
-      setAllCourseAssignments((prev) => [...prev, { user_id: selectedUserId, course_id: courseId, role }]);
-
-      toast({ title: `${role === "senior_moderator" ? "Senior Moderator" : "Moderator"} added` });
-      setShowAddSeniorModDialog(null);
-      setShowAddModeratorDialog(null);
-    } catch (error: any) {
-      toast({
-        title: "Error adding moderator",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRemoveModerator = async (assignmentId: string, courseId: string, userId: string, role: string) => {
+  const handleRemoveModerator = async (assignmentId: string, courseId: string, removedUserId: string, role: string) => {
     try {
       const { error } = await supabase
         .from("course_assignments")
@@ -341,7 +368,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (error) throw error;
 
-      // Update local state without refetching
       setCourses((prev) =>
         prev.map((c) => {
           if (c.id !== courseId) return c;
@@ -352,10 +378,9 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
           }
         })
       );
-      
-      // Also update allCourseAssignments
-      setAllCourseAssignments((prev) => 
-        prev.filter((a) => !(a.user_id === userId && a.course_id === courseId && a.role === role))
+
+      setAllCourseAssignments((prev) =>
+        prev.filter((a) => !(a.user_id === removedUserId && a.course_id === courseId && a.role === role))
       );
 
       toast({ title: "Assignment removed" });
@@ -370,7 +395,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
   const handleSetDefaultManager = async (courseId: string, assignmentId: string) => {
     try {
-      // First, unset all default managers for this course
       const { error: unsetError } = await supabase
         .from("course_assignments")
         .update({ is_default_manager: false })
@@ -380,7 +404,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (unsetError) throw unsetError;
 
-      // Set the new default manager
       const { error: setError } = await supabase
         .from("course_assignments")
         .update({ is_default_manager: true })
@@ -388,7 +411,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (setError) throw setError;
 
-      // Update local state without refetching
       setCourses((prev) =>
         prev.map((c) => {
           if (c.id !== courseId) return c;
@@ -412,395 +434,350 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
-  // Filter available users for a course based on role - checks ALL assignments across teams
-  const getAvailableUsersForRole = (courseId: string, role: "senior_moderator" | "moderator") => {
-    // Get users already assigned to this course with this role (across all teams)
-    const assignedUserIds = new Set(
-      allCourseAssignments
-        .filter((a) => a.course_id === courseId && a.role === role)
-        .map((a) => a.user_id)
-    );
-
-    return allUsers.filter((u) => !assignedUserIds.has(u.id));
-  };
-
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10 rounded-lg" />
-          <Skeleton className="h-8 w-64" />
+      <div className="flex h-full">
+        <div className="flex-1 space-y-6 p-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <Skeleton className="h-8 w-64" />
+          </div>
+          <div className="flex flex-col items-center gap-6 py-12">
+            <Skeleton className="h-20 w-64 rounded-xl" />
+            <Skeleton className="h-32 w-96 rounded-xl" />
+            <Skeleton className="h-48 w-full max-w-4xl rounded-xl" />
+          </div>
         </div>
-        <div className="flex flex-col items-center gap-6 py-12">
-          <Skeleton className="h-20 w-64 rounded-xl" />
-          <Skeleton className="h-32 w-96 rounded-xl" />
-          <Skeleton className="h-48 w-full max-w-4xl rounded-xl" />
+        <div className="w-72 border-l bg-muted/30">
+          <Skeleton className="h-full" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header - same style as create team */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <Input
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            className="text-xl font-bold w-64"
-            placeholder="Team name"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleSaveName} disabled={!editedName.trim()}>
-            Update Team
-          </Button>
-          <Button
-            variant="outline"
-            className="text-destructive hover:bg-destructive/10"
-            onClick={() => setShowArchiveDialog(true)}
-          >
-            <Archive className="h-4 w-4 mr-2" />
-            Archive
-          </Button>
-        </div>
-      </div>
-
-      {/* Hierarchical Canvas */}
-      <div className="flex flex-col items-center">
-        {/* Career Node */}
-        <div className="px-8 py-4 rounded-xl border-2 border-primary bg-card shadow-sm">
-          <p className="text-xs font-medium text-primary uppercase tracking-wide text-center mb-1">
-            CAREER
-          </p>
-          <h2 className="text-xl font-bold text-foreground text-center">
-            {team.career?.name}
-          </h2>
-        </div>
-
-        {/* Connector Line */}
-        <div className="w-0.5 h-8 bg-border" />
-
-        {/* Super Moderators Section */}
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className="h-5 w-5 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-              SUPER MODERATORS
-            </h3>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-3">
-            {superModerators.map((sm) => (
-              <div
-                key={sm.id}
-                className="group relative flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-primary/30 bg-primary/5"
-              >
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                  <AvatarImage src={sm.user?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                    {sm.user?.full_name?.[0] || sm.user?.email?.[0] || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium text-foreground">
-                    {sm.user?.full_name || "Unknown"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{sm.user?.email}</p>
-                </div>
-                <button
-                  onClick={() => handleRemoveSuperModerator(sm.id)}
-                  className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-
-            {/* Add Super Moderator Button */}
-            <button
-              onDoubleClick={() => setShowAddSuperModDialog(true)}
-              className="flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors cursor-pointer"
+    <div className="flex h-full min-h-[calc(100vh-8rem)]">
+      {/* Main Canvas Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-card">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Input
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              className="text-xl font-bold w-64 border-transparent hover:border-input focus:border-input transition-colors"
+              placeholder="Team name"
+            />
+            <Badge
+              variant="outline"
+              style={{
+                borderColor: team.career?.color,
+                color: team.career?.color,
+                backgroundColor: `${team.career?.color}10`,
+              }}
             >
-              <Plus className="h-5 w-5" />
-              <span className="text-sm">Double-click to add</span>
-            </button>
+              <Briefcase className="h-3 w-3 mr-1" />
+              {team.career?.name}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleSaveName} disabled={!editedName.trim()}>
+              Update Team
+            </Button>
+            <Button
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={() => setShowArchiveDialog(true)}
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Archive
+            </Button>
           </div>
         </div>
 
-        {/* Connector Line */}
-        <div className="w-0.5 h-8 bg-border" />
+        {/* Canvas Content */}
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col items-center py-8 px-6 space-y-6">
+            {/* Career Node */}
+            <div
+              className="px-8 py-4 rounded-xl border-2 shadow-sm"
+              style={{
+                backgroundColor: `${team.career?.color}10`,
+                borderColor: team.career?.color,
+              }}
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-center mb-1" style={{ color: team.career?.color }}>
+                CAREER
+              </p>
+              <h2 className="text-xl font-bold text-foreground text-center">
+                {team.career?.name}
+              </h2>
+            </div>
 
-        {/* Courses Section */}
-        <div className="w-full max-w-6xl">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <GraduationCap className="h-5 w-5 text-accent" />
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-              COURSES
-            </h3>
-          </div>
+            {/* Connector Line */}
+            <div className="w-0.5 h-6 bg-border" />
 
-          {courses.length === 0 ? (
-            <div className="flex justify-center">
-              <div className="px-16 py-12 rounded-xl border-2 border-dashed border-muted-foreground/30 text-center">
-                <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-muted-foreground">No courses assigned to this team</p>
+            {/* Super Moderators Section */}
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="h-5 w-5 text-purple-500" />
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  SUPER MODERATORS
+                </h3>
+                <Badge variant="secondary" className="text-xs">
+                  {superModerators.length}
+                </Badge>
               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {courses.map((course) => (
-                <div key={course.id} className="rounded-xl border bg-card p-5 space-y-4">
-                  {/* Course Header */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <GraduationCap className="h-6 w-6 text-accent" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground">{course.name}</h4>
-                      <p className="text-xs text-muted-foreground">{course.slug}</p>
-                    </div>
-                  </div>
 
-                  {/* Senior Moderators */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <UserCog className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Senior Moderators
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {course.seniorModerators.map((sm) => (
-                        <div
-                          key={sm.id}
-                          className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20"
-                        >
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={sm.user?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {sm.user?.full_name?.[0] || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium">
-                            {sm.user?.full_name || sm.user?.email}
-                          </span>
-                          {sm.is_default_manager && (
-                            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                              <Star className="h-3 w-3 mr-0.5" />
-                              Default
-                            </Badge>
-                          )}
-                          <div className="absolute -top-2 -right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {!sm.is_default_manager && (
-                              <button
-                                onClick={() => handleSetDefaultManager(course.id, sm.id)}
-                                className="p-1 rounded-full bg-primary text-primary-foreground"
-                                title="Set as default manager"
-                              >
-                                <Star className="h-3 w-3" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleRemoveModerator(sm.id, course.id, sm.user_id, "senior_moderator")}
-                              className="p-1 rounded-full bg-destructive text-destructive-foreground"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setShowAddSeniorModDialog(course.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span className="text-sm">Add</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Connector Line */}
-                  <div className="flex justify-center">
-                    <div className="w-0.5 h-4 bg-border" />
-                  </div>
-
-                  {/* Moderators */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Moderators
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {course.moderators.map((mod) => (
-                        <div
-                          key={mod.id}
-                          className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border"
-                        >
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={mod.user?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {mod.user?.full_name?.[0] || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium">
-                            {mod.user?.full_name || mod.user?.email}
-                          </span>
-                          <button
-                            onClick={() => handleRemoveModerator(mod.id, course.id, mod.user_id, "moderator")}
-                            className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setShowAddModeratorDialog(course.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span className="text-sm">Add</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Add Super Moderator Dialog */}
-      <Dialog open={showAddSuperModDialog} onOpenChange={setShowAddSuperModDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Super Moderator</DialogTitle>
-          </DialogHeader>
-          <Command className="rounded-lg border">
-            <CommandInput placeholder="Search users..." />
-            <CommandList>
-              <CommandEmpty>No users found.</CommandEmpty>
-              <CommandGroup>
-                {getAvailableSuperModUsers().map((user) => (
-                  <CommandItem
-                    key={user.id}
-                    value={user.email}
-                    onSelect={() => handleAddSuperModerator(user.id)}
-                    className="cursor-pointer"
+              <div className="flex flex-wrap justify-center gap-3">
+                {superModerators.map((sm) => (
+                  <div
+                    key={sm.id}
+                    className="group relative flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-purple-500/30 bg-purple-500/5"
                   >
-                    <Avatar className="h-6 w-6 mr-2">
-                      <AvatarImage src={user.avatar_url || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {user.full_name?.[0] || user.email[0]}
+                    <Avatar className="h-10 w-10 ring-2 ring-purple-500/20">
+                      <AvatarImage src={sm.user?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-purple-500/10 text-purple-600 font-semibold">
+                        {sm.user?.full_name?.[0] || sm.user?.email?.[0] || "?"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm">{user.full_name || user.email}</p>
-                      {user.full_name && (
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
-                      )}
+                      <p className="font-medium text-foreground">
+                        {sm.user?.full_name || "Unknown"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{sm.user?.email}</p>
                     </div>
-                  </CommandItem>
+                    <button
+                      onClick={() => handleRemoveSuperModerator(sm.id)}
+                      className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </DialogContent>
-      </Dialog>
 
-      {/* Add Senior Moderator Dialog */}
-      <Dialog
-        open={!!showAddSeniorModDialog}
-        onOpenChange={() => setShowAddSeniorModDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Senior Moderator</DialogTitle>
-          </DialogHeader>
-          <Command className="rounded-lg border">
-            <CommandInput placeholder="Search users..." />
-            <CommandList>
-              <CommandEmpty>No users found.</CommandEmpty>
-              <CommandGroup>
-                {showAddSeniorModDialog &&
-                  getAvailableUsersForRole(showAddSeniorModDialog, "senior_moderator").map((user) => (
-                    <CommandItem
-                      key={user.id}
-                      value={user.email}
-                      onSelect={() =>
-                        handleAddModerator(showAddSeniorModDialog, user.id, "senior_moderator")
-                      }
-                      className="cursor-pointer"
-                    >
-                      <Avatar className="h-6 w-6 mr-2">
-                        <AvatarImage src={user.avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {user.full_name?.[0] || user.email[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm">{user.full_name || user.email}</p>
-                        {user.full_name && (
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </DialogContent>
-      </Dialog>
+                {/* Add Super Moderator Button */}
+                <button
+                  onClick={() => setSelectedTarget({ type: "super_moderator" })}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-dashed transition-colors cursor-pointer ${
+                    selectedTarget?.type === "super_moderator"
+                      ? "border-purple-500 bg-purple-500/10 text-purple-600"
+                      : "border-muted-foreground/30 text-muted-foreground hover:border-purple-500/50 hover:text-purple-500"
+                  }`}
+                >
+                  {selectedTarget?.type === "super_moderator" ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="text-sm font-medium">Select from pool →</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-5 w-5" />
+                      <span className="text-sm">Add</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
-      {/* Add Moderator Dialog */}
-      <Dialog
-        open={!!showAddModeratorDialog}
-        onOpenChange={() => setShowAddModeratorDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Moderator</DialogTitle>
-          </DialogHeader>
-          <Command className="rounded-lg border">
-            <CommandInput placeholder="Search users..." />
-            <CommandList>
-              <CommandEmpty>No users found.</CommandEmpty>
-              <CommandGroup>
-                {showAddModeratorDialog &&
-                  getAvailableUsersForRole(showAddModeratorDialog, "moderator").map((user) => (
-                    <CommandItem
-                      key={user.id}
-                      value={user.email}
-                      onSelect={() =>
-                        handleAddModerator(showAddModeratorDialog, user.id, "moderator")
-                      }
-                      className="cursor-pointer"
-                    >
-                      <Avatar className="h-6 w-6 mr-2">
-                        <AvatarImage src={user.avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {user.full_name?.[0] || user.email[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm">{user.full_name || user.email}</p>
-                        {user.full_name && (
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
-                        )}
+            {/* Connector Line */}
+            <div className="w-0.5 h-6 bg-border" />
+
+            {/* Courses Section */}
+            <div className="w-full max-w-5xl">
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <GraduationCap className="h-5 w-5 text-accent" />
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  COURSES
+                </h3>
+                <Badge variant="secondary" className="text-xs">
+                  {courses.length}
+                </Badge>
+              </div>
+
+              {courses.length === 0 ? (
+                <div className="flex justify-center">
+                  <div className="px-16 py-12 rounded-xl border-2 border-dashed border-muted-foreground/30 text-center">
+                    <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">No courses in this career yet</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {courses.map((course) => (
+                    <div key={course.id} className="rounded-xl border bg-card p-5 space-y-4">
+                      {/* Course Header */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                          <GraduationCap className="h-6 w-6 text-accent" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground">{course.name}</h4>
+                          <p className="text-xs text-muted-foreground">{course.slug}</p>
+                        </div>
                       </div>
-                    </CommandItem>
+
+                      {/* Senior Moderators */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <UserCog className="h-4 w-4 text-amber-500" />
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              Senior Moderators
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] h-5">
+                            {course.seniorModerators.length}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {course.seniorModerators.map((sm) => (
+                            <div
+                              key={sm.id}
+                              className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/20"
+                            >
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={sm.user?.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs bg-amber-500/10 text-amber-600">
+                                  {sm.user?.full_name?.[0] || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium">
+                                {sm.user?.full_name || sm.user?.email}
+                              </span>
+                              {sm.is_default_manager && (
+                                <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                                  <Star className="h-3 w-3 mr-0.5 text-amber-500" />
+                                  Default
+                                </Badge>
+                              )}
+                              <div className="absolute -top-2 -right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {!sm.is_default_manager && (
+                                  <button
+                                    onClick={() => handleSetDefaultManager(course.id, sm.id)}
+                                    className="p-1 rounded-full bg-amber-500 text-white"
+                                    title="Set as default manager"
+                                  >
+                                    <Star className="h-3 w-3" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleRemoveModerator(sm.id, course.id, sm.user_id, "senior_moderator")}
+                                  className="p-1 rounded-full bg-destructive text-destructive-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => setSelectedTarget({ type: "senior_moderator", courseId: course.id })}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors ${
+                              selectedTarget?.type === "senior_moderator" && selectedTarget?.courseId === course.id
+                                ? "border-amber-500 bg-amber-500/10 text-amber-600"
+                                : "border-dashed border-muted-foreground/30 text-muted-foreground hover:border-amber-500/50 hover:text-amber-500"
+                            }`}
+                          >
+                            {selectedTarget?.type === "senior_moderator" && selectedTarget?.courseId === course.id ? (
+                              <>
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span className="text-sm">Select →</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-3.5 w-3.5" />
+                                <span className="text-sm">Add</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Connector */}
+                      <div className="flex justify-center">
+                        <div className="w-0.5 h-3 bg-border" />
+                      </div>
+
+                      {/* Moderators */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-blue-500" />
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              Moderators
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] h-5">
+                            {course.moderators.length}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {course.moderators.map((mod) => (
+                            <div
+                              key={mod.id}
+                              className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/5 border border-blue-500/20"
+                            >
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={mod.user?.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs bg-blue-500/10 text-blue-600">
+                                  {mod.user?.full_name?.[0] || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium">
+                                {mod.user?.full_name || mod.user?.email}
+                              </span>
+                              <button
+                                onClick={() => handleRemoveModerator(mod.id, course.id, mod.user_id, "moderator")}
+                                className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => setSelectedTarget({ type: "moderator", courseId: course.id })}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors ${
+                              selectedTarget?.type === "moderator" && selectedTarget?.courseId === course.id
+                                ? "border-blue-500 bg-blue-500/10 text-blue-600"
+                                : "border-dashed border-muted-foreground/30 text-muted-foreground hover:border-blue-500/50 hover:text-blue-500"
+                            }`}
+                          >
+                            {selectedTarget?.type === "moderator" && selectedTarget?.courseId === course.id ? (
+                              <>
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span className="text-sm">Select →</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-3.5 w-3.5" />
+                                <span className="text-sm">Add</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </DialogContent>
-      </Dialog>
+                </div>
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* User Pool Sidebar */}
+      <UserPoolSidebar
+        allUsers={allUsers}
+        assignedSuperModeratorIds={assignedSuperModeratorIds}
+        assignedSeniorModeratorIds={assignedSeniorModeratorIds}
+        assignedModeratorIds={assignedModeratorIds}
+        selectedTarget={selectedTarget}
+        onSelectUser={handleSelectUserFromPool}
+        onClearSelection={() => setSelectedTarget(null)}
+      />
 
       {/* Archive Confirmation */}
       <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
@@ -814,18 +791,13 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li>Hide the team from the active teams list</li>
-                  <li>Keep all super moderator and course assignments intact (not deleted)</li>
-                  <li>Preserve historical data for auditing purposes</li>
+                  <li>Keep all assignments intact (not deleted)</li>
                   <li>Allow the team to be restored later if needed</li>
                 </ul>
-                <p className="text-sm">
-                  The team members will no longer see this team in their dashboard, but their
-                  permissions on courses remain unchanged until manually removed.
-                </p>
                 {(superModerators.length > 0 || courses.some(c => c.seniorModerators.length > 0 || c.moderators.length > 0)) && (
                   <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">
-                    ⚠️ This team has active assignments ({superModerators.length} super moderator(s),{" "}
-                    {courses.reduce((acc, c) => acc + c.seniorModerators.length + c.moderators.length, 0)} course assignment(s))
+                    ⚠️ This team has {superModerators.length} super moderator(s) and{" "}
+                    {courses.reduce((acc, c) => acc + c.seniorModerators.length + c.moderators.length, 0)} course assignment(s)
                   </p>
                 )}
               </div>
