@@ -28,6 +28,7 @@ import AdminModeratorActivity from "@/pages/AdminModeratorActivity";
 import AdminReports from "@/pages/AdminReports";
 import AdminPostVersions from "@/pages/AdminPostVersions";
 import AdminAnnotations from "@/pages/AdminAnnotations";
+import AdminAssignments from "@/pages/AdminAssignments";
 import NotFound from "@/pages/NotFound";
 
 /**
@@ -61,6 +62,7 @@ const AdminRoutes = () => {
           <Route path="users" element={<AdminUsers />} />
           <Route path="tags" element={<AdminTags />} />
           <Route path="authors" element={<AdminAuthors />} />
+          <Route path="assignments" element={<AdminAssignments />} />
           <Route path="media" element={<AdminMedia />} />
           <Route path="monetization" element={<AdminMonetization />} />
           <Route path="redirects" element={<AdminRedirects />} />
