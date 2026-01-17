@@ -90,10 +90,10 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
   useEffect(() => {
     const fetchCareers = async () => {
       try {
+        // Fetch all careers (admin can see all statuses)
         const { data, error } = await supabase
           .from("careers")
           .select("id, name, slug, icon, color, status")
-          .eq("status", "published")
           .order("name");
 
         if (error) throw error;
