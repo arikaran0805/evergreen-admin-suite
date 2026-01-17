@@ -35,10 +35,22 @@ interface CanvasCourseNodeProps {
   teamId: string;
   allUsers: UserProfile[];
   allCourseAssignments?: CourseAssignmentGlobal[];
+  onAssignmentAdded?: (courseId: string, userId: string, role: string, assignment: CourseAssignment) => void;
+  onAssignmentRemoved?: (courseId: string, assignmentId: string, userId: string, role: string) => void;
+  onDefaultManagerChanged?: (courseId: string, assignmentId: string) => void;
   onRefresh: () => void;
 }
 
-const CanvasCourseNode = ({ course, teamId, allUsers, allCourseAssignments = [], onRefresh }: CanvasCourseNodeProps) => {
+const CanvasCourseNode = ({ 
+  course, 
+  teamId, 
+  allUsers, 
+  allCourseAssignments = [], 
+  onAssignmentAdded,
+  onAssignmentRemoved,
+  onDefaultManagerChanged,
+  onRefresh 
+}: CanvasCourseNodeProps) => {
   const { userId } = useAuth();
   const { toast } = useToast();
   const [showAddSeniorModDialog, setShowAddSeniorModDialog] = useState(false);
@@ -61,23 +73,32 @@ const CanvasCourseNode = ({ course, teamId, allUsers, allCourseAssignments = [],
     try {
       const isFirstSeniorMod = role === "senior_moderator" && course.seniorModerators.length === 0;
 
-      const { error } = await supabase.from("course_assignments").insert({
+      const { data, error } = await supabase.from("course_assignments").insert({
         user_id: selectedUserId,
         course_id: course.id,
         team_id: teamId,
         role,
         is_default_manager: isFirstSeniorMod,
         assigned_by: userId,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Notify parent to update state locally
+      const user = allUsers.find((u) => u.id === selectedUserId);
+      const newAssignment: CourseAssignment = { ...data, user };
+      
+      if (onAssignmentAdded) {
+        onAssignmentAdded(course.id, selectedUserId, role, newAssignment);
+      } else {
+        onRefresh();
+      }
 
       toast({
         title: `${role === "senior_moderator" ? "Senior Moderator" : "Moderator"} assigned`,
       });
       setShowAddSeniorModDialog(false);
       setShowAddModeratorDialog(false);
-      onRefresh();
     } catch (error: any) {
       toast({
         title: "Error assigning user",
@@ -112,9 +133,15 @@ const CanvasCourseNode = ({ course, teamId, allUsers, allCourseAssignments = [],
 
       if (error) throw error;
 
+      // Notify parent to update state locally
+      if (onAssignmentRemoved) {
+        onAssignmentRemoved(course.id, assignmentToRemove.id, assignmentToRemove.user_id, assignmentToRemove.role);
+      } else {
+        onRefresh();
+      }
+
       toast({ title: "Assignment removed" });
       setAssignmentToRemove(null);
-      onRefresh();
     } catch (error: any) {
       toast({
         title: "Error removing assignment",
@@ -141,8 +168,14 @@ const CanvasCourseNode = ({ course, teamId, allUsers, allCourseAssignments = [],
 
       if (error) throw error;
 
+      // Notify parent to update state locally
+      if (onDefaultManagerChanged) {
+        onDefaultManagerChanged(course.id, assignment.id);
+      } else {
+        onRefresh();
+      }
+
       toast({ title: "Default manager updated" });
-      onRefresh();
     } catch (error: any) {
       toast({
         title: "Error updating default manager",

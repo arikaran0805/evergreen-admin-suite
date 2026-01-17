@@ -70,9 +70,9 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   // State for all existing course assignments (to prevent duplicates across teams)
   const [allCourseAssignments, setAllCourseAssignments] = useState<{ user_id: string; course_id: string; role: string }[]>([]);
 
-  const fetchCanvasData = async () => {
+  const fetchCanvasData = async (showLoader = true) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
 
       // Fetch all users
       const { data: usersData } = await supabase
@@ -166,7 +166,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -221,18 +221,21 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   // Super Moderator handlers
   const handleAddSuperModerator = async (selectedUserId: string) => {
     try {
-      const { error } = await supabase.from("career_assignments").insert({
+      const { data, error } = await supabase.from("career_assignments").insert({
         user_id: selectedUserId,
         career_id: team.career_id,
         team_id: team.id,
         assigned_by: userId,
-      });
+      }).select().single();
 
       if (error) throw error;
 
+      // Update local state without refetching
+      const user = allUsers.find((u) => u.id === selectedUserId);
+      setSuperModerators((prev) => [...prev, { ...data, user }]);
+      
       toast({ title: "Super Moderator added" });
       setShowAddSuperModDialog(false);
-      fetchCanvasData();
     } catch (error: any) {
       toast({
         title: "Error adding super moderator",
@@ -251,8 +254,10 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (error) throw error;
 
+      // Update local state without refetching
+      setSuperModerators((prev) => prev.filter((sm) => sm.id !== assignmentId));
+      
       toast({ title: "Super Moderator removed" });
-      fetchCanvasData();
     } catch (error: any) {
       toast({
         title: "Error removing super moderator",
@@ -277,21 +282,38 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
       const course = courses.find((c) => c.id === courseId);
       const isFirstSenior = role === "senior_moderator" && course?.seniorModerators.length === 0;
 
-      const { error } = await supabase.from("course_assignments").insert({
+      const { data, error } = await supabase.from("course_assignments").insert({
         user_id: selectedUserId,
         course_id: courseId,
         team_id: team.id,
         role,
         is_default_manager: isFirstSenior,
         assigned_by: userId,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Update local state without refetching
+      const user = allUsers.find((u) => u.id === selectedUserId);
+      const newAssignment = { ...data, user };
+      
+      setCourses((prev) =>
+        prev.map((c) => {
+          if (c.id !== courseId) return c;
+          if (role === "senior_moderator") {
+            return { ...c, seniorModerators: [...c.seniorModerators, newAssignment] };
+          } else {
+            return { ...c, moderators: [...c.moderators, newAssignment] };
+          }
+        })
+      );
+      
+      // Also update allCourseAssignments to prevent duplicate selections
+      setAllCourseAssignments((prev) => [...prev, { user_id: selectedUserId, course_id: courseId, role }]);
 
       toast({ title: `${role === "senior_moderator" ? "Senior Moderator" : "Moderator"} added` });
       setShowAddSeniorModDialog(null);
       setShowAddModeratorDialog(null);
-      fetchCanvasData();
     } catch (error: any) {
       toast({
         title: "Error adding moderator",
@@ -301,7 +323,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
-  const handleRemoveModerator = async (assignmentId: string) => {
+  const handleRemoveModerator = async (assignmentId: string, courseId: string, userId: string, role: string) => {
     try {
       const { error } = await supabase
         .from("course_assignments")
@@ -310,8 +332,24 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (error) throw error;
 
+      // Update local state without refetching
+      setCourses((prev) =>
+        prev.map((c) => {
+          if (c.id !== courseId) return c;
+          if (role === "senior_moderator") {
+            return { ...c, seniorModerators: c.seniorModerators.filter((sm) => sm.id !== assignmentId) };
+          } else {
+            return { ...c, moderators: c.moderators.filter((m) => m.id !== assignmentId) };
+          }
+        })
+      );
+      
+      // Also update allCourseAssignments
+      setAllCourseAssignments((prev) => 
+        prev.filter((a) => !(a.user_id === userId && a.course_id === courseId && a.role === role))
+      );
+
       toast({ title: "Assignment removed" });
-      fetchCanvasData();
     } catch (error: any) {
       toast({
         title: "Error removing assignment",
@@ -341,8 +379,21 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (setError) throw setError;
 
+      // Update local state without refetching
+      setCourses((prev) =>
+        prev.map((c) => {
+          if (c.id !== courseId) return c;
+          return {
+            ...c,
+            seniorModerators: c.seniorModerators.map((sm) => ({
+              ...sm,
+              is_default_manager: sm.id === assignmentId,
+            })),
+          };
+        })
+      );
+
       toast({ title: "Default manager updated" });
-      fetchCanvasData();
     } catch (error: any) {
       toast({
         title: "Error updating default manager",
@@ -549,7 +600,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                               </button>
                             )}
                             <button
-                              onClick={() => handleRemoveModerator(sm.id)}
+                              onClick={() => handleRemoveModerator(sm.id, course.id, sm.user_id, "senior_moderator")}
                               className="p-1 rounded-full bg-destructive text-destructive-foreground"
                             >
                               <X className="h-3 w-3" />
@@ -596,7 +647,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                             {mod.user?.full_name || mod.user?.email}
                           </span>
                           <button
-                            onClick={() => handleRemoveModerator(mod.id)}
+                            onClick={() => handleRemoveModerator(mod.id, course.id, mod.user_id, "moderator")}
                             className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <X className="h-3 w-3" />
