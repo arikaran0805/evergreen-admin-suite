@@ -145,7 +145,22 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
           }));
 
         setCourses(coursesWithMods);
-        setTeamName(`${selectedCareer.name} Team`);
+
+        // Generate unique team name
+        const baseName = `${selectedCareer.name} Team`;
+        const { data: existingTeams } = await supabase
+          .from("teams")
+          .select("name")
+          .eq("career_id", selectedCareer.id);
+
+        const existingNames = new Set((existingTeams || []).map((t) => t.name));
+        let uniqueName = baseName;
+        let counter = 2;
+        while (existingNames.has(uniqueName)) {
+          uniqueName = `${baseName} ${counter}`;
+          counter++;
+        }
+        setTeamName(uniqueName);
       } catch (error: any) {
         toast({
           title: "Error loading courses",
