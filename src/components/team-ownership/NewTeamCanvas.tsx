@@ -81,7 +81,6 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
         const { data, error } = await supabase
           .from("careers")
           .select("id, name, slug, icon, color, status")
-          .eq("status", "published")
           .order("name");
 
         if (error) throw error;
@@ -127,7 +126,7 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
 
         // Initialize courses with empty moderator arrays
         const coursesWithMods: CourseWithModerators[] = (careerCoursesData || [])
-          .filter((cc: any) => cc.course && cc.course.status === "published")
+          .filter((cc: any) => cc.course)
           .map((cc: any) => ({
             ...cc.course,
             seniorModerators: [],
