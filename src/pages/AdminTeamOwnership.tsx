@@ -4,7 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminSidebar } from "@/contexts/AdminSidebarContext";
 import TeamCard from "@/components/team-ownership/TeamCard";
-import TeamCanvas from "@/components/team-ownership/TeamCanvas";
+import TeamCanvasEditor from "@/components/team-ownership/TeamCanvasEditor";
+import NewTeamCanvas from "@/components/team-ownership/NewTeamCanvas";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -161,22 +162,23 @@ const AdminTeamOwnership = () => {
     setSidebarOpen(true);
   };
 
-  // Show Team Canvas (unified for create and edit)
-  if (showNewTeamCanvas || selectedTeam) {
+  // Show New Team Canvas
+  if (showNewTeamCanvas) {
     return (
-      <TeamCanvas
+      <NewTeamCanvas
+        onClose={handleCloseNewTeamCanvas}
+        onTeamCreated={handleNewTeamCreated}
+      />
+    );
+  }
+
+  // Show existing Team Canvas Editor
+  if (selectedTeam) {
+    return (
+      <TeamCanvasEditor
         team={selectedTeam}
-        onClose={() => {
-          setShowNewTeamCanvas(false);
-          setSelectedTeam(null);
-          setSidebarOpen(true);
-        }}
-        onSaved={() => {
-          setShowNewTeamCanvas(false);
-          setSelectedTeam(null);
-          setSidebarOpen(true);
-          fetchData();
-        }}
+        onClose={handleCloseCanvas}
+        onRefresh={fetchData}
       />
     );
   }
