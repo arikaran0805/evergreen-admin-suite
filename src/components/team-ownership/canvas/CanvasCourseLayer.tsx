@@ -34,13 +34,22 @@ const CanvasCourseLayer = ({
 
   const handleAddCourse = async (courseId: string) => {
     try {
-      // When adding a course to a team, we need to assign at least one senior moderator
-      // For now, we'll just mark the course as belonging to this team by creating a placeholder assignment
-      // The admin will then need to assign a senior moderator
+      // Create a placeholder course assignment with the admin as initial senior moderator
+      // This links the course to this team
+      const { error } = await supabase.from("course_assignments").insert({
+        user_id: userId,
+        course_id: courseId,
+        team_id: teamId,
+        role: "senior_moderator",
+        is_default_manager: true,
+        assigned_by: userId,
+      });
+
+      if (error) throw error;
       
       toast({
         title: "Course added",
-        description: "Now assign a Senior Moderator to manage this course",
+        description: "Course assigned with you as the default Senior Moderator",
       });
       setShowAddCourseDialog(false);
       onRefresh();
