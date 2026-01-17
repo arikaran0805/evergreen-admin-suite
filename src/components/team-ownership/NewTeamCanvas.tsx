@@ -31,8 +31,15 @@ import {
   X,
   Star,
   Check,
+  Shield,
 } from "lucide-react";
 import type { Career, UserProfile } from "./types";
+
+interface SuperModeratorTemp {
+  id: string;
+  user_id: string;
+  user?: UserProfile;
+}
 
 interface CourseWithModerators {
   id: string;
@@ -70,7 +77,11 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Super Moderators for the team (career level)
+  const [superModerators, setSuperModerators] = useState<SuperModeratorTemp[]>([]);
+
   // Dialog states
+  const [showAddSuperModDialog, setShowAddSuperModDialog] = useState(false);
   const [showAddSeniorModDialog, setShowAddSeniorModDialog] = useState<string | null>(null);
   const [showAddModeratorDialog, setShowAddModeratorDialog] = useState<string | null>(null);
 
@@ -152,6 +163,29 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
   const handleSelectCareer = (career: Career) => {
     setSelectedCareer(career);
     setStep("courses");
+  };
+
+  // Super Moderator handlers
+  const handleAddSuperModerator = (userId: string) => {
+    const user = allUsers.find((u) => u.id === userId);
+    setSuperModerators((prev) => [
+      ...prev,
+      {
+        id: `temp-${Date.now()}`,
+        user_id: userId,
+        user,
+      },
+    ]);
+    setShowAddSuperModDialog(false);
+  };
+
+  const handleRemoveSuperModerator = (id: string) => {
+    setSuperModerators((prev) => prev.filter((sm) => sm.id !== id));
+  };
+
+  const getAvailableSuperModUsers = () => {
+    const assignedIds = new Set(superModerators.map((sm) => sm.user_id));
+    return allUsers.filter((u) => !assignedIds.has(u.id));
   };
 
   const handleAddModerator = (
@@ -249,15 +283,15 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
       return;
     }
 
-    // Check that at least one course has assignments
+    // Check that at least one super moderator or course assignment exists
     const coursesWithAssignments = courses.filter(
       (c) => c.seniorModerators.length > 0 || c.moderators.length > 0
     );
 
-    if (coursesWithAssignments.length === 0) {
+    if (superModerators.length === 0 && coursesWithAssignments.length === 0) {
       toast({
         title: "No assignments",
-        description: "Please assign at least one moderator to a course",
+        description: "Please assign at least one super moderator or course moderator",
         variant: "destructive",
       });
       return;
@@ -278,6 +312,22 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
         .single();
 
       if (teamError) throw teamError;
+
+      // Create career assignments for super moderators
+      if (superModerators.length > 0) {
+        const careerAssignments = superModerators.map((sm) => ({
+          user_id: sm.user_id,
+          career_id: selectedCareer.id,
+          team_id: teamData.id,
+          assigned_by: userId,
+        }));
+
+        const { error: careerAssignError } = await supabase
+          .from("career_assignments")
+          .insert(careerAssignments);
+
+        if (careerAssignError) throw careerAssignError;
+      }
 
       // Create course assignments
       const assignments: {
@@ -321,9 +371,10 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
         if (assignError) throw assignError;
       }
 
+      const totalAssignments = superModerators.length + assignments.length;
       toast({
         title: "Team created",
-        description: `${teamName} has been created with ${assignments.length} assignment(s)`,
+        description: `${teamName} has been created with ${totalAssignments} assignment(s)`,
       });
 
       onTeamCreated();
@@ -406,7 +457,7 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
     );
   }
 
-  // Courses & Assignments Step
+  // Courses & Assignments Step - Hierarchical Layout
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -415,165 +466,271 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
           <Button variant="ghost" size="icon" onClick={() => setStep("career")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-3">
-            <Input
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              className="text-xl font-bold w-64"
-              placeholder="Team name"
-            />
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground">
-              <Briefcase className="h-4 w-4" />
-              <span className="text-sm">{selectedCareer?.name}</span>
-            </div>
-          </div>
+          <Input
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            className="text-xl font-bold w-64"
+            placeholder="Team name"
+          />
         </div>
         <Button onClick={handleSaveTeam} disabled={saving}>
           {saving ? "Creating..." : "Create Team"}
         </Button>
       </div>
 
-      {/* Courses Grid */}
-      <div className="card-premium rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <GraduationCap className="h-5 w-5 text-accent" />
-          <h2 className="text-lg font-semibold">Courses in {selectedCareer?.name}</h2>
+      {loading ? (
+        <div className="flex flex-col items-center gap-6 py-12">
+          <Skeleton className="h-20 w-64 rounded-xl" />
+          <Skeleton className="h-32 w-96 rounded-xl" />
+          <Skeleton className="h-48 w-full max-w-4xl rounded-xl" />
         </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-48 rounded-xl" />
-            ))}
+      ) : (
+        <div className="flex flex-col items-center">
+          {/* Career Node */}
+          <div className="px-8 py-4 rounded-xl border-2 border-primary bg-card shadow-sm">
+            <p className="text-xs font-medium text-primary uppercase tracking-wide text-center mb-1">
+              CAREER
+            </p>
+            <h2 className="text-xl font-bold text-foreground text-center">
+              {selectedCareer?.name}
+            </h2>
           </div>
-        ) : courses.length === 0 ? (
-          <div className="text-center py-12">
-            <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-muted-foreground">No courses in this career</p>
+
+          {/* Connector Line */}
+          <div className="w-0.5 h-8 bg-border" />
+
+          {/* Super Moderators Section */}
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                SUPER MODERATORS
+              </h3>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+              {superModerators.map((sm) => (
+                <div
+                  key={sm.id}
+                  className="group relative flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-primary/30 bg-primary/5"
+                >
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                    <AvatarImage src={sm.user?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {sm.user?.full_name?.[0] || sm.user?.email?.[0] || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {sm.user?.full_name || "Unknown"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{sm.user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveSuperModerator(sm.id)}
+                    className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add Super Moderator Button */}
+              <button
+                onDoubleClick={() => setShowAddSuperModDialog(true)}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors cursor-pointer"
+              >
+                <Plus className="h-5 w-5" />
+                <span className="text-sm">Double-click to add</span>
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {courses.map((course) => (
-              <div key={course.id} className="rounded-xl border bg-card p-4 space-y-4">
-                {/* Course Header */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-accent" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-foreground truncate">{course.name}</h4>
-                    <p className="text-xs text-muted-foreground">{course.slug}</p>
-                  </div>
-                </div>
 
-                {/* Senior Moderators */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <UserCog className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Senior Moderators
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {course.seniorModerators.map((sm) => (
-                      <div
-                        key={sm.id}
-                        className="group relative flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/5 border border-primary/20"
-                      >
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={sm.user?.avatar_url || undefined} />
-                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                            {sm.user?.full_name?.[0] || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs font-medium">
-                          {sm.user?.full_name || sm.user?.email}
-                        </span>
-                        {sm.is_default_manager && (
-                          <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                            <Star className="h-2.5 w-2.5 mr-0.5" />
-                            Default
-                          </Badge>
-                        )}
-                        <div className="absolute -top-2 -right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!sm.is_default_manager && (
-                            <button
-                              onClick={() => handleSetDefaultManager(course.id, sm.id)}
-                              className="p-0.5 rounded-full bg-primary text-primary-foreground"
-                              title="Set as default manager"
-                            >
-                              <Star className="h-2.5 w-2.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleRemoveModerator(course.id, sm.id, "senior_moderator")}
-                            className="p-0.5 rounded-full bg-destructive text-destructive-foreground"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setShowAddSeniorModDialog(course.id)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-md border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                      <span className="text-xs">Add</span>
-                    </button>
-                  </div>
-                </div>
+          {/* Connector Line */}
+          <div className="w-0.5 h-8 bg-border" />
 
-                {/* Connector Line */}
-                <div className="flex justify-center">
-                  <div className="w-0.5 h-3 bg-border" />
-                </div>
+          {/* Courses Section */}
+          <div className="w-full max-w-6xl">
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <GraduationCap className="h-5 w-5 text-accent" />
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                COURSES
+              </h3>
+            </div>
 
-                {/* Moderators */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Moderators
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {course.moderators.map((mod) => (
-                      <div
-                        key={mod.id}
-                        className="group relative flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border"
-                      >
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={mod.user?.avatar_url || undefined} />
-                          <AvatarFallback className="text-[10px]">
-                            {mod.user?.full_name?.[0] || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs font-medium">
-                          {mod.user?.full_name || mod.user?.email}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveModerator(course.id, mod.id, "moderator")}
-                          className="absolute -top-2 -right-2 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setShowAddModeratorDialog(course.id)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-md border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                      <span className="text-xs">Add</span>
-                    </button>
-                  </div>
+            {courses.length === 0 ? (
+              <div className="flex justify-center">
+                <div className="px-16 py-12 rounded-xl border-2 border-dashed border-muted-foreground/30 text-center">
+                  <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground">No courses in this career</p>
                 </div>
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {courses.map((course) => (
+                  <div key={course.id} className="rounded-xl border bg-card p-5 space-y-4">
+                    {/* Course Header */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                        <GraduationCap className="h-6 w-6 text-accent" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-foreground">{course.name}</h4>
+                        <p className="text-xs text-muted-foreground">{course.slug}</p>
+                      </div>
+                    </div>
+
+                    {/* Senior Moderators */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <UserCog className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Senior Moderators
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {course.seniorModerators.map((sm) => (
+                          <div
+                            key={sm.id}
+                            className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20"
+                          >
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={sm.user?.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {sm.user?.full_name?.[0] || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">
+                              {sm.user?.full_name || sm.user?.email}
+                            </span>
+                            {sm.is_default_manager && (
+                              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                                <Star className="h-3 w-3 mr-0.5" />
+                                Default
+                              </Badge>
+                            )}
+                            <div className="absolute -top-2 -right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!sm.is_default_manager && (
+                                <button
+                                  onClick={() => handleSetDefaultManager(course.id, sm.id)}
+                                  className="p-1 rounded-full bg-primary text-primary-foreground"
+                                  title="Set as default manager"
+                                >
+                                  <Star className="h-3 w-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleRemoveModerator(course.id, sm.id, "senior_moderator")}
+                                className="p-1 rounded-full bg-destructive text-destructive-foreground"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setShowAddSeniorModDialog(course.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span className="text-sm">Add</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Connector Line */}
+                    <div className="flex justify-center">
+                      <div className="w-0.5 h-4 bg-border" />
+                    </div>
+
+                    {/* Moderators */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Moderators
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {course.moderators.map((mod) => (
+                          <div
+                            key={mod.id}
+                            className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border"
+                          >
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={mod.user?.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {mod.user?.full_name?.[0] || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">
+                              {mod.user?.full_name || mod.user?.email}
+                            </span>
+                            <button
+                              onClick={() => handleRemoveModerator(course.id, mod.id, "moderator")}
+                              className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setShowAddModeratorDialog(course.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span className="text-sm">Add</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Add Super Moderator Dialog */}
+      <Dialog
+        open={showAddSuperModDialog}
+        onOpenChange={setShowAddSuperModDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Super Moderator</DialogTitle>
+          </DialogHeader>
+          <Command className="rounded-lg border">
+            <CommandInput placeholder="Search users..." />
+            <CommandList>
+              <CommandEmpty>No users found.</CommandEmpty>
+              <CommandGroup>
+                {getAvailableSuperModUsers().map((user) => (
+                  <CommandItem
+                    key={user.id}
+                    value={user.email}
+                    onSelect={() => handleAddSuperModerator(user.id)}
+                    className="cursor-pointer"
+                  >
+                    <Avatar className="h-6 w-6 mr-2">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {user.full_name?.[0] || user.email[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm">{user.full_name || user.email}</p>
+                      {user.full_name && (
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Senior Moderator Dialog */}
       <Dialog
