@@ -33,16 +33,14 @@ import {
 } from "@/components/ui/command";
 import {
   ArrowLeft,
-  Edit2,
   Archive,
-  Check,
-  X,
   Shield,
   GraduationCap,
   UserCog,
   Users,
   Plus,
   Star,
+  X,
 } from "lucide-react";
 import type { Team, UserProfile, CourseWithAssignments, SuperModeratorAssignment } from "./types";
 
@@ -56,7 +54,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   const { userId } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(team.name);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
 
@@ -158,8 +155,6 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
   const handleSaveName = async () => {
     if (!editedName.trim() || editedName === team.name) {
-      setIsEditing(false);
-      setEditedName(team.name);
       return;
     }
 
@@ -171,12 +166,11 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
       if (error) throw error;
 
-      toast({ title: "Team renamed" });
-      setIsEditing(false);
+      toast({ title: "Team updated" });
       onRefresh();
     } catch (error: any) {
       toast({
-        title: "Error renaming team",
+        title: "Error updating team",
         description: error.message,
         variant: "destructive",
       });
@@ -367,65 +361,35 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - same style as create team */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                className="w-64"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveName();
-                  if (e.key === "Escape") {
-                    setIsEditing(false);
-                    setEditedName(team.name);
-                  }
-                }}
-              />
-              <Button size="icon" variant="ghost" onClick={handleSaveName}>
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  setIsEditing(false);
-                  setEditedName(team.name);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{team.name}</h1>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onDoubleClick={() => setIsEditing(true)}
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          <Input
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            className="text-xl font-bold w-64"
+            placeholder="Team name"
+          />
         </div>
-
-        <Button
-          variant="outline"
-          className="text-destructive hover:bg-destructive/10"
-          onClick={() => setShowArchiveDialog(true)}
-        >
-          <Archive className="h-4 w-4 mr-2" />
-          Archive
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleSaveName}
+            disabled={!editedName.trim() || editedName === team.name}
+          >
+            Update Team
+          </Button>
+          <Button
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10"
+            onClick={() => setShowArchiveDialog(true)}
+          >
+            <Archive className="h-4 w-4 mr-2" />
+            Archive
+          </Button>
+        </div>
       </div>
 
       {/* Hierarchical Canvas */}
@@ -765,13 +729,28 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Team?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will archive "{team.name}" and remove all assignments.
-              {courses.length > 0 && (
-                <span className="block mt-2 text-destructive">
-                  Warning: This team has {courses.length} course(s) assigned.
-                </span>
-              )}
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-muted-foreground">
+                <p>
+                  Archiving <strong>"{team.name}"</strong> will:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Hide the team from the active teams list</li>
+                  <li>Keep all super moderator and course assignments intact (not deleted)</li>
+                  <li>Preserve historical data for auditing purposes</li>
+                  <li>Allow the team to be restored later if needed</li>
+                </ul>
+                <p className="text-sm">
+                  The team members will no longer see this team in their dashboard, but their
+                  permissions on courses remain unchanged until manually removed.
+                </p>
+                {(superModerators.length > 0 || courses.some(c => c.seniorModerators.length > 0 || c.moderators.length > 0)) && (
+                  <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">
+                    ⚠️ This team has active assignments ({superModerators.length} super moderator(s),{" "}
+                    {courses.reduce((acc, c) => acc + c.seniorModerators.length + c.moderators.length, 0)} course assignment(s))
+                  </p>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -780,7 +759,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
               onClick={handleArchive}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Archive
+              Archive Team
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
