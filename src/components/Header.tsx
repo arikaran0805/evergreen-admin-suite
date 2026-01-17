@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
-import { GlobalCommandSearch } from "./GlobalCommandSearch";
+import { SearchDialog } from "./SearchDialog";
 import NotificationDropdown from "./NotificationDropdown";
 
 interface SiteSettings {
@@ -185,8 +185,8 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
                 <Search className="h-[18px] w-[18px] text-foreground/80" strokeWidth={1.5} />
               </Button>
 
-              {/* Global Command Search (Spotlight-style) */}
-              <GlobalCommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
+              {/* Search Dialog for public pages */}
+              <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
               {/* Notification Bell - Only for Admin/Moderator */}
               {user && (isAdmin || isModerator) && (
