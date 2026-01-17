@@ -4,8 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import TeamCard from "@/components/team-ownership/TeamCard";
 import TeamCanvasEditor from "@/components/team-ownership/TeamCanvasEditor";
+import NewTeamCanvas from "@/components/team-ownership/NewTeamCanvas";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Search, Plus, Users2 } from "lucide-react";
 import type { Team, Career } from "@/components/team-ownership/types";
 
@@ -17,6 +19,7 @@ const AdminTeamOwnership = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [showNewTeamCanvas, setShowNewTeamCanvas] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -130,43 +133,31 @@ const AdminTeamOwnership = () => {
     return Object.values(grouped);
   }, [filteredTeams]);
 
-  const handleCreateTeam = async (careerId: string) => {
-    try {
-      const career = careers.find((c) => c.id === careerId);
-      const teamName = `Team ${(teams.filter((t) => t.career_id === careerId).length + 1)}`;
-
-      const { data, error } = await supabase
-        .from("teams")
-        .insert({
-          name: teamName,
-          career_id: careerId,
-          created_by: userId,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({ title: "Team created", description: `${teamName} created for ${career?.name}` });
-      fetchData();
-    } catch (error: any) {
-      toast({
-        title: "Error creating team",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleTeamDoubleClick = (team: Team) => {
     setSelectedTeam(team);
   };
 
   const handleCloseCanvas = () => {
     setSelectedTeam(null);
-    fetchData(); // Refresh data when canvas closes
+    fetchData();
   };
 
+  const handleNewTeamCreated = () => {
+    setShowNewTeamCanvas(false);
+    fetchData();
+  };
+
+  // Show New Team Canvas
+  if (showNewTeamCanvas) {
+    return (
+      <NewTeamCanvas
+        onClose={() => setShowNewTeamCanvas(false)}
+        onTeamCreated={handleNewTeamCreated}
+      />
+    );
+  }
+
+  // Show existing Team Canvas Editor
   if (selectedTeam) {
     return (
       <TeamCanvasEditor
@@ -197,6 +188,10 @@ const AdminTeamOwnership = () => {
               className="pl-9"
             />
           </div>
+          <Button onClick={() => setShowNewTeamCanvas(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Team
+          </Button>
         </div>
       </div>
 
@@ -264,34 +259,12 @@ const AdminTeamOwnership = () => {
           <Users2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">No teams yet</h3>
           <p className="text-muted-foreground mb-6">
-            Double-click on an empty area within a career to create your first team
+            Click the "New Team" button to create your first team
           </p>
-          {/* Show careers without teams */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {careers.map((career) => (
-              <button
-                key={career.id}
-                onDoubleClick={() => handleCreateTeam(career.id)}
-                className="card-premium rounded-xl p-6 text-left transition-all hover:border-primary/30 cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold"
-                    style={{ backgroundColor: career.color || "hsl(var(--primary))" }}
-                  >
-                    {career.icon || career.name[0]}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">{career.name}</h3>
-                    <p className="text-sm text-muted-foreground">No teams</p>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                  Double-click to create a team
-                </p>
-              </button>
-            ))}
-          </div>
+          <Button onClick={() => setShowNewTeamCanvas(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create First Team
+          </Button>
         </div>
       ) : (
         <div className="space-y-8">
@@ -312,9 +285,9 @@ const AdminTeamOwnership = () => {
                   </span>
                 </div>
                 <button
-                  onDoubleClick={() => handleCreateTeam(career.id)}
+                  onClick={() => setShowNewTeamCanvas(true)}
                   className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                  title="Double-click to add team"
+                  title="Add new team"
                 >
                   <Plus className="h-5 w-5" />
                 </button>
