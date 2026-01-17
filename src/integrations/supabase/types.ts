@@ -404,6 +404,7 @@ export type Database = {
           assigned_by: string | null
           career_id: string
           id: string
+          team_id: string | null
           user_id: string
         }
         Insert: {
@@ -411,6 +412,7 @@ export type Database = {
           assigned_by?: string | null
           career_id: string
           id?: string
+          team_id?: string | null
           user_id: string
         }
         Update: {
@@ -418,6 +420,7 @@ export type Database = {
           assigned_by?: string | null
           career_id?: string
           id?: string
+          team_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -426,6 +429,13 @@ export type Database = {
             columns: ["career_id"]
             isOneToOne: false
             referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "career_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -803,7 +813,9 @@ export type Database = {
           assigned_by: string | null
           course_id: string
           id: string
+          is_default_manager: boolean
           role: Database["public"]["Enums"]["app_role"]
+          team_id: string | null
           user_id: string
         }
         Insert: {
@@ -811,7 +823,9 @@ export type Database = {
           assigned_by?: string | null
           course_id: string
           id?: string
+          is_default_manager?: boolean
           role: Database["public"]["Enums"]["app_role"]
+          team_id?: string | null
           user_id: string
         }
         Update: {
@@ -819,7 +833,9 @@ export type Database = {
           assigned_by?: string | null
           course_id?: string
           id?: string
+          is_default_manager?: boolean
           role?: Database["public"]["Enums"]["app_role"]
+          team_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -828,6 +844,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2180,6 +2203,44 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      teams: {
+        Row: {
+          archived_at: string | null
+          career_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          career_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          career_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

@@ -28,6 +28,7 @@ import {
   Activity,
   Shield,
   UserCog,
+  Users2,
 } from "lucide-react";
 import type { SidebarConfig, SidebarSection } from "./types";
 
@@ -81,6 +82,7 @@ const systemSection: SidebarSection = {
     { icon: Users, label: "Users", path: "/admin/users" },
     { icon: Shield, label: "Roles & Permissions", path: "/admin/authors" },
     { icon: UserCog, label: "Assignments", path: "/admin/assignments" },
+    { icon: Users2, label: "Team Ownership", path: "/admin/team-ownership" },
     { icon: DollarSign, label: "Monetization", path: "/admin/monetization" },
     { icon: Link2, label: "Redirects", path: "/admin/redirects" },
     { icon: Key, label: "API & Integrations", path: "/admin/api" },

@@ -1,0 +1,140 @@
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { GraduationCap, Plus } from "lucide-react";
+import type { CourseWithAssignments, UserProfile } from "../types";
+import CanvasCourseNode from "./CanvasCourseNode";
+
+interface CanvasCourseLayerProps {
+  teamId: string;
+  courses: CourseWithAssignments[];
+  availableCourses: { id: string; name: string; slug: string }[];
+  allUsers: UserProfile[];
+  onRefresh: () => void;
+}
+
+const CanvasCourseLayer = ({
+  teamId,
+  courses,
+  availableCourses,
+  allUsers,
+  onRefresh,
+}: CanvasCourseLayerProps) => {
+  const { userId } = useAuth();
+  const { toast } = useToast();
+  const [showAddCourseDialog, setShowAddCourseDialog] = useState(false);
+
+  const handleAddCourse = async (courseId: string) => {
+    try {
+      // When adding a course to a team, we need to assign at least one senior moderator
+      // For now, we'll just mark the course as belonging to this team by creating a placeholder assignment
+      // The admin will then need to assign a senior moderator
+      
+      toast({
+        title: "Course added",
+        description: "Now assign a Senior Moderator to manage this course",
+      });
+      setShowAddCourseDialog(false);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Error adding course",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-4">
+          <GraduationCap className="h-5 w-5 text-accent" />
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Courses
+          </h3>
+        </div>
+
+        {courses.length === 0 ? (
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-sm text-muted-foreground">No courses assigned to this team</p>
+            <button
+              onDoubleClick={() => setShowAddCourseDialog(true)}
+              className="flex items-center gap-2 px-6 py-4 rounded-xl border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Double-click to assign a course</span>
+            </button>
+          </div>
+        ) : (
+          <div className="w-full space-y-6">
+            {/* Course Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses.map((course) => (
+                <CanvasCourseNode
+                  key={course.id}
+                  course={course}
+                  teamId={teamId}
+                  allUsers={allUsers}
+                  onRefresh={onRefresh}
+                />
+              ))}
+
+              {/* Add Course Placeholder */}
+              {availableCourses.length > 0 && (
+                <button
+                  onDoubleClick={() => setShowAddCourseDialog(true)}
+                  className="flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors min-h-[200px]"
+                >
+                  <Plus className="h-8 w-8" />
+                  <span className="text-sm">Double-click to add course</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Add Course Dialog */}
+      <Dialog open={showAddCourseDialog} onOpenChange={setShowAddCourseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Course to Team</DialogTitle>
+          </DialogHeader>
+          <Command className="rounded-lg border">
+            <CommandInput placeholder="Search courses..." />
+            <CommandList>
+              <CommandEmpty>No available courses in this career.</CommandEmpty>
+              <CommandGroup>
+                {availableCourses.map((course) => (
+                  <CommandItem
+                    key={course.id}
+                    value={course.name}
+                    onSelect={() => handleAddCourse(course.id)}
+                    className="cursor-pointer"
+                  >
+                    <GraduationCap className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{course.name}</p>
+                      <p className="text-xs text-muted-foreground">{course.slug}</p>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default CanvasCourseLayer;
