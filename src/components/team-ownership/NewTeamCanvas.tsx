@@ -85,6 +85,9 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
   const [showAddSeniorModDialog, setShowAddSeniorModDialog] = useState<string | null>(null);
   const [showAddModeratorDialog, setShowAddModeratorDialog] = useState<string | null>(null);
 
+  // State for all existing course assignments (to prevent duplicates across teams)
+  const [allCourseAssignments, setAllCourseAssignments] = useState<{ user_id: string; course_id: string; role: string }[]>([]);
+
   // Fetch careers on mount
   useEffect(() => {
     const fetchCareers = async () => {
@@ -145,6 +148,20 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
           }));
 
         setCourses(coursesWithMods);
+
+        // Fetch ALL existing course assignments for these courses (across all teams)
+        const courseIds = coursesWithMods.map((c) => c.id);
+        if (courseIds.length > 0) {
+          const { data: allAssignments, error: allAssignmentsError } = await supabase
+            .from("course_assignments")
+            .select("user_id, course_id, role")
+            .in("course_id", courseIds);
+
+          if (allAssignmentsError) throw allAssignmentsError;
+          setAllCourseAssignments(allAssignments || []);
+        } else {
+          setAllCourseAssignments([]);
+        }
 
         // Generate unique team name
         const baseName = `${selectedCareer.name} Team`;
@@ -441,16 +458,25 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
     }
   };
 
-  const getAvailableUsers = (courseId: string) => {
+  // Filter available users for a course based on role - checks ALL assignments across teams
+  const getAvailableUsersForRole = (courseId: string, role: "senior_moderator" | "moderator") => {
     const course = courses.find((c) => c.id === courseId);
-    if (!course) return allUsers;
+    
+    // Get users already assigned to this course with this role (across all teams from DB)
+    const globalAssignedIds = new Set(
+      allCourseAssignments
+        .filter((a) => a.course_id === courseId && a.role === role)
+        .map((a) => a.user_id)
+    );
+    
+    // Also exclude users already added in local state for this session
+    const localAssignedIds = new Set(
+      role === "senior_moderator"
+        ? course?.seniorModerators.map((sm) => sm.user_id) || []
+        : course?.moderators.map((m) => m.user_id) || []
+    );
 
-    const assignedIds = new Set([
-      ...course.seniorModerators.map((sm) => sm.user_id),
-      ...course.moderators.map((m) => m.user_id),
-    ]);
-
-    return allUsers.filter((u) => !assignedIds.has(u.id));
+    return allUsers.filter((u) => !globalAssignedIds.has(u.id) && !localAssignedIds.has(u.id));
   };
 
   // Career Selection Step
@@ -799,7 +825,7 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
                 {showAddSeniorModDialog &&
-                  getAvailableUsers(showAddSeniorModDialog).map((user) => (
+                  getAvailableUsersForRole(showAddSeniorModDialog, "senior_moderator").map((user) => (
                     <CommandItem
                       key={user.id}
                       value={user.email}
@@ -843,7 +869,7 @@ const NewTeamCanvas = ({ onClose, onTeamCreated }: NewTeamCanvasProps) => {
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
                 {showAddModeratorDialog &&
-                  getAvailableUsers(showAddModeratorDialog).map((user) => (
+                  getAvailableUsersForRole(showAddModeratorDialog, "moderator").map((user) => (
                     <CommandItem
                       key={user.id}
                       value={user.email}
