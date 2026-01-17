@@ -19,12 +19,25 @@ interface CourseAssignmentGlobal {
   role: string;
 }
 
+interface CourseAssignment {
+  id: string;
+  user_id: string;
+  course_id: string;
+  team_id: string;
+  role: string;
+  is_default_manager: boolean;
+  user?: UserProfile;
+}
+
 interface CanvasCourseLayerProps {
   teamId: string;
   courses: CourseWithAssignments[];
   availableCourses: { id: string; name: string; slug: string }[];
   allUsers: UserProfile[];
   allCourseAssignments?: CourseAssignmentGlobal[];
+  onAssignmentAdded?: (courseId: string, userId: string, role: string, assignment: CourseAssignment) => void;
+  onAssignmentRemoved?: (courseId: string, assignmentId: string, userId: string, role: string) => void;
+  onDefaultManagerChanged?: (courseId: string, assignmentId: string) => void;
   onRefresh: () => void;
 }
 
@@ -34,6 +47,9 @@ const CanvasCourseLayer = ({
   availableCourses,
   allUsers,
   allCourseAssignments = [],
+  onAssignmentAdded,
+  onAssignmentRemoved,
+  onDefaultManagerChanged,
   onRefresh,
 }: CanvasCourseLayerProps) => {
   const { userId } = useAuth();
@@ -102,6 +118,9 @@ const CanvasCourseLayer = ({
                   teamId={teamId}
                   allUsers={allUsers}
                   allCourseAssignments={allCourseAssignments}
+                  onAssignmentAdded={onAssignmentAdded}
+                  onAssignmentRemoved={onAssignmentRemoved}
+                  onDefaultManagerChanged={onDefaultManagerChanged}
                   onRefresh={onRefresh}
                 />
               ))}
