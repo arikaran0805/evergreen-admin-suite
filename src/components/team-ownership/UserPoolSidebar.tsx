@@ -3,13 +3,16 @@
  * 
  * Persistent right sidebar showing all users for drag-and-drop assignments.
  * Filters by role (Super Moderator, Senior Moderator, Moderator)
+ * Supports both click-to-select and drag-and-drop assignment
  */
 import { useState, useMemo } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Shield, UserCog, Users, GripVertical, Check } from "lucide-react";
 import type { UserProfile } from "./types";
 
@@ -26,6 +29,83 @@ interface UserPoolSidebarProps {
   selectedTarget: { type: "super_moderator" | "senior_moderator" | "moderator"; courseId?: string } | null;
   onClearSelection: () => void;
 }
+
+// Draggable User Card Component
+const DraggableUserCard = ({
+  user,
+  isAssigned,
+  canSelect,
+  selectedTarget,
+  onSelectUser,
+  getRoleBadge,
+}: {
+  user: UserWithRole;
+  isAssigned: boolean;
+  canSelect: boolean;
+  selectedTarget: UserPoolSidebarProps["selectedTarget"];
+  onSelectUser: UserPoolSidebarProps["onSelectUser"];
+  getRoleBadge: (role?: string | null) => React.ReactNode;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `user-${user.id}`,
+    data: { user, type: "user" },
+    disabled: isAssigned,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`
+        w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors
+        ${isDragging ? "shadow-lg ring-2 ring-primary" : ""}
+        ${canSelect ? "hover:bg-primary/10 cursor-pointer" : ""}
+        ${isAssigned ? "opacity-50 bg-muted/50" : "hover:bg-muted/50"}
+        ${!selectedTarget && !isAssigned ? "cursor-grab active:cursor-grabbing" : ""}
+      `}
+      onClick={() => {
+        if (canSelect) {
+          onSelectUser(user.id, selectedTarget!.type, selectedTarget!.courseId);
+        }
+      }}
+    >
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
+      </div>
+      <Avatar className="h-7 w-7 flex-shrink-0">
+        <AvatarImage src={user.avatar_url || undefined} />
+        <AvatarFallback className="text-xs bg-muted">
+          {user.full_name?.[0] || user.email[0]}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">
+          {user.full_name || user.email}
+        </p>
+        {user.full_name && (
+          <p className="text-[10px] text-muted-foreground truncate">
+            {user.email}
+          </p>
+        )}
+      </div>
+      {isAssigned ? (
+        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+      ) : (
+        getRoleBadge(user.role)
+      )}
+    </div>
+  );
+};
 
 const UserPoolSidebar = ({
   allUsers,
@@ -109,7 +189,7 @@ const UserPoolSidebar = ({
   };
 
   return (
-    <div className="w-72 border-l bg-card/50 flex flex-col h-full">
+    <div data-user-pool-sidebar className="w-72 border-l bg-card/50 flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b space-y-3">
         <div className="flex items-center justify-between">
@@ -169,47 +249,18 @@ const UserPoolSidebar = ({
           ) : (
             filteredUsers.map((user) => {
               const isAssigned = isUserAssigned(user.id);
-              const canSelect = selectedTarget && !isAssigned;
+              const canSelect = selectedTarget !== null && !isAssigned;
 
               return (
-                <button
+                <DraggableUserCard
                   key={user.id}
-                  onClick={() => {
-                    if (canSelect) {
-                      onSelectUser(user.id, selectedTarget.type, selectedTarget.courseId);
-                    }
-                  }}
-                  disabled={!selectedTarget || isAssigned}
-                  className={`
-                    w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors
-                    ${canSelect ? "hover:bg-primary/10 cursor-pointer" : ""}
-                    ${isAssigned ? "opacity-50 bg-muted/50" : "hover:bg-muted/50"}
-                    ${!selectedTarget ? "cursor-default" : ""}
-                  `}
-                >
-                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
-                  <Avatar className="h-7 w-7 flex-shrink-0">
-                    <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs bg-muted">
-                      {user.full_name?.[0] || user.email[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {user.full_name || user.email}
-                    </p>
-                    {user.full_name && (
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {user.email}
-                      </p>
-                    )}
-                  </div>
-                  {isAssigned ? (
-                    <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                  ) : (
-                    getRoleBadge(user.role)
-                  )}
-                </button>
+                  user={user}
+                  isAssigned={isAssigned}
+                  canSelect={canSelect}
+                  selectedTarget={selectedTarget}
+                  onSelectUser={onSelectUser}
+                  getRoleBadge={getRoleBadge}
+                />
               );
             })
           )}
@@ -220,7 +271,7 @@ const UserPoolSidebar = ({
       {!selectedTarget && (
         <div className="p-3 border-t bg-muted/30">
           <p className="text-xs text-muted-foreground text-center">
-            Click "Add" on any role section to select users from this pool
+            Drag users to assign, or click "Add" to select
           </p>
         </div>
       )}
