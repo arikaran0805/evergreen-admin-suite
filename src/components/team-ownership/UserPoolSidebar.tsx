@@ -194,21 +194,19 @@ const UserPoolSidebar = ({
 
   return (
     <div data-user-pool-sidebar className="flex-shrink-0 flex h-[calc(100vh-100px)] sticky top-4">
-      {/* Vertical Tab Toggle - Matching Post Editor style */}
-      <div className="flex flex-col items-center border border-r-0 rounded-l-xl bg-background">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-center h-10 w-10 hover:bg-muted/50 transition-colors cursor-pointer rounded-tl-xl"
-        >
-          <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <span className="text-[11px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none py-2 px-1">
+      {/* Vertical Tab Toggle - Exact match to Post Editor */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
+      >
+        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
           User Pool
         </span>
-      </div>
+      </button>
 
       {/* Sidebar Content */}
-      <Card className={`flex flex-col h-full transition-all duration-300 rounded-l-none border-l-0 ${isOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+      <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${isOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
         {/* Header */}
         <div className={`p-4 border-b space-y-3 flex-shrink-0 ${!isOpen ? 'hidden' : ''}`}>
           <div className="flex items-center justify-between">
