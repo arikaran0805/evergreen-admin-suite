@@ -194,18 +194,18 @@ const UserPoolSidebar = ({
 
   return (
     <div data-user-pool-sidebar className="flex-shrink-0 flex h-[calc(100vh-100px)] sticky top-4">
-      {/* Vertical Tab Toggle - Matching AdminSidebar style */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex flex-col items-center justify-start gap-2 py-3 px-1.5 bg-muted/50 hover:bg-muted/70 border border-r-0 rounded-l-lg transition-colors cursor-pointer h-fit"
-      >
-        <div className="flex items-center justify-center h-7 w-7 rounded-md bg-background shadow-sm border border-border">
-          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-        </div>
-        <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
+      {/* Vertical Tab Toggle - Matching Post Editor style */}
+      <div className="flex flex-col items-center border border-r-0 rounded-l-xl bg-background">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-center h-10 w-10 hover:bg-muted/50 transition-colors cursor-pointer rounded-tl-xl"
+        >
+          <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <span className="text-[11px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none py-2 px-1">
           User Pool
         </span>
-      </button>
+      </div>
 
       {/* Sidebar Content */}
       <Card className={`flex flex-col h-full transition-all duration-300 rounded-l-none border-l-0 ${isOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
