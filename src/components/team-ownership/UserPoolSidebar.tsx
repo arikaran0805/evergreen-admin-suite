@@ -8,7 +8,6 @@
  */
 import { useState, useMemo } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -54,19 +53,21 @@ const DraggableUserCard = ({
     disabled: isAssigned,
   });
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : undefined,
-  };
+  // Hide the original element completely when dragging (DragOverlay shows the visual)
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        className="w-full h-11 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5"
+      />
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={`
         w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors
-        ${isDragging ? "shadow-lg ring-2 ring-primary" : ""}
         ${canSelect ? "hover:bg-primary/10 cursor-pointer" : ""}
         ${isAssigned ? "opacity-50 bg-muted/50" : "hover:bg-muted/50"}
         ${!selectedTarget && !isAssigned ? "cursor-grab active:cursor-grabbing" : ""}
@@ -192,11 +193,11 @@ const UserPoolSidebar = ({
   };
 
   return (
-    <div data-user-pool-sidebar className="flex-shrink-0 flex">
+    <div data-user-pool-sidebar className="flex-shrink-0 flex h-full sticky top-0">
       {/* Vertical Tab Toggle - Always visible */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
+        className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer h-fit sticky top-4"
       >
         <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
@@ -205,7 +206,7 @@ const UserPoolSidebar = ({
       </button>
 
       {/* Sidebar Content */}
-      <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${isOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+      <Card className={`flex flex-col h-[calc(100vh-8rem)] sticky top-0 transition-all duration-300 rounded-l-none border-l-0 ${isOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
         {/* Header */}
         <div className={`p-4 border-b space-y-3 flex-shrink-0 ${!isOpen ? 'hidden' : ''}`}>
           <div className="flex items-center justify-between">
