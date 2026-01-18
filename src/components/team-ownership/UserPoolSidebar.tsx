@@ -1,7 +1,8 @@
 /**
  * User Pool Sidebar
  * 
- * Persistent right sidebar showing all users for drag-and-drop assignments.
+ * Collapsible right sidebar (matching post editor style) showing all users 
+ * for drag-and-drop assignments.
  * Filters by role (Super Moderator, Senior Moderator, Moderator)
  * Supports both click-to-select and drag-and-drop assignment
  */
@@ -12,8 +13,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Shield, UserCog, Users, GripVertical, Check } from "lucide-react";
+import { Search, Shield, UserCog, Users, GripVertical, Check, ChevronRight } from "lucide-react";
 import type { UserProfile } from "./types";
 
 interface UserWithRole extends UserProfile {
@@ -116,6 +118,7 @@ const UserPoolSidebar = ({
   selectedTarget,
   onClearSelection,
 }: UserPoolSidebarProps) => {
+  const [isOpen, setIsOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "super" | "senior" | "moderator">("all");
 
@@ -189,92 +192,109 @@ const UserPoolSidebar = ({
   };
 
   return (
-    <div data-user-pool-sidebar className="w-72 border-l bg-card/50 flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">User Pool</h3>
-          <Badge variant="secondary" className="text-xs">
-            {filteredUsers.length}
-          </Badge>
+    <div data-user-pool-sidebar className="flex-shrink-0 flex">
+      {/* Vertical Tab Toggle - Always visible */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex flex-col items-center justify-start gap-1 py-3 px-1 bg-muted/50 hover:bg-muted border-y border-l rounded-l-md transition-colors cursor-pointer"
+      >
+        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180 select-none">
+          User Pool
+        </span>
+      </button>
+
+      {/* Sidebar Content */}
+      <Card className={`flex flex-col min-h-0 transition-all duration-300 rounded-l-none border-l-0 ${isOpen ? 'w-72' : 'w-0 overflow-hidden border-0 p-0'}`}>
+        {/* Header */}
+        <div className={`p-4 border-b space-y-3 flex-shrink-0 ${!isOpen ? 'hidden' : ''}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm whitespace-nowrap">User Pool</h3>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {filteredUsers.length}
+            </Badge>
+          </div>
+
+          {selectedTarget && (
+            <div className="flex items-center justify-between p-2 rounded-lg bg-primary/10 border border-primary/20">
+              <span className="text-xs font-medium text-primary">{getTargetLabel()}</span>
+              <button
+                onClick={onClearSelection}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+
+          {/* Role Filter Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <TabsList className="w-full grid grid-cols-4 h-8">
+              <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
+              <TabsTrigger value="super" className="text-xs px-1.5">
+                <Shield className="h-3 w-3" />
+              </TabsTrigger>
+              <TabsTrigger value="senior" className="text-xs px-1.5">
+                <UserCog className="h-3 w-3" />
+              </TabsTrigger>
+              <TabsTrigger value="moderator" className="text-xs px-1.5">
+                <Users className="h-3 w-3" />
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
-        {selectedTarget && (
-          <div className="flex items-center justify-between p-2 rounded-lg bg-primary/10 border border-primary/20">
-            <span className="text-xs font-medium text-primary">{getTargetLabel()}</span>
-            <button
-              onClick={onClearSelection}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Cancel
-            </button>
+        {/* User List */}
+        <ScrollArea className={`flex-1 min-h-0 ${!isOpen ? 'hidden' : ''}`}>
+          <div className="p-2 space-y-1">
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                No users found
+              </div>
+            ) : (
+              filteredUsers.map((user) => {
+                const isAssigned = isUserAssigned(user.id);
+                const canSelect = selectedTarget !== null && !isAssigned;
+
+                return (
+                  <DraggableUserCard
+                    key={user.id}
+                    user={user}
+                    isAssigned={isAssigned}
+                    canSelect={canSelect}
+                    selectedTarget={selectedTarget}
+                    onSelectUser={onSelectUser}
+                    getRoleBadge={getRoleBadge}
+                  />
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Instructions Footer */}
+        {!selectedTarget && isOpen && (
+          <div className="p-3 border-t bg-muted/30 flex-shrink-0">
+            <p className="text-xs text-muted-foreground text-center">
+              Drag users to assign, or click "Add" to select
+            </p>
           </div>
         )}
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9 text-sm"
-          />
-        </div>
-
-        {/* Role Filter Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <TabsList className="w-full grid grid-cols-4 h-8">
-            <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
-            <TabsTrigger value="super" className="text-xs px-1.5">
-              <Shield className="h-3 w-3" />
-            </TabsTrigger>
-            <TabsTrigger value="senior" className="text-xs px-1.5">
-              <UserCog className="h-3 w-3" />
-            </TabsTrigger>
-            <TabsTrigger value="moderator" className="text-xs px-1.5">
-              <Users className="h-3 w-3" />
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* User List */}
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              No users found
-            </div>
-          ) : (
-            filteredUsers.map((user) => {
-              const isAssigned = isUserAssigned(user.id);
-              const canSelect = selectedTarget !== null && !isAssigned;
-
-              return (
-                <DraggableUserCard
-                  key={user.id}
-                  user={user}
-                  isAssigned={isAssigned}
-                  canSelect={canSelect}
-                  selectedTarget={selectedTarget}
-                  onSelectUser={onSelectUser}
-                  getRoleBadge={getRoleBadge}
-                />
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Instructions Footer */}
-      {!selectedTarget && (
-        <div className="p-3 border-t bg-muted/30">
-          <p className="text-xs text-muted-foreground text-center">
-            Drag users to assign, or click "Add" to select
-          </p>
-        </div>
-      )}
+      </Card>
     </div>
   );
 };
