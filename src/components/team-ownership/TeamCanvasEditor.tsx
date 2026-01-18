@@ -9,7 +9,8 @@
  * - Persistent User Pool sidebar for drag-drop style selections
  * - All assignments save immediately
  */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,6 +46,30 @@ import {
 import type { Team, UserProfile, CourseWithAssignments, SuperModeratorAssignment } from "./types";
 import UserPoolSidebar from "./UserPoolSidebar";
 
+// Droppable zone component
+const DroppableZone = ({ 
+  id, 
+  children, 
+  className,
+  activeClassName,
+}: { 
+  id: string; 
+  children: React.ReactNode;
+  className?: string;
+  activeClassName?: string;
+}) => {
+  const { isOver, setNodeRef } = useDroppable({ id });
+  
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={`${className} ${isOver ? activeClassName : ''}`}
+    >
+      {children}
+    </div>
+  );
+};
+
 interface UserWithRole extends UserProfile {
   role?: "admin" | "super_moderator" | "senior_moderator" | "moderator" | "user" | null;
 }
@@ -75,6 +100,41 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     type: "super_moderator" | "senior_moderator" | "moderator";
     courseId?: string;
   } | null>(null);
+
+  // Ref for click-outside detection on add buttons
+  const addButtonRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map());
+
+  // Handle click outside to reset selection
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (!selectedTarget) return;
+    
+    const target = event.target as HTMLElement;
+    
+    // Check if click is inside sidebar (has the user pool area)
+    const sidebar = document.querySelector('[data-user-pool-sidebar]');
+    if (sidebar?.contains(target)) return;
+    
+    // Check if click is on any add button
+    let clickedOnAddButton = false;
+    addButtonRefs.current.forEach((buttonEl) => {
+      if (buttonEl?.contains(target)) {
+        clickedOnAddButton = true;
+      }
+    });
+    
+    if (!clickedOnAddButton) {
+      setSelectedTarget(null);
+    }
+  }, [selectedTarget]);
+
+  useEffect(() => {
+    if (selectedTarget) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedTarget, handleClickOutside]);
 
   // Computed sets for sidebar
   const assignedSuperModeratorIds = useMemo(() => {
@@ -338,6 +398,63 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
+  // Handle drag end for DnD
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || !active.data.current?.user) return;
+
+    const draggedUser = active.data.current.user as UserWithRole;
+    const droppableId = over.id as string;
+
+    // Parse the droppable ID to determine target
+    if (droppableId === "drop-super-moderator") {
+      // Check if already assigned
+      if (assignedSuperModeratorIds.has(draggedUser.id)) {
+        toast({
+          title: "Already assigned",
+          description: "This user is already a super moderator for this team.",
+          variant: "destructive",
+        });
+        return;
+      }
+      handleSelectUserFromPool(draggedUser.id, "super_moderator");
+    } else if (droppableId.startsWith("drop-senior-")) {
+      const courseId = droppableId.replace("drop-senior-", "");
+      // Check if already assigned
+      if (assignedSeniorModeratorIds.get(courseId)?.has(draggedUser.id)) {
+        toast({
+          title: "Already assigned",
+          description: "This user is already a senior moderator for this course.",
+          variant: "destructive",
+        });
+        return;
+      }
+      handleSelectUserFromPool(draggedUser.id, "senior_moderator", courseId);
+    } else if (droppableId.startsWith("drop-mod-")) {
+      const courseId = droppableId.replace("drop-mod-", "");
+      // Check if already assigned
+      if (assignedModeratorIds.get(courseId)?.has(draggedUser.id)) {
+        toast({
+          title: "Already assigned",
+          description: "This user is already a moderator for this course.",
+          variant: "destructive",
+        });
+        return;
+      }
+      handleSelectUserFromPool(draggedUser.id, "moderator", courseId);
+    }
+  };
+
+  // DnD sensors with activation constraint
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
   // Remove handlers
   const handleRemoveSuperModerator = async (assignmentId: string) => {
     try {
@@ -456,6 +573,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   }
 
   return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="flex h-full min-h-[calc(100vh-8rem)]">
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col">
@@ -532,7 +650,11 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                 </Badge>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3">
+              <DroppableZone 
+                id="drop-super-moderator" 
+                className="flex flex-wrap justify-center gap-3 p-3 rounded-xl border-2 border-transparent transition-all min-w-[200px]"
+                activeClassName="border-purple-500 bg-purple-500/5 border-dashed"
+              >
                 {superModerators.map((sm) => (
                   <div
                     key={sm.id}
@@ -561,7 +683,10 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
 
                 {/* Add Super Moderator Button */}
                 <button
-                  onClick={() => setSelectedTarget({ type: "super_moderator" })}
+                  ref={(el) => addButtonRefs.current.set('super_moderator', el)}
+                  onClick={() => setSelectedTarget(
+                    selectedTarget?.type === "super_moderator" ? null : { type: "super_moderator" }
+                  )}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-dashed transition-colors cursor-pointer ${
                     selectedTarget?.type === "super_moderator"
                       ? "border-purple-500 bg-purple-500/10 text-purple-600"
@@ -580,7 +705,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                     </>
                   )}
                 </button>
-              </div>
+              </DroppableZone>
             </div>
 
             {/* Connector Line */}
@@ -633,7 +758,11 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                             {course.seniorModerators.length}
                           </Badge>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <DroppableZone 
+                          id={`drop-senior-${course.id}`}
+                          className="flex flex-wrap gap-2 p-2 rounded-lg border-2 border-transparent transition-all min-h-[40px]"
+                          activeClassName="border-amber-500 bg-amber-500/5 border-dashed"
+                        >
                           {course.seniorModerators.map((sm) => (
                             <div
                               key={sm.id}
@@ -674,7 +803,12 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                             </div>
                           ))}
                           <button
-                            onClick={() => setSelectedTarget({ type: "senior_moderator", courseId: course.id })}
+                            ref={(el) => addButtonRefs.current.set(`senior_${course.id}`, el)}
+                            onClick={() => setSelectedTarget(
+                              selectedTarget?.type === "senior_moderator" && selectedTarget?.courseId === course.id 
+                                ? null 
+                                : { type: "senior_moderator", courseId: course.id }
+                            )}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors ${
                               selectedTarget?.type === "senior_moderator" && selectedTarget?.courseId === course.id
                                 ? "border-amber-500 bg-amber-500/10 text-amber-600"
@@ -693,7 +827,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                               </>
                             )}
                           </button>
-                        </div>
+                        </DroppableZone>
                       </div>
 
                       {/* Connector */}
@@ -714,7 +848,11 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                             {course.moderators.length}
                           </Badge>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <DroppableZone 
+                          id={`drop-mod-${course.id}`}
+                          className="flex flex-wrap gap-2 p-2 rounded-lg border-2 border-transparent transition-all min-h-[40px]"
+                          activeClassName="border-blue-500 bg-blue-500/5 border-dashed"
+                        >
                           {course.moderators.map((mod) => (
                             <div
                               key={mod.id}
@@ -738,7 +876,12 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                             </div>
                           ))}
                           <button
-                            onClick={() => setSelectedTarget({ type: "moderator", courseId: course.id })}
+                            ref={(el) => addButtonRefs.current.set(`mod_${course.id}`, el)}
+                            onClick={() => setSelectedTarget(
+                              selectedTarget?.type === "moderator" && selectedTarget?.courseId === course.id 
+                                ? null 
+                                : { type: "moderator", courseId: course.id }
+                            )}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors ${
                               selectedTarget?.type === "moderator" && selectedTarget?.courseId === course.id
                                 ? "border-blue-500 bg-blue-500/10 text-blue-600"
@@ -757,7 +900,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
                               </>
                             )}
                           </button>
-                        </div>
+                        </DroppableZone>
                       </div>
                     </div>
                   ))}
@@ -815,6 +958,7 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </DndContext>
   );
 };
 
