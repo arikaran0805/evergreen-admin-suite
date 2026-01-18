@@ -10,7 +10,7 @@
  * - All assignments save immediately
  */
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor, useDroppable } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -100,6 +100,9 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     type: "super_moderator" | "senior_moderator" | "moderator";
     courseId?: string;
   } | null>(null);
+
+  // Active dragging user for DragOverlay
+  const [activeDragUser, setActiveDragUser] = useState<UserWithRole | null>(null);
 
   // Ref for click-outside detection on add buttons
   const addButtonRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map());
@@ -398,9 +401,20 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
     }
   };
 
+  // Handle drag start for DnD - show overlay
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    if (active.data.current?.user) {
+      setActiveDragUser(active.data.current.user as UserWithRole);
+    }
+  };
+
   // Handle drag end for DnD
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    
+    // Always clear the active drag user
+    setActiveDragUser(null);
     
     if (!over || !active.data.current?.user) return;
 
@@ -444,6 +458,11 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
       }
       handleSelectUserFromPool(draggedUser.id, "moderator", courseId);
     }
+  };
+
+  // Handle drag cancel
+  const handleDragCancel = () => {
+    setActiveDragUser(null);
   };
 
   // DnD sensors with activation constraint
@@ -573,7 +592,12 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext 
+      sensors={sensors} 
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
     <div className="flex h-full min-h-[calc(100vh-8rem)]">
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col">
@@ -958,6 +982,25 @@ const TeamCanvasEditor = ({ team, onClose, onRefresh }: TeamCanvasEditorProps) =
         </AlertDialogContent>
       </AlertDialog>
     </div>
+
+    {/* DragOverlay - Shows dragged user card outside its container */}
+    <DragOverlay dropAnimation={null}>
+      {activeDragUser ? (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border-2 border-primary shadow-lg">
+          <Avatar className="h-7 w-7 flex-shrink-0">
+            <AvatarImage src={activeDragUser.avatar_url || undefined} />
+            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+              {activeDragUser.full_name?.[0] || activeDragUser.email[0]}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">
+              {activeDragUser.full_name || activeDragUser.email}
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </DragOverlay>
     </DndContext>
   );
 };
