@@ -1071,34 +1071,23 @@ const CourseDetail = () => {
           {/* LEFT SIDEBAR - Progress & Navigation */}
           <aside className="lg:w-72 bg-primary/5 border-r border-primary/10 flex-shrink-0">
             <div className={`sticky ${isPreviewMode && canPreview ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') : (showAnnouncement ? 'top-32' : 'top-24')}`}>
-              {/* Progress Section - Clickable Card */}
-              <div 
-                role="button"
-                tabIndex={0}
-                aria-label="View course progress and details"
-                onClick={() => setSelectedPost(null)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedPost(null);
-                  }
-                }}
-                className="p-4 border-b border-primary/10 bg-primary/10 cursor-pointer group
-                  transition-all duration-150 ease-out
-                  hover:bg-primary/15 hover:shadow-md hover:-translate-y-0.5
-                  active:translate-y-0 active:shadow-sm active:bg-primary/20
-                  focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
+              {/* Progress Section */}
+              <div className="p-4 border-b border-primary/10 bg-primary/10">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity mb-3"
+                  onClick={() => setSelectedPost(null)}
+                >
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <h2 className="font-semibold text-foreground">Course Progress</h2>
+                </div>
+                
                 {/* Progress Stats */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                    <span className="text-muted-foreground">
                       {courseProgress.completedCount}/{courseProgress.totalCount} posts completed
                     </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-primary">{courseProgress.percentage}%</span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                    </div>
+                    <span className="font-semibold text-primary">{courseProgress.percentage}%</span>
                   </div>
                   <Progress value={courseProgress.percentage} className="h-2 bg-primary/20 [&>div]:bg-primary" />
                   
