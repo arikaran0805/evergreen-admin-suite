@@ -70,6 +70,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { trackSocialMediaClick } from "@/lib/socialAnalytics";
+import { formatReadingTime, formatTotalReadingTime } from "@/lib/readingTime";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 
@@ -1375,7 +1376,7 @@ const CourseDetail = () => {
                                       <Clock className="h-4 w-4" />
                                       <span>Duration</span>
                                     </div>
-                                    <span className="text-sm font-medium">{course.learning_hours || Math.ceil(posts.length * 0.5)} hours</span>
+                                    <span className="text-sm font-medium">{course.learning_hours ? `${course.learning_hours} hours` : formatTotalReadingTime(posts)}</span>
                                   </div>
 
                                   {/* Language */}
@@ -1575,7 +1576,7 @@ const CourseDetail = () => {
                                               )}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                              <span className="text-xs text-muted-foreground">~5 min</span>
+                                              <span className="text-xs text-muted-foreground">~{formatReadingTime(post.content)}</span>
                                               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                             </div>
                                           </div>
