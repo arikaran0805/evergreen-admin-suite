@@ -910,6 +910,12 @@ const CourseDetail = () => {
                   <Progress value={courseProgress.percentage} className="h-2 bg-primary/20 [&>div]:bg-primary" />
                   
                   {/* Motivation Message */}
+                  {!courseProgress.hasStarted && (
+                    <div className="flex items-center gap-2 text-xs text-primary mt-2">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Let's get started 🚀</span>
+                    </div>
+                  )}
                   {courseProgress.hasStarted && !courseProgress.isCompleted && (
                     <div className="flex items-center gap-2 text-xs text-primary mt-2">
                       <Sparkles className="h-3.5 w-3.5" />
