@@ -1280,10 +1280,6 @@ const CourseDetail = () => {
                           <Users className="h-4 w-4" />
                           <span className="text-sm">{courseStats.enrollmentCount.toLocaleString()} enrolled</span>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          <GraduationCap className="h-3 w-3 mr-1" />
-                          Created by Moderators
-                        </Badge>
                       </div>
 
                       {/* Primary CTA */}
