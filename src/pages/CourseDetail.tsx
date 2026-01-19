@@ -1305,186 +1305,52 @@ const CourseDetail = () => {
                           <List className="h-4 w-4" />
                           Lessons ({lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length})
                         </TabsTrigger>
+                        <TabsTrigger value="info" className="gap-2">
+                          <BookOpen className="h-4 w-4" />
+                          Course Info
+                        </TabsTrigger>
                       </TabsList>
 
                       {/* Course Details Tab */}
                       <TabsContent value="details">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                          {/* LEFT - Description */}
-                          <div className="lg:col-span-2">
-                            {course.description && (
-                              <div className="prose prose-lg max-w-none">
-                                <h3 className="text-xl font-semibold mb-4">About This Course</h3>
-                                <div 
-                                  className="text-foreground leading-relaxed"
-                                  dangerouslySetInnerHTML={{ __html: course.description }}
-                                />
-                              </div>
-                            )}
+                        <div className="space-y-8">
+                          {/* Description */}
+                          {course.description && (
+                            <div className="prose prose-lg max-w-none">
+                              <h3 className="text-xl font-semibold mb-4">About This Course</h3>
+                              <div 
+                                className="text-foreground leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: course.description }}
+                              />
+                            </div>
+                          )}
 
-                            {/* Get Started CTA */}
-                            {posts.length > 0 && (
-                              <div className="mt-8 p-6 bg-primary/5 rounded-xl border border-primary/20">
-                                <div className="flex items-start gap-4">
-                                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                    <Target className="h-6 w-6 text-primary" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <h3 className="font-semibold text-lg mb-1">Ready to Get Started?</h3>
-                                    <p className="text-muted-foreground text-sm mb-4">
-                                      {courseProgress.hasStarted 
-                                        ? `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Keep going!`
-                                        : "Start your learning journey today and master new skills."
-                                      }
-                                    </p>
-                                    <Button 
-                                      className="bg-primary hover:bg-primary/90 gap-2"
-                                      onClick={ctaProps.onClick}
-                                    >
-                                      <CtaIcon className="h-4 w-4" />
-                                      {ctaProps.label}
-                                    </Button>
-                                  </div>
+                          {/* Get Started CTA */}
+                          {posts.length > 0 && (
+                            <div className="p-6 bg-primary/5 rounded-xl border border-primary/20">
+                              <div className="flex items-start gap-4">
+                                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <Target className="h-6 w-6 text-primary" />
                                 </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* RIGHT - Course Info Card */}
-                          <div className="lg:col-span-1">
-                            <Card className="sticky top-28">
-                              <CardContent className="p-5 space-y-4">
-                                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Course Info</h4>
-                                
-                                <div className="space-y-3">
-                                  {/* Difficulty */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                      <TrendingUp className="h-4 w-4" />
-                                      <span>Difficulty</span>
-                                    </div>
-                                    <Badge variant="secondary">{course.level || 'Beginner'}</Badge>
-                                  </div>
-
-                                  {/* Duration */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                      <Clock className="h-4 w-4" />
-                                      <span>Duration</span>
-                                    </div>
-                                    <span className="text-sm font-medium">{course.learning_hours ? `${course.learning_hours} hours` : formatTotalReadingTime(posts)}</span>
-                                  </div>
-
-                                  {/* Language */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                      <Globe className="h-4 w-4" />
-                                      <span>Language</span>
-                                    </div>
-                                    <span className="text-sm font-medium">English</span>
-                                  </div>
-
-                                  {/* Last Updated */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                      <Calendar className="h-4 w-4" />
-                                      <span>Last Updated</span>
-                                    </div>
-                                    <span className="text-sm font-medium">
-                                      {posts[0]?.updated_at 
-                                        ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                        : 'Recently'
-                                      }
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* Careers */}
-                                {careers.length > 0 && (
-                                  <div>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                      <Award className="h-4 w-4" />
-                                      <span>Career Paths</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {careers.map(career => (
-                                        <Link key={career.id} to={`/career/${career.slug}`}>
-                                          <Badge variant="outline" className="text-xs hover:bg-primary/10 cursor-pointer">
-                                            {career.name}
-                                          </Badge>
-                                        </Link>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                <Separator />
-
-                                {/* Course URL */}
-                                <div>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                    <Globe className="h-4 w-4" />
-                                    <span>Course URL</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <code className="flex-1 text-xs bg-muted px-2 py-1.5 rounded truncate">
-                                      /course/{course.slug}
-                                    </code>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={copyUrl}>
-                                      {copiedUrl ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* Action Buttons */}
-                                <div className="space-y-2">
-                                  {courseStats.isEnrolled ? (
-                                    <Button variant="outline" className="w-full gap-2" onClick={handleUnenroll} disabled={enrolling}>
-                                      <UserCheck className="h-4 w-4" />
-                                      {enrolling ? "Processing..." : "Enrolled"}
-                                    </Button>
-                                  ) : (
-                                    <Button className="w-full gap-2 bg-primary hover:bg-primary/90" onClick={handleEnroll} disabled={enrolling}>
-                                      <UserPlus className="h-4 w-4" />
-                                      {enrolling ? "Enrolling..." : "Enroll Now"}
-                                    </Button>
-                                  )}
-                                  <Button variant="outline" className="w-full gap-2" onClick={() => toggleBookmark(course?.id)}>
-                                    {isBookmarked(course?.id) ? (
-                                      <>
-                                        <BookmarkCheck className="h-4 w-4 text-primary" />
-                                        Saved
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Bookmark className="h-4 w-4" />
-                                        Save Course
-                                      </>
-                                    )}
-                                  </Button>
-                                  <CourseReviewDialog
-                                    reviews={courseReviews}
-                                    averageRating={courseStats.averageRating}
-                                    reviewCount={courseStats.reviewCount}
-                                    userReview={courseStats.userReview}
-                                    isEnrolled={courseStats.isEnrolled}
-                                    isAuthenticated={!!user}
-                                    onSubmitReview={submitReview}
-                                    onDeleteReview={deleteReview}
+                                <div className="flex-1">
+                                  <h3 className="font-semibold text-lg mb-1">Ready to Get Started?</h3>
+                                  <p className="text-muted-foreground text-sm mb-4">
+                                    {courseProgress.hasStarted 
+                                      ? `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Keep going!`
+                                      : "Start your learning journey today and master new skills."
+                                    }
+                                  </p>
+                                  <Button 
+                                    className="bg-primary hover:bg-primary/90 gap-2"
+                                    onClick={ctaProps.onClick}
                                   >
-                                    <Button variant="outline" className="w-full gap-2">
-                                      <Star className="h-4 w-4" />
-                                      {courseStats.userReview ? "Update Review" : "Rate Course"}
-                                    </Button>
-                                  </CourseReviewDialog>
+                                    <CtaIcon className="h-4 w-4" />
+                                    {ctaProps.label}
+                                  </Button>
                                 </div>
-                              </CardContent>
-                            </Card>
-                          </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </TabsContent>
 
@@ -1590,6 +1456,162 @@ const CourseDetail = () => {
                             })}
                           </div>
                         )}
+                      </TabsContent>
+
+                      {/* Course Info Tab */}
+                      <TabsContent value="info">
+                        <div className="max-w-2xl space-y-6">
+                          <h3 className="text-xl font-semibold">Course Information</h3>
+                          
+                          <Card>
+                            <CardContent className="p-6 space-y-4">
+                              <div className="space-y-4">
+                                {/* Difficulty */}
+                                <div className="flex items-center justify-between py-3 border-b border-border/50">
+                                  <div className="flex items-center gap-3 text-muted-foreground">
+                                    <TrendingUp className="h-5 w-5" />
+                                    <span>Difficulty</span>
+                                  </div>
+                                  <Badge variant="secondary" className="text-sm">{course.level || 'Beginner'}</Badge>
+                                </div>
+
+                                {/* Duration */}
+                                <div className="flex items-center justify-between py-3 border-b border-border/50">
+                                  <div className="flex items-center gap-3 text-muted-foreground">
+                                    <Clock className="h-5 w-5" />
+                                    <span>Duration</span>
+                                  </div>
+                                  <span className="font-medium">{course.learning_hours ? `${course.learning_hours} hours` : formatTotalReadingTime(posts)}</span>
+                                </div>
+
+                                {/* Language */}
+                                <div className="flex items-center justify-between py-3 border-b border-border/50">
+                                  <div className="flex items-center gap-3 text-muted-foreground">
+                                    <Globe className="h-5 w-5" />
+                                    <span>Language</span>
+                                  </div>
+                                  <span className="font-medium">English</span>
+                                </div>
+
+                                {/* Last Updated */}
+                                <div className="flex items-center justify-between py-3 border-b border-border/50">
+                                  <div className="flex items-center gap-3 text-muted-foreground">
+                                    <Calendar className="h-5 w-5" />
+                                    <span>Last Updated</span>
+                                  </div>
+                                  <span className="font-medium">
+                                    {posts[0]?.updated_at 
+                                      ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                      : 'Recently'
+                                    }
+                                  </span>
+                                </div>
+
+                                {/* Posts Count */}
+                                <div className="flex items-center justify-between py-3 border-b border-border/50">
+                                  <div className="flex items-center gap-3 text-muted-foreground">
+                                    <BookOpen className="h-5 w-5" />
+                                    <span>Total Posts</span>
+                                  </div>
+                                  <span className="font-medium">{posts.length} posts</span>
+                                </div>
+
+                                {/* Lessons Count */}
+                                <div className="flex items-center justify-between py-3">
+                                  <div className="flex items-center gap-3 text-muted-foreground">
+                                    <List className="h-5 w-5" />
+                                    <span>Total Lessons</span>
+                                  </div>
+                                  <span className="font-medium">{lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length} lessons</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Careers */}
+                          {careers.length > 0 && (
+                            <Card>
+                              <CardContent className="p-6">
+                                <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                  <Award className="h-5 w-5" />
+                                  <span className="font-medium text-foreground">Career Paths</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {careers.map(career => (
+                                    <Link key={career.id} to={`/career/${career.slug}`}>
+                                      <Badge variant="outline" className="text-sm hover:bg-primary/10 cursor-pointer py-1.5 px-3">
+                                        {career.name}
+                                      </Badge>
+                                    </Link>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+
+                          {/* Course URL */}
+                          <Card>
+                            <CardContent className="p-6">
+                              <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                <Globe className="h-5 w-5" />
+                                <span className="font-medium text-foreground">Course URL</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <code className="flex-1 text-sm bg-muted px-3 py-2 rounded truncate">
+                                  /course/{course.slug}
+                                </code>
+                                <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={copyUrl}>
+                                  {copiedUrl ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Action Buttons */}
+                          <Card>
+                            <CardContent className="p-6 space-y-3">
+                              {courseStats.isEnrolled ? (
+                                <Button variant="outline" className="w-full gap-2" onClick={handleUnenroll} disabled={enrolling}>
+                                  <UserCheck className="h-4 w-4" />
+                                  {enrolling ? "Processing..." : "Enrolled"}
+                                </Button>
+                              ) : (
+                                <Button className="w-full gap-2 bg-primary hover:bg-primary/90" onClick={handleEnroll} disabled={enrolling}>
+                                  <UserPlus className="h-4 w-4" />
+                                  {enrolling ? "Enrolling..." : "Enroll Now"}
+                                </Button>
+                              )}
+                              <Button variant="outline" className="w-full gap-2" onClick={() => toggleBookmark(course?.id)}>
+                                {isBookmarked(course?.id) ? (
+                                  <>
+                                    <BookmarkCheck className="h-4 w-4 text-primary" />
+                                    Saved
+                                  </>
+                                ) : (
+                                  <>
+                                    <Bookmark className="h-4 w-4" />
+                                    Save Course
+                                  </>
+                                )}
+                              </Button>
+                              <CourseReviewDialog
+                                reviews={courseReviews}
+                                averageRating={courseStats.averageRating}
+                                reviewCount={courseStats.reviewCount}
+                                userReview={courseStats.userReview}
+                                isEnrolled={courseStats.isEnrolled}
+                                isAuthenticated={!!user}
+                                onSubmitReview={submitReview}
+                                onDeleteReview={deleteReview}
+                              >
+                                <Button variant="outline" className="w-full gap-2">
+                                  <Star className="h-4 w-4" />
+                                  {courseStats.userReview ? "Update Review" : "Rate Course"}
+                                </Button>
+                              </CourseReviewDialog>
+                            </CardContent>
+                          </Card>
+                        </div>
                       </TabsContent>
                     </Tabs>
                   </>
