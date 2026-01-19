@@ -104,7 +104,7 @@ export default function CourseDetail() {
     submitReview, 
     deleteReview,
     refetch: refetchStats 
-  } = useCourseStats(course?.id);
+  } = useCourseStats(course?.id, user);
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const { careerCourses } = useCareers();
 
@@ -333,7 +333,15 @@ export default function CourseDetail() {
         title={`${course.name} | Learn`}
         description={course.description || `Learn ${course.name} with our comprehensive course.`}
       />
-      <CourseStructuredData course={course} />
+      <CourseStructuredData 
+        course={course} 
+        lessons={lessons.map(l => ({ id: l.id, title: l.title, slug: l.id }))}
+        stats={courseStats ? {
+          enrollmentCount: courseStats.enrollmentCount,
+          averageRating: courseStats.averageRating,
+          reviewCount: courseStats.reviewCount
+        } : undefined}
+      />
       
       <div className="min-h-screen bg-background">
         <div className="container max-w-7xl mx-auto px-4 py-8">
@@ -752,19 +760,12 @@ export default function CourseDetail() {
 
                       <Separator />
 
-                      {/* Share & Report */}
-                      <div className="flex gap-2">
-                        <ShareTooltip title={course.name} url={window.location.href} contentId={course.id} contentType="course">
-                          <Button variant="outline" size="sm" className="flex-1">
-                            Share
-                          </Button>
-                        </ShareTooltip>
-                        <ReportSuggestDialog contentId={course.id} contentType="course">
-                          <Button variant="outline" size="sm" className="flex-1">
-                            Report
-                          </Button>
-                        </ReportSuggestDialog>
-                      </div>
+                      {/* Share */}
+                      <ShareTooltip title={course.name} url={window.location.href}>
+                        <Button variant="outline" size="sm" className="w-full">
+                          Share Course
+                        </Button>
+                      </ShareTooltip>
                     </CardContent>
                   </Card>
                 </TabsContent>
