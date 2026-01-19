@@ -24,6 +24,7 @@ import CourseReviewDialog from "@/components/CourseReviewDialog";
 import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
+import CourseInfoTab from "@/components/course/CourseInfoTab";
 import {
   SidebarAdTop,
   SidebarAdMiddle,
@@ -1541,163 +1542,19 @@ const CourseDetail = () => {
 
                       {/* Course Info Tab */}
                       <TabsContent value="info">
-                        <div className="max-w-2xl space-y-6">
-                          <h3 className="text-xl font-semibold">Course Information</h3>
-                          
-                          <Card>
-                            <CardContent className="p-6 space-y-4">
-                              <div className="space-y-4">
-                                {/* Difficulty */}
-                                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                                  <div className="flex items-center gap-3 text-muted-foreground">
-                                    <TrendingUp className="h-5 w-5" />
-                                    <span>Difficulty</span>
-                                  </div>
-                                  <Badge variant="secondary" className="text-sm">{course.level || 'Beginner'}</Badge>
-                                </div>
-
-                                {/* Duration */}
-                                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                                  <div className="flex items-center gap-3 text-muted-foreground">
-                                    <Clock className="h-5 w-5" />
-                                    <span>Duration</span>
-                                  </div>
-                                  <span className="font-medium">{course.learning_hours ? `${course.learning_hours} hours` : formatTotalReadingTime(posts)}</span>
-                                </div>
-
-                                {/* Language */}
-                                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                                  <div className="flex items-center gap-3 text-muted-foreground">
-                                    <Globe className="h-5 w-5" />
-                                    <span>Language</span>
-                                  </div>
-                                  <span className="font-medium">English</span>
-                                </div>
-
-                                {/* Last Updated */}
-                                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                                  <div className="flex items-center gap-3 text-muted-foreground">
-                                    <Calendar className="h-5 w-5" />
-                                    <span>Last Updated</span>
-                                  </div>
-                                  <span className="font-medium">
-                                    {posts[0]?.updated_at 
-                                      ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                      : 'Recently'
-                                    }
-                                  </span>
-                                </div>
-
-                                {/* Posts Count */}
-                                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                                  <div className="flex items-center gap-3 text-muted-foreground">
-                                    <BookOpen className="h-5 w-5" />
-                                    <span>Total Posts</span>
-                                  </div>
-                                  <span className="font-medium">{posts.length} posts</span>
-                                </div>
-
-                                {/* Lessons Count */}
-                                <div className="flex items-center justify-between py-3">
-                                  <div className="flex items-center gap-3 text-muted-foreground">
-                                    <List className="h-5 w-5" />
-                                    <span>Total Lessons</span>
-                                  </div>
-                                  <span className="font-medium">{lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length} lessons</span>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Careers */}
-                          {careers.length > 0 && (
-                            <Card>
-                              <CardContent className="p-6">
-                                <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                                  <Award className="h-5 w-5" />
-                                  <span className="font-medium text-foreground">Career Paths</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {careers.map(career => (
-                                    <Link key={career.id} to={`/career/${career.slug}`}>
-                                      <Badge variant="outline" className="text-sm hover:bg-primary/10 cursor-pointer py-1.5 px-3">
-                                        {career.name}
-                                      </Badge>
-                                    </Link>
-                                  ))}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          {/* Course URL */}
-                          <Card>
-                            <CardContent className="p-6">
-                              <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                                <Globe className="h-5 w-5" />
-                                <span className="font-medium text-foreground">Course URL</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <code className="flex-1 text-sm bg-muted px-3 py-2 rounded truncate">
-                                  /course/{course.slug}
-                                </code>
-                                <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={copyUrl}>
-                                  {copiedUrl ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Action Buttons */}
-                          <Card>
-                            <CardContent className="p-6 space-y-3">
-                              {!user ? (
-                                <Button className="w-full gap-2 bg-primary hover:bg-primary/90" onClick={() => setLoginModalOpen(true)}>
-                                  <UserPlus className="h-4 w-4" />
-                                  Enroll Now
-                                </Button>
-                              ) : courseStats.isEnrolled ? (
-                                <Button variant="outline" className="w-full gap-2" onClick={handleUnenroll} disabled={enrolling}>
-                                  <UserCheck className="h-4 w-4" />
-                                  {enrolling ? "Processing..." : "Enrolled"}
-                                </Button>
-                              ) : (
-                                <Button className="w-full gap-2 bg-primary hover:bg-primary/90" onClick={handleEnroll} disabled={enrolling}>
-                                  <UserPlus className="h-4 w-4" />
-                                  {enrolling ? "Enrolling..." : "Enroll Now"}
-                                </Button>
-                              )}
-                              <Button variant="outline" className="w-full gap-2" onClick={() => toggleBookmark(course?.id)}>
-                                {isBookmarked(course?.id) ? (
-                                  <>
-                                    <BookmarkCheck className="h-4 w-4 text-primary" />
-                                    Saved
-                                  </>
-                                ) : (
-                                  <>
-                                    <Bookmark className="h-4 w-4" />
-                                    Save Course
-                                  </>
-                                )}
-                              </Button>
-                              <CourseReviewDialog
-                                reviews={courseReviews}
-                                averageRating={courseStats.averageRating}
-                                reviewCount={courseStats.reviewCount}
-                                userReview={courseStats.userReview}
-                                isEnrolled={courseStats.isEnrolled}
-                                isAuthenticated={!!user}
-                                onSubmitReview={submitReview}
-                                onDeleteReview={deleteReview}
-                              >
-                                <Button variant="outline" className="w-full gap-2">
-                                  <Star className="h-4 w-4" />
-                                  {courseStats.userReview ? "Update Review" : "Rate Course"}
-                                </Button>
-                              </CourseReviewDialog>
-                            </CardContent>
-                          </Card>
-                        </div>
+                        <CourseInfoTab
+                          course={course}
+                          careers={careers}
+                          totalPosts={posts.length}
+                          totalLessons={lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length}
+                          estimatedDuration={formatTotalReadingTime(posts)}
+                          lastUpdated={posts[0]?.updated_at 
+                            ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                            : undefined
+                          }
+                          authorName="Platform Team"
+                          authorRole="Admin"
+                        />
                       </TabsContent>
                     </Tabs>
                   </>
