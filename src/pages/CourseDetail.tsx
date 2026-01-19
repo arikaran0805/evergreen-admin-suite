@@ -928,6 +928,67 @@ const CourseDetail = () => {
     return { completedPosts, totalPosts, percentage, isComplete };
   };
 
+  // Get Action Reinforcement Card content based on current state (mirrors Primary CTA)
+  const getActionCardContent = () => {
+    // State 6: Admin / Super Moderator / Senior Moderator
+    if (isAdmin || isModerator) {
+      return {
+        title: "Manage This Course",
+        message: "View and manage course settings, structure, and metadata.",
+        buttonLabel: "Manage Course",
+        icon: Edit,
+      };
+    }
+
+    // State 1: User not logged in
+    if (!user) {
+      return {
+        title: "Login to Get Started",
+        message: "Please log in to enroll and track your learning progress.",
+        buttonLabel: "Log in",
+        icon: UserPlus,
+      };
+    }
+
+    // State 2: User logged in but not enrolled
+    if (!courseStats.isEnrolled) {
+      return {
+        title: "Ready to Get Started?",
+        message: "Enroll in this course to begin your learning journey.",
+        buttonLabel: "Enroll Now",
+        icon: UserPlus,
+      };
+    }
+
+    // State 5: User enrolled and completed (100%)
+    if (courseProgress.isCompleted) {
+      return {
+        title: "Course Completed 🎉",
+        message: "You've completed this course. You can restart anytime to revise.",
+        buttonLabel: "Restart Course",
+        icon: RefreshCw,
+      };
+    }
+
+    // State 4: User enrolled and in progress (1%-99%)
+    if (courseProgress.hasStarted) {
+      return {
+        title: "Keep Going",
+        message: `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Let's continue where you left off.`,
+        buttonLabel: "Continue Learning",
+        icon: Play,
+      };
+    }
+
+    // State 3: User enrolled but not started (0%)
+    return {
+      title: "You're All Set to Start",
+      message: "Begin your learning journey when you're ready.",
+      buttonLabel: "Start Course",
+      icon: Play,
+    };
+  };
+
   if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -1452,37 +1513,37 @@ const CourseDetail = () => {
                             </div>
                           )}
 
-                          {/* Get Started CTA */}
-                          {posts.length > 0 && (
-                            <div id="how-youll-learn" className="p-6 bg-primary/5 rounded-xl border border-primary/20">
-                              <div className="flex items-start gap-4">
-                                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                  <Target className="h-6 w-6 text-primary" />
-                                </div>
-                                <div className="flex-1">
-                                  <h3 className="font-semibold text-lg mb-1">Ready to Get Started?</h3>
-                                  <p className="text-muted-foreground text-sm mb-4">
-                                    {!user 
-                                      ? "Log in to enroll and track your learning progress."
-                                      : !courseStats.isEnrolled
-                                        ? "Enroll now to start tracking your progress."
-                                        : courseProgress.hasStarted 
-                                          ? `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Keep going!`
-                                          : "Start your learning journey today and master new skills."
-                                    }
-                                  </p>
-                                  <Button 
-                                    className="bg-primary hover:bg-primary/90 gap-2"
-                                    onClick={ctaProps.onClick}
-                                    disabled={posts.length === 0 || enrolling}
-                                  >
-                                    <CtaIcon className="h-4 w-4" />
-                                    {enrolling ? "Processing..." : ctaProps.label}
-                                  </Button>
+                          {/* Action Reinforcement Card - mirrors Primary CTA */}
+                          {posts.length > 0 && (() => {
+                            const cardContent = getActionCardContent();
+                            const CardIcon = cardContent.icon;
+                            return (
+                              <div 
+                                id="action-reinforcement-card" 
+                                className="p-6 bg-primary/5 rounded-xl border border-primary/20 transition-all duration-300"
+                              >
+                                <div className="flex items-start gap-4">
+                                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <Target className="h-6 w-6 text-primary" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-lg mb-1">{cardContent.title}</h3>
+                                    <p className="text-muted-foreground text-sm mb-4">
+                                      {cardContent.message}
+                                    </p>
+                                    <Button 
+                                      className="bg-primary hover:bg-primary/90 gap-2"
+                                      onClick={ctaProps.onClick}
+                                      disabled={posts.length === 0 || enrolling}
+                                    >
+                                      <CardIcon className="h-4 w-4" />
+                                      {enrolling ? "Processing..." : cardContent.buttonLabel}
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
                         </div>
                       </TabsContent>
 
