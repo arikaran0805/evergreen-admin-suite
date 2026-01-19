@@ -842,11 +842,19 @@ const CourseDetail = () => {
       icon: Play,
       onClick: () => {
         setActiveTab("lessons");
-        // Navigate to the first lesson
-        const firstPost = getAllOrderedPosts()[0];
-        if (firstPost) {
-          handleLessonClick(firstPost);
+
+        // Prefer the first ordered lesson post; fall back to the first course post if lessons aren't wired up.
+        const firstPost = orderedPosts[0] ?? posts[0];
+        if (!firstPost) {
+          toast({
+            title: "No lessons available",
+            description: "This course doesn't have any published lessons yet.",
+            variant: "destructive",
+          });
+          return;
         }
+
+        handleLessonClick(firstPost);
       },
     };
   };
@@ -855,7 +863,9 @@ const CourseDetail = () => {
   const handleRestartCourse = () => {
     setRestartModalOpen(false);
     setActiveTab("lessons");
-    if (posts[0]) handleLessonClick(posts[0]);
+
+    const firstPost = orderedPosts[0] ?? posts[0];
+    if (firstPost) handleLessonClick(firstPost);
   };
 
   // Handle login redirect
