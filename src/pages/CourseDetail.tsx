@@ -277,20 +277,21 @@ const CourseDetail = () => {
 
   useEffect(() => {
     if (lessonSlug && posts.length > 0) {
-      const postToSelect = posts.find(p => p.slug === lessonSlug);
+      const postToSelect = posts.find((p) => p.slug === lessonSlug);
+      // Only hydrate via URL when it isn't already selected (prevents double-fetch on CTA clicks)
       if (postToSelect && selectedPost?.slug !== lessonSlug) {
         if (postToSelect.lesson_id) {
-          setExpandedLessons(prev => {
+          setExpandedLessons((prev) => {
             const newSet = new Set(prev);
             newSet.add(postToSelect.lesson_id!);
             return newSet;
           });
         }
         fetchPostContent(postToSelect);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: "auto" });
       }
     }
-  }, [lessonSlug, posts]);
+  }, [lessonSlug, posts, selectedPost?.slug]);
 
   useEffect(() => {
     if (selectedPost) {
