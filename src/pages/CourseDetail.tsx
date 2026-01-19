@@ -29,6 +29,16 @@ import {
   SidebarAdMiddle,
   SidebarAdBottom
 } from "@/components/ads";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -170,6 +180,9 @@ const CourseDetail = () => {
   const { settings: adSettings } = useAdSettings();
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [restartModalOpen, setRestartModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
 
   // Course stats hook
   const {
@@ -771,30 +784,87 @@ const CourseDetail = () => {
     toast({ title: "URL copied!", description: "Course URL copied to clipboard." });
   };
 
-  // Get primary CTA button props
+  // Get primary CTA button props based on user state, enrollment, progress, and role
   const getPrimaryCTAProps = () => {
+    // State 5: Admin / Super Moderator / Senior Moderator
+    if (isAdmin || isModerator) {
+      return {
+        label: "Manage Course",
+        icon: Edit,
+        onClick: () => setActiveTab("info"),
+      };
+    }
+
+    // State 0: User not logged in
+    if (!user) {
+      return {
+        label: "Enroll Now",
+        icon: UserPlus,
+        onClick: () => setLoginModalOpen(true),
+      };
+    }
+
+    // State 1: User logged in but not enrolled
+    if (!courseStats.isEnrolled) {
+      return {
+        label: "Enroll Now",
+        icon: UserPlus,
+        onClick: handleEnroll,
+      };
+    }
+
+    // State 4: User enrolled and completed (100%)
     if (courseProgress.isCompleted) {
       return {
         label: "Restart Course",
         icon: RefreshCw,
-        onClick: () => posts[0] && handleLessonClick(posts[0]),
+        onClick: () => setRestartModalOpen(true),
       };
     }
+
+    // State 3: User enrolled and in progress (1%-99%)
     if (courseProgress.hasStarted) {
       return {
         label: "Continue Learning",
         icon: Play,
         onClick: () => {
+          setActiveTab("lessons");
           const next = getNextPost();
           if (next) handleLessonClick(next);
         },
       };
     }
+
+    // State 2: User enrolled but not started (0%)
     return {
       label: "Start Course",
       icon: Play,
-      onClick: () => posts[0] && handleLessonClick(posts[0]),
+      onClick: () => {
+        setActiveTab("details");
+        // Scroll to "How You'll Learn" section after a small delay
+        setTimeout(() => {
+          const howSection = document.getElementById("how-youll-learn");
+          if (howSection) {
+            howSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 100);
+      },
     };
+  };
+
+  // Handle restart course confirmation
+  const handleRestartCourse = () => {
+    setRestartModalOpen(false);
+    setActiveTab("lessons");
+    if (posts[0]) handleLessonClick(posts[0]);
+  };
+
+  // Handle login redirect
+  const handleLoginRedirect = () => {
+    setLoginModalOpen(false);
+    // Store current URL to redirect back after login
+    const returnUrl = window.location.pathname + window.location.search;
+    navigate(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
   };
 
   // Get lesson completion info
@@ -1301,7 +1371,7 @@ const CourseDetail = () => {
                     </div>
 
                     {/* TABS */}
-                    <Tabs defaultValue="details" className="w-full">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                       <TabsList className="mb-6 w-full justify-start">
                         <TabsTrigger value="details" className="gap-2">
                           <Info className="h-4 w-4" />
@@ -1333,7 +1403,7 @@ const CourseDetail = () => {
 
                           {/* Get Started CTA */}
                           {posts.length > 0 && (
-                            <div className="p-6 bg-primary/5 rounded-xl border border-primary/20">
+                            <div id="how-youll-learn" className="p-6 bg-primary/5 rounded-xl border border-primary/20">
                               <div className="flex items-start gap-4">
                                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                   <Target className="h-6 w-6 text-primary" />
@@ -1341,17 +1411,22 @@ const CourseDetail = () => {
                                 <div className="flex-1">
                                   <h3 className="font-semibold text-lg mb-1">Ready to Get Started?</h3>
                                   <p className="text-muted-foreground text-sm mb-4">
-                                    {courseProgress.hasStarted 
-                                      ? `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Keep going!`
-                                      : "Start your learning journey today and master new skills."
+                                    {!user 
+                                      ? "Log in to enroll and track your learning progress."
+                                      : !courseStats.isEnrolled
+                                        ? "Enroll now to start tracking your progress."
+                                        : courseProgress.hasStarted 
+                                          ? `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Keep going!`
+                                          : "Start your learning journey today and master new skills."
                                     }
                                   </p>
                                   <Button 
                                     className="bg-primary hover:bg-primary/90 gap-2"
                                     onClick={ctaProps.onClick}
+                                    disabled={posts.length === 0 || enrolling}
                                   >
                                     <CtaIcon className="h-4 w-4" />
-                                    {ctaProps.label}
+                                    {enrolling ? "Processing..." : ctaProps.label}
                                   </Button>
                                 </div>
                               </div>
@@ -1576,7 +1651,12 @@ const CourseDetail = () => {
                           {/* Action Buttons */}
                           <Card>
                             <CardContent className="p-6 space-y-3">
-                              {courseStats.isEnrolled ? (
+                              {!user ? (
+                                <Button className="w-full gap-2 bg-primary hover:bg-primary/90" onClick={() => setLoginModalOpen(true)}>
+                                  <UserPlus className="h-4 w-4" />
+                                  Enroll Now
+                                </Button>
+                              ) : courseStats.isEnrolled ? (
                                 <Button variant="outline" className="w-full gap-2" onClick={handleUnenroll} disabled={enrolling}>
                                   <UserCheck className="h-4 w-4" />
                                   {enrolling ? "Processing..." : "Enrolled"}
@@ -1664,6 +1744,42 @@ const CourseDetail = () => {
           submitting={submittingComment}
         />
       )}
+
+      {/* Login Required Modal */}
+      <AlertDialog open={loginModalOpen} onOpenChange={setLoginModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please log in to enroll in this course and track your progress.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoginRedirect} className="bg-primary hover:bg-primary/90">
+              Log in
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restart Course Confirmation Modal */}
+      <AlertDialog open={restartModalOpen} onOpenChange={setRestartModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restart Course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Restarting will reset your progress. Your completion history will be preserved. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestartCourse} className="bg-primary hover:bg-primary/90">
+              Restart Course
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
