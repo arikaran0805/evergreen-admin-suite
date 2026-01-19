@@ -841,14 +841,12 @@ const CourseDetail = () => {
       label: "Start Course",
       icon: Play,
       onClick: () => {
-        setActiveTab("details");
-        // Scroll to "How You'll Learn" section after a small delay
-        setTimeout(() => {
-          const howSection = document.getElementById("how-youll-learn");
-          if (howSection) {
-            howSection.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 100);
+        setActiveTab("lessons");
+        // Navigate to the first lesson
+        const firstPost = getAllOrderedPosts()[0];
+        if (firstPost) {
+          handleLessonClick(firstPost);
+        }
       },
     };
   };
