@@ -183,7 +183,8 @@ const CourseDetail = () => {
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [restartModalOpen, setRestartModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState<string | null>(null); // Defer until we know user context
+  const [defaultTabResolved, setDefaultTabResolved] = useState(false);
 
   // Course stats hook
   const {
@@ -216,6 +217,46 @@ const CourseDetail = () => {
     const isCompleted = completedCount === totalCount && totalCount > 0;
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
   }, [progress.completedLessons, posts.length]);
+
+  // Resolve default tab based on user role and progress state
+  useEffect(() => {
+    // Skip if already resolved or still loading essential data
+    if (defaultTabResolved || loading || roleLoading) return;
+
+    // Admin / Super Moderator / Senior Moderator → Course Info
+    if (isAdmin || isModerator) {
+      setActiveTab("info");
+      setDefaultTabResolved(true);
+      return;
+    }
+
+    // If a lesson is already selected via URL, go to lessons tab
+    if (lessonSlug) {
+      setActiveTab("lessons");
+      setDefaultTabResolved(true);
+      return;
+    }
+
+    // Enrolled learner - in progress (1%-99%) or completed → Lessons
+    if (courseStats.isEnrolled && courseProgress.hasStarted) {
+      setActiveTab("lessons");
+      setDefaultTabResolved(true);
+      return;
+    }
+
+    // Not started / not enrolled / unknown → Course Details (onboarding)
+    setActiveTab("details");
+    setDefaultTabResolved(true);
+  }, [
+    defaultTabResolved,
+    loading,
+    roleLoading,
+    isAdmin,
+    isModerator,
+    lessonSlug,
+    courseStats.isEnrolled,
+    courseProgress.hasStarted,
+  ]);
 
   // Get first uncompleted post for "Continue Learning"
   const getNextPost = useCallback(() => {
@@ -1381,7 +1422,7 @@ const CourseDetail = () => {
                     </div>
 
                     {/* TABS */}
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <Tabs value={activeTab ?? "details"} onValueChange={setActiveTab} className="w-full">
                       <TabsList className="mb-6 w-full justify-start">
                         <TabsTrigger value="details" className="gap-2">
                           <Info className="h-4 w-4" />
