@@ -1083,8 +1083,7 @@ const CourseDetail = () => {
                       <button
                         onClick={() => {
                           setSelectedPost(null);
-                          setActiveTab("details");
-                          navigate(slug ? `/course/${slug}` : "/courses");
+                          navigate("/courses");
                         }}
                         className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
                         aria-label="Go to course home"
