@@ -1465,7 +1465,7 @@ const CourseDetail = () => {
                             <>
                               <div className="flex items-center gap-1.5 text-muted-foreground flex-shrink-0">
                                 <Tag className="h-4 w-4" />
-                                <span className="text-sm font-medium">Tags</span>
+                                <span className="text-base font-medium">Tags:</span>
                               </div>
                               {allTags.map((tag) => (
                                 <Link 
