@@ -1083,7 +1083,7 @@ const CourseDetail = () => {
                       <button
                         onClick={() => {
                           setSelectedPost(null);
-                          setActiveTab("course-details");
+                          setActiveTab("details");
                           navigate(slug ? `/course/${slug}` : "/courses");
                         }}
                         className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
