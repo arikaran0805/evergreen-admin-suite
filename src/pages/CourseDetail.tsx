@@ -39,7 +39,6 @@ import {
 import { 
   ChevronLeft, 
   ChevronRight, 
-  ChevronDown, 
   BookOpen, 
   Users, 
   Tag, 
@@ -54,28 +53,20 @@ import {
   Edit, 
   Star, 
   UserPlus, 
-  UserCheck, 
   CheckCircle, 
   Circle, 
   AlertTriangle, 
   Info, 
   List,
-  Clock,
-  Globe,
   Award,
   Play,
   Lock,
   RefreshCw,
-  Copy,
-  Check,
   Sparkles,
   Target,
-  GraduationCap,
-  TrendingUp,
   Home,
-  Search,
-  X
 } from "lucide-react";
+import CourseSidebar from "@/components/course/CourseSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -177,8 +168,6 @@ const CourseDetail = () => {
   const [allTags, setAllTags] = useState<Array<{id: string; name: string; slug: string}>>([]);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [careers, setCareers] = useState<Array<{id: string; name: string; slug: string}>>([]);
-  const [lessonSearchQuery, setLessonSearchQuery] = useState("");
-  const [isLessonSearchOpen, setIsLessonSearchOpen] = useState(false);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
   const { isBookmarked, toggleBookmark } = useBookmarks();
@@ -1106,266 +1095,44 @@ const CourseDetail = () => {
         <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Progress & Navigation */}
-          <aside className="lg:w-72 bg-primary/5 border-r border-primary/10 flex-shrink-0">
-            <div className={`sticky transition-[top] duration-200 ease-out ${
-              isPreviewMode && canPreview 
-                ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') 
-                : isHeaderVisible
-                  ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]') // Below primary + secondary + announcement
-                  : (showAnnouncement ? 'top-[4.75rem]' : 'top-10') // Below secondary + announcement only
-            }`}>
-              {/* Progress Section - Clean & Motivational Design */}
-              <div className="p-4 border-b border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10">
-                {/* Header with Search and Home Navigation */}
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium text-foreground">Course Progress</h2>
-                  <div className="flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => {
-                            setIsLessonSearchOpen(!isLessonSearchOpen);
-                            if (isLessonSearchOpen) {
-                              setLessonSearchQuery("");
-                            }
-                          }}
-                          className={`p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 ${
-                            isLessonSearchOpen ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary'
-                          }`}
-                          aria-label="Search lessons"
-                        >
-                          <Search className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Search lessons</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => {
-                            setSelectedPost(null);
+          <CourseSidebar
+            lessons={lessons}
+            posts={posts}
+            selectedPost={selectedPost}
+            expandedLessons={expandedLessons}
+            courseProgress={courseProgress}
+            isPreviewMode={isPreviewMode && (isAdmin || isModerator)}
+            canPreview={canPreview}
+            isHeaderVisible={isHeaderVisible}
+            showAnnouncement={showAnnouncement}
+            getPostsForLesson={getPostsForLesson}
+            getLessonProgress={getLessonProgress}
+            isLessonCompleted={isLessonCompleted}
+            toggleLessonExpansion={toggleLessonExpansion}
+            handleLessonClick={handleLessonClick}
+            handleHomeClick={() => {
+              setSelectedPost(null);
 
-                            // If somehow slug is missing, fall back to Courses
-                            if (!slug) {
-                              navigate("/courses");
-                              return;
-                            }
+              if (!slug) {
+                navigate("/courses");
+                return;
+              }
 
-                            const desiredTab = (isAdmin || isModerator)
-                              ? "info"
-                              : courseProgress.percentage > 0
-                                ? "lessons"
-                                : "details";
+              const desiredTab = (isAdmin || isModerator)
+                ? "info"
+                : courseProgress.percentage > 0
+                  ? "lessons"
+                  : "details";
 
-                            setActiveTab(desiredTab);
-                            setDefaultTabResolved(true);
+              setActiveTab(desiredTab);
+              setDefaultTabResolved(true);
 
-                            // Clear lesson selection and persist tab in URL
-                            const nextSearch = new URLSearchParams(searchParams);
-                            nextSearch.delete("lesson");
-                            nextSearch.set("tab", desiredTab);
-                            setSearchParams(nextSearch, { replace: true });
-                          }}
-                          className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
-                          aria-label="Go to course home"
-                        >
-                          <Home className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Go to course home</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-                
-                {/* Lesson Search Input */}
-                {isLessonSearchOpen && (
-                  <div className="mb-4 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search lessons..."
-                      value={lessonSearchQuery}
-                      onChange={(e) => setLessonSearchQuery(e.target.value)}
-                      autoFocus
-                      className="w-full pl-9 pr-8 py-2 text-sm rounded-md border border-primary/20 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
-                    />
-                    {lessonSearchQuery && (
-                      <button
-                        onClick={() => setLessonSearchQuery("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                )}
-                
-                {/* Progress Bar with Percentage */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    {/* Conditional Completion Text - Left aligned, only show when progress > 0% */}
-                    {courseProgress.percentage > 0 ? (
-                      <span className="text-[11px] text-muted-foreground">
-                        {courseProgress.completedCount}/{courseProgress.totalCount} lessons completed
-                      </span>
-                    ) : (
-                      <span></span>
-                    )}
-                    {/* Percentage - Right aligned */}
-                    <span className="text-sm font-medium text-primary">
-                      {courseProgress.percentage}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={courseProgress.percentage} 
-                    className="h-2.5 bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80 [&>div]:transition-all [&>div]:duration-500"
-                    aria-label={`Course progress: ${courseProgress.percentage}%`}
-                  />
-                </div>
-                  
-                {/* Dynamic Motivational Text */}
-                <div className="flex items-center gap-2 text-xs mt-3">
-                  {!courseProgress.hasStarted && (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5 text-primary/70" />
-                      <span className="text-muted-foreground">Ready when you are!</span>
-                    </>
-                  )}
-                  {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage < 50 && (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-primary/80">Great start! Keep going</span>
-                    </>
-                  )}
-                  {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage >= 50 && (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-primary">You're doing amazing!</span>
-                    </>
-                  )}
-                  {courseProgress.isCompleted && (
-                    <>
-                      <Award className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-primary font-medium">Course completed!</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              {/* Lesson Navigation */}
-              <ScrollArea className="h-[calc(100vh-240px)]">
-                <nav className="p-2">
-                  {lessons.length > 0 ? (
-                    lessons
-                      .filter(lesson => (isPreviewMode && (isAdmin || isModerator)) || lesson.is_published)
-                      .map((lesson, lessonIndex) => {
-                      const lessonPosts = getPostsForLesson(lesson.id);
-                      const isExpanded = expandedLessons.has(lesson.id);
-                      const hasActivePost = lessonPosts.some(p => p.id === selectedPost?.id);
-                      const lessonProgress = getLessonProgress(lesson.id);
-                      
-                      return (
-                        <div key={lesson.id} className="mb-1">
-                          {/* Lesson Header */}
-                          <div
-                            onClick={() => toggleLessonExpansion(lesson.id)}
-                            className={`rounded-lg cursor-pointer transition-all duration-200 ${
-                              hasActivePost
-                                ? 'bg-primary/15 border border-primary/30' 
-                                : 'hover:bg-primary/10'
-                            }`}
-                          >
-                            <div className="px-3 py-2.5 flex items-center justify-between">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                {lessonProgress.isComplete ? (
-                                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                ) : lessonProgress.completedPosts > 0 ? (
-                                  <div className="h-4 w-4 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0">
-                                    <div className="h-2 w-2 rounded-full bg-primary/50" />
-                                  </div>
-                                ) : (
-                                  <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                )}
-                                <span className="text-sm font-medium text-foreground truncate">
-                                  {lesson.title}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                {lessonProgress.completedPosts > 0 && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
-                                  </span>
-                                )}
-                                <ChevronDown 
-                                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                                    isExpanded ? 'rotate-180' : ''
-                                  }`} 
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Posts List */}
-                          {isExpanded && (
-                            <div className="ml-3 mt-1 border-l-2 border-primary/20 pl-2">
-                              {lessonPosts.length > 0 ? (
-                                lessonPosts.map((post) => {
-                                  const isActive = selectedPost?.id === post.id;
-                                  const isCompleted = isLessonCompleted(post.id);
-                                  
-                                  return (
-                                    <div
-                                      key={post.id}
-                                      onClick={() => handleLessonClick(post)}
-                                      className={`rounded-lg cursor-pointer transition-all duration-200 mb-1 group ${
-                                        isActive
-                                          ? 'bg-primary shadow-sm' 
-                                          : 'hover:bg-primary/10'
-                                      }`}
-                                    >
-                                      <div className="px-3 py-2 flex items-center gap-2">
-                                        {isCompleted ? (
-                                          <CheckCircle className={`h-3.5 w-3.5 flex-shrink-0 ${isActive ? 'text-white' : 'text-primary'}`} />
-                                        ) : (
-                                          <Circle className={`h-3.5 w-3.5 flex-shrink-0 ${isActive ? 'text-white/70' : 'text-muted-foreground'}`} />
-                                        )}
-                                        <span 
-                                          className={`text-sm flex-1 transition-colors truncate ${
-                                            isActive
-                                              ? 'text-white font-medium' 
-                                              : 'text-foreground'
-                                          }`}
-                                        >
-                                          {post.title}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="px-3 py-3 text-xs text-muted-foreground italic">
-                                  Content coming soon...
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No lessons yet</p>
-                    </div>
-                  )}
-                </nav>
-              </ScrollArea>
-            </div>
-          </aside>
+              const nextSearch = new URLSearchParams(searchParams);
+              nextSearch.delete("lesson");
+              nextSearch.set("tab", desiredTab);
+              setSearchParams(nextSearch, { replace: true });
+            }}
+          />
 
           {/* MAIN CONTENT */}
           <main className="flex-1 min-w-0">
@@ -1772,137 +1539,91 @@ const CourseDetail = () => {
                             <p className="text-sm text-muted-foreground mt-1">Check back soon for new content!</p>
                           </div>
                         ) : (
-                          (() => {
-                            const searchLower = lessonSearchQuery.toLowerCase().trim();
-                            
-                            // Filter lessons and posts based on search query
-                            const filteredLessonsWithPosts = lessons
+                          <div className="space-y-3">
+                            {lessons
                               .filter(lesson => (isPreviewMode && (isAdmin || isModerator)) || lesson.is_published)
-                              .map(lesson => {
+                              .map((lesson, lessonIndex) => {
                                 const lessonPosts = getPostsForLesson(lesson.id);
+                                const lessonProgress = getLessonProgress(lesson.id);
                                 
-                                if (!searchLower) {
-                                  return { lesson, posts: lessonPosts, matchesSearch: true };
-                                }
-                                
-                                // Check if lesson title matches
-                                const lessonMatches = lesson.title.toLowerCase().includes(searchLower) ||
-                                  (lesson.description?.toLowerCase().includes(searchLower) ?? false);
-                                
-                                // Check which posts match
-                                const matchingPosts = lessonPosts.filter(post => 
-                                  post.title.toLowerCase().includes(searchLower) ||
-                                  (post.excerpt?.toLowerCase().includes(searchLower) ?? false)
-                                );
-                                
-                                // Include lesson if it matches or has matching posts
-                                if (lessonMatches || matchingPosts.length > 0) {
-                                  return { 
-                                    lesson, 
-                                    posts: lessonMatches ? lessonPosts : matchingPosts,
-                                    matchesSearch: true 
-                                  };
-                                }
-                                
-                                return { lesson, posts: [], matchesSearch: false };
-                              })
-                              .filter(item => item.matchesSearch);
-                            
-                            if (searchLower && filteredLessonsWithPosts.length === 0) {
-                              return (
-                                <div className="text-center py-16 bg-muted/30 rounded-xl">
-                                  <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                                  <p className="text-muted-foreground">No lessons match "{lessonSearchQuery}"</p>
-                                  <p className="text-sm text-muted-foreground mt-1">Try a different search term</p>
-                                </div>
-                              );
-                            }
-                            
-                            return (
-                              <div className="space-y-3">
-                                {filteredLessonsWithPosts.map(({ lesson, posts: lessonPosts }, lessonIndex) => {
-                                  const lessonProgress = getLessonProgress(lesson.id);
-                                  
-                                  return (
-                                    <Card key={lesson.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                                      <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                                            lessonProgress.isComplete 
-                                              ? 'bg-primary text-primary-foreground' 
-                                              : 'bg-muted text-muted-foreground'
-                                          }`}>
-                                            {lessonProgress.isComplete ? <CheckCircle className="h-4 w-4" /> : lessonIndex + 1}
-                                          </div>
-                                          <div>
-                                            <h4 className="font-semibold">{lesson.title}</h4>
-                                            {lesson.description && (
-                                              <p className="text-xs text-muted-foreground">{lesson.description}</p>
-                                            )}
-                                          </div>
-                                          {!lesson.is_published && (
-                                            <Badge variant="secondary" className="text-xs">Draft</Badge>
+                                return (
+                                  <Card key={lesson.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                                    <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                                          lessonProgress.isComplete 
+                                            ? 'bg-primary text-primary-foreground' 
+                                            : 'bg-muted text-muted-foreground'
+                                        }`}>
+                                          {lessonProgress.isComplete ? <CheckCircle className="h-4 w-4" /> : lessonIndex + 1}
+                                        </div>
+                                        <div>
+                                          <h4 className="font-semibold">{lesson.title}</h4>
+                                          {lesson.description && (
+                                            <p className="text-xs text-muted-foreground">{lesson.description}</p>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                          {lessonProgress.totalPosts > 0 && (
-                                            <div className="flex items-center gap-2">
-                                              <Progress value={lessonProgress.percentage} className="w-16 h-1.5" />
-                                              <span className="text-xs text-muted-foreground">
-                                                {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
-                                              </span>
-                                            </div>
-                                          )}
-                                          <span className="text-sm text-muted-foreground">
-                                            {lessonPosts.length} post{lessonPosts.length !== 1 ? 's' : ''}
-                                          </span>
-                                        </div>
+                                        {!lesson.is_published && (
+                                          <Badge variant="secondary" className="text-xs">Draft</Badge>
+                                        )}
                                       </div>
-                                      
-                                      {lessonPosts.length > 0 ? (
-                                        <div className="divide-y">
-                                          {lessonPosts.map((post) => {
-                                            const isCompleted = isLessonCompleted(post.id);
-                                            
-                                            return (
-                                              <div 
-                                                key={post.id}
-                                                className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 cursor-pointer transition-colors group"
-                                                onClick={() => handleLessonClick(post)}
-                                              >
-                                                <div className="flex items-center gap-3">
-                                                  {isCompleted ? (
-                                                    <CheckCircle className="h-4 w-4 text-primary" />
-                                                  ) : (
-                                                    <Circle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                  )}
-                                                  <span className="text-sm">{post.title}</span>
-                                                  {post.post_type && post.post_type !== 'content' && (
-                                                    <Badge variant="secondary" className="text-[10px]">
-                                                      {post.post_type}
-                                                    </Badge>
-                                                  )}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                  <span className="text-xs text-muted-foreground">~{formatReadingTime(post.content)}</span>
-                                                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                </div>
+                                      <div className="flex items-center gap-3">
+                                        {lessonProgress.totalPosts > 0 && (
+                                          <div className="flex items-center gap-2">
+                                            <Progress value={lessonProgress.percentage} className="w-16 h-1.5" />
+                                            <span className="text-xs text-muted-foreground">
+                                              {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
+                                            </span>
+                                          </div>
+                                        )}
+                                        <span className="text-sm text-muted-foreground">
+                                          {lessonPosts.length} post{lessonPosts.length !== 1 ? 's' : ''}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {lessonPosts.length > 0 ? (
+                                      <div className="divide-y">
+                                        {lessonPosts.map((post) => {
+                                          const isCompleted = isLessonCompleted(post.id);
+                                          
+                                          return (
+                                            <div 
+                                              key={post.id}
+                                              className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 cursor-pointer transition-colors group"
+                                              onClick={() => handleLessonClick(post)}
+                                            >
+                                              <div className="flex items-center gap-3">
+                                                {isCompleted ? (
+                                                  <CheckCircle className="h-4 w-4 text-primary" />
+                                                ) : (
+                                                  <Circle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                )}
+                                                <span className="text-sm">{post.title}</span>
+                                                {post.post_type && post.post_type !== 'content' && (
+                                                  <Badge variant="secondary" className="text-[10px]">
+                                                    {post.post_type}
+                                                  </Badge>
+                                                )}
                                               </div>
-                                            );
-                                          })}
-                                        </div>
-                                      ) : (
-                                        <div className="px-4 py-6 text-center bg-muted/20">
-                                          <Lock className="h-5 w-5 mx-auto mb-2 text-muted-foreground/50" />
-                                          <p className="text-sm text-muted-foreground">Content coming soon</p>
-                                        </div>
-                                      )}
-                                    </Card>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs text-muted-foreground">~{formatReadingTime(post.content)}</span>
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="px-4 py-6 text-center bg-muted/20">
+                                        <Lock className="h-5 w-5 mx-auto mb-2 text-muted-foreground/50" />
+                                        <p className="text-sm text-muted-foreground">Content coming soon</p>
+                                      </div>
+                                    )}
+                                  </Card>
+                                );
+                            })}
+                          </div>
                         )}
                       </TabsContent>
 
