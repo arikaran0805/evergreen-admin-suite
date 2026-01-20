@@ -6,6 +6,7 @@ import { useVersionBookmarks } from "@/hooks/useVersionBookmarks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { sanitizeHtml } from "@/lib/sanitize";
 import {
   Sheet,
   SheetContent,
@@ -760,7 +761,7 @@ const VersionHistoryPanel = ({
                     ) : (
                       <div 
                         className="prose dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: selectedVersion.content }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedVersion.content) }}
                       />
                     )}
                   </div>

@@ -25,6 +25,7 @@ import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseInfoTab from "@/components/course/CourseInfoTab";
+import { sanitizeHtml } from "@/lib/sanitize";
 import {
   SidebarAdTop,
   SidebarAdMiddle,
@@ -1508,7 +1509,7 @@ const CourseDetail = () => {
                               <h3 className="text-xl font-semibold mb-4">About This Course</h3>
                               <div 
                                 className="text-foreground leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: course.description }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                               />
                             </div>
                           )}

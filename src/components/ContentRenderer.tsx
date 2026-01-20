@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
 import CodeBlock from "@/components/chat-editor/CodeBlock";
 import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface ContentRendererProps {
   htmlContent: string;
@@ -72,12 +73,12 @@ const ContentRenderer = ({
     );
   }
 
-  // If no code blocks, render normally
+  // If no code blocks, render normally with sanitization
   if (codeBlocks.length === 0) {
     return (
       <div 
         className="prose prose-lg max-w-none"
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
       />
     );
   }
@@ -93,7 +94,7 @@ const ContentRenderer = ({
           return part ? (
             <div 
               key={idx}
-              dangerouslySetInnerHTML={{ __html: part }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }}
             />
           ) : null;
         } else {

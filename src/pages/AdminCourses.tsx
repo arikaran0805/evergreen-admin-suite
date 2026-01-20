@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -198,7 +199,7 @@ const AdminCourses = () => {
                   <div>
                     <div 
                       className="text-sm break-words prose prose-sm max-w-none line-clamp-3"
-                      dangerouslySetInnerHTML={{ __html: category.description }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(category.description) }}
                     />
                     {category.description.length > 150 && (
                       <button

@@ -11,6 +11,7 @@ import { getChatColors, getDynamicStyles, DynamicChatColors } from "./chatColors
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 // Lazy load the freeform canvas viewer to avoid loading fabric.js until needed
 const FreeformCanvasViewer = lazy(() => 
@@ -698,14 +699,14 @@ const ChatConversationView = ({
           {explanationCodeBlocks.length === 0 ? (
             <div
               className="leading-relaxed text-foreground/90"
-              dangerouslySetInnerHTML={{ __html: explanation }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(explanation) }}
             />
           ) : (
             <div className="leading-relaxed text-foreground/90">
               {explanationHtml.split(/<!--CODE_BLOCK_(\d+)-->/).map((part, idx) => {
                 if (idx % 2 === 0) {
                   return part ? (
-                    <div key={idx} dangerouslySetInnerHTML={{ __html: part }} />
+                    <div key={idx} dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />
                   ) : null;
                 }
 
