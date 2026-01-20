@@ -76,7 +76,8 @@ import {
   Sparkles,
   Target,
   GraduationCap,
-  TrendingUp
+  TrendingUp,
+  Home
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1072,45 +1073,67 @@ const CourseDetail = () => {
           {/* LEFT SIDEBAR - Progress & Navigation */}
           <aside className="lg:w-72 bg-primary/5 border-r border-primary/10 flex-shrink-0">
             <div className={`sticky ${isPreviewMode && canPreview ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') : (showAnnouncement ? 'top-32' : 'top-24')}`}>
-              {/* Progress Section */}
-              <div className="p-4 border-b border-primary/10 bg-primary/10">
-                <div 
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity mb-3"
-                  onClick={() => setSelectedPost(null)}
-                >
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <h2 className="font-semibold text-foreground">Course Progress</h2>
+              {/* Progress Section - Clean & Motivational Design */}
+              <div className="p-4 border-b border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10">
+                {/* Header with Home Navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-medium text-foreground">Course Progress</h2>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setSelectedPost(null)}
+                        className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
+                        aria-label="Go to course home"
+                      >
+                        <Home className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Go to course home</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 
-                {/* Progress Stats */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {courseProgress.completedCount}/{courseProgress.totalCount} posts completed
+                {/* Progress Bar with Percentage */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Progress 
+                      value={courseProgress.percentage} 
+                      className="h-2.5 flex-1 bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80 [&>div]:transition-all [&>div]:duration-500"
+                      aria-label={`Course progress: ${courseProgress.percentage}%`}
+                    />
+                    <span className="text-sm font-medium text-primary min-w-[3rem] text-right">
+                      {courseProgress.percentage}%
                     </span>
-                    <span className="font-semibold text-primary">{courseProgress.percentage}%</span>
                   </div>
-                  <Progress value={courseProgress.percentage} className="h-2 bg-primary/20 [&>div]:bg-primary" />
                   
-                  {/* Motivation Message */}
-                  {!courseProgress.hasStarted && (
-                    <div className="flex items-center gap-2 text-xs text-primary mt-2">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Let's get started!</span>
-                    </div>
-                  )}
-                  {courseProgress.hasStarted && !courseProgress.isCompleted && (
-                    <div className="flex items-center gap-2 text-xs text-primary mt-2">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>You're making progress! Keep it up!</span>
-                    </div>
-                  )}
-                  {courseProgress.isCompleted && (
-                    <div className="flex items-center gap-2 text-xs text-primary mt-2 font-medium">
-                      <Award className="h-3.5 w-3.5" />
-                      <span>Congratulations! Course completed!</span>
-                    </div>
-                  )}
+                  {/* Dynamic Motivational Text */}
+                  <div className="flex items-center gap-2 text-xs">
+                    {!courseProgress.hasStarted && (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5 text-primary/70" />
+                        <span className="text-muted-foreground">Ready when you are!</span>
+                      </>
+                    )}
+                    {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage < 50 && (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-primary/80">Great start! Keep going</span>
+                      </>
+                    )}
+                    {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage >= 50 && (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-primary">You're doing amazing!</span>
+                      </>
+                    )}
+                    {courseProgress.isCompleted && (
+                      <>
+                        <Award className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-primary font-medium">Course completed!</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               
