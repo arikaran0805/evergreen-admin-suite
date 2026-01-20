@@ -29,9 +29,11 @@ interface HeaderProps {
   announcementVisible?: boolean;
   /** Enable scroll-aware auto-hide behavior (for course/lesson pages) */
   autoHideOnScroll?: boolean;
+  /** Callback when header visibility changes (for coordinating layout) */
+  onVisibilityChange?: (isVisible: boolean) => void;
 }
 
-const Header = ({ announcementVisible = false, autoHideOnScroll }: HeaderProps) => {
+const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityChange }: HeaderProps) => {
   const location = useLocation();
   const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
@@ -52,6 +54,11 @@ const Header = ({ announcementVisible = false, autoHideOnScroll }: HeaderProps) 
     threshold: 15,
     enabled: shouldAutoHide,
   });
+
+  // Notify parent when visibility changes
+  useEffect(() => {
+    onVisibilityChange?.(isHeaderVisible);
+  }, [isHeaderVisible, onVisibilityChange]);
 
   useEffect(() => {
     const handleScroll = () => {

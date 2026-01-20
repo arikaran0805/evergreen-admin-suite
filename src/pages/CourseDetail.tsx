@@ -183,6 +183,7 @@ const CourseDetail = () => {
   const { settings: adSettings } = useAdSettings();
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [restartModalOpen, setRestartModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null); // Defer until we know user context
@@ -208,6 +209,10 @@ const CourseDetail = () => {
 
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
+  }, []);
+
+  const handleHeaderVisibility = useCallback((visible: boolean) => {
+    setIsHeaderVisible(visible);
   }, []);
 
   // Computed values for course status
@@ -1064,15 +1069,30 @@ const CourseDetail = () => {
       <div className={`fixed ${isPreviewMode && canPreview ? 'top-10' : 'top-0'} left-0 right-0 z-[60]`}>
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
-      <Header announcementVisible={showAnnouncement} />
+      <Header 
+        announcementVisible={showAnnouncement} 
+        onVisibilityChange={handleHeaderVisibility}
+      />
 
-      {/* Main Layout */}
-      <div className={`w-full ${isPreviewMode && canPreview ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
+      {/* Main Layout - adjust padding based on header visibility */}
+      <div className={`w-full transition-[padding-top] duration-200 ease-out ${
+        isPreviewMode && canPreview 
+          ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
+          : isHeaderVisible
+            ? (showAnnouncement ? 'pt-32' : 'pt-24')
+            : (showAnnouncement ? 'pt-9' : 'pt-0')
+      }`}>
         <div className="flex flex-col lg:flex-row gap-0">
           
           {/* LEFT SIDEBAR - Progress & Navigation */}
           <aside className="lg:w-72 bg-primary/5 border-r border-primary/10 flex-shrink-0">
-            <div className={`sticky ${isPreviewMode && canPreview ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') : (showAnnouncement ? 'top-32' : 'top-24')}`}>
+            <div className={`sticky transition-[top] duration-200 ease-out ${
+              isPreviewMode && canPreview 
+                ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') 
+                : isHeaderVisible
+                  ? (showAnnouncement ? 'top-32' : 'top-24')
+                  : (showAnnouncement ? 'top-9' : 'top-0')
+            }`}>
               {/* Progress Section - Clean & Motivational Design */}
               <div className="p-4 border-b border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10">
                 {/* Header with Home Navigation */}
