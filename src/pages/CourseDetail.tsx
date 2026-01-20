@@ -1401,7 +1401,7 @@ const CourseDetail = () => {
                           </DropdownMenu>
                         </div>
                       </div>
-                      <Separator className="mt-4" />
+                      <Separator className="mt-2" />
                     </div>
 
                     {/* Featured Image */}
