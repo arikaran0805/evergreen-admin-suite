@@ -1075,12 +1075,13 @@ const CourseDetail = () => {
       />
 
       {/* Main Layout - adjust padding based on header visibility */}
+      {/* Heights: Primary header=64px, Secondary header=40px, Announcement=36px */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         isPreviewMode && canPreview 
           ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
           : isHeaderVisible
-            ? (showAnnouncement ? 'pt-32' : 'pt-24')
-            : (showAnnouncement ? 'pt-9' : 'pt-0')
+            ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
+            : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (36+40 / 40 - secondary header only)
       }`}>
         <div className="flex flex-col lg:flex-row gap-0">
           
@@ -1090,8 +1091,8 @@ const CourseDetail = () => {
               isPreviewMode && canPreview 
                 ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]') 
                 : isHeaderVisible
-                  ? (showAnnouncement ? 'top-32' : 'top-24')
-                  : (showAnnouncement ? 'top-9' : 'top-0')
+                  ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]') // Below primary + secondary + announcement
+                  : (showAnnouncement ? 'top-[4.75rem]' : 'top-10') // Below secondary + announcement only
             }`}>
               {/* Progress Section - Clean & Motivational Design */}
               <div className="p-4 border-b border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10">
