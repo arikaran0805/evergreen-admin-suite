@@ -15,6 +15,7 @@ import { usePostVersions, PostVersion } from "@/hooks/usePostVersions";
 import { usePostAnnotations } from "@/hooks/usePostAnnotations";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import { useAdminSidebar } from "@/contexts/AdminSidebarContext";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 import { AdminEditorSkeleton } from "@/components/admin/AdminEditorSkeleton";
 import { ContentStatusBadge, ContentStatus } from "@/components/ContentStatusBadge";
@@ -1207,7 +1208,7 @@ const AdminPostEditor = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="prose dark:prose-invert max-w-none mt-4">
-            <div dangerouslySetInnerHTML={{ __html: previewVersion?.content || "" }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewVersion?.content || "") }} />
           </div>
         </DialogContent>
       </Dialog>

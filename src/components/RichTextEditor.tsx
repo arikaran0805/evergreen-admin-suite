@@ -6,6 +6,7 @@ import { Copy, Check, Play, Pencil, Loader2, X, ChevronDown, Lightbulb, Eye, Eye
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -919,11 +920,11 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            {/* Preview panel */}
+            {/* Preview panel with XSS-safe rendering */}
             <ResizablePanel defaultSize={50} minSize={25}>
               <div 
                 className="w-full h-full text-sm leading-relaxed p-4 overflow-auto bg-muted/30 prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: value || '<p class="text-muted-foreground italic">Preview...</p>' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) || '<p class="text-muted-foreground italic">Preview...</p>' }}
               />
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -963,10 +964,11 @@ const RichTextEditor = ({ value, onChange, placeholder, annotationMode, annotati
           </div>
         </div>
       ) : viewMode === 'preview' ? (
+        // Full preview mode with XSS-safe rendering
         <div 
           className="w-full min-h-[300px] text-sm leading-relaxed border rounded-lg p-4 overflow-auto bg-muted/30 prose prose-sm dark:prose-invert max-w-none"
           style={{ maxHeight: '600px' }}
-          dangerouslySetInnerHTML={{ __html: value || '<p class="text-muted-foreground italic">Nothing to preview...</p>' }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) || '<p class="text-muted-foreground italic">Nothing to preview...</p>' }}
         />
       ) : (
         <ReactQuill

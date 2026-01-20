@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { isChatTranscript, extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { Separator } from "@/components/ui/separator";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface VersionDiffViewerProps {
   currentVersion: PostVersion;
@@ -354,7 +355,7 @@ const ChatDiffView = ({
                   <h4 className="text-sm font-semibold text-muted-foreground mb-2">Explanation</h4>
                   <div className="prose dark:prose-invert max-w-none text-sm">
                     {!showHighlights || !explanationDiff ? (
-                      <div dangerouslySetInnerHTML={{ __html: newExplanation || oldExplanation || "" }} />
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(newExplanation || oldExplanation || "") }} />
                     ) : (
                       explanationDiff.map((segment, index) => {
                         if (segment.type === "removed") {
@@ -362,7 +363,7 @@ const ChatDiffView = ({
                             <span
                               key={index}
                               className="bg-red-200 dark:bg-red-800/50 line-through text-red-700 dark:text-red-300 px-0.5 rounded"
-                              dangerouslySetInnerHTML={{ __html: segment.text }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(segment.text) }}
                             />
                           );
                         }
@@ -371,11 +372,11 @@ const ChatDiffView = ({
                             <span
                               key={index}
                               className="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200 px-0.5 rounded"
-                              dangerouslySetInnerHTML={{ __html: segment.text }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(segment.text) }}
                             />
                           );
                         }
-                        return <span key={index} dangerouslySetInnerHTML={{ __html: segment.text }} />;
+                        return <span key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(segment.text) }} />;
                       })
                     )}
                   </div>

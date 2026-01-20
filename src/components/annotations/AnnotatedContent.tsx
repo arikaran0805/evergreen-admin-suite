@@ -6,6 +6,7 @@ import CodeBlock from "@/components/chat-editor/CodeBlock";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface AnnotatedContentProps {
   htmlContent: string;
@@ -131,10 +132,10 @@ const AnnotatedContent = ({
     </button>
   );
 
-  // Render highlighted text with annotation
+  // Render highlighted text with annotation (XSS-safe)
   const renderHighlightedText = (text: string, contentAnnotations: PostAnnotation[]) => {
     if (!showAnnotations || contentAnnotations.length === 0) {
-      return <span dangerouslySetInnerHTML={{ __html: text }} />;
+      return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />;
     }
 
     // Group annotations by their position
@@ -143,7 +144,7 @@ const AnnotatedContent = ({
 
     return (
       <span className="relative">
-        <span dangerouslySetInnerHTML={{ __html: text }} />
+        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
         {openAnnotations.length > 0 && (
           <span className="absolute -top-1 -right-1">
             <Badge 

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface ContentWithCodeCopyProps {
   content: string;
@@ -9,6 +10,9 @@ interface ContentWithCodeCopyProps {
 const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  // Sanitize content to prevent XSS attacks
+  const sanitizedContent = useMemo(() => sanitizeHtml(content), [content]);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -85,13 +89,13 @@ const ContentWithCodeCopy = ({ content, className }: ContentWithCodeCopyProps) =
       headerContainer.appendChild(copyButton);
       wrapper.appendChild(headerContainer);
     });
-  }, [content, toast]);
+  }, [sanitizedContent, toast]);
 
   return (
     <div
       ref={contentRef}
       className={className}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
     />
   );
 };
