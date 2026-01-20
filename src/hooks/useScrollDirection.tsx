@@ -7,6 +7,8 @@ interface UseScrollDirectionOptions {
   threshold?: number;
   /** Whether the hook is active (default: true) */
   enabled?: boolean;
+  /** Show header only at top, not on scroll up (default: false) */
+  showOnlyAtTop?: boolean;
 }
 
 interface UseScrollDirectionResult {
@@ -25,6 +27,7 @@ interface UseScrollDirectionResult {
 export const useScrollDirection = ({
   threshold = 10,
   enabled = true,
+  showOnlyAtTop = false,
 }: UseScrollDirectionOptions = {}): UseScrollDirectionResult => {
   const [direction, setDirection] = useState<ScrollDirection>(null);
   const [isAtTop, setIsAtTop] = useState(true);
@@ -74,8 +77,10 @@ export const useScrollDirection = ({
     return () => window.removeEventListener("scroll", onScroll);
   }, [enabled, onScroll]);
 
-  // Header is visible if at top OR scrolling up
-  const isHeaderVisible = !enabled || isAtTop || direction === "up";
+  // Header visibility logic:
+  // - If showOnlyAtTop: visible ONLY when at top (not on scroll up)
+  // - Otherwise: visible if at top OR scrolling up
+  const isHeaderVisible = !enabled || isAtTop || (!showOnlyAtTop && direction === "up");
 
   return { direction, isAtTop, isHeaderVisible };
 };

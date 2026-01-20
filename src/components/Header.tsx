@@ -50,9 +50,11 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
   const shouldAutoHide = autoHideOnScroll ?? isCourseDetailPage;
 
   // Scroll direction hook for auto-hide behavior
+  // showOnlyAtTop: header reappears only when user scrolls to very top (not on scroll-up)
   const { isHeaderVisible } = useScrollDirection({
     threshold: 15,
     enabled: shouldAutoHide,
+    showOnlyAtTop: true,
   });
 
   // Notify parent when visibility changes
