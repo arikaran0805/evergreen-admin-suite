@@ -6,7 +6,8 @@
  * 
  * @see https://github.com/cure53/DOMPurify
  */
-import DOMPurify, { Config } from 'dompurify';
+import DOMPurify from 'dompurify';
+import type { Config } from 'dompurify';
 
 /**
  * Configuration for DOMPurify sanitization.
