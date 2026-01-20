@@ -1329,7 +1329,7 @@ const CourseDetail = () => {
                   /* Post Content View */
                   <>
                     {/* Post Header */}
-                    <div className="mb-6">
+                    <div className="mb-4">
                       <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-foreground">{selectedPost.title}</h1>
                       <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1401,10 +1401,8 @@ const CourseDetail = () => {
                           </DropdownMenu>
                         </div>
                       </div>
+                      <Separator className="mt-4" />
                     </div>
-
-                    {/* Separator line */}
-                    <Separator className="mt-3 mb-4" />
 
                     {/* Featured Image */}
                     {selectedPost.featured_image && (
