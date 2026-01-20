@@ -151,8 +151,9 @@ const commentSchema = z.object({
 const CourseDetail = () => {
   const params = useParams<{ slug: string }>();
   const slug = decodeURIComponent((params.slug ?? "").split("?")[0]).trim();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const lessonSlug = searchParams.get("lesson");
+  const tabParam = searchParams.get("tab"); // Persist active tab in URL
   const isPreviewMode = searchParams.get("preview") === "true";
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
@@ -225,33 +226,40 @@ const CourseDetail = () => {
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
   }, [progress.completedLessons, posts.length]);
 
-  // Resolve default tab based on user role and progress state
+  // Resolve default tab based on URL param, user role, and progress state
   useEffect(() => {
     // Skip if already resolved or still loading essential data
     if (defaultTabResolved || loading || roleLoading) return;
 
-    // Admin / Super Moderator / Senior Moderator → Course Info
+    // Priority 1: If tab is specified in URL, use it (for persistence across refresh)
+    if (tabParam && ["details", "lessons", "info"].includes(tabParam)) {
+      setActiveTab(tabParam);
+      setDefaultTabResolved(true);
+      return;
+    }
+
+    // Priority 2: Admin / Super Moderator / Senior Moderator → Course Info
     if (isAdmin || isModerator) {
       setActiveTab("info");
       setDefaultTabResolved(true);
       return;
     }
 
-    // If a lesson is already selected via URL, go to lessons tab
+    // Priority 3: If a lesson is already selected via URL, go to lessons tab
     if (lessonSlug) {
       setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
     }
 
-    // Enrolled learner - in progress (1%-99%) or completed → Lessons
+    // Priority 4: Enrolled learner - in progress (1%-99%) or completed → Lessons
     if (courseStats.isEnrolled && courseProgress.hasStarted) {
       setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
     }
 
-    // Not started / not enrolled / unknown → Course Details (onboarding)
+    // Default: Not started / not enrolled / unknown → Course Details (onboarding)
     setActiveTab("details");
     setDefaultTabResolved(true);
   }, [
@@ -261,9 +269,18 @@ const CourseDetail = () => {
     isAdmin,
     isModerator,
     lessonSlug,
+    tabParam,
     courseStats.isEnrolled,
     courseProgress.hasStarted,
   ]);
+
+  // Persist active tab to URL when it changes
+  const handleTabChange = useCallback((newTab: string) => {
+    setActiveTab(newTab);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", newTab);
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Get first uncompleted post for "Continue Learning"
   const getNextPost = useCallback(() => {
@@ -1557,7 +1574,7 @@ const CourseDetail = () => {
                     </div>
 
                     {/* TABS */}
-                    <Tabs value={activeTab ?? "details"} onValueChange={setActiveTab} className="w-full">
+                    <Tabs value={activeTab ?? "details"} onValueChange={handleTabChange} className="w-full">
                       <TabsList className="mb-6 w-full justify-start">
                         <TabsTrigger value="details" className="gap-2">
                           <Info className="h-4 w-4" />
