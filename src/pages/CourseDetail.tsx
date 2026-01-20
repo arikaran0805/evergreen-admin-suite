@@ -1081,7 +1081,11 @@ const CourseDetail = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
-                        onClick={() => setSelectedPost(null)}
+                        onClick={() => {
+                          setSelectedPost(null);
+                          setActiveTab("course-details");
+                          navigate(`/courses/${slug}`);
+                        }}
                         className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
                         aria-label="Go to course home"
                       >
@@ -1176,9 +1180,11 @@ const CourseDetail = () => {
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="text-[10px] text-muted-foreground">
-                                  {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
-                                </span>
+                                {lessonProgress.completedPosts > 0 && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
+                                  </span>
+                                )}
                                 <ChevronDown 
                                   className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
                                     isExpanded ? 'rotate-180' : ''
