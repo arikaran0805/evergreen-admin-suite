@@ -204,7 +204,7 @@ export const CourseSidebar = ({
         <div
           className={cn(
             "overflow-hidden transition-all duration-300 ease-in-out",
-            isSearchFocused ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+            isSearchFocused ? "max-h-24 opacity-100" : "max-h-0 opacity-0"
           )}
         >
           <div className="px-4 pb-3">
@@ -234,9 +234,9 @@ export const CourseSidebar = ({
               )}
             </div>
           </div>
+          {/* Separator inside collapsible - only visible when search is open */}
+          <Separator className="bg-sidebar-border" />
         </div>
-
-        <Separator className="bg-sidebar-border" />
 
         {/* === SECTION 3: PROGRESS DISPLAY === */}
         <div className="px-4 py-4">
