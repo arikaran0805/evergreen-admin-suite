@@ -14,6 +14,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { ThemeToggle } from "./ThemeToggle";
 import { SearchDialog } from "./SearchDialog";
 import NotificationDropdown from "./NotificationDropdown";
@@ -25,9 +27,12 @@ interface SiteSettings {
 
 interface HeaderProps {
   announcementVisible?: boolean;
+  /** Enable scroll-aware auto-hide behavior (for course/lesson pages) */
+  autoHideOnScroll?: boolean;
 }
 
-const Header = ({ announcementVisible = false }: HeaderProps) => {
+const Header = ({ announcementVisible = false, autoHideOnScroll }: HeaderProps) => {
+  const location = useLocation();
   const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -37,6 +42,16 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Auto-detect course/lesson pages if not explicitly set
+  const isCourseDetailPage = location.pathname.startsWith("/course/");
+  const shouldAutoHide = autoHideOnScroll ?? isCourseDetailPage;
+
+  // Scroll direction hook for auto-hide behavior
+  const { isHeaderVisible } = useScrollDirection({
+    threshold: 15,
+    enabled: shouldAutoHide,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -135,7 +150,15 @@ const Header = ({ announcementVisible = false }: HeaderProps) => {
   };
 
   return (
-    <header className={`fixed left-0 right-0 z-50 transition-all duration-300 ${announcementVisible ? 'top-9' : 'top-0'}`}>
+    <header
+      className={`fixed left-0 right-0 z-50 transition-all duration-200 ease-out ${
+        announcementVisible ? 'top-9' : 'top-0'
+      } ${
+        shouldAutoHide && !isHeaderVisible
+          ? '-translate-y-full opacity-0 pointer-events-none'
+          : 'translate-y-0 opacity-100'
+      }`}
+    >
       {/* Primary Header */}
       <div className="bg-background border-b border-border">
         <div className="container mx-auto px-6 lg:px-12">
