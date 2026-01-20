@@ -200,33 +200,39 @@ export const CourseSidebar = ({
           </div>
         </div>
 
-        {/* === SECTION 2: LESSON SEARCH === */}
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search lessons…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              className={cn(
-                "w-full pl-9 pr-8 py-2 text-sm rounded-lg",
-                "bg-background border border-sidebar-border",
-                "placeholder:text-muted-foreground/60",
-                "transition-all duration-200",
-                "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/30 focus:border-sidebar-primary/50"
+        {/* === SECTION 2: LESSON SEARCH (Collapsible) === */}
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-300 ease-in-out",
+            isSearchFocused ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          <div className="px-4 pb-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search lessons…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn(
+                  "w-full pl-9 pr-8 py-2 text-sm rounded-lg",
+                  "bg-background border border-sidebar-border",
+                  "placeholder:text-muted-foreground/60",
+                  "transition-all duration-200",
+                  "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/30 focus:border-sidebar-primary/50"
+                )}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               )}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+            </div>
           </div>
         </div>
 
