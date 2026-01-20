@@ -1084,7 +1084,7 @@ const CourseDetail = () => {
                         onClick={() => {
                           setSelectedPost(null);
                           setActiveTab("course-details");
-                          navigate(`/courses/${slug}`);
+                          navigate(slug ? `/course/${slug}` : "/courses");
                         }}
                         className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
                         aria-label="Go to course home"
@@ -1110,6 +1110,11 @@ const CourseDetail = () => {
                     className="h-2.5 bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80 [&>div]:transition-all [&>div]:duration-500"
                     aria-label={`Course progress: ${courseProgress.percentage}%`}
                   />
+                  {courseProgress.completedCount > 0 && (
+                    <div className="text-[11px] text-muted-foreground">
+                      {courseProgress.completedCount}/{courseProgress.totalCount} posts completed
+                    </div>
+                  )}
                 </div>
                   
                 {/* Dynamic Motivational Text */}
