@@ -1083,6 +1083,14 @@ const CourseDetail = () => {
                       <button
                         onClick={() => {
                           setSelectedPost(null);
+
+                          // Clear lesson selection from the URL so we truly return to the course “home” state
+                          const nextSearch = new URLSearchParams(searchParams);
+                          nextSearch.delete("lesson");
+                          const basePath = slug ? `/course/${slug}` : "/courses";
+                          const qs = nextSearch.toString();
+                          navigate(qs ? `${basePath}?${qs}` : basePath);
+
                           // Apply adaptive default tab logic based on role and progress
                           if (isAdmin || isModerator) {
                             setActiveTab("info");
