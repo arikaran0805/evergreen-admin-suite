@@ -1095,45 +1095,45 @@ const CourseDetail = () => {
                 </div>
                 
                 {/* Progress Bar with Percentage */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Progress 
-                      value={courseProgress.percentage} 
-                      className="h-2.5 flex-1 bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80 [&>div]:transition-all [&>div]:duration-500"
-                      aria-label={`Course progress: ${courseProgress.percentage}%`}
-                    />
-                    <span className="text-sm font-medium text-primary min-w-[3rem] text-right">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-end">
+                    <span className="text-sm font-medium text-primary">
                       {courseProgress.percentage}%
                     </span>
                   </div>
+                  <Progress 
+                    value={courseProgress.percentage} 
+                    className="h-2.5 bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80 [&>div]:transition-all [&>div]:duration-500"
+                    aria-label={`Course progress: ${courseProgress.percentage}%`}
+                  />
+                </div>
                   
-                  {/* Dynamic Motivational Text */}
-                  <div className="flex items-center gap-2 text-xs">
-                    {!courseProgress.hasStarted && (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 text-primary/70" />
-                        <span className="text-muted-foreground">Ready when you are!</span>
-                      </>
-                    )}
-                    {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage < 50 && (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-primary/80">Great start! Keep going</span>
-                      </>
-                    )}
-                    {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage >= 50 && (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-primary">You're doing amazing!</span>
-                      </>
-                    )}
-                    {courseProgress.isCompleted && (
-                      <>
-                        <Award className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-primary font-medium">Course completed!</span>
-                      </>
-                    )}
-                  </div>
+                {/* Dynamic Motivational Text */}
+                <div className="flex items-center gap-2 text-xs mt-3">
+                  {!courseProgress.hasStarted && (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-primary/70" />
+                      <span className="text-muted-foreground">Ready when you are!</span>
+                    </>
+                  )}
+                  {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage < 50 && (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-primary/80">Great start! Keep going</span>
+                    </>
+                  )}
+                  {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage >= 50 && (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-primary">You're doing amazing!</span>
+                    </>
+                  )}
+                  {courseProgress.isCompleted && (
+                    <>
+                      <Award className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-primary font-medium">Course completed!</span>
+                    </>
+                  )}
                 </div>
               </div>
               
