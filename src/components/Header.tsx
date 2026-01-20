@@ -149,14 +149,15 @@ const Header = ({ announcementVisible = false, autoHideOnScroll }: HeaderProps) 
     }
   };
 
+  // When hidden, reset to top-0 so -translate-y-full fully hides the header
+  const headerHidden = shouldAutoHide && !isHeaderVisible;
+
   return (
     <header
       className={`fixed left-0 right-0 z-50 transition-all duration-200 ease-out ${
-        announcementVisible ? 'top-9' : 'top-0'
-      } ${
-        shouldAutoHide && !isHeaderVisible
-          ? '-translate-y-full opacity-0 pointer-events-none'
-          : 'translate-y-0 opacity-100'
+        headerHidden
+          ? 'top-0 -translate-y-full opacity-0 pointer-events-none'
+          : `${announcementVisible ? 'top-9' : 'top-0'} translate-y-0 opacity-100`
       }`}
     >
       {/* Primary Header */}
