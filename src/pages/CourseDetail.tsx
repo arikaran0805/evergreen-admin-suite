@@ -231,23 +231,24 @@ const CourseDetail = () => {
     // Skip if already resolved or still loading essential data
     if (defaultTabResolved || loading || roleLoading) return;
 
-    // Priority 1: If tab is specified in URL, use it (for persistence across refresh)
+    // Priority 1: If a lesson is already selected via URL, go to lessons tab
+    // (Lesson reading always lives in the Lessons context)
+    if (lessonSlug) {
+      setActiveTab("lessons");
+      setDefaultTabResolved(true);
+      return;
+    }
+
+    // Priority 2: If tab is specified in URL, use it (for persistence across refresh)
     if (tabParam && ["details", "lessons", "info"].includes(tabParam)) {
       setActiveTab(tabParam);
       setDefaultTabResolved(true);
       return;
     }
 
-    // Priority 2: Admin / Super Moderator / Senior Moderator → Course Info
+    // Priority 3: Admin / Super Moderator / Senior Moderator → Course Info
     if (isAdmin || isModerator) {
       setActiveTab("info");
-      setDefaultTabResolved(true);
-      return;
-    }
-
-    // Priority 3: If a lesson is already selected via URL, go to lessons tab
-    if (lessonSlug) {
-      setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
     }
@@ -637,21 +638,28 @@ const CourseDetail = () => {
   };
 
   const handleLessonClick = (post: Post) => {
-    const updateUrlWithLesson = (lessonSlug: string) => {
-      navigate(`/course/${slug}?lesson=${lessonSlug}`);
-    };
-    
+    // Expand the parent lesson in the sidebar
     if (post.lesson_id) {
-      setExpandedLessons(prev => {
+      setExpandedLessons((prev) => {
         const newSet = new Set(prev);
         newSet.add(post.lesson_id!);
         return newSet;
       });
     }
-    
+
+    // Ensure the Lessons tab is active and persists across refresh
+    setActiveTab("lessons");
+    setDefaultTabResolved(true);
+
     fetchPostContent(post);
-    updateUrlWithLesson(post.slug);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Preserve existing query params (preview, etc.) and keep tab in sync
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", "lessons");
+    nextParams.set("lesson", post.slug);
+    setSearchParams(nextParams);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const fetchComments = async (postId: string) => {
@@ -858,7 +866,7 @@ const CourseDetail = () => {
       return {
         label: "Manage Course",
         icon: Edit,
-        onClick: () => setActiveTab("info"),
+        onClick: () => handleTabChange("info"),
       };
     }
 
@@ -895,7 +903,6 @@ const CourseDetail = () => {
         label: "Continue Learning",
         icon: Play,
         onClick: () => {
-          setActiveTab("lessons");
           const next = getNextPost();
           if (next) handleLessonClick(next);
         },
@@ -907,8 +914,6 @@ const CourseDetail = () => {
       label: "Start Course",
       icon: Play,
       onClick: () => {
-        setActiveTab("lessons");
-
         // Prefer the first ordered lesson post; fall back to the first course post if lessons aren't wired up.
         const firstPost = orderedPosts[0] ?? posts[0];
         if (!firstPost) {
@@ -928,7 +933,6 @@ const CourseDetail = () => {
   // Handle restart course confirmation
   const handleRestartCourse = () => {
     setRestartModalOpen(false);
-    setActiveTab("lessons");
 
     const firstPost = orderedPosts[0] ?? posts[0];
     if (firstPost) handleLessonClick(firstPost);
@@ -1122,21 +1126,26 @@ const CourseDetail = () => {
                         onClick={() => {
                           setSelectedPost(null);
 
-                          // Clear lesson selection from the URL so we truly return to the course “home” state
+                          // If somehow slug is missing, fall back to Courses
+                          if (!slug) {
+                            navigate("/courses");
+                            return;
+                          }
+
+                          const desiredTab = (isAdmin || isModerator)
+                            ? "info"
+                            : courseProgress.percentage > 0
+                              ? "lessons"
+                              : "details";
+
+                          setActiveTab(desiredTab);
+                          setDefaultTabResolved(true);
+
+                          // Clear lesson selection and persist tab in URL
                           const nextSearch = new URLSearchParams(searchParams);
                           nextSearch.delete("lesson");
-                          const basePath = slug ? `/course/${slug}` : "/courses";
-                          const qs = nextSearch.toString();
-                          navigate(qs ? `${basePath}?${qs}` : basePath);
-
-                          // Apply adaptive default tab logic based on role and progress
-                          if (isAdmin || isModerator) {
-                            setActiveTab("info");
-                          } else if (courseProgress.percentage > 0) {
-                            setActiveTab("lessons");
-                          } else {
-                            setActiveTab("details");
-                          }
+                          nextSearch.set("tab", desiredTab);
+                          setSearchParams(nextSearch, { replace: true });
                         }}
                         className="p-1.5 rounded-md hover:bg-primary/10 hover:scale-105 transition-all duration-200 text-muted-foreground hover:text-primary"
                         aria-label="Go to course home"
