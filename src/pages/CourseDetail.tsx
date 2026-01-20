@@ -1403,6 +1403,9 @@ const CourseDetail = () => {
                       </div>
                     </div>
 
+                    {/* Separator line */}
+                    <Separator className="my-4" />
+
                     {/* Featured Image */}
                     {selectedPost.featured_image && (
                       <img 
