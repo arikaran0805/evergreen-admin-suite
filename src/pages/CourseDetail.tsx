@@ -27,11 +27,6 @@ import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseInfoTab from "@/components/course/CourseInfoTab";
 import { sanitizeHtml } from "@/lib/sanitize";
 import {
-  SidebarAdTop,
-  SidebarAdMiddle,
-  SidebarAdBottom
-} from "@/components/ads";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -1774,22 +1769,10 @@ const CourseDetail = () => {
             </Card>
           </main>
 
-          {/* RIGHT SIDEBAR - Ads */}
+          {/* RIGHT SIDEBAR - Reserved for future use */}
           <aside className="hidden xl:block w-[300px] flex-shrink-0">
-            <div className="sticky top-28 space-y-4 p-4">
-              <SidebarAdTop 
-                googleAdClient={adSettings.googleAdClient}
-                googleAdSlot={adSettings.sidebarTopSlot}
-              />
-              <SidebarAdMiddle 
-                googleAdClient={adSettings.googleAdClient}
-                googleAdSlot={adSettings.sidebarMiddleSlot}
-                thirdPartyAdCode={adSettings.thirdPartySidebarCode || undefined}
-              />
-              <SidebarAdBottom 
-                googleAdClient={adSettings.googleAdClient}
-                googleAdSlot={adSettings.sidebarBottomSlot}
-              />
+            <div className="sticky top-28 p-4">
+              {/* Empty sidebar */}
             </div>
           </aside>
         </div>
