@@ -1404,7 +1404,7 @@ const CourseDetail = () => {
                     </div>
 
                     {/* Separator line */}
-                    <Separator className="my-4" />
+                    <Separator className="mt-2 mb-4" />
 
                     {/* Featured Image */}
                     {selectedPost.featured_image && (
