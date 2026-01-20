@@ -1557,7 +1557,7 @@ const CourseDetail = () => {
                     )}
 
                     {/* Lesson Navigation */}
-                    <div className="mt-8 pt-6 border-t">
+                    <div className="mt-8">
                       <div className="flex items-center justify-between gap-4">
                         {hasPrevious ? (
                           <Button 
