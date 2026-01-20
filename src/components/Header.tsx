@@ -160,15 +160,16 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
   const headerHidden = shouldAutoHide && !isHeaderVisible;
 
   return (
-    <header
-      className={`fixed left-0 right-0 z-50 transition-all duration-200 ease-out ${
-        headerHidden
-          ? 'top-0 -translate-y-full opacity-0 pointer-events-none'
-          : `${announcementVisible ? 'top-9' : 'top-0'} translate-y-0 opacity-100`
-      }`}
-    >
-      {/* Primary Header */}
-      <div className="bg-background border-b border-border">
+    <>
+      {/* Primary Header - Auto-hides on scroll */}
+      <header
+        className={`fixed left-0 right-0 z-50 transition-all duration-200 ease-out ${
+          headerHidden
+            ? 'top-0 -translate-y-full opacity-0 pointer-events-none'
+            : `${announcementVisible ? 'top-9' : 'top-0'} translate-y-0 opacity-100`
+        }`}
+      >
+        <div className="bg-background border-b border-border">
         <div className="container mx-auto px-6 lg:px-12">
           <div className="flex h-16 items-center justify-between">
             {/* Logo and Brand */}
@@ -431,10 +432,17 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </header>
 
-      {/* Secondary Header - Courses Navigation */}
-      <div className="hidden lg:block bg-muted border-b border-border">
+      {/* Secondary Header - Courses Navigation - Always visible */}
+      <div 
+        className={`hidden lg:block fixed left-0 right-0 z-40 bg-muted border-b border-border transition-all duration-200 ease-out ${
+          headerHidden
+            ? (announcementVisible ? 'top-9' : 'top-0')
+            : (announcementVisible ? 'top-[6.25rem]' : 'top-16')
+        }`}
+      >
         <div className="container mx-auto px-6 lg:px-12">
           <nav className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
             {courses.map((course) => (
@@ -450,7 +458,7 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
           </nav>
         </div>
       </div>
-    </header>
+    </>
   );
 };
 
