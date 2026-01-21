@@ -155,7 +155,7 @@ export const CourseSidebar = ({
         {/* === SECTION 1: COURSE PROGRESS HEADER === */}
         <div className="px-4 pt-4 pb-1">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sidebar-foreground text-sm tracking-wide uppercase leading-none">
+            <h2 className="font-medium text-muted-foreground text-xs tracking-widest uppercase leading-none">
               {isAuthenticated ? "Course Progress" : "Course Outline"}
             </h2>
             <div className="flex items-center gap-0.5">
