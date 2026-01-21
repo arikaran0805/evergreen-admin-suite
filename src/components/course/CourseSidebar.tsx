@@ -239,8 +239,8 @@ export const CourseSidebar = ({
         </div>
 
         {/* === SECTION 3: PROGRESS DISPLAY === */}
-        <div className="px-4 py-4">
-          <div className="space-y-3">
+        <div className="px-4 py-2">
+          <div className="space-y-2">
             {/* Completion Stats Row */}
             <div className="flex items-center justify-between">
               {courseProgress.percentage > 0 ? (
