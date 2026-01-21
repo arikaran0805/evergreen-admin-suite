@@ -153,9 +153,9 @@ export const CourseSidebar = ({
       <div className={cn("sticky transition-[top] duration-200 ease-out h-[calc(100vh-6.5rem)]", stickyTopClass)}>
         
         {/* === SECTION 1: COURSE PROGRESS HEADER === */}
-        <div className="p-4 pb-3">
+        <div className="px-4 pt-4 pb-1">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sidebar-foreground text-sm tracking-wide uppercase">
+            <h2 className="font-semibold text-sidebar-foreground text-sm tracking-wide uppercase leading-none">
               {isAuthenticated ? "Course Progress" : "Course Outline"}
             </h2>
             <div className="flex items-center gap-0.5">
@@ -243,8 +243,8 @@ export const CourseSidebar = ({
         {/* === SECTION 3: PROGRESS DISPLAY (Logged-in users only) === */}
         {isAuthenticated ? (
           <>
-            <div className="px-4 py-4">
-              <div className="space-y-3">
+            <div className="px-4 pt-1 pb-4">
+              <div className="space-y-2.5">
                 {/* Completion Stats Row */}
                 <div className="flex items-center justify-between">
                   {courseProgress.percentage > 0 ? (
