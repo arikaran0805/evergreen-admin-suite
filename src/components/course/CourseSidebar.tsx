@@ -59,6 +59,7 @@ interface CourseSidebarProps {
   canPreview: boolean;
   isHeaderVisible: boolean;
   showAnnouncement: boolean;
+  isAuthenticated: boolean;
   getPostsForLesson: (lessonId: string) => Post[];
   getLessonProgress: (lessonId: string) => LessonProgress;
   isLessonCompleted: (postId: string) => boolean;
@@ -77,6 +78,7 @@ export const CourseSidebar = ({
   canPreview,
   isHeaderVisible,
   showAnnouncement,
+  isAuthenticated,
   getPostsForLesson,
   getLessonProgress,
   isLessonCompleted,
@@ -154,7 +156,7 @@ export const CourseSidebar = ({
         <div className="p-4 pb-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sidebar-foreground text-sm tracking-wide uppercase">
-              Course Progress
+              {isAuthenticated ? "Course Progress" : "Course Outline"}
             </h2>
             <div className="flex items-center gap-0.5">
               {/* Search Icon */}
@@ -238,63 +240,73 @@ export const CourseSidebar = ({
           <Separator className="bg-sidebar-border" />
         </div>
 
-        {/* === SECTION 3: PROGRESS DISPLAY === */}
-        <div className="px-4 py-4">
-          <div className="space-y-3">
-            {/* Completion Stats Row */}
-            <div className="flex items-center justify-between">
-              {courseProgress.percentage > 0 ? (
-                <span className="text-xs text-muted-foreground">
-                  {courseProgress.completedCount}/{courseProgress.totalCount} lessons completed
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground/60">
-                  {courseProgress.totalCount} lessons
-                </span>
-              )}
-              <span className="text-sm font-semibold text-sidebar-primary">
-                {courseProgress.percentage}%
-              </span>
-            </div>
+        {/* === SECTION 3: PROGRESS DISPLAY (Logged-in users only) === */}
+        {isAuthenticated ? (
+          <>
+            <div className="px-4 py-4">
+              <div className="space-y-3">
+                {/* Completion Stats Row */}
+                <div className="flex items-center justify-between">
+                  {courseProgress.percentage > 0 ? (
+                    <span className="text-xs text-muted-foreground">
+                      {courseProgress.completedCount}/{courseProgress.totalCount} lessons completed
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/60">
+                      {courseProgress.totalCount} lessons
+                    </span>
+                  )}
+                  <span className="text-sm font-semibold text-sidebar-primary">
+                    {courseProgress.percentage}%
+                  </span>
+                </div>
 
-            {/* Progress Bar */}
-            <Progress 
-              value={courseProgress.percentage} 
-              className="h-2 bg-sidebar-accent [&>div]:bg-gradient-to-r [&>div]:from-sidebar-primary [&>div]:to-sidebar-primary/70 [&>div]:transition-all [&>div]:duration-500"
-              aria-label={`Course progress: ${courseProgress.percentage}%`}
-            />
+                {/* Progress Bar */}
+                <Progress 
+                  value={courseProgress.percentage} 
+                  className="h-2 bg-sidebar-accent [&>div]:bg-gradient-to-r [&>div]:from-sidebar-primary [&>div]:to-sidebar-primary/70 [&>div]:transition-all [&>div]:duration-500"
+                  aria-label={`Course progress: ${courseProgress.percentage}%`}
+                />
 
-            {/* Motivational Text */}
-            <div className="flex items-center gap-1.5 text-xs">
-              {!courseProgress.hasStarted && (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">Ready when you are</span>
-                </>
-              )}
-              {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage < 50 && (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 text-sidebar-primary" />
-                  <span className="text-sidebar-accent-foreground">Great start! Keep going</span>
-                </>
-              )}
-              {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage >= 50 && (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 text-sidebar-primary" />
-                  <span className="text-sidebar-accent-foreground">You're doing amazing!</span>
-                </>
-              )}
-              {courseProgress.isCompleted && (
-                <>
-                  <Award className="h-3.5 w-3.5 text-sidebar-primary" />
-                  <span className="text-sidebar-primary font-medium">Course completed!</span>
-                </>
-              )}
+                {/* Motivational Text */}
+                <div className="flex items-center gap-1.5 text-xs">
+                  {!courseProgress.hasStarted && (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Ready when you are</span>
+                    </>
+                  )}
+                  {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage < 50 && (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-sidebar-primary" />
+                      <span className="text-sidebar-accent-foreground">Great start! Keep going</span>
+                    </>
+                  )}
+                  {courseProgress.hasStarted && !courseProgress.isCompleted && courseProgress.percentage >= 50 && (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-sidebar-primary" />
+                      <span className="text-sidebar-accent-foreground">You're doing amazing!</span>
+                    </>
+                  )}
+                  {courseProgress.isCompleted && (
+                    <>
+                      <Award className="h-3.5 w-3.5 text-sidebar-primary" />
+                      <span className="text-sidebar-primary font-medium">Course completed!</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
+            <Separator className="bg-sidebar-border" />
+          </>
+        ) : (
+          /* Guest CTA */
+          <div className="px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              <a href="/auth" className="text-sidebar-primary hover:underline">Log in</a> to track your progress
+            </p>
           </div>
-        </div>
-
-        <Separator className="bg-sidebar-border" />
+        )}
 
         {/* === SECTION 4: LESSON TREE === */}
         <ScrollArea className="flex-1 h-[calc(100%-16rem)]">
@@ -334,23 +346,27 @@ export const CourseSidebar = ({
                     >
                       <div className="px-3 py-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          {/* Module Status Icon */}
-                          {lessonProgress.isComplete ? (
-                            <CheckCircle className="h-4 w-4 text-sidebar-primary flex-shrink-0" />
-                          ) : lessonProgress.completedPosts > 0 ? (
-                            <div className="h-4 w-4 rounded-full border-2 border-sidebar-primary flex items-center justify-center flex-shrink-0">
-                              <div className="h-1.5 w-1.5 rounded-full bg-sidebar-primary/60" />
-                            </div>
+                          {/* Module Status Icon - Only show progress for authenticated users */}
+                          {isAuthenticated ? (
+                            lessonProgress.isComplete ? (
+                              <CheckCircle className="h-4 w-4 text-sidebar-primary flex-shrink-0" />
+                            ) : lessonProgress.completedPosts > 0 ? (
+                              <div className="h-4 w-4 rounded-full border-2 border-sidebar-primary flex items-center justify-center flex-shrink-0">
+                                <div className="h-1.5 w-1.5 rounded-full bg-sidebar-primary/60" />
+                              </div>
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
+                            )
                           ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
+                            <BookOpen className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
                           )}
                           <span className="text-sm font-medium text-sidebar-foreground truncate">
                             {lesson.title}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {/* Module Progress Indicator */}
-                          {lessonProgress.totalPosts > 0 && (
+                          {/* Module Progress Indicator - Only for authenticated users */}
+                          {isAuthenticated && lessonProgress.totalPosts > 0 && (
                             <span className="text-[10px] text-muted-foreground tabular-nums">
                               {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
                             </span>
@@ -389,22 +405,24 @@ export const CourseSidebar = ({
                                 )}
                               >
                                 <div className="px-3 py-2 flex items-center gap-2">
-                                  {/* Lesson Status */}
-                                  {isCompleted ? (
-                                    <CheckCircle
-                                      className={cn(
-                                        "h-3.5 w-3.5 flex-shrink-0",
-                                        isActive ? "text-sidebar-primary-foreground" : "text-sidebar-primary"
-                                      )}
-                                    />
-                                  ) : (
-                                    <Circle
-                                      className={cn(
-                                        "h-3.5 w-3.5 flex-shrink-0",
-                                        isActive ? "text-sidebar-primary-foreground/70" : "text-muted-foreground/50"
-                                      )}
-                                    />
-                                  )}
+                                  {/* Lesson Status - Only show for authenticated users */}
+                                  {isAuthenticated ? (
+                                    isCompleted ? (
+                                      <CheckCircle
+                                        className={cn(
+                                          "h-3.5 w-3.5 flex-shrink-0",
+                                          isActive ? "text-sidebar-primary-foreground" : "text-sidebar-primary"
+                                        )}
+                                      />
+                                    ) : (
+                                      <Circle
+                                        className={cn(
+                                          "h-3.5 w-3.5 flex-shrink-0",
+                                          isActive ? "text-sidebar-primary-foreground/70" : "text-muted-foreground/50"
+                                        )}
+                                      />
+                                    )
+                                  ) : null}
                                   <span
                                     className={cn(
                                       "text-sm flex-1 truncate transition-colors",

@@ -1105,6 +1105,7 @@ const CourseDetail = () => {
             canPreview={canPreview}
             isHeaderVisible={isHeaderVisible}
             showAnnouncement={showAnnouncement}
+            isAuthenticated={!!user}
             getPostsForLesson={getPostsForLesson}
             getLessonProgress={getLessonProgress}
             isLessonCompleted={isLessonCompleted}
