@@ -13,8 +13,12 @@ import {
   X,
   Sparkles,
   Award,
+  Share2,
+  Link2,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface CourseLesson {
   id: string;
@@ -397,7 +401,7 @@ export const CourseSidebar = ({
                                 key={post.id}
                                 onClick={() => handleLessonClick(post)}
                                 className={cn(
-                                  "w-full rounded-md transition-all duration-200 text-left group",
+                                  "w-full rounded-md transition-all duration-200 text-left group/lesson",
                                   "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/40",
                                   isActive
                                     ? "bg-sidebar-primary shadow-sm"
@@ -428,11 +432,85 @@ export const CourseSidebar = ({
                                       "text-sm flex-1 truncate transition-colors",
                                       isActive
                                         ? "text-sidebar-primary-foreground font-medium"
-                                        : "text-sidebar-foreground group-hover:text-sidebar-accent-foreground"
+                                        : "text-sidebar-foreground group-hover/lesson:text-sidebar-accent-foreground"
                                     )}
                                   >
                                     {post.title}
                                   </span>
+                                  
+                                  {/* Hover Actions */}
+                                  <div 
+                                    className={cn(
+                                      "flex items-center gap-1.5 opacity-0 group-hover/lesson:opacity-100 transition-opacity duration-200",
+                                      isActive && "opacity-100"
+                                    )}
+                                  >
+                                    {/* Estimated Time */}
+                                    <span 
+                                      className={cn(
+                                        "text-[10px] flex items-center gap-0.5 tabular-nums",
+                                        isActive ? "text-sidebar-primary-foreground/70" : "text-muted-foreground"
+                                      )}
+                                    >
+                                      <Clock className="h-2.5 w-2.5" />
+                                      ~1m
+                                    </span>
+                                    
+                                    {/* Copy Link */}
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                            toast.success("Link copied!");
+                                          }}
+                                          className={cn(
+                                            "p-0.5 rounded transition-colors",
+                                            isActive 
+                                              ? "text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground" 
+                                              : "text-muted-foreground hover:text-foreground"
+                                          )}
+                                        >
+                                          <Link2 className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="text-xs">
+                                        Copy link
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    
+                                    {/* Share */}
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (navigator.share) {
+                                              navigator.share({
+                                                title: post.title,
+                                                url: `${window.location.origin}/courses/${post.slug}`
+                                              });
+                                            } else {
+                                              navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                              toast.success("Link copied!");
+                                            }
+                                          }}
+                                          className={cn(
+                                            "p-0.5 rounded transition-colors",
+                                            isActive 
+                                              ? "text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground" 
+                                              : "text-muted-foreground hover:text-foreground"
+                                          )}
+                                        >
+                                          <Share2 className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="text-xs">
+                                        Share
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </div>
                                 </div>
                               </button>
                             );
