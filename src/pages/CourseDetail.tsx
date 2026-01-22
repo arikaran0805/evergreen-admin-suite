@@ -1610,9 +1610,9 @@ const CourseDetail = () => {
                                                 )}
                                               </div>
                                               <div className="flex items-center gap-2">
-                                                {/* Estimated Time */}
-                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                  <Clock className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                {/* Estimated Time - visible on hover */}
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                  <Clock className="h-3 w-3" />
                                                   ~{formatReadingTime(post.content)}
                                                 </span>
                                                 
