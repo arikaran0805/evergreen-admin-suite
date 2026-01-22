@@ -21,11 +21,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { useState, useCallback } from 'react';
-import { KEYBOARD_SHORTCUTS, CODE_LANGUAGES } from './editorConfig';
+import { KEYBOARD_SHORTCUTS } from './editorConfig';
 
 interface FullEditorToolbarProps {
   editor: Editor | null;
@@ -168,55 +165,18 @@ export function FullEditorToolbar({ editor, className }: FullEditorToolbarProps)
           <Quote className="w-4 h-4" />
         </ToolbarButton>
         
-        {/* Executable Code block with language selector */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'h-8 w-8 p-0', 
-                (editor.isActive('executableCodeBlock') || editor.isActive('codeBlock')) && 'bg-primary/10 text-primary'
-              )}
-              title="Code Block (⌘⌥C)"
-            >
-              <Code2 className="w-4 h-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48 p-2" align="start">
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Select language</p>
-              <Select
-                value={
-                  editor.getAttributes('executableCodeBlock').language || 
-                  editor.getAttributes('codeBlock').language || 
-                  'python'
-                }
-                onValueChange={(lang) => {
-                  if (editor.isActive('executableCodeBlock')) {
-                    editor.chain().focus().updateAttributes('executableCodeBlock', { language: lang }).run();
-                  } else if (editor.isActive('codeBlock')) {
-                    editor.chain().focus().updateAttributes('codeBlock', { language: lang }).run();
-                  } else {
-                    // Insert new executable code block
-                    editor.chain().focus().setExecutableCodeBlock({ language: lang, code: '' }).run();
-                  }
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CODE_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value} className="text-xs">
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* Code block - inserts immediately with default Python, language selector is inside the block */}
+        <ToolbarButton
+          onClick={() => {
+            // Insert executable code block with default Python language
+            // Language selector is rendered INSIDE the NodeView
+            editor.chain().focus().setExecutableCodeBlock({ language: 'python', code: '' }).run();
+          }}
+          isActive={editor.isActive('executableCodeBlock')}
+          title="Code Block (⌘⌥C)"
+        >
+          <Code2 className="w-4 h-4" />
+        </ToolbarButton>
       </div>
 
       <div className="tiptap-toolbar-divider" />
