@@ -65,6 +65,8 @@ import {
   Sparkles,
   Target,
   Home,
+  Link2,
+  Clock,
 } from "lucide-react";
 import CourseSidebar from "@/components/course/CourseSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1608,7 +1610,57 @@ const CourseDetail = () => {
                                                 )}
                                               </div>
                                               <div className="flex items-center gap-2">
-                                                <span className="text-xs text-muted-foreground">~{formatReadingTime(post.content)}</span>
+                                                {/* Estimated Time */}
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                  <Clock className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                  ~{formatReadingTime(post.content)}
+                                                </span>
+                                                
+                                                {/* Copy Link - visible on hover */}
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                                        toast({ title: "Link copied!" });
+                                                      }}
+                                                      className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                      <Link2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent side="top" className="text-xs">
+                                                    Copy link
+                                                  </TooltipContent>
+                                                </Tooltip>
+                                                
+                                                {/* Share - visible on hover */}
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (navigator.share) {
+                                                          navigator.share({
+                                                            title: post.title,
+                                                            url: `${window.location.origin}/courses/${post.slug}`
+                                                          });
+                                                        } else {
+                                                          navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                                          toast({ title: "Link copied!" });
+                                                        }
+                                                      }}
+                                                      className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                      <Share2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent side="top" className="text-xs">
+                                                    Share
+                                                  </TooltipContent>
+                                                </Tooltip>
+                                                
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                               </div>
                                             </div>
