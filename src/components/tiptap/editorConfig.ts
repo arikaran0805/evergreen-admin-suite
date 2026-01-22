@@ -1,8 +1,10 @@
 /**
  * Unified TipTap Editor Configuration
- * 
- * Single source of truth for all editor extensions, shortcuts, and settings.
- * Both FullEditor and LightEditor consume from this config.
+ *
+ * ✅ Single schema across FullEditor, LightEditor, Preview
+ * ✅ Executable code blocks everywhere
+ * ✅ Annotation mark registered everywhere
+ * ❌ No static codeBlock fallbacks
  */
 
 import StarterKit from '@tiptap/starter-kit';
@@ -10,28 +12,33 @@ import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
+import Highlight from '@tiptap/extension-highlight';
+import Image from '@tiptap/extension-image';
+
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import Image from '@tiptap/extension-image';
-import Highlight from '@tiptap/extension-highlight';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { common, createLowlight } from 'lowlight';
+
 import type { Extensions } from '@tiptap/react';
+
 import { ExecutableCodeBlock } from './ExecutableCodeBlock';
 import { AnnotationMark } from './AnnotationMark';
 
-// Create lowlight instance with common languages
-const lowlight = createLowlight(common);
+/* -------------------------------------------------- */
+/* Platform shortcut helper */
+/* -------------------------------------------------- */
 
-// Detect platform for keyboard shortcuts display
-const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const isMac =
+  typeof navigator !== 'undefined' &&
+  navigator.platform.toUpperCase().includes('MAC');
+
 export const modKey = isMac ? '⌘' : 'Ctrl';
 
-/**
- * Keyboard shortcuts for reference display
- */
+/* -------------------------------------------------- */
+/* Keyboard shortcuts for reference display */
+/* -------------------------------------------------- */
+
 export const KEYBOARD_SHORTCUTS = {
   full: [
     { keys: `${modKey}+B`, action: 'Bold' },
@@ -54,9 +61,10 @@ export const KEYBOARD_SHORTCUTS = {
   ],
 };
 
-/**
- * Supported code block languages
- */
+/* -------------------------------------------------- */
+/* Supported code block languages */
+/* -------------------------------------------------- */
+
 export const CODE_LANGUAGES = [
   { value: 'python', label: 'Python' },
   { value: 'javascript', label: 'JavaScript' },
@@ -74,9 +82,10 @@ export const CODE_LANGUAGES = [
   { value: 'plaintext', label: 'Plain Text' },
 ];
 
-/**
- * Base link configuration used by all editors
- */
+/* -------------------------------------------------- */
+/* Shared Link config */
+/* -------------------------------------------------- */
+
 const linkConfig = Link.configure({
   openOnClick: false,
   HTMLAttributes: {
@@ -86,147 +95,122 @@ const linkConfig = Link.configure({
   },
 });
 
-/**
- * FullEditor Extensions
- * For Admin/Moderator content creation
- * Uses ExecutableCodeBlock for interactive code editing
- */
+/* -------------------------------------------------- */
+/* Shared base schema (USED EVERYWHERE) */
+/* -------------------------------------------------- */
+
+const baseExtensions: Extensions = [
+  StarterKit.configure({
+    heading: { levels: [1, 2, 3, 4, 5, 6] },
+
+    // ❌ NEVER use default codeBlock
+    codeBlock: false,
+
+    code: {
+      HTMLAttributes: { class: 'tiptap-inline-code' },
+    },
+
+    blockquote: {
+      HTMLAttributes: { class: 'tiptap-blockquote' },
+    },
+  }),
+
+  // ✅ Custom executable code node (always registered)
+  ExecutableCodeBlock,
+
+  // ✅ Annotation as real TipTap mark
+  AnnotationMark,
+
+  linkConfig,
+  Underline,
+
+  Highlight.configure({
+    multicolor: true,
+    HTMLAttributes: { class: 'tiptap-highlight' },
+  }),
+
+  Table.configure({
+    resizable: true,
+    HTMLAttributes: { class: 'tiptap-table' },
+  }),
+  TableRow,
+  TableCell.configure({
+    HTMLAttributes: { class: 'tiptap-table-cell' },
+  }),
+  TableHeader.configure({
+    HTMLAttributes: { class: 'tiptap-table-header' },
+  }),
+
+  Image.configure({
+    inline: false,
+    allowBase64: false,
+    HTMLAttributes: { class: 'tiptap-image' },
+  }),
+];
+
+/* -------------------------------------------------- */
+/* FullEditor – Admin / Moderator */
+/* -------------------------------------------------- */
+
 export const getFullEditorExtensions = (options?: {
   placeholder?: string;
   characterLimit?: number;
-  useExecutableCodeBlocks?: boolean;
-}): Extensions => {
-  const useExecutable = options?.useExecutableCodeBlocks ?? true;
-  
-  return [
-    StarterKit.configure({
-      heading: { levels: [1, 2, 3, 4, 5, 6] },
-      codeBlock: false, // Disabled - using ExecutableCodeBlock or CodeBlockLowlight
-      code: {
-        HTMLAttributes: { class: 'tiptap-inline-code' },
-      },
-      blockquote: {
-        HTMLAttributes: { class: 'tiptap-blockquote' },
-      },
-    }),
-    // Use ExecutableCodeBlock for interactive editing, or CodeBlockLowlight for static
-    ...(useExecutable 
-      ? [ExecutableCodeBlock]
-      : [CodeBlockLowlight.configure({
-          lowlight,
-          defaultLanguage: 'python',
-          HTMLAttributes: { class: 'tiptap-code-block' },
-        })]
-    ),
-    linkConfig,
-    Underline,
-    Highlight.configure({
-      multicolor: true,
-      HTMLAttributes: { class: 'tiptap-highlight' },
-    }),
-    Table.configure({
-      resizable: true,
-      HTMLAttributes: { class: 'tiptap-table' },
-    }),
-    TableRow,
-    TableCell.configure({
-      HTMLAttributes: { class: 'tiptap-table-cell' },
-    }),
-    TableHeader.configure({
-      HTMLAttributes: { class: 'tiptap-table-header' },
-    }),
-    Image.configure({
-      inline: false,
-      allowBase64: false,
-      HTMLAttributes: { class: 'tiptap-image' },
-    }),
-    Placeholder.configure({
-      placeholder: options?.placeholder ?? 'Write your content here...',
-      emptyEditorClass: 'tiptap-empty',
-    }),
-    // Annotation mark for inline feedback
-    AnnotationMark,
-    ...(options?.characterLimit 
-      ? [CharacterCount.configure({ limit: options.characterLimit })] 
-      : [CharacterCount]
-    ),
-  ];
-};
+}): Extensions => [
+  ...baseExtensions,
 
-/**
- * LightEditor Extensions
- * For comments/replies - restricted feature set
- */
+  Placeholder.configure({
+    placeholder: options?.placeholder ?? 'Write your content here…',
+    emptyEditorClass: 'tiptap-empty',
+  }),
+
+  options?.characterLimit
+    ? CharacterCount.configure({ limit: options.characterLimit })
+    : CharacterCount,
+];
+
+/* -------------------------------------------------- */
+/* LightEditor – Comments / Replies */
+/* (UI restricted, schema NOT restricted) */
+/* -------------------------------------------------- */
+
 export const getLightEditorExtensions = (options?: {
   placeholder?: string;
   characterLimit?: number;
 }): Extensions => [
-  StarterKit.configure({
-    // Disable block-level elements
-    heading: false,
-    codeBlock: false,
-    blockquote: false,
-    horizontalRule: false,
-    bulletList: false,
-    orderedList: false,
-    listItem: false,
-    // Keep inline elements
-    bold: {},
-    italic: {},
-    strike: false,
-    code: {
-      HTMLAttributes: { class: 'tiptap-inline-code' },
-    },
-  }),
-  linkConfig,
+  // Keep schema SAME, restrict via toolbar/UI only
+  ...baseExtensions,
+
   Placeholder.configure({
-    placeholder: options?.placeholder ?? 'Write a comment...',
+    placeholder: options?.placeholder ?? 'Write a comment…',
     emptyEditorClass: 'tiptap-empty',
   }),
-  CharacterCount.configure({ 
-    limit: options?.characterLimit ?? 2000 
+
+  CharacterCount.configure({
+    limit: options?.characterLimit ?? 2000,
   }),
 ];
 
-/**
- * Extensions for content rendering (read-only)
- * Matches FullEditor for proper HTML generation
- * Includes AnnotationMark for rendering annotated content
- */
+/* -------------------------------------------------- */
+/* Renderer / Preview / Split View */
+/* -------------------------------------------------- */
+
 export const getRenderExtensions = (): Extensions => [
-  StarterKit.configure({
-    heading: { levels: [1, 2, 3, 4, 5, 6] },
-    codeBlock: false,
-  }),
-  CodeBlockLowlight.configure({
-    lowlight,
-    HTMLAttributes: { class: 'tiptap-code-block' },
-  }),
-  linkConfig,
-  Underline,
-  Highlight.configure({ multicolor: true }),
-  Table,
-  TableRow,
-  TableCell,
-  TableHeader,
-  Image,
-  // Include AnnotationMark for rendering annotated content
-  AnnotationMark,
+  // 🔑 SAME schema as editors
+  ...baseExtensions,
 ];
 
-/**
- * Default empty document
- */
-export const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] };
+/* -------------------------------------------------- */
+/* Defaults */
+/* -------------------------------------------------- */
 
-/**
- * Character limits
- */
+export const EMPTY_DOC = {
+  type: 'doc',
+  content: [{ type: 'paragraph' }],
+};
+
 export const CHARACTER_LIMITS = {
   comment: 2000,
   reply: 1000,
   excerpt: 300,
-  fullEditor: undefined, // No limit for full editor
+  fullEditor: undefined,
 };
-
-export { lowlight };
