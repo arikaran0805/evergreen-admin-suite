@@ -991,8 +991,8 @@ const CourseDetail = () => {
     // State 4: User enrolled and in progress (1%-99%)
     if (courseProgress.hasStarted) {
       return {
-        title: "Keep Going",
-        message: `You've completed ${courseProgress.completedCount} of ${courseProgress.totalCount} posts. Let's continue where you left off.`,
+        title: "Keep going",
+        message: `${courseProgress.completedCount} of ${courseProgress.totalCount} lessons completed`,
         buttonLabel: "Continue Learning",
         icon: Play,
       };
@@ -1499,25 +1499,37 @@ const CourseDetail = () => {
                             return (
                               <div 
                                 id="action-reinforcement-card" 
-                                className="p-6 bg-primary/5 rounded-xl border border-primary/20 transition-all duration-300"
+                                className="p-5 bg-primary/5 rounded-xl border border-primary/10 transition-all duration-300"
                               >
-                                <div className="flex items-start gap-4">
-                                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                    <Target className="h-6 w-6 text-primary" />
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                  {/* Left: Icon + Content */}
+                                  <div className="flex items-start gap-4 flex-1">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <Target className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <h3 className="font-semibold text-foreground text-lg leading-tight">
+                                        {cardContent.title}
+                                      </h3>
+                                      <p className="text-sm text-muted-foreground">
+                                        {cardContent.message}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="flex-1">
-                                    <h3 className="font-semibold text-lg mb-1">{cardContent.title}</h3>
-                                    <p className="text-muted-foreground text-sm mb-4">
-                                      {cardContent.message}
-                                    </p>
+
+                                  {/* Right: CTA */}
+                                  <div className="flex flex-col items-end gap-1.5 sm:ml-auto">
                                     <Button 
-                                      className="bg-primary hover:bg-primary/90 gap-2"
                                       onClick={ctaProps.onClick}
                                       disabled={posts.length === 0 || enrolling}
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-10 font-medium shadow-sm"
                                     >
-                                      <CardIcon className="h-4 w-4" />
+                                      <CardIcon className="h-4 w-4 mr-2 fill-current" />
                                       {enrolling ? "Processing..." : cardContent.buttonLabel}
                                     </Button>
+                                    <span className="text-xs text-muted-foreground hidden sm:block">
+                                      Resume where you left off
+                                    </span>
                                   </div>
                                 </div>
                               </div>
