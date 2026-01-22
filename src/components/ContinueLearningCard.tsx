@@ -136,7 +136,7 @@ export const ContinueLearningCard = () => {
           </div>
 
           {/* Right: CTA */}
-          <div className="flex flex-col items-end gap-1.5 sm:ml-auto">
+          <div className="flex flex-col items-center gap-1.5 sm:ml-auto">
             <Button 
               onClick={handleContinue}
               className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-10 font-medium shadow-sm"
