@@ -2,162 +2,154 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { BookOpen, Clock, icons } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Target, Play } from 'lucide-react';
 
-// Helper to get a dynamic icon
-const ICONS = icons as unknown as Record<string, LucideIcon>;
-const getIcon = (iconName: string | null | undefined, fallback: LucideIcon): LucideIcon => {
-  if (!iconName) return fallback;
-  return ICONS[iconName] ?? fallback;
-};
-
-interface CourseProgress {
+interface ResumeData {
   courseId: string;
   courseName: string;
   courseSlug: string;
-  featuredImage: string | null;
-  icon: string | null;
-  learningHours: number;
   completedLessons: number;
   totalLessons: number;
+  lastLessonSlug: string | null;
 }
 
 export const ContinueLearningCard = () => {
-  const [courses, setCourses] = useState<CourseProgress[]>([]);
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCourseProgress = async () => {
+    const fetchResumeData = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Get enrolled courses with icon and learning_hours
+        // Get the most recently active course enrollment
         const { data: enrollments } = await supabase
           .from('course_enrollments')
-          .select('course_id, courses:course_id (id, name, slug, featured_image, icon, learning_hours)')
+          .select('course_id, courses:course_id (id, name, slug)')
           .eq('user_id', session.user.id)
-          .limit(4);
+          .order('enrolled_at', { ascending: false })
+          .limit(1);
 
-        if (!enrollments) return;
+        if (!enrollments || enrollments.length === 0) return;
 
-        const courseProgressData: CourseProgress[] = [];
+        const course = enrollments[0].courses as any;
+        if (!course) return;
 
-        for (const enrollment of enrollments) {
-          const course = enrollment.courses as any;
-          if (!course) continue;
+        // Get total lessons for this course
+        const { count: totalLessons } = await supabase
+          .from('course_lessons' as any)
+          .select('*', { count: 'exact', head: true })
+          .eq('course_id', course.id)
+          .is('deleted_at', null);
 
-          // Get total lessons for this course from course_lessons table
-          const { count: totalLessons } = await supabase
-            .from('course_lessons' as any)
-            .select('*', { count: 'exact', head: true })
-            .eq('course_id', course.id)
-            .is('deleted_at', null);
+        // Get completed lessons for this course
+        const { count: completedLessons } = await supabase
+          .from('lesson_progress')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+          .eq('course_id', course.id)
+          .eq('completed', true);
 
-          // Get completed lessons for this course
-          const { count: completedLessons } = await supabase
-            .from('lesson_progress')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', session.user.id)
-            .eq('course_id', course.id)
-            .eq('completed', true);
+        // Get the last viewed lesson to resume from
+        const { data: lastProgress } = await supabase
+          .from('lesson_progress')
+          .select('lesson_id, posts:lesson_id (slug)')
+          .eq('user_id', session.user.id)
+          .eq('course_id', course.id)
+          .order('viewed_at', { ascending: false })
+          .limit(1);
 
-          courseProgressData.push({
-            courseId: course.id,
-            courseName: course.name,
-            courseSlug: course.slug,
-            featuredImage: course.featured_image,
-            icon: course.icon || null,
-            learningHours: course.learning_hours || 0,
-            completedLessons: completedLessons || 0,
-            totalLessons: totalLessons || 0,
-          });
-        }
+        const lastLessonSlug = lastProgress?.[0]?.posts 
+          ? (lastProgress[0].posts as any).slug 
+          : null;
 
-        setCourses(courseProgressData);
+        setResumeData({
+          courseId: course.id,
+          courseName: course.name,
+          courseSlug: course.slug,
+          completedLessons: completedLessons || 0,
+          totalLessons: totalLessons || 0,
+          lastLessonSlug,
+        });
       } catch (error) {
-        console.error('Error fetching course progress:', error);
+        console.error('Error fetching resume data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCourseProgress();
+    fetchResumeData();
   }, []);
+
+  const handleContinue = () => {
+    if (!resumeData) return;
+    
+    if (resumeData.lastLessonSlug) {
+      navigate(`/course/${resumeData.courseSlug}/${resumeData.lastLessonSlug}`);
+    } else {
+      navigate(`/course/${resumeData.courseSlug}?tab=lessons`);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[1, 2].map((i) => (
-          <Card key={i} className="bg-muted/30">
-            <CardContent className="p-4">
-              <div className="h-16 animate-pulse bg-muted rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card className="bg-primary/5 border-primary/10">
+        <CardContent className="p-5">
+          <div className="h-16 animate-pulse bg-primary/10 rounded-lg" />
+        </CardContent>
+      </Card>
     );
   }
 
-  if (courses.length === 0) {
+  if (!resumeData || resumeData.totalLessons === 0) {
+    return null;
+  }
+
+  // Don't show if course is completed
+  if (resumeData.completedLessons >= resumeData.totalLessons) {
     return null;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {courses.map((course) => {
-        const progressPercent = course.totalLessons > 0 
-          ? (course.completedLessons / course.totalLessons) * 100 
-          : 0;
+    <Card className="bg-primary/5 border-primary/10 overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Left: Icon + Content */}
+          <div className="flex items-start gap-4 flex-1">
+            {/* Progress Icon */}
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Target className="h-5 w-5 text-primary" />
+            </div>
+            
+            {/* Text Content */}
+            <div className="flex flex-col gap-1">
+              <h3 className="font-semibold text-foreground text-lg leading-tight">
+                Keep going
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {resumeData.completedLessons} of {resumeData.totalLessons} lessons completed
+              </p>
+            </div>
+          </div>
 
-        const IconComponent = getIcon(course.icon || 'BookOpen', BookOpen);
-
-        return (
-          <Card 
-            key={course.courseId}
-            className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-            onClick={() => navigate(`/course/${course.courseSlug}`)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shrink-0">
-                  {course.featuredImage ? (
-                    <img 
-                      src={course.featuredImage} 
-                      alt={course.courseName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <IconComponent className="h-8 w-8 text-primary" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground truncate">{course.courseName}</h4>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      {course.learningHours > 0 
-                        ? `${course.learningHours}h` 
-                        : `${Math.max(1, Math.round((course.totalLessons * 15) / 60))}h`}
-                    </span>
-                  </div>
-                  <Progress value={progressPercent} className="h-2 mt-2" />
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs text-muted-foreground">Total Progress</span>
-                    <span className="text-sm font-medium">
-                      <span className="text-foreground">{course.completedLessons}</span>
-                      <span className="text-muted-foreground"> / {course.totalLessons}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+          {/* Right: CTA */}
+          <div className="flex flex-col items-end gap-1.5 sm:ml-auto">
+            <Button 
+              onClick={handleContinue}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-10 font-medium shadow-sm"
+            >
+              <Play className="h-4 w-4 mr-2 fill-current" />
+              Continue Learning
+            </Button>
+            <span className="text-xs text-muted-foreground hidden sm:block">
+              Resume where you left off
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
