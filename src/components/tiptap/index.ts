@@ -20,5 +20,8 @@ export { RichTextRenderer } from './RichTextRenderer';
 export { FullEditorToolbar } from './FullEditorToolbar';
 export { EditorToolbar } from './EditorToolbar';
 
+// Extensions
+export { ExecutableCodeBlock } from './ExecutableCodeBlock';
+
 // Config
 export * from './editorConfig';
