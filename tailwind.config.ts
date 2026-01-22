@@ -58,6 +58,9 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Semantic text colors for mint/green backgrounds
+        "text-on-mint": "hsl(var(--text-on-mint))",
+        "text-on-mint-secondary": "hsl(var(--text-on-mint-secondary))",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
