@@ -10,6 +10,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewAsRoleProvider } from "@/contexts/ViewAsRoleContext";
 import ViewAsRoleBanner from "@/components/ViewAsRoleBanner";
 
+// Import unified TipTap styles
+import "@/styles/tiptap.css";
+
 // Route Compositions
 import { AdminRoutes, SuperModeratorRoutes, SeniorModeratorRoutes, ModeratorRoutes, publicRoutes } from "@/routes";
 

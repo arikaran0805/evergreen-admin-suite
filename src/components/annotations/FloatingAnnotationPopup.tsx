@@ -1,9 +1,17 @@
+/**
+ * FloatingAnnotationPopup - TipTap-integrated annotation creation
+ * 
+ * Uses LightEditor for annotation comments.
+ * ONLY for Admins/Moderators - never for learners.
+ */
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquarePlus, X, Send, Code, FileText, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LightEditor, type LightEditorRef } from "@/components/tiptap";
+import { extractPlainText, parseContent } from "@/lib/tiptapMigration";
 
 interface FloatingAnnotationPopupProps {
   selectedText: {
@@ -38,7 +46,7 @@ const FloatingAnnotationPopup = ({
   const [placement, setPlacement] = useState<"top" | "bottom">("top");
   const [isExpanded, setIsExpanded] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<LightEditorRef>(null);
   const lastRectRef = useRef<DOMRect | null>(null);
 
   // Calculate position based on selection
@@ -53,11 +61,9 @@ const FloatingAnnotationPopup = ({
     }
 
     const update = () => {
-      // First priority: use the pre-captured rect passed from the parent
       if (selectedText.rect && (selectedText.rect.width > 0 || selectedText.rect.height > 0)) {
         lastRectRef.current = selectedText.rect as DOMRect;
       } else {
-        // Fallback: try to capture the selection rect if it's still available
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
           const rect = selection.getRangeAt(0).getBoundingClientRect();
@@ -74,13 +80,12 @@ const FloatingAnnotationPopup = ({
       }
 
       const padding = 12;
-      const minHalfWidth = 150; // ~min-w-[280px] / 2 + breathing room
-      const popupHeight = isExpanded ? 220 : 50;
+      const minHalfWidth = 150;
+      const popupHeight = isExpanded ? 280 : 50;
 
       let top = rect.top - popupHeight - 12;
       let nextPlacement: "top" | "bottom" = "top";
 
-      // If popup would go above viewport, position below selection instead
       if (top < padding) {
         top = rect.bottom + 12;
         nextPlacement = "bottom";
@@ -100,10 +105,10 @@ const FloatingAnnotationPopup = ({
     return () => cancelAnimationFrame(raf);
   }, [selectedText, isExpanded]);
 
-  // Focus textarea when expanded
+  // Focus editor when expanded
   useEffect(() => {
-    if (isExpanded && textareaRef.current) {
-      textareaRef.current.focus();
+    if (isExpanded) {
+      setTimeout(() => editorRef.current?.focus(), 50);
     }
   }, [isExpanded]);
 
@@ -111,8 +116,8 @@ const FloatingAnnotationPopup = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-        if (isExpanded && comment.trim()) {
-          // Don't close if there's content
+        const text = editorRef.current?.getText() || '';
+        if (isExpanded && text.trim()) {
           return;
         }
         onClose();
@@ -121,7 +126,7 @@ const FloatingAnnotationPopup = ({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose, isExpanded, comment]);
+  }, [onClose, isExpanded]);
 
   // Close on Escape
   useEffect(() => {
@@ -136,26 +141,23 @@ const FloatingAnnotationPopup = ({
   }, [onClose]);
 
   const handleSubmit = () => {
-    if (!selectedText || !comment.trim()) return;
+    if (!selectedText) return;
+    
+    // Extract plain text from JSON content
+    const plainText = extractPlainText(parseContent(comment));
+    if (!plainText.trim()) return;
 
     onAddAnnotation(
       selectedText.start,
       selectedText.end,
       selectedText.text,
-      comment.trim(),
+      plainText.trim(),
       selectedText.type
     );
 
     setComment("");
     setIsExpanded(false);
     onClose();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      handleSubmit();
-    }
   };
 
   const getTypeIcon = () => {
@@ -180,6 +182,7 @@ const FloatingAnnotationPopup = ({
     }
   };
 
+  // CRITICAL: Only admins/moderators can see this popup
   if (!selectedText || !position || (!isAdmin && !isModerator)) {
     return null;
   }
@@ -209,7 +212,6 @@ const FloatingAnnotationPopup = ({
 
       <div className="bg-popover border border-border rounded-lg shadow-xl overflow-hidden min-w-[280px] max-w-[400px]">
         {!isExpanded ? (
-          // Compact mode - just show add button
           <div className="flex items-center gap-2 p-2">
             <Button
               size="sm"
@@ -229,7 +231,6 @@ const FloatingAnnotationPopup = ({
             </Button>
           </div>
         ) : (
-          // Expanded mode - show form
           <div className="p-3 space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -251,15 +252,16 @@ const FloatingAnnotationPopup = ({
               "{selectedText.text}"
             </div>
 
-            {/* Comment input */}
-            <Textarea
-              ref={textareaRef}
-              placeholder="Enter your feedback or suggestion..."
+            {/* Comment input - LightEditor */}
+            <LightEditor
+              ref={editorRef}
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="min-h-[80px] text-sm resize-none"
-              rows={3}
+              onChange={setComment}
+              placeholder="Enter your feedback or suggestion..."
+              characterLimit={500}
+              minHeight="80px"
+              showCharCount
+              autoFocus
             />
 
             {/* Actions */}
@@ -274,7 +276,6 @@ const FloatingAnnotationPopup = ({
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={!comment.trim()}
                   className="gap-1.5"
                 >
                   <Send className="h-3.5 w-3.5" />
