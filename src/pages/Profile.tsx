@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useCourseNavigation } from "@/hooks/useCourseNavigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -318,37 +319,7 @@ const Profile = () => {
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
-
-  // Navigate to a course with the last viewed lesson
-  const navigateToCourseWithLastLesson = async (courseSlug: string, courseId: string) => {
-    if (!userId) {
-      navigate(`/course/${courseSlug}`);
-      return;
-    }
-
-    try {
-      // Fetch the last viewed lesson for this course
-      const { data: lastLesson } = await supabase
-        .from("lesson_progress")
-        .select("lesson_id, posts!lesson_progress_lesson_id_fkey(slug)")
-        .eq("user_id", userId)
-        .eq("course_id", courseId)
-        .order("viewed_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (lastLesson && (lastLesson as any).posts?.slug) {
-        // Navigate to course with last viewed lesson
-        navigate(`/course/${courseSlug}?lesson=${(lastLesson as any).posts.slug}`);
-      } else {
-        // No progress, go to course start
-        navigate(`/course/${courseSlug}`);
-      }
-    } catch {
-      // No progress found, just navigate to course
-      navigate(`/course/${courseSlug}`);
-    }
-  };
+  const { navigateToCourse, handleResume } = useCourseNavigation();
 
   // Handle skill click - navigate to course that teaches this skill
   const handleSkillClick = async (skillName: string) => {
@@ -356,7 +327,8 @@ const Profile = () => {
     
     const courseInfo = getCourseForSkill(career.id, skillName);
     if (courseInfo) {
-      await navigateToCourseWithLastLesson(courseInfo.courseSlug, courseInfo.courseId);
+      // Use role-aware navigation (not auto-resume)
+      await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId);
     }
   };
 
@@ -1485,7 +1457,7 @@ const Profile = () => {
                   key={enrollment.id}
                   course={enrollment.courses}
                   userId={userId}
-                  onClick={() => navigate(`/course/${enrollment.courses?.slug}`)}
+                  onClick={() => navigateToCourse(enrollment.courses?.slug, enrollment.courses?.id)}
                 />
               ))}
             </div>
@@ -1515,7 +1487,7 @@ const Profile = () => {
                   key={course.id}
                   course={course}
                   gradient={gradients[index % gradients.length]}
-                  onClick={() => navigate(`/course/${course.slug}`)}
+                  onClick={() => navigateToCourse(course.slug, course.id)}
                 />
               ))}
             </div>

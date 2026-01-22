@@ -1,7 +1,8 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Circle, FlaskConical, ArrowRight, ArrowDown, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useCourseNavigation } from "@/hooks/useCourseNavigation";
 
 interface CourseStep {
   id: string;
@@ -30,6 +31,7 @@ export const CareerRoadmapChart = ({
   careerName 
 }: CareerRoadmapChartProps) => {
   const navigate = useNavigate();
+  const { navigateToCourse } = useCourseNavigation();
 
   // Calculate positions - Y goes DOWN (courses), X goes RIGHT (career readiness)
   const chartData = useMemo(() => {
@@ -335,7 +337,7 @@ export const CareerRoadmapChart = ({
             >
               {/* Node */}
               <div
-                onClick={() => navigate(`/course/${course.slug}`)}
+                onClick={() => navigateToCourse(course.slug, course.id)}
                 className="relative flex items-center cursor-pointer transition-all hover:scale-110"
               >
                 {/* Circle indicator */}

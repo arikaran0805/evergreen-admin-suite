@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCourseNavigation } from "@/hooks/useCourseNavigation";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
@@ -70,7 +71,8 @@ const Library = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [aiPicksExpanded, setAiPicksExpanded] = useState(true);
   const navigate = useNavigate();
-  
+  const { navigateToCourse, handleResume } = useCourseNavigation();
+
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -285,7 +287,7 @@ const Library = () => {
     return (
       <Card
         className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
-        onClick={() => navigate(`/course/${course.slug}`)}
+        onClick={() => navigateToCourse(course.slug, course.id)}
       >
         <div className="flex h-full">
           {/* Left Section - Dark */}
@@ -355,7 +357,12 @@ const Library = () => {
                 className="text-white rounded-full px-4 h-7 text-xs hover:opacity-90" style={{ background: '#14532d' }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/course/${course.slug}`);
+                  if (showProgress && course.progress && course.progress > 0) {
+                    // Explicit resume action
+                    handleResume(course.slug, course.id);
+                  } else {
+                    navigateToCourse(course.slug, course.id);
+                  }
                 }}
               >
                 {showProgress ? "Continue" : "Start"}
@@ -468,7 +475,7 @@ const Library = () => {
                     {enrolledCourses.slice(0, 3).map((course) => (
                       <button
                         key={course.id}
-                        onClick={() => navigate(`/course/${course.slug}`)}
+                        onClick={() => navigateToCourse(course.slug, course.id)}
                         className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-muted">

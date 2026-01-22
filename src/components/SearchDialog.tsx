@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, X, ArrowRight, BookOpen } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useCourseNavigation } from "@/hooks/useCourseNavigation";
 
 interface SearchDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { navigateToCourse } = useCourseNavigation();
 
   // Focus input when dialog opens
   useEffect(() => {
@@ -81,8 +83,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     }
   };
 
-  const handleCourseClick = (slug: string) => {
-    navigate(`/course/${slug}`);
+  const handleCourseClick = (slug: string, courseId: string) => {
+    navigateToCourse(slug, courseId);
     onOpenChange(false);
   };
 
@@ -129,7 +131,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 {displayResults.map((course) => (
                   <button
                     key={course.id}
-                    onClick={() => handleCourseClick(course.slug)}
+                    onClick={() => handleCourseClick(course.slug, course.id)}
                     className="w-full flex items-start gap-4 p-4 rounded-xl hover:bg-primary/10 transition-all duration-200 group text-left"
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
