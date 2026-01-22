@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
 import CodeBlock from "@/components/chat-editor/CodeBlock";
 import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
+import { parseContent, tipTapJSONToHTML, isTipTapJSON } from "@/lib/tiptapMigration";
 import { sanitizeHtml } from "@/lib/sanitize";
 
 interface ContentRendererProps {
@@ -14,8 +15,9 @@ interface ContentRendererProps {
 const extractCodeBlocks = (html: string): { processedHtml: string; codeBlocks: { code: string; language: string }[] } => {
   const codeBlocks: { code: string; language: string }[] = [];
   
-  // Match <pre class="ql-syntax"...>...</pre> from Quill editor
-  const preRegex = /<pre[^>]*class="[^"]*ql-syntax[^"]*"[^>]*>([\s\S]*?)<\/pre>/gi;
+  // Match <pre class="ql-syntax"...>...</pre> from Quill editor (legacy)
+  // and <pre><code>...</code></pre> from TipTap
+  const preRegex = /<pre[^>]*(?:class="[^"]*(?:ql-syntax|code-block)[^"]*")?[^>]*>(?:<code[^>]*>)?([\s\S]*?)(?:<\/code>)?<\/pre>/gi;
   
   let processedHtml = html.replace(preRegex, (match, content) => {
     // Decode HTML entities
@@ -46,6 +48,12 @@ const extractCodeBlocks = (html: string): { processedHtml: string; codeBlocks: {
   return { processedHtml, codeBlocks };
 };
 
+/**
+ * ContentRenderer
+ * 
+ * Renders content from both legacy HTML (react-quill) and new TipTap JSON format.
+ * Automatically detects content type and renders appropriately.
+ */
 const ContentRenderer = ({ 
   htmlContent, 
   courseType = "python",
@@ -54,9 +62,23 @@ const ContentRenderer = ({
   const isChat = useMemo(() => isChatTranscript(htmlContent), [htmlContent]);
   const [editedCodes, setEditedCodes] = useState<Record<number, string>>({});
 
+  // Check if content is TipTap JSON and convert to HTML if needed
+  const renderedHtml = useMemo(() => {
+    if (!htmlContent) return '';
+    
+    // If it's TipTap JSON, convert to HTML
+    if (isTipTapJSON(htmlContent)) {
+      const json = parseContent(htmlContent);
+      return tipTapJSONToHTML(json);
+    }
+    
+    // Otherwise treat as HTML (legacy content)
+    return htmlContent;
+  }, [htmlContent]);
+
   // Extract code blocks and get processed HTML
   const { processedHtml, codeBlocks } = useMemo(() => 
-    extractCodeBlocks(htmlContent), [htmlContent]
+    extractCodeBlocks(renderedHtml), [renderedHtml]
   );
 
   const handleCodeEdit = (index: number, newCode: string) => {
@@ -78,7 +100,7 @@ const ContentRenderer = ({
     return (
       <div 
         className="prose prose-lg max-w-none"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderedHtml) }}
       />
     );
   }
