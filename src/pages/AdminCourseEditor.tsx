@@ -14,7 +14,7 @@ import { AnnotationPanel, FloatingAnnotationPopup } from "@/components/annotatio
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import RichTextEditor from "@/components/RichTextEditor";
+import { RichTextEditor } from "@/components/tiptap";
 import { ChatStyleEditor } from "@/components/chat-editor";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
