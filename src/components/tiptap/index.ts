@@ -22,6 +22,7 @@ export { EditorToolbar } from './EditorToolbar';
 
 // Extensions
 export { ExecutableCodeBlock } from './ExecutableCodeBlock';
+export { AnnotationMark, AnnotationTooltip, type AnnotationData } from './AnnotationMark';
 
 // Config
 export * from './editorConfig';
