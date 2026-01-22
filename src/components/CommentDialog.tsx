@@ -1,4 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
+/**
+ * CommentDialog - TipTap-integrated comment system
+ * 
+ * Uses LightEditor for all comment/reply creation.
+ * Learners: Can only CREATE comments, no edit after submission.
+ * Admins/Mods: Full CRUD capabilities.
+ */
+
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,12 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check, Bold, Italic, Code, Link, Shield } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MessageSquare, ThumbsUp, ThumbsDown, Reply, Pencil, Trash2, X, Check, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { LightEditor, type LightEditorRef } from "@/components/tiptap";
+import { RichTextRenderer } from "@/components/tiptap";
+import { serializeContent, parseContent, extractPlainText } from "@/lib/tiptapMigration";
 
 interface Comment {
   id: string;
@@ -84,6 +93,10 @@ const CommentDialog = ({
   const [reactions, setReactions] = useState<Record<string, { likes: number; dislikes: number; userReaction: string | null }>>({});
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most_liked">("newest");
   const { toast } = useToast();
+  
+  const mainEditorRef = useRef<LightEditorRef>(null);
+  const replyEditorRef = useRef<LightEditorRef>(null);
+  const editEditorRef = useRef<LightEditorRef>(null);
 
   const sessionId = getSessionId();
 
@@ -165,28 +178,6 @@ const CommentDialog = ({
     }
   };
 
-// Parse markdown in comment content
-  const parseMarkdown = (text: string) => {
-    // Process in order: code, bold, italic, links
-    let html = text
-      // Escape HTML first
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      // Inline code: `code`
-      .replace(/`([^`]+)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
-      // Bold: **text** or __text__
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-      // Italic: *text* or _text_
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/_([^_]+)_/g, '<em>$1</em>')
-      // Links: [text](url)
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">$1</a>');
-    
-    return html;
-  };
-
   const getDisplayName = (comment: Comment) => {
     if (comment.is_anonymous || !comment.user_id) {
       return comment.display_name || "unknown_ant";
@@ -201,20 +192,25 @@ const CommentDialog = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmitComment(e, postAnonymously);
+    const content = mainEditorRef.current?.getText() || '';
+    if (!content.trim()) return;
+    onSubmitComment(e, postAnonymously, undefined, newComment);
+    mainEditorRef.current?.clear();
   };
 
   const handleReplySubmit = (e: React.FormEvent, parentId: string) => {
     e.preventDefault();
-    if (!replyContent.trim()) return;
+    const content = replyEditorRef.current?.getText() || '';
+    if (!content.trim()) return;
     
-    // Pass reply content directly to avoid async state issues
     onSubmitComment(e, replyAnonymously, parentId, replyContent);
     setReplyContent("");
     setReplyingTo(null);
     setReplyAnonymously(false);
+    replyEditorRef.current?.clear();
   };
 
+  // Learners can only edit their OWN comments (admin check happens server-side for actual permissions)
   const canEditOrDelete = (comment: Comment) => {
     return user && comment.user_id === user.id;
   };
@@ -230,10 +226,13 @@ const CommentDialog = ({
   };
 
   const handleSaveEdit = async (commentId: string) => {
-    if (!onEditComment || !editContent.trim()) return;
+    if (!onEditComment) return;
+    const text = editEditorRef.current?.getText() || '';
+    if (!text.trim()) return;
+    
     setIsUpdating(true);
     try {
-      await onEditComment(commentId, editContent.trim());
+      await onEditComment(commentId, editContent);
       setEditingId(null);
       setEditContent("");
     } finally {
@@ -251,7 +250,6 @@ const CommentDialog = ({
   // Organize and sort comments into threads
   const topLevelComments = useMemo(() => {
     const filtered = comments.filter(c => !c.parent_id);
-    console.log("Sort by:", sortBy, "Filtered comments:", filtered.length);
     
     return [...filtered].sort((a, b) => {
       if (sortBy === "newest") {
@@ -259,7 +257,6 @@ const CommentDialog = ({
       } else if (sortBy === "oldest") {
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       } else {
-        // most_liked
         const aLikes = reactions[a.id]?.likes || 0;
         const bLikes = reactions[b.id]?.likes || 0;
         return bLikes - aLikes;
@@ -280,9 +277,9 @@ const CommentDialog = ({
             {getAvatarFallback(comment)}
           </AvatarFallback>
         </Avatar>
-          <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold">
                 {getDisplayName(comment)}
               </span>
@@ -320,17 +317,20 @@ const CommentDialog = ({
           
           {editingId === comment.id ? (
             <div className="space-y-2">
-              <Textarea
+              <LightEditor
+                ref={editEditorRef}
                 value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={3}
-                className="border-primary/20 focus:border-primary"
+                onChange={setEditContent}
+                placeholder="Edit your comment..."
+                characterLimit={2000}
+                minHeight="60px"
+                autoFocus
               />
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   onClick={() => handleSaveEdit(comment.id)}
-                  disabled={isUpdating || !editContent.trim()}
+                  disabled={isUpdating}
                   className="h-8"
                 >
                   <Check className="h-3.5 w-3.5 mr-1" />
@@ -349,10 +349,13 @@ const CommentDialog = ({
               </div>
             </div>
           ) : (
-            <p 
-              className="text-foreground mb-3 whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: parseMarkdown(comment.content) }}
-            />
+            <div className="mb-3">
+              <RichTextRenderer 
+                content={comment.content} 
+                className="text-foreground"
+                emptyPlaceholder=""
+              />
+            </div>
           )}
           
           {editingId !== comment.id && (
@@ -389,78 +392,19 @@ const CommentDialog = ({
             </div>
           )}
 
-          {/* Reply form */}
+          {/* Reply form - uses LightEditor */}
           {replyingTo === comment.id && (
             <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 space-y-2">
-              <div className="border border-primary/20 rounded-md focus-within:border-primary overflow-hidden">
-                <Textarea
-                  placeholder="Write a reply..."
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  rows={2}
-                  className="border-0 focus-visible:ring-0 resize-none"
-                />
-                <div className="flex items-center gap-1 px-2 py-1.5 border-t border-primary/10 bg-muted/30">
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setReplyContent(replyContent + "**bold**")}
-                        >
-                          <Bold className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Bold</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setReplyContent(replyContent + "*italic*")}
-                        >
-                          <Italic className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Italic</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setReplyContent(replyContent + "`code`")}
-                        >
-                          <Code className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Code</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setReplyContent(replyContent + "[link](url)")}
-                        >
-                          <Link className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Link</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
+              <LightEditor
+                ref={replyEditorRef}
+                value={replyContent}
+                onChange={setReplyContent}
+                placeholder="Write a reply..."
+                characterLimit={2000}
+                draftKey={`reply_${comment.id}`}
+                minHeight="60px"
+                autoFocus
+              />
               <div className="flex items-center justify-between">
                 {user ? (
                   <div className="flex items-center space-x-2">
@@ -480,7 +424,7 @@ const CommentDialog = ({
                   <Button type="button" size="sm" variant="outline" onClick={() => setReplyingTo(null)}>
                     Cancel
                   </Button>
-                  <Button type="submit" size="sm" disabled={submitting || !replyContent.trim()}>
+                  <Button type="submit" size="sm" disabled={submitting}>
                     {submitting ? "Posting..." : "Post Reply"}
                   </Button>
                 </div>
@@ -501,7 +445,6 @@ const CommentDialog = ({
               <MessageSquare className="h-5 w-5 text-primary" />
               Comments ({comments.length})
             </DialogTitle>
-            {/* Sort Options - Top Right */}
             {comments.length > 0 && (
               <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most_liked") => setSortBy(value)}>
                 <SelectTrigger className="w-[120px] h-8">
@@ -521,79 +464,18 @@ const CommentDialog = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Comment Form */}
+          {/* Comment Form - Uses LightEditor */}
           <div>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="group border border-primary/20 rounded-md focus-within:border-primary overflow-hidden">
-                <Textarea
-                  placeholder="Share your thoughts..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={4}
-                  required
-                  className="border-0 focus-visible:ring-0 resize-none"
-                />
-                <div className="flex items-center gap-1 px-2 py-1.5 border-t border-primary/10 bg-muted/30 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setNewComment(newComment + "**bold**")}
-                        >
-                          <Bold className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Bold</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setNewComment(newComment + "*italic*")}
-                        >
-                          <Italic className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Italic</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setNewComment(newComment + "`code`")}
-                        >
-                          <Code className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Code</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setNewComment(newComment + "[link](url)")}
-                        >
-                          <Link className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Link</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
+              <LightEditor
+                ref={mainEditorRef}
+                value={newComment}
+                onChange={setNewComment}
+                placeholder="Share your thoughts..."
+                characterLimit={2000}
+                draftKey="new_comment"
+                minHeight="100px"
+              />
               
               <div className="flex items-center justify-between">
                 <div>
@@ -633,7 +515,6 @@ const CommentDialog = ({
             {topLevelComments.map((comment) => (
               <div key={comment.id}>
                 {renderComment(comment)}
-                {/* Render replies */}
                 {getReplies(comment.id).map((reply) => renderComment(reply, true))}
               </div>
             ))}
