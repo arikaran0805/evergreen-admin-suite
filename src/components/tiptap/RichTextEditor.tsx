@@ -4,24 +4,20 @@
  * Secure rich text editor using TipTap (ProseMirror-based).
  * - JSON output format (no raw HTML storage)
  * - XSS-safe by design
+ * - ExecutableCodeBlock for interactive code editing
  * - Annotation mark support with stable tooltip
  * - Uses shared tiptap.css - NO inline styles
  */
 
 import { useCallback, useEffect, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useEditor, EditorContent, type JSONContent, type Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
-import Underline from '@tiptap/extension-underline';
-import Placeholder from '@tiptap/extension-placeholder';
-import CharacterCount from '@tiptap/extension-character-count';
 import { cn } from '@/lib/utils';
-import { EditorToolbar } from './EditorToolbar';
+import { FullEditorToolbar } from './FullEditorToolbar';
 import { parseContent, serializeContent, tipTapJSONToHTML } from '@/lib/tiptapMigration';
+import { getFullEditorExtensions } from './editorConfig';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Columns } from 'lucide-react';
-import { AnnotationMark } from './AnnotationMark';
 import AnnotationTooltip, { type AnnotationData } from './AnnotationMark/AnnotationTooltip';
 import '@/styles/tiptap.css';
 
@@ -97,30 +93,18 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
   const initialContent = parseContent(value);
 
+  // Use shared config with ExecutableCodeBlock and AnnotationMark
+  const extensions = useMemo(() => 
+    getFullEditorExtensions({ 
+      placeholder, 
+      characterLimit,
+      useExecutableCodeBlocks: showCodeBlock 
+    }), 
+    [placeholder, characterLimit, showCodeBlock]
+  );
+
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5, 6] },
-        codeBlock: {
-          HTMLAttributes: { class: 'code-block' },
-        },
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        },
-      }),
-      Underline,
-      Placeholder.configure({
-        placeholder,
-        emptyEditorClass: 'tiptap-empty',
-      }),
-      // Annotation mark for inline feedback
-      AnnotationMark,
-      ...(characterLimit ? [CharacterCount.configure({ limit: characterLimit })] : []),
-    ],
+    extensions,
     content: initialContent,
     editable: !readOnly && !annotationMode,
     onUpdate: ({ editor }) => {
@@ -135,7 +119,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           if (text.trim().length >= 2) {
             const coords = editor.view.coordsAtPos(from);
             const endCoords = editor.view.coordsAtPos(to);
-            const isCodeBlock = editor.isActive('codeBlock');
+            const isCodeBlock = editor.isActive('executableCodeBlock') || editor.isActive('codeBlock');
             
             onTextSelect({
               start: from,
@@ -327,9 +311,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         </div>
       )}
 
-      {/* Toolbar */}
+      {/* Toolbar - uses FullEditorToolbar for ExecutableCodeBlock support */}
       {viewMode !== 'preview' && !readOnly && !annotationMode && (
-        <EditorToolbar editor={editor} showCodeBlock={showCodeBlock} />
+        <FullEditorToolbar editor={editor} />
       )}
 
       {/* Editor content based on view mode */}
