@@ -1,0 +1,273 @@
+/**
+ * LightEditor - Comment/Reply Editor
+ * 
+ * Minimal TipTap editor for comments and replies.
+ * Limited features: bold, italic, inline code, links only.
+ * 
+ * ROLES: All users (for comments), Admins/Moderators (for replies)
+ * LEARNERS: Can ONLY create comments - no editing after submission
+ */
+
+import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState } from 'react';
+import { useEditor, EditorContent, type JSONContent, type Editor } from '@tiptap/react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Bold, Italic, Code, Link as LinkIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getLightEditorExtensions, CHARACTER_LIMITS } from './editorConfig';
+import { parseContent, serializeContent } from '@/lib/tiptapMigration';
+import { useEditorAutosave } from '@/hooks/useEditorAutosave';
+import '@/styles/tiptap.css';
+
+export interface LightEditorProps {
+  /** Content (JSON or string) */
+  value: string | JSONContent;
+  /** Change handler */
+  onChange: (value: string) => void;
+  /** Placeholder text */
+  placeholder?: string;
+  /** Character limit (default: 2000) */
+  characterLimit?: number;
+  /** Custom class */
+  className?: string;
+  /** Draft key for autosave */
+  draftKey?: string;
+  /** Show character count */
+  showCharCount?: boolean;
+  /** Disable editing */
+  disabled?: boolean;
+  /** Auto-focus on mount */
+  autoFocus?: boolean;
+  /** Minimum height */
+  minHeight?: string;
+}
+
+export interface LightEditorRef {
+  getEditor: () => Editor | null;
+  getJSON: () => JSONContent | undefined;
+  getText: () => string;
+  isEmpty: () => boolean;
+  focus: () => void;
+  clear: () => void;
+}
+
+export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
+  value,
+  onChange,
+  placeholder = 'Write a comment...',
+  characterLimit = CHARACTER_LIMITS.comment,
+  className,
+  draftKey,
+  showCharCount = true,
+  disabled = false,
+  autoFocus = false,
+  minHeight = '80px',
+}, ref) => {
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+
+  // Autosave for drafts
+  const autosave = useEditorAutosave({
+    draftKey: draftKey || '',
+    enableLocalDraft: !!draftKey,
+    warnOnUnsavedChanges: false,
+  });
+
+  // Extensions
+  const extensions = useMemo(() => 
+    getLightEditorExtensions({ placeholder, characterLimit }), 
+    [placeholder, characterLimit]
+  );
+
+  // Parse initial content
+  const initialContent = useMemo(() => {
+    if (draftKey) {
+      const draft = autosave.loadDraft();
+      if (draft) return draft;
+    }
+    return parseContent(value);
+  }, []);
+
+  // Editor instance
+  const editor = useEditor({
+    extensions,
+    content: initialContent,
+    editable: !disabled,
+    autofocus: autoFocus,
+    onUpdate: ({ editor }) => {
+      const json = editor.getJSON();
+      onChange(serializeContent(json));
+      if (draftKey) {
+        autosave.debouncedSave(json);
+      }
+    },
+  });
+
+  // Sync editable state
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [editor, disabled]);
+
+  // Sync external value
+  useEffect(() => {
+    if (!editor) return;
+    const newContent = parseContent(value);
+    const current = JSON.stringify(editor.getJSON());
+    const incoming = JSON.stringify(newContent);
+    if (current !== incoming) {
+      editor.commands.setContent(newContent);
+    }
+  }, [value, editor]);
+
+  // Link handler
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    if (!linkUrl) {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    } else {
+      const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+      editor.chain().focus().extendMarkRange('link')
+        .setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run();
+    }
+    setLinkUrl('');
+    setShowLinkInput(false);
+  }, [editor, linkUrl]);
+
+  // Expose ref
+  useImperativeHandle(ref, () => ({
+    getEditor: () => editor,
+    getJSON: () => editor?.getJSON(),
+    getText: () => editor?.getText() || '',
+    isEmpty: () => editor?.isEmpty ?? true,
+    focus: () => editor?.commands.focus(),
+    clear: () => {
+      editor?.commands.clearContent();
+      if (draftKey) autosave.clearDraft();
+    },
+  }));
+
+  const charCount = editor?.storage.characterCount?.characters() || 0;
+  const isOverLimit = charCount >= characterLimit;
+  const isNearLimit = charCount > characterLimit * 0.9;
+
+  if (!editor) {
+    return <div className={cn('border rounded-lg bg-background animate-pulse', className)} style={{ minHeight }} />;
+  }
+
+  return (
+    <div 
+      className={cn(
+        'tiptap-light-editor border border-border rounded-lg overflow-hidden bg-background transition-all',
+        disabled && 'opacity-60 cursor-not-allowed',
+        className
+      )}
+    >
+      {/* Editor content */}
+      <div style={{ minHeight }}>
+        <EditorContent editor={editor} />
+      </div>
+
+      {/* Light toolbar - appears on focus/hover */}
+      <div className="tiptap-light-toolbar">
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn('h-7 w-7 p-0', editor.isActive('bold') && 'bg-primary/10 text-primary')}
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                disabled={disabled}
+              >
+                <Bold className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Bold (⌘B)</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn('h-7 w-7 p-0', editor.isActive('italic') && 'bg-primary/10 text-primary')}
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                disabled={disabled}
+              >
+                <Italic className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Italic (⌘I)</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn('h-7 w-7 p-0', editor.isActive('code') && 'bg-primary/10 text-primary')}
+                onClick={() => editor.chain().focus().toggleCode().run()}
+                disabled={disabled}
+              >
+                <Code className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Inline Code (⌘`)</TooltipContent>
+          </Tooltip>
+
+          <Popover open={showLinkInput} onOpenChange={setShowLinkInput}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn('h-7 w-7 p-0', editor.isActive('link') && 'bg-primary/10 text-primary')}
+                onClick={() => {
+                  setLinkUrl(editor.getAttributes('link').href || '');
+                  setShowLinkInput(true);
+                }}
+                disabled={disabled}
+              >
+                <LinkIcon className="h-3.5 w-3.5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-2" align="start">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="URL..."
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setLink())}
+                  className="flex-1 h-8 text-sm"
+                />
+                <Button size="sm" className="h-8" onClick={setLink}>
+                  {editor.isActive('link') ? 'Update' : 'Add'}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </TooltipProvider>
+
+        {/* Character count */}
+        {showCharCount && (
+          <div className={cn(
+            'ml-auto text-xs',
+            isOverLimit && 'text-destructive font-medium',
+            isNearLimit && !isOverLimit && 'text-amber-600 dark:text-amber-400'
+          )}>
+            {charCount}/{characterLimit}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+LightEditor.displayName = 'LightEditor';
+
+export default LightEditor;
