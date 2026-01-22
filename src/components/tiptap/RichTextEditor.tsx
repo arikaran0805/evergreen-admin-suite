@@ -97,10 +97,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
   const extensions = useMemo(() => 
     getFullEditorExtensions({ 
       placeholder, 
-      characterLimit,
-      useExecutableCodeBlocks: showCodeBlock 
+      characterLimit
     }), 
-    [placeholder, characterLimit, showCodeBlock]
+    [placeholder, characterLimit]
   );
 
   const editor = useEditor({
