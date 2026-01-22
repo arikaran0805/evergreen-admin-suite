@@ -1,0 +1,508 @@
+/**
+ * Unified TipTap Styles
+ * 
+ * Single stylesheet for all TipTap editor and renderer components.
+ * Uses design system tokens from index.css.
+ */
+
+/* ============================================
+   BASE EDITOR STYLES
+   ============================================ */
+
+.tiptap-editor .ProseMirror,
+.tiptap-light-editor .ProseMirror {
+  outline: none;
+  min-height: inherit;
+}
+
+.tiptap-editor .ProseMirror {
+  padding: 1rem;
+  min-height: 250px;
+}
+
+.tiptap-light-editor .ProseMirror {
+  padding: 0.75rem;
+  min-height: 80px;
+}
+
+/* Placeholder */
+.tiptap-editor .ProseMirror p.tiptap-empty:first-child::before,
+.tiptap-light-editor .ProseMirror p.tiptap-empty:first-child::before,
+.tiptap-editor .ProseMirror.tiptap-empty::before,
+.tiptap-light-editor .ProseMirror.tiptap-empty::before {
+  color: hsl(var(--muted-foreground));
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Focus ring for light editor */
+.tiptap-light-editor:focus-within {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+.tiptap-editor .ProseMirror > * + *,
+.tiptap-content > * + * {
+  margin-top: 0.75em;
+}
+
+/* Headings */
+.tiptap-editor .ProseMirror h1,
+.tiptap-content h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap-editor .ProseMirror h2,
+.tiptap-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap-editor .ProseMirror h3,
+.tiptap-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap-editor .ProseMirror h4,
+.tiptap-content h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Paragraphs */
+.tiptap-editor .ProseMirror p,
+.tiptap-light-editor .ProseMirror p,
+.tiptap-content p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.tiptap-content p {
+  margin: 0.75em 0;
+}
+
+/* ============================================
+   LISTS
+   ============================================ */
+
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol,
+.tiptap-content ul,
+.tiptap-content ol {
+  padding-left: 1.5em;
+  margin: 0.75em 0;
+}
+
+.tiptap-editor .ProseMirror ul,
+.tiptap-content ul {
+  list-style-type: disc;
+}
+
+.tiptap-editor .ProseMirror ol,
+.tiptap-content ol {
+  list-style-type: decimal;
+}
+
+.tiptap-editor .ProseMirror li,
+.tiptap-content li {
+  margin: 0.25em 0;
+}
+
+/* ============================================
+   BLOCKQUOTE
+   ============================================ */
+
+.tiptap-editor .ProseMirror blockquote,
+.tiptap-content blockquote,
+.tiptap-blockquote {
+  border-left: 3px solid hsl(var(--primary));
+  padding-left: 1em;
+  margin: 1em 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.3);
+  padding: 0.75em 1em;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+/* ============================================
+   CODE BLOCKS
+   ============================================ */
+
+.tiptap-editor .ProseMirror pre,
+.tiptap-content pre,
+.tiptap-code-block {
+  background: hsl(142 20% 95%);
+  color: hsl(142 30% 25%);
+  border: 1px solid hsl(142 20% 88%);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  margin: 1em 0;
+  position: relative;
+}
+
+.tiptap-editor .ProseMirror pre code,
+.tiptap-content pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+/* Dark mode code blocks */
+.dark .tiptap-editor .ProseMirror pre,
+.dark .tiptap-content pre,
+.dark .tiptap-code-block {
+  background: hsl(142 20% 12%);
+  color: hsl(142 30% 80%);
+  border-color: hsl(142 20% 20%);
+}
+
+/* Inline code */
+.tiptap-editor .ProseMirror code,
+.tiptap-light-editor .ProseMirror code,
+.tiptap-content code,
+.tiptap-inline-code {
+  background: hsl(var(--muted));
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Prevent double styling for code in pre */
+.tiptap-editor .ProseMirror pre code,
+.tiptap-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ============================================
+   LINKS
+   ============================================ */
+
+.tiptap-editor .ProseMirror a,
+.tiptap-light-editor .ProseMirror a,
+.tiptap-content a,
+.tiptap-link {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.tiptap-editor .ProseMirror a:hover,
+.tiptap-light-editor .ProseMirror a:hover,
+.tiptap-content a:hover {
+  opacity: 0.8;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+
+.tiptap-editor .ProseMirror table,
+.tiptap-content table,
+.tiptap-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+}
+
+.tiptap-editor .ProseMirror th,
+.tiptap-editor .ProseMirror td,
+.tiptap-content th,
+.tiptap-content td,
+.tiptap-table-cell,
+.tiptap-table-header {
+  min-width: 1em;
+  border: 1px solid hsl(var(--border));
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap-editor .ProseMirror th,
+.tiptap-content th,
+.tiptap-table-header {
+  font-weight: 600;
+  text-align: left;
+  background: hsl(var(--muted));
+}
+
+.tiptap-editor .ProseMirror .selectedCell {
+  background: hsl(var(--primary) / 0.1);
+}
+
+/* ============================================
+   IMAGES
+   ============================================ */
+
+.tiptap-editor .ProseMirror img,
+.tiptap-content img,
+.tiptap-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1em 0;
+}
+
+.tiptap-editor .ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* ============================================
+   HIGHLIGHTS (Annotations)
+   ============================================ */
+
+.tiptap-highlight,
+.tiptap-editor .ProseMirror mark,
+.tiptap-content mark {
+  background: hsl(var(--primary) / 0.2);
+  border-radius: 0.125rem;
+  padding: 0.125em 0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tiptap-highlight:hover,
+.tiptap-editor .ProseMirror mark:hover {
+  background: hsl(var(--primary) / 0.35);
+}
+
+/* Annotation statuses */
+.tiptap-highlight[data-status="open"] {
+  background: hsl(45 100% 60% / 0.3);
+}
+
+.tiptap-highlight[data-status="resolved"] {
+  background: hsl(142 70% 45% / 0.2);
+}
+
+.tiptap-highlight[data-status="dismissed"] {
+  background: hsl(var(--muted-foreground) / 0.2);
+}
+
+/* ============================================
+   HORIZONTAL RULE
+   ============================================ */
+
+.tiptap-editor .ProseMirror hr,
+.tiptap-content hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: 1.5em 0;
+}
+
+/* ============================================
+   SYNTAX HIGHLIGHTING (lowlight)
+   ============================================ */
+
+/* Comments */
+.hljs-comment,
+.hljs-quote {
+  color: hsl(142 20% 50%);
+  font-style: italic;
+}
+
+/* Keywords */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-addition {
+  color: hsl(280 70% 50%);
+}
+
+/* Strings */
+.hljs-string,
+.hljs-doctag,
+.hljs-attr {
+  color: hsl(142 70% 35%);
+}
+
+/* Numbers */
+.hljs-number,
+.hljs-literal {
+  color: hsl(20 90% 50%);
+}
+
+/* Functions */
+.hljs-title,
+.hljs-section,
+.hljs-name {
+  color: hsl(200 80% 45%);
+}
+
+/* Variables */
+.hljs-variable,
+.hljs-template-variable {
+  color: hsl(350 80% 55%);
+}
+
+/* Built-in */
+.hljs-built_in,
+.hljs-type {
+  color: hsl(180 60% 40%);
+}
+
+/* Classes */
+.hljs-class .hljs-title {
+  color: hsl(45 100% 40%);
+}
+
+/* Dark mode syntax highlighting */
+.dark .hljs-comment,
+.dark .hljs-quote {
+  color: hsl(142 15% 55%);
+}
+
+.dark .hljs-keyword,
+.dark .hljs-selector-tag {
+  color: hsl(280 70% 70%);
+}
+
+.dark .hljs-string,
+.dark .hljs-doctag,
+.dark .hljs-attr {
+  color: hsl(142 60% 60%);
+}
+
+.dark .hljs-number,
+.dark .hljs-literal {
+  color: hsl(20 90% 65%);
+}
+
+.dark .hljs-title,
+.dark .hljs-section,
+.dark .hljs-name {
+  color: hsl(200 80% 65%);
+}
+
+.dark .hljs-variable,
+.dark .hljs-template-variable {
+  color: hsl(350 80% 70%);
+}
+
+.dark .hljs-built_in,
+.dark .hljs-type {
+  color: hsl(180 60% 60%);
+}
+
+/* ============================================
+   AUTOSAVE INDICATOR
+   ============================================ */
+
+.tiptap-autosave-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.tiptap-autosave-indicator.saving {
+  color: hsl(var(--primary));
+}
+
+.tiptap-autosave-indicator.saved {
+  color: hsl(142 70% 45%);
+}
+
+.tiptap-autosave-indicator.error {
+  color: hsl(var(--destructive));
+}
+
+/* ============================================
+   CHARACTER COUNT
+   ============================================ */
+
+.tiptap-char-count {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  text-align: right;
+  padding: 0.25rem 0.5rem;
+}
+
+.tiptap-char-count.warning {
+  color: hsl(45 100% 40%);
+}
+
+.tiptap-char-count.error {
+  color: hsl(var(--destructive));
+}
+
+/* ============================================
+   TOOLBAR
+   ============================================ */
+
+.tiptap-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.5);
+}
+
+.tiptap-toolbar-group {
+  display: flex;
+  align-items: center;
+}
+
+.tiptap-toolbar-divider {
+  width: 1px;
+  height: 1.5rem;
+  background: hsl(var(--border));
+  margin: 0 0.25rem;
+}
+
+/* Light editor minimal toolbar */
+.tiptap-light-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  background: hsl(var(--muted) / 0.3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tiptap-light-editor:focus-within .tiptap-light-toolbar,
+.tiptap-light-editor:hover .tiptap-light-toolbar {
+  opacity: 1;
+}
