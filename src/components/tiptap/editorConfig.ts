@@ -191,6 +191,7 @@ export const getLightEditorExtensions = (options?: {
 /**
  * Extensions for content rendering (read-only)
  * Matches FullEditor for proper HTML generation
+ * Includes AnnotationMark for rendering annotated content
  */
 export const getRenderExtensions = (): Extensions => [
   StarterKit.configure({
@@ -209,6 +210,8 @@ export const getRenderExtensions = (): Extensions => [
   TableCell,
   TableHeader,
   Image,
+  // Include AnnotationMark for rendering annotated content
+  AnnotationMark,
 ];
 
 /**
