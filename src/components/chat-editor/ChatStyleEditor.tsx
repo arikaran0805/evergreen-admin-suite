@@ -420,6 +420,7 @@ const SortableMessageItem = ({
             onEndEdit={onEndEdit}
             index={index}
             annotationMode={annotationMode}
+            codeTheme={codeTheme}
           />
         </div>
         {isEditMode && !isEditing && !annotationMode && <ActionButtons />}
