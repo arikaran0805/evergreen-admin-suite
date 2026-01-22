@@ -3,22 +3,32 @@
  * 
  * Handles conversion between legacy HTML (from react-quill) and TipTap JSON format.
  * Provides safe parsing and sanitization during migration.
+ * 
+ * NOTE: For RENDERING, use RichTextRenderer which uses real TipTap editor
+ * with full schema including ExecutableCodeBlock and AnnotationMark.
+ * 
+ * This file is for HTML/JSON conversion only during content migration.
  */
 
 import { generateHTML, generateJSON } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
+import Highlight from '@tiptap/extension-highlight';
 import type { JSONContent } from '@tiptap/react';
 
-// Extensions used for parsing/generating - must match editor extensions
+// Extensions used for parsing/generating HTML during migration
+// NOTE: This is a minimal set for HTML parsing - does NOT include custom nodes
+// Use RichTextRenderer for full rendering with ExecutableCodeBlock & AnnotationMark
 const extensions = [
   StarterKit.configure({
     heading: { levels: [1, 2, 3, 4, 5, 6] },
+    // Use default codeBlock for HTML parsing (migration only)
     codeBlock: { HTMLAttributes: { class: 'code-block' } },
   }),
   Link.configure({ openOnClick: false }),
   Underline,
+  Highlight.configure({ multicolor: true }),
 ];
 
 /**

@@ -1,14 +1,21 @@
 /**
  * TipTap Rich Text Renderer
- * 
- * Safe content renderer that converts TipTap JSON to HTML.
- * Uses shared tiptap.css for styling - NO inline styles.
+ *
+ * Renders TipTap JSON content using a real TipTap editor instance
+ * with editable: false for proper custom node/mark rendering.
+ *
+ * ✅ Uses getRenderExtensions() for schema parity
+ * ✅ Supports ExecutableCodeBlock
+ * ✅ Supports AnnotationMark
+ * ❌ No dangerouslySetInnerHTML
  */
 
 import { useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import { parseContent, tipTapJSONToHTML, isContentEmpty } from '@/lib/tiptapMigration';
+import { useEditor, EditorContent } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/react';
+import { cn } from '@/lib/utils';
+import { getRenderExtensions } from './editorConfig';
+import { parseContent, isContentEmpty } from '@/lib/tiptapMigration';
 import '@/styles/tiptap.css';
 
 interface RichTextRendererProps {
@@ -27,28 +34,41 @@ interface RichTextRendererProps {
 }
 
 /**
- * Safe Rich Text Renderer
- * 
- * Security:
- * - Content is parsed through TipTap's JSON parser
- * - Only whitelisted tags/attributes are rendered
- * - No raw HTML injection possible
+ * Rich Text Renderer using TipTap
+ *
+ * Uses a real TipTap editor instance with editable: false
+ * to properly render custom nodes (ExecutableCodeBlock) and marks (AnnotationMark)
  */
 export const RichTextRenderer = ({
   content,
   className,
   emptyPlaceholder = 'No content',
 }: RichTextRendererProps) => {
-  const html = useMemo(() => {
-    if (!content) return '';
-    
+  // Parse content to TipTap JSON format
+  const parsedContent = useMemo(() => {
+    if (!content) return null;
     const json = parseContent(content);
-    if (isContentEmpty(json)) return '';
-    
-    return tipTapJSONToHTML(json);
+    if (isContentEmpty(json)) return null;
+    return json;
   }, [content]);
 
-  if (!html) {
+  // Create read-only editor with full schema
+  const editor = useEditor(
+    {
+      extensions: getRenderExtensions(),
+      content: parsedContent,
+      editable: false,
+      editorProps: {
+        attributes: {
+          class: 'tiptap-renderer prose prose-sm dark:prose-invert max-w-none focus:outline-none',
+        },
+      },
+    },
+    [parsedContent]
+  );
+
+  // Show placeholder when no content
+  if (!parsedContent) {
     return (
       <div className={cn('text-muted-foreground italic', className)}>
         {emptyPlaceholder}
@@ -58,10 +78,7 @@ export const RichTextRenderer = ({
 
   return (
     <div className={cn('tiptap-content', className)}>
-      <div
-        className="prose prose-sm dark:prose-invert max-w-none"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <EditorContent editor={editor} />
     </div>
   );
 };
