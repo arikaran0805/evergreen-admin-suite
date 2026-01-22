@@ -168,14 +168,17 @@ export function FullEditorToolbar({ editor, className }: FullEditorToolbarProps)
           <Quote className="w-4 h-4" />
         </ToolbarButton>
         
-        {/* Code block with language selector */}
+        {/* Executable Code block with language selector */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className={cn('h-8 w-8 p-0', editor.isActive('codeBlock') && 'bg-primary/10 text-primary')}
-              title="Code Block"
+              className={cn(
+                'h-8 w-8 p-0', 
+                (editor.isActive('executableCodeBlock') || editor.isActive('codeBlock')) && 'bg-primary/10 text-primary'
+              )}
+              title="Code Block (⌘⌥C)"
             >
               <Code2 className="w-4 h-4" />
             </Button>
@@ -184,12 +187,19 @@ export function FullEditorToolbar({ editor, className }: FullEditorToolbarProps)
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Select language</p>
               <Select
-                value={editor.getAttributes('codeBlock').language || 'python'}
+                value={
+                  editor.getAttributes('executableCodeBlock').language || 
+                  editor.getAttributes('codeBlock').language || 
+                  'python'
+                }
                 onValueChange={(lang) => {
-                  if (editor.isActive('codeBlock')) {
+                  if (editor.isActive('executableCodeBlock')) {
+                    editor.chain().focus().updateAttributes('executableCodeBlock', { language: lang }).run();
+                  } else if (editor.isActive('codeBlock')) {
                     editor.chain().focus().updateAttributes('codeBlock', { language: lang }).run();
                   } else {
-                    editor.chain().focus().toggleCodeBlock().updateAttributes('codeBlock', { language: lang }).run();
+                    // Insert new executable code block
+                    editor.chain().focus().setExecutableCodeBlock({ language: lang, code: '' }).run();
                   }
                 }}
               >

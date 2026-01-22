@@ -588,3 +588,68 @@
 .tiptap-light-editor:hover .tiptap-light-toolbar {
   opacity: 1;
 }
+
+/* ============================================
+   EXECUTABLE CODE BLOCK
+   ============================================ */
+
+.executable-code-block {
+  margin: 1rem 0;
+}
+
+.executable-code-block textarea {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
+  line-height: 1.6;
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+.executable-code-block pre {
+  margin: 0;
+}
+
+.executable-code-block code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* Syntax highlighting in executable blocks */
+.executable-code-block .hljs-comment,
+.executable-code-block .hljs-quote {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+.executable-code-block .hljs-keyword {
+  color: hsl(280 70% 50%);
+}
+
+.executable-code-block .hljs-string {
+  color: hsl(142 70% 35%);
+}
+
+.executable-code-block .hljs-number {
+  color: hsl(20 90% 50%);
+}
+
+.executable-code-block .hljs-title {
+  color: hsl(200 80% 45%);
+}
+
+/* Dark mode syntax */
+.dark .executable-code-block .hljs-keyword {
+  color: hsl(280 70% 70%);
+}
+
+.dark .executable-code-block .hljs-string {
+  color: hsl(142 60% 60%);
+}
+
+.dark .executable-code-block .hljs-number {
+  color: hsl(20 90% 65%);
+}
+
+.dark .executable-code-block .hljs-title {
+  color: hsl(200 80% 65%);
+}

@@ -19,6 +19,7 @@ import Highlight from '@tiptap/extension-highlight';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import type { Extensions } from '@tiptap/react';
+import { ExecutableCodeBlock } from './ExecutableCodeBlock';
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
@@ -87,57 +88,67 @@ const linkConfig = Link.configure({
 /**
  * FullEditor Extensions
  * For Admin/Moderator content creation
+ * Uses ExecutableCodeBlock for interactive code editing
  */
 export const getFullEditorExtensions = (options?: {
   placeholder?: string;
   characterLimit?: number;
-}): Extensions => [
-  StarterKit.configure({
-    heading: { levels: [1, 2, 3, 4, 5, 6] },
-    codeBlock: false, // Using CodeBlockLowlight instead
-    code: {
-      HTMLAttributes: { class: 'tiptap-inline-code' },
-    },
-    blockquote: {
-      HTMLAttributes: { class: 'tiptap-blockquote' },
-    },
-  }),
-  CodeBlockLowlight.configure({
-    lowlight,
-    defaultLanguage: 'python',
-    HTMLAttributes: { class: 'tiptap-code-block' },
-  }),
-  linkConfig,
-  Underline,
-  Highlight.configure({
-    multicolor: true,
-    HTMLAttributes: { class: 'tiptap-highlight' },
-  }),
-  Table.configure({
-    resizable: true,
-    HTMLAttributes: { class: 'tiptap-table' },
-  }),
-  TableRow,
-  TableCell.configure({
-    HTMLAttributes: { class: 'tiptap-table-cell' },
-  }),
-  TableHeader.configure({
-    HTMLAttributes: { class: 'tiptap-table-header' },
-  }),
-  Image.configure({
-    inline: false,
-    allowBase64: false,
-    HTMLAttributes: { class: 'tiptap-image' },
-  }),
-  Placeholder.configure({
-    placeholder: options?.placeholder ?? 'Write your content here...',
-    emptyEditorClass: 'tiptap-empty',
-  }),
-  ...(options?.characterLimit 
-    ? [CharacterCount.configure({ limit: options.characterLimit })] 
-    : [CharacterCount]
-  ),
-];
+  useExecutableCodeBlocks?: boolean;
+}): Extensions => {
+  const useExecutable = options?.useExecutableCodeBlocks ?? true;
+  
+  return [
+    StarterKit.configure({
+      heading: { levels: [1, 2, 3, 4, 5, 6] },
+      codeBlock: false, // Disabled - using ExecutableCodeBlock or CodeBlockLowlight
+      code: {
+        HTMLAttributes: { class: 'tiptap-inline-code' },
+      },
+      blockquote: {
+        HTMLAttributes: { class: 'tiptap-blockquote' },
+      },
+    }),
+    // Use ExecutableCodeBlock for interactive editing, or CodeBlockLowlight for static
+    ...(useExecutable 
+      ? [ExecutableCodeBlock]
+      : [CodeBlockLowlight.configure({
+          lowlight,
+          defaultLanguage: 'python',
+          HTMLAttributes: { class: 'tiptap-code-block' },
+        })]
+    ),
+    linkConfig,
+    Underline,
+    Highlight.configure({
+      multicolor: true,
+      HTMLAttributes: { class: 'tiptap-highlight' },
+    }),
+    Table.configure({
+      resizable: true,
+      HTMLAttributes: { class: 'tiptap-table' },
+    }),
+    TableRow,
+    TableCell.configure({
+      HTMLAttributes: { class: 'tiptap-table-cell' },
+    }),
+    TableHeader.configure({
+      HTMLAttributes: { class: 'tiptap-table-header' },
+    }),
+    Image.configure({
+      inline: false,
+      allowBase64: false,
+      HTMLAttributes: { class: 'tiptap-image' },
+    }),
+    Placeholder.configure({
+      placeholder: options?.placeholder ?? 'Write your content here...',
+      emptyEditorClass: 'tiptap-empty',
+    }),
+    ...(options?.characterLimit 
+      ? [CharacterCount.configure({ limit: options.characterLimit })] 
+      : [CharacterCount]
+    ),
+  ];
+};
 
 /**
  * LightEditor Extensions
