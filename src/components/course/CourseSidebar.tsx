@@ -445,17 +445,6 @@ export const CourseSidebar = ({
                                       isActive && "opacity-100"
                                     )}
                                   >
-                                    {/* Estimated Time */}
-                                    <span 
-                                      className={cn(
-                                        "text-[10px] flex items-center gap-0.5 tabular-nums",
-                                        isActive ? "text-sidebar-primary-foreground/70" : "text-muted-foreground"
-                                      )}
-                                    >
-                                      <Clock className="h-2.5 w-2.5" />
-                                      ~1m
-                                    </span>
-                                    
                                     {/* Copy Link */}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
