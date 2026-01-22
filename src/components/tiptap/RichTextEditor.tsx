@@ -4,10 +4,11 @@
  * Secure rich text editor using TipTap (ProseMirror-based).
  * - JSON output format (no raw HTML storage)
  * - XSS-safe by design
+ * - Annotation mark support with stable tooltip
  * - Uses shared tiptap.css - NO inline styles
  */
 
-import { useCallback, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { useCallback, useEffect, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useEditor, EditorContent, type JSONContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -20,6 +21,8 @@ import { parseContent, serializeContent, tipTapJSONToHTML } from '@/lib/tiptapMi
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Columns } from 'lucide-react';
+import { AnnotationMark } from './AnnotationMark';
+import AnnotationTooltip, { type AnnotationData } from './AnnotationMark/AnnotationTooltip';
 import '@/styles/tiptap.css';
 
 type ViewMode = 'edit' | 'preview' | 'split';
@@ -38,9 +41,17 @@ export interface RichTextEditorProps {
     selection_start: number;
     selection_end: number;
     selected_text: string;
+    comment?: string;
     status: string;
+    author_profile?: { full_name?: string | null } | null;
+    created_at?: string;
   }>;
+  isAdmin?: boolean;
+  isModerator?: boolean;
   onAnnotationClick?: (annotation: any) => void;
+  onAnnotationResolve?: (annotationId: string) => void;
+  onAnnotationDismiss?: (annotationId: string) => void;
+  onAnnotationDelete?: (annotationId: string) => void;
   onTextSelect?: (selection: {
     start: number;
     end: number;
@@ -57,6 +68,8 @@ export interface RichTextEditorRef {
   getText: () => string;
   isEmpty: () => boolean;
   focus: () => void;
+  applyAnnotation: (annotationId: string, from: number, to: number, status?: 'open' | 'resolved' | 'dismissed') => void;
+  updateAnnotationStatus: (annotationId: string, status: 'open' | 'resolved' | 'dismissed') => void;
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
@@ -69,7 +82,12 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
   className,
   annotationMode = false,
   annotations = [],
+  isAdmin = false,
+  isModerator = false,
   onAnnotationClick,
+  onAnnotationResolve,
+  onAnnotationDismiss,
+  onAnnotationDelete,
   onTextSelect,
 }, ref) => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -99,6 +117,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         placeholder,
         emptyEditorClass: 'tiptap-empty',
       }),
+      // Annotation mark for inline feedback
+      AnnotationMark,
       ...(characterLimit ? [CharacterCount.configure({ limit: characterLimit })] : []),
     ],
     content: initialContent,
@@ -136,6 +156,51 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     },
   });
 
+  // Convert annotations prop to tooltip-compatible format
+  const annotationData: AnnotationData[] = useMemo(() => {
+    return annotations.map(a => ({
+      id: a.id,
+      status: (a.status as 'open' | 'resolved' | 'dismissed') || 'open',
+      comment: a.comment || '',
+      selectedText: a.selected_text,
+      authorName: a.author_profile?.full_name || undefined,
+      createdAt: a.created_at,
+    }));
+  }, [annotations]);
+
+  // Apply annotation marks to editor when annotations change
+  useEffect(() => {
+    if (!editor || !annotations.length) return;
+
+    // Apply annotation marks for each annotation
+    annotations.forEach(annotation => {
+      const { selection_start, selection_end, id, status } = annotation;
+      
+      // Check if mark already exists
+      let exists = false;
+      editor.state.doc.descendants((node, pos) => {
+        if (!node.isText) return;
+        const marks = node.marks.filter(m => 
+          m.type.name === 'annotation' && m.attrs.annotationId === id
+        );
+        if (marks.length > 0) exists = true;
+      });
+
+      // Only apply if not already present
+      if (!exists && selection_start && selection_end) {
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from: selection_start, to: selection_end })
+          .setAnnotation({ 
+            annotationId: id, 
+            status: (status as 'open' | 'resolved' | 'dismissed') || 'open' 
+          })
+          .run();
+      }
+    });
+  }, [editor, annotations]);
+
   useEffect(() => {
     if (editor) {
       editor.setEditable(!readOnly && !annotationMode);
@@ -160,12 +225,39 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     getText: () => editor?.getText() || '',
     isEmpty: () => editor?.isEmpty ?? true,
     focus: () => editor?.commands.focus(),
+    applyAnnotation: (annotationId: string, from: number, to: number, status = 'open') => {
+      if (!editor) return;
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from, to })
+        .setAnnotation({ annotationId, status })
+        .run();
+    },
+    updateAnnotationStatus: (annotationId: string, status: 'open' | 'resolved' | 'dismissed') => {
+      if (!editor) return;
+      editor.commands.updateAnnotationStatus(annotationId, status);
+    },
   }));
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem('tiptapEditorViewMode', mode);
   }, []);
+
+  const handleResolve = useCallback((annotationId: string) => {
+    if (editor) {
+      editor.commands.updateAnnotationStatus(annotationId, 'resolved');
+    }
+    onAnnotationResolve?.(annotationId);
+  }, [editor, onAnnotationResolve]);
+
+  const handleDismiss = useCallback((annotationId: string) => {
+    if (editor) {
+      editor.commands.updateAnnotationStatus(annotationId, 'dismissed');
+    }
+    onAnnotationDismiss?.(annotationId);
+  }, [editor, onAnnotationDismiss]);
 
   const previewHTML = editor ? tipTapJSONToHTML(editor.getJSON()) : '';
 
@@ -177,6 +269,20 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
   return (
     <div className={cn('tiptap-editor-wrapper border rounded-lg overflow-hidden', className)}>
+      {/* Annotation tooltip - rendered in portal */}
+      {(annotationMode || annotations.length > 0) && (
+        <AnnotationTooltip
+          editor={editor}
+          annotations={annotationData}
+          isAdmin={isAdmin}
+          isModerator={isModerator}
+          onResolve={handleResolve}
+          onDismiss={handleDismiss}
+          onDelete={onAnnotationDelete}
+          onAnnotationClick={onAnnotationClick}
+        />
+      )}
+
       {/* View mode toggle */}
       {!annotationMode && !readOnly && (
         <div className="flex items-center justify-end p-2 border-b border-border bg-muted/30">

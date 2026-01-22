@@ -383,7 +383,7 @@
   background: hsl(var(--primary) / 0.35);
 }
 
-/* Annotation statuses */
+/* Annotation statuses (legacy highlight-based) */
 .tiptap-highlight[data-status="open"] {
   background: hsl(45 100% 60% / 0.3);
 }
@@ -394,6 +394,71 @@
 
 .tiptap-highlight[data-status="dismissed"] {
   background: hsl(var(--muted-foreground) / 0.2);
+}
+
+/* ============================================
+   ANNOTATION MARK - Inline feedback system
+   ============================================ */
+
+/* Base annotation mark styling */
+.annotation-mark {
+  position: relative;
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Open annotations - Amber/warning to draw attention */
+.annotation-mark-open {
+  background: hsl(45 100% 70% / 0.4);
+  border-bottom: 2px solid hsl(45 100% 45%);
+  box-shadow: 0 0 0 1px hsl(45 100% 50% / 0.2);
+}
+
+.annotation-mark-open:hover {
+  background: hsl(45 100% 65% / 0.5);
+  box-shadow: 0 0 0 2px hsl(45 100% 50% / 0.3);
+}
+
+/* Resolved annotations - Green/success subtle */
+.annotation-mark-resolved {
+  background: hsl(142 70% 75% / 0.3);
+  border-bottom: 1px dashed hsl(142 70% 45% / 0.5);
+}
+
+.annotation-mark-resolved:hover {
+  background: hsl(142 70% 70% / 0.4);
+}
+
+/* Dismissed annotations - Muted, nearly invisible */
+.annotation-mark-dismissed {
+  background: hsl(var(--muted-foreground) / 0.1);
+  border-bottom: 1px dotted hsl(var(--muted-foreground) / 0.3);
+}
+
+.annotation-mark-dismissed:hover {
+  background: hsl(var(--muted-foreground) / 0.15);
+}
+
+/* Dark mode adjustments */
+.dark .annotation-mark-open {
+  background: hsl(45 100% 50% / 0.25);
+  border-bottom-color: hsl(45 100% 55%);
+  box-shadow: 0 0 0 1px hsl(45 100% 50% / 0.15);
+}
+
+.dark .annotation-mark-open:hover {
+  background: hsl(45 100% 50% / 0.35);
+}
+
+.dark .annotation-mark-resolved {
+  background: hsl(142 70% 50% / 0.2);
+  border-bottom-color: hsl(142 70% 55% / 0.4);
+}
+
+.dark .annotation-mark-dismissed {
+  background: hsl(var(--muted-foreground) / 0.08);
 }
 
 /* ============================================

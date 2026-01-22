@@ -20,6 +20,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import type { Extensions } from '@tiptap/react';
 import { ExecutableCodeBlock } from './ExecutableCodeBlock';
+import { AnnotationMark } from './AnnotationMark';
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
@@ -143,6 +144,8 @@ export const getFullEditorExtensions = (options?: {
       placeholder: options?.placeholder ?? 'Write your content here...',
       emptyEditorClass: 'tiptap-empty',
     }),
+    // Annotation mark for inline feedback
+    AnnotationMark,
     ...(options?.characterLimit 
       ? [CharacterCount.configure({ limit: options.characterLimit })] 
       : [CharacterCount]
