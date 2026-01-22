@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Target, Play } from 'lucide-react';
+import { useCourseNavigation } from '@/hooks/useCourseNavigation';
 
 interface ResumeData {
   courseId: string;
@@ -17,7 +17,7 @@ interface ResumeData {
 export const ContinueLearningCard = () => {
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const { handleResume } = useCourseNavigation();
 
   useEffect(() => {
     const fetchResumeData = async () => {
@@ -84,14 +84,11 @@ export const ContinueLearningCard = () => {
     fetchResumeData();
   }, []);
 
+  // Explicit resume action - user clicked Continue
   const handleContinue = () => {
     if (!resumeData) return;
-    
-    if (resumeData.lastLessonSlug) {
-      navigate(`/course/${resumeData.courseSlug}/${resumeData.lastLessonSlug}`);
-    } else {
-      navigate(`/course/${resumeData.courseSlug}?tab=lessons`);
-    }
+    // Use the explicit resume handler from useCourseNavigation
+    handleResume(resumeData.courseSlug, resumeData.courseId);
   };
 
   if (loading) {
