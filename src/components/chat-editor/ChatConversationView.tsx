@@ -12,6 +12,8 @@ import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { isTipTapJSON } from "@/lib/tiptapMigration";
+import { RichTextRenderer } from "@/components/tiptap/RichTextRenderer";
 
 // Lazy load the freeform canvas viewer to avoid loading fabric.js until needed
 const FreeformCanvasViewer = lazy(() => 
@@ -230,11 +232,13 @@ const ChatConversationView = ({
   const [dynamicColors, setDynamicColors] = useState<DynamicChatColors | null>(null);
   const messages = useMemo(() => parseConversation(content), [content]);
   const explanation = useMemo(() => extractExplanation(content), [content]);
+  const isExplanationTipTapJSON = useMemo(() => isTipTapJSON(explanation), [explanation]);
 
   const { processedHtml: explanationHtml, codeBlocks: explanationCodeBlocks } = useMemo(() => {
-    if (!explanation) return { processedHtml: "", codeBlocks: [] as { code: string; language: string }[] };
+    // Skip code block extraction if it's TipTap JSON - RichTextRenderer will handle it
+    if (!explanation || isExplanationTipTapJSON) return { processedHtml: "", codeBlocks: [] as { code: string; language: string }[] };
     return extractCodeBlocksFromHtml(explanation);
-  }, [explanation]);
+  }, [explanation, isExplanationTipTapJSON]);
 
   // Fetch courses and dynamic colors from database
   useEffect(() => {
@@ -696,7 +700,15 @@ const ChatConversationView = ({
             <span className="text-xl">📝</span> Explanation
           </h3>
 
-          {explanationCodeBlocks.length === 0 ? (
+          {/* ✅ TipTap JSON: Use RichTextRenderer with full schema support */}
+          {isExplanationTipTapJSON ? (
+            <div className="leading-relaxed text-foreground/90">
+              <RichTextRenderer 
+                content={explanation} 
+                emptyPlaceholder=""
+              />
+            </div>
+          ) : explanationCodeBlocks.length === 0 ? (
             <div
               className="leading-relaxed text-foreground/90"
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(explanation) }}
