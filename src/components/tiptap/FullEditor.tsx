@@ -47,8 +47,17 @@ export interface FullEditorProps {
     type: 'paragraph' | 'code';
     rect?: DOMRect;
   }) => void;
-  /** Annotation metadata for tooltip rendering */
-  annotations?: AnnotationData[];
+  /** Stored annotation metadata (used to resolve tooltip content) */
+  annotations?: Array<{
+    id: string;
+    selection_start: number;
+    selection_end: number;
+    selected_text: string;
+    comment?: string;
+    status: string;
+    author_profile?: { full_name?: string | null } | null;
+    created_at?: string;
+  }>;
   /** Whether the current user is an admin */
   isAdmin?: boolean;
   /** Whether the current user is a moderator */
@@ -102,10 +111,22 @@ export const FullEditor = forwardRef<FullEditorRef, FullEditorProps>(({
     warnOnUnsavedChanges: true,
   });
 
+  // Convert stored annotations -> tooltip format
+  const annotationData: AnnotationData[] = useMemo(() => {
+    return annotations.map(a => ({
+      id: a.id,
+      status: (a.status as 'open' | 'resolved' | 'dismissed') || 'open',
+      comment: a.comment || '',
+      selectedText: a.selected_text,
+      authorName: a.author_profile?.full_name || undefined,
+      createdAt: a.created_at,
+    }));
+  }, [annotations]);
+
   // Extensions
   const extensions = useMemo(() => 
-    getFullEditorExtensions({ placeholder, characterLimit }), 
-    [placeholder, characterLimit]
+    getFullEditorExtensions({ placeholder, characterLimit, annotations }), 
+    [placeholder, characterLimit, annotations]
   );
 
   // Parse initial content
@@ -282,10 +303,10 @@ export const FullEditor = forwardRef<FullEditorRef, FullEditorProps>(({
       )}
 
       {/* Annotation tooltip - renders via portal */}
-      {annotations.length > 0 && (
+      {annotationData.length > 0 && (
         <AnnotationTooltip
           editor={editor}
-          annotations={annotations}
+          annotations={annotationData}
           isAdmin={isAdmin}
           isModerator={isModerator}
           onResolve={onAnnotationResolve}
