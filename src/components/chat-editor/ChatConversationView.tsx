@@ -30,11 +30,30 @@ const CanvasLoadingFallback = ({ className }: { className?: string }) => (
   </div>
 );
 
+// Annotation data for explanation section tooltips
+interface ExplanationAnnotation {
+  id: string;
+  selection_start: number;
+  selection_end: number;
+  selected_text: string;
+  comment?: string;
+  status: string;
+  author_profile?: { full_name?: string | null } | null;
+  created_at?: string;
+}
+
 interface ChatConversationViewProps {
   content: string;
   courseType?: string;
   className?: string;
   codeTheme?: string;
+  /** Annotations for the explanation section */
+  explanationAnnotations?: ExplanationAnnotation[];
+  isAdmin?: boolean;
+  isModerator?: boolean;
+  onAnnotationResolve?: (annotationId: string) => void;
+  onAnnotationDismiss?: (annotationId: string) => void;
+  onAnnotationDelete?: (annotationId: string) => void;
 }
 
 interface Course {
@@ -227,6 +246,12 @@ const ChatConversationView = ({
   courseType = "python",
   className,
   codeTheme,
+  explanationAnnotations = [],
+  isAdmin = false,
+  isModerator = false,
+  onAnnotationResolve,
+  onAnnotationDismiss,
+  onAnnotationDelete,
 }: ChatConversationViewProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [dynamicColors, setDynamicColors] = useState<DynamicChatColors | null>(null);
@@ -706,6 +731,12 @@ const ChatConversationView = ({
               <RichTextRenderer 
                 content={explanation} 
                 emptyPlaceholder=""
+                annotations={explanationAnnotations}
+                isAdmin={isAdmin}
+                isModerator={isModerator}
+                onAnnotationResolve={onAnnotationResolve}
+                onAnnotationDismiss={onAnnotationDismiss}
+                onAnnotationDelete={onAnnotationDelete}
               />
             </div>
           ) : explanationCodeBlocks.length === 0 ? (

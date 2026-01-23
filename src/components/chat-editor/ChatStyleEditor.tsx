@@ -69,6 +69,18 @@ interface BubbleAnnotation {
   status: string;
 }
 
+// Annotation data for rich text editor tooltip
+interface ExplanationAnnotation {
+  id: string;
+  selection_start: number;
+  selection_end: number;
+  selected_text: string;
+  comment?: string;
+  status: string;
+  author_profile?: { full_name?: string | null } | null;
+  created_at?: string;
+}
+
 interface ChatStyleEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -77,12 +89,26 @@ interface ChatStyleEditorProps {
   codeTheme?: string;
   annotationMode?: boolean;
   annotations?: BubbleAnnotation[];
+  /** Annotations for the explanation section (RichTextEditor) */
+  explanationAnnotations?: ExplanationAnnotation[];
+  isAdmin?: boolean;
+  isModerator?: boolean;
+  onAnnotationResolve?: (annotationId: string) => void;
+  onAnnotationDismiss?: (annotationId: string) => void;
+  onAnnotationDelete?: (annotationId: string) => void;
   onTextSelect?: (selection: {
     start: number;
     end: number;
     text: string;
     type: "conversation";
     bubbleIndex?: number;
+    rect?: { top: number; left: number; width: number; height: number; bottom: number };
+  }) => void;
+  onExplanationTextSelect?: (selection: {
+    start: number;
+    end: number;
+    text: string;
+    type: 'paragraph' | 'code';
     rect?: { top: number; left: number; width: number; height: number; bottom: number };
   }) => void;
 }
@@ -601,7 +627,14 @@ const ChatStyleEditor = ({
   codeTheme,
   annotationMode,
   annotations = [],
+  explanationAnnotations = [],
+  isAdmin = false,
+  isModerator = false,
+  onAnnotationResolve,
+  onAnnotationDismiss,
+  onAnnotationDelete,
   onTextSelect,
+  onExplanationTextSelect,
 }: ChatStyleEditorProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => parseContent(value));
   const [explanation, setExplanation] = useState<string>(() => extractExplanation(value) || "");
@@ -1935,11 +1968,26 @@ const ChatStyleEditor = ({
             value={explanation}
             onChange={setExplanation}
             placeholder="Add an explanation or summary of the conversation... (optional)"
+            annotationMode={annotationMode}
+            annotations={explanationAnnotations}
+            isAdmin={isAdmin}
+            isModerator={isModerator}
+            onAnnotationResolve={onAnnotationResolve}
+            onAnnotationDismiss={onAnnotationDismiss}
+            onAnnotationDelete={onAnnotationDelete}
+            onTextSelect={onExplanationTextSelect}
           />
         ) : (
-          <div 
-            className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-lg border border-border bg-background min-h-[100px]"
-            dangerouslySetInnerHTML={{ __html: explanation || "<p class='text-muted-foreground'>No explanation added</p>" }}
+          <RichTextEditor
+            value={explanation}
+            onChange={() => {}}
+            readOnly
+            annotations={explanationAnnotations}
+            isAdmin={isAdmin}
+            isModerator={isModerator}
+            onAnnotationResolve={onAnnotationResolve}
+            onAnnotationDismiss={onAnnotationDismiss}
+            onAnnotationDelete={onAnnotationDelete}
           />
         )}
         <p className="text-xs text-muted-foreground mt-2">
