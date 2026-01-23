@@ -17,6 +17,7 @@ import { getFullEditorExtensions, getRenderExtensions } from './editorConfig';
 import { FullEditorToolbar } from './FullEditorToolbar';
 import { parseContent, serializeContent, tipTapJSONToHTML } from '@/lib/tiptapMigration';
 import { useEditorAutosave, type AutosaveStatus } from '@/hooks/useEditorAutosave';
+import AnnotationTooltip, { type AnnotationData } from './AnnotationMark/AnnotationTooltip';
 import '@/styles/tiptap.css';
 
 type ViewMode = 'edit' | 'preview' | 'split';
@@ -46,6 +47,18 @@ export interface FullEditorProps {
     type: 'paragraph' | 'code';
     rect?: DOMRect;
   }) => void;
+  /** Annotation metadata for tooltip rendering */
+  annotations?: AnnotationData[];
+  /** Whether the current user is an admin */
+  isAdmin?: boolean;
+  /** Whether the current user is a moderator */
+  isModerator?: boolean;
+  /** Callback when annotation is resolved */
+  onAnnotationResolve?: (annotationId: string) => void;
+  /** Callback when annotation is dismissed */
+  onAnnotationDismiss?: (annotationId: string) => void;
+  /** Callback when annotation is deleted */
+  onAnnotationDelete?: (annotationId: string) => void;
 }
 
 export interface FullEditorRef {
@@ -68,6 +81,12 @@ export const FullEditor = forwardRef<FullEditorRef, FullEditorProps>(({
   onSave,
   annotationMode = false,
   onTextSelect,
+  annotations = [],
+  isAdmin = false,
+  isModerator = false,
+  onAnnotationResolve,
+  onAnnotationDismiss,
+  onAnnotationDelete,
 }, ref) => {
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -260,6 +279,19 @@ export const FullEditor = forwardRef<FullEditorRef, FullEditorProps>(({
         />
       ) : (
         <EditorContent editor={editor} />
+      )}
+
+      {/* Annotation tooltip - renders via portal */}
+      {annotations.length > 0 && (
+        <AnnotationTooltip
+          editor={editor}
+          annotations={annotations}
+          isAdmin={isAdmin}
+          isModerator={isModerator}
+          onResolve={onAnnotationResolve}
+          onDismiss={onAnnotationDismiss}
+          onDelete={onAnnotationDelete}
+        />
       )}
 
       {/* Character count */}
