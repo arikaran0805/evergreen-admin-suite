@@ -171,6 +171,61 @@ const AnnotationTooltip = ({
     return () => window.removeEventListener('scroll', handleScroll, true);
   }, [tooltip.visible, tooltip.annotationId, calculatePosition]);
 
+  // Handle hover on annotation marks (for read-only mode and UX)
+  useEffect(() => {
+    if (!editor) return;
+
+    const editorDom = editor.view.dom;
+
+    const handleMouseEnter = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const annotationSpan = target.closest('[data-annotation-id]') as HTMLElement | null;
+      
+      if (annotationSpan) {
+        const annotationId = annotationSpan.getAttribute('data-annotation-id');
+        if (annotationId && annotationId !== lastAnnotationId.current) {
+          const position = calculatePosition(annotationId);
+          if (position) {
+            lastAnnotationId.current = annotationId;
+            setTooltip({
+              visible: true,
+              annotationId,
+              position: { top: position.top, left: position.left },
+              placement: position.placement,
+            });
+          }
+        }
+      }
+    };
+
+    const handleMouseLeave = (e: Event) => {
+      const relatedTarget = (e as MouseEvent).relatedTarget as HTMLElement | null;
+      
+      // Don't hide if moving to the tooltip or another annotation
+      if (relatedTarget?.closest('[data-annotation-id]') || 
+          relatedTarget?.closest('.annotation-tooltip-portal')) {
+        return;
+      }
+
+      // Delay hiding to allow smooth transition to tooltip
+      setTimeout(() => {
+        if (!tooltipRef.current?.matches(':hover')) {
+          lastAnnotationId.current = null;
+          setTooltip(prev => ({ ...prev, visible: false, annotationId: null }));
+        }
+      }, 150);
+    };
+
+    // Add listeners to all annotation marks
+    editorDom.addEventListener('mouseenter', handleMouseEnter, true);
+    editorDom.addEventListener('mouseleave', handleMouseLeave, true);
+
+    return () => {
+      editorDom.removeEventListener('mouseenter', handleMouseEnter, true);
+      editorDom.removeEventListener('mouseleave', handleMouseLeave, true);
+    };
+  }, [editor, calculatePosition]);
+
   // Handle click outside to close
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

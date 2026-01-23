@@ -6,17 +6,29 @@
  *
  * ✅ Uses getRenderExtensions() for schema parity
  * ✅ Supports ExecutableCodeBlock
- * ✅ Supports AnnotationMark
+ * ✅ Supports AnnotationMark with tooltip
  * ❌ No dangerouslySetInnerHTML
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { getRenderExtensions } from './editorConfig';
 import { parseContent, isContentEmpty } from '@/lib/tiptapMigration';
+import AnnotationTooltip, { type AnnotationData } from './AnnotationMark/AnnotationTooltip';
 import '@/styles/tiptap.css';
+
+interface AnnotationProp {
+  id: string;
+  selection_start: number;
+  selection_end: number;
+  selected_text: string;
+  comment?: string;
+  status: string;
+  author_profile?: { full_name?: string | null } | null;
+  created_at?: string;
+}
 
 interface RichTextRendererProps {
   /**
@@ -31,6 +43,34 @@ interface RichTextRendererProps {
    * Placeholder text when content is empty
    */
   emptyPlaceholder?: string;
+  /**
+   * Annotations to display with tooltips
+   */
+  annotations?: AnnotationProp[];
+  /**
+   * Whether current user is admin (for tooltip actions)
+   */
+  isAdmin?: boolean;
+  /**
+   * Whether current user is moderator (for tooltip actions)
+   */
+  isModerator?: boolean;
+  /**
+   * Callback when annotation is resolved
+   */
+  onAnnotationResolve?: (annotationId: string) => void;
+  /**
+   * Callback when annotation is dismissed
+   */
+  onAnnotationDismiss?: (annotationId: string) => void;
+  /**
+   * Callback when annotation is deleted
+   */
+  onAnnotationDelete?: (annotationId: string) => void;
+  /**
+   * Callback when annotation is clicked
+   */
+  onAnnotationClick?: (annotationId: string) => void;
 }
 
 /**
@@ -43,6 +83,13 @@ export const RichTextRenderer = ({
   content,
   className,
   emptyPlaceholder = 'No content',
+  annotations = [],
+  isAdmin = false,
+  isModerator = false,
+  onAnnotationResolve,
+  onAnnotationDismiss,
+  onAnnotationDelete,
+  onAnnotationClick,
 }: RichTextRendererProps) => {
   // Parse content to TipTap JSON format
   const parsedContent = useMemo(() => {
@@ -67,6 +114,50 @@ export const RichTextRenderer = ({
     [parsedContent]
   );
 
+  // Apply annotation marks when annotations prop changes
+  useEffect(() => {
+    if (!editor || !annotations.length) return;
+
+    // Apply annotation marks for each annotation
+    annotations.forEach(annotation => {
+      const { selection_start, selection_end, id, status } = annotation;
+      
+      // Check if mark already exists
+      let exists = false;
+      editor.state.doc.descendants((node, pos) => {
+        if (!node.isText) return;
+        const marks = node.marks.filter(m => 
+          m.type.name === 'annotation' && m.attrs.annotationId === id
+        );
+        if (marks.length > 0) exists = true;
+      });
+
+      // Only apply if not already present
+      if (!exists && selection_start && selection_end) {
+        editor
+          .chain()
+          .setTextSelection({ from: selection_start, to: selection_end })
+          .setAnnotation({ 
+            annotationId: id, 
+            status: (status as 'open' | 'resolved' | 'dismissed') || 'open' 
+          })
+          .run();
+      }
+    });
+  }, [editor, annotations]);
+
+  // Convert annotations to tooltip format
+  const annotationData: AnnotationData[] = useMemo(() => {
+    return annotations.map(a => ({
+      id: a.id,
+      status: (a.status as 'open' | 'resolved' | 'dismissed') || 'open',
+      comment: a.comment || '',
+      selectedText: a.selected_text,
+      authorName: a.author_profile?.full_name || undefined,
+      createdAt: a.created_at,
+    }));
+  }, [annotations]);
+
   // Show placeholder when no content
   if (!parsedContent) {
     return (
@@ -79,6 +170,20 @@ export const RichTextRenderer = ({
   return (
     <div className={cn('tiptap-content', className)}>
       <EditorContent editor={editor} />
+      
+      {/* Annotation tooltip - works in read-only mode */}
+      {annotations.length > 0 && editor && (
+        <AnnotationTooltip
+          editor={editor}
+          annotations={annotationData}
+          isAdmin={isAdmin}
+          isModerator={isModerator}
+          onResolve={onAnnotationResolve}
+          onDismiss={onAnnotationDismiss}
+          onDelete={onAnnotationDelete}
+          onAnnotationClick={onAnnotationClick}
+        />
+      )}
     </div>
   );
 };
