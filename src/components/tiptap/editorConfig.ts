@@ -155,6 +155,9 @@ const baseExtensions: Extensions = [
 export const getFullEditorExtensions = (options?: {
   placeholder?: string;
   characterLimit?: number;
+  // Optional: allows callers (e.g. FullEditor) to pass stored annotation metadata
+  // for any extension/plugin that may need it. (Schema already includes AnnotationMark.)
+  annotations?: unknown;
 }): Extensions => [
   ...baseExtensions,
 
