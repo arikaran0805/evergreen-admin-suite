@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
 import CodeBlock from "@/components/chat-editor/CodeBlock";
 import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
-import { parseContent, tipTapJSONToHTML, isTipTapJSON } from "@/lib/tiptapMigration";
+import { isTipTapJSON } from "@/lib/tiptapMigration";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { RichTextRenderer } from "@/components/tiptap/RichTextRenderer";
 
 interface ContentRendererProps {
   htmlContent: string;
@@ -53,6 +54,9 @@ const extractCodeBlocks = (html: string): { processedHtml: string; codeBlocks: {
  * 
  * Renders content from both legacy HTML (react-quill) and new TipTap JSON format.
  * Automatically detects content type and renders appropriately.
+ * 
+ * For TipTap JSON: Uses RichTextRenderer with full schema support
+ * For legacy HTML: Uses sanitized HTML with code block extraction
  */
 const ContentRenderer = ({ 
   htmlContent, 
@@ -60,26 +64,16 @@ const ContentRenderer = ({
   codeTheme,
 }: ContentRendererProps) => {
   const isChat = useMemo(() => isChatTranscript(htmlContent), [htmlContent]);
+  const isTipTap = useMemo(() => isTipTapJSON(htmlContent), [htmlContent]);
   const [editedCodes, setEditedCodes] = useState<Record<number, string>>({});
 
-  // Check if content is TipTap JSON and convert to HTML if needed
-  const renderedHtml = useMemo(() => {
-    if (!htmlContent) return '';
-    
-    // If it's TipTap JSON, convert to HTML
-    if (isTipTapJSON(htmlContent)) {
-      const json = parseContent(htmlContent);
-      return tipTapJSONToHTML(json);
+  // Extract code blocks and get processed HTML (only for legacy HTML content)
+  const { processedHtml, codeBlocks } = useMemo(() => {
+    if (isTipTap || isChat) {
+      return { processedHtml: '', codeBlocks: [] };
     }
-    
-    // Otherwise treat as HTML (legacy content)
-    return htmlContent;
-  }, [htmlContent]);
-
-  // Extract code blocks and get processed HTML
-  const { processedHtml, codeBlocks } = useMemo(() => 
-    extractCodeBlocks(renderedHtml), [renderedHtml]
-  );
+    return extractCodeBlocks(htmlContent);
+  }, [htmlContent, isTipTap, isChat]);
 
   const handleCodeEdit = (index: number, newCode: string) => {
     setEditedCodes(prev => ({ ...prev, [index]: newCode }));
@@ -95,17 +89,29 @@ const ContentRenderer = ({
     );
   }
 
-  // If no code blocks, render normally with sanitization
+  // ✅ TipTap JSON: Use RichTextRenderer with full schema (ExecutableCodeBlock, AnnotationMark)
+  if (isTipTap) {
+    return (
+      <div className="prose prose-lg max-w-none">
+        <RichTextRenderer 
+          content={htmlContent} 
+          emptyPlaceholder="No content available"
+        />
+      </div>
+    );
+  }
+
+  // Legacy HTML: If no code blocks, render normally with sanitization
   if (codeBlocks.length === 0) {
     return (
       <div 
         className="prose prose-lg max-w-none"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderedHtml) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
       />
     );
   }
 
-  // Split HTML by code block placeholders and render with CodeBlock components
+  // Legacy HTML: Split by code block placeholders and render with CodeBlock components
   const parts = processedHtml.split(/<!--CODE_BLOCK_(\d+)-->/);
   
   return (
