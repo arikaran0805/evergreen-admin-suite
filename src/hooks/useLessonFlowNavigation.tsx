@@ -91,14 +91,11 @@ export function useLessonFlowNavigation(
           const element = document.querySelector(section.selector);
           if (element) {
             const rect = element.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
             
-            // Section is "active" if:
-            // 1. Its top is above the middle of the viewport AND
-            // 2. Its bottom is below the scroll offset
-            const isInView = 
-              rect.top <= viewportHeight * 0.5 && 
-              rect.bottom > scrollOffset;
+            // Section is "active" if its top is at or above the scroll offset + small buffer
+            // This makes the highlight shift as soon as the section enters the "reading zone"
+            const activationThreshold = scrollOffset + 50;
+            const isInView = rect.top <= activationThreshold && rect.bottom > scrollOffset;
             
             if (isInView) {
               foundActive = section.id;
