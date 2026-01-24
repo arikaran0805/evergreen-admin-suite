@@ -426,6 +426,40 @@ const TagPosts = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Live Search Result Count */}
+              {(searchQuery || levelFilter !== "all" || contentFilter !== "all") && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>
+                    Showing{" "}
+                    <span className="font-medium text-foreground">
+                      {showLessons ? filteredLessons.length : 0}
+                    </span>{" "}
+                    of {lessons.length} lesson{lessons.length !== 1 ? "s" : ""}
+                  </span>
+                  <span className="text-border">•</span>
+                  <span>
+                    <span className="font-medium text-foreground">
+                      {showCourses ? filteredCourses.length : 0}
+                    </span>{" "}
+                    of {courses.length} course{courses.length !== 1 ? "s" : ""}
+                  </span>
+                  {(searchQuery || levelFilter !== "all") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs ml-2"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setLevelFilter("all");
+                        setContentFilter("all");
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             )}
 
