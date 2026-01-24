@@ -89,6 +89,9 @@ interface Course {
   status: string;
   level?: string | null;
   learning_hours?: number | null;
+  author_id?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
 }
 
 interface CourseLesson {
@@ -173,6 +176,8 @@ const CourseDetail = () => {
   const [allTags, setAllTags] = useState<Array<{id: string; name: string; slug: string}>>([]);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [careers, setCareers] = useState<Array<{id: string; name: string; slug: string}>>([]);
+  const [courseCreator, setCourseCreator] = useState<{id: string; full_name: string | null; avatar_url: string | null; role: string} | null>(null);
+  const [maintenanceTeam, setMaintenanceTeam] = useState<Array<{id: string; full_name: string | null; avatar_url: string | null; role: string}>>([]);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
   const { isBookmarked, toggleBookmark } = useBookmarks();
@@ -386,6 +391,7 @@ const CourseDetail = () => {
   useEffect(() => {
     if (course?.id) {
       fetchCareers();
+      fetchCourseTeam();
     }
   }, [course?.id]);
 
@@ -403,6 +409,51 @@ const CourseDetail = () => {
       setCareers(mappedCareers);
     } catch (error) {
       console.error("Error fetching careers:", error);
+    }
+  };
+
+  const fetchCourseTeam = async () => {
+    if (!course?.id) return;
+    try {
+      // Fetch course creator (author)
+      if (course.author_id) {
+        const { data: authorData } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .eq("id", course.author_id)
+          .single();
+
+        if (authorData) {
+          setCourseCreator({
+            id: authorData.id,
+            full_name: authorData.full_name,
+            avatar_url: authorData.avatar_url,
+            role: "creator",
+          });
+        }
+      }
+
+      // Fetch maintenance team from course_assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from("course_assignments")
+        .select("user_id, role, profiles:user_id(id, full_name, avatar_url)")
+        .eq("course_id", course.id);
+
+      if (assignmentsError) throw assignmentsError;
+
+      if (assignmentsData) {
+        const team = assignmentsData
+          .filter(a => a.profiles)
+          .map(a => ({
+            id: (a.profiles as any).id,
+            full_name: (a.profiles as any).full_name,
+            avatar_url: (a.profiles as any).avatar_url,
+            role: a.role,
+          }));
+        setMaintenanceTeam(team);
+      }
+    } catch (error) {
+      console.error("Error fetching course team:", error);
     }
   };
 
@@ -1746,6 +1797,8 @@ const CourseDetail = () => {
                 isModerator={isModerator}
                 isHeaderVisible={isHeaderVisible}
                 showAnnouncement={showAnnouncement}
+                creator={courseCreator}
+                maintenanceTeam={maintenanceTeam}
               />
             )
           )}
