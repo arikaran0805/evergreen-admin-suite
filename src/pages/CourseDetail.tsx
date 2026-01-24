@@ -24,7 +24,8 @@ import CourseReviewDialog from "@/components/CourseReviewDialog";
 import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
-import CourseInfoTab from "@/components/course/CourseInfoTab";
+import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
+import CourseNotesTab from "@/components/course/CourseNotesTab";
 import { sanitizeHtml } from "@/lib/sanitize";
 import {
   AlertDialog,
@@ -58,6 +59,7 @@ import {
   AlertTriangle, 
   Info, 
   List,
+  StickyNote,
   Award,
   Play,
   Lock,
@@ -231,15 +233,15 @@ const CourseDetail = () => {
     }
 
     // Priority 2: If tab is specified in URL, use it (for persistence across refresh)
-    if (tabParam && ["details", "lessons", "info"].includes(tabParam)) {
+    if (tabParam && ["details", "lessons", "notes"].includes(tabParam)) {
       setActiveTab(tabParam);
       setDefaultTabResolved(true);
       return;
     }
 
-    // Priority 3: Admin / Super Moderator / Senior Moderator → Course Info
+    // Priority 3: Admin / Super Moderator / Senior Moderator → Lessons tab
     if (isAdmin || isModerator) {
-      setActiveTab("info");
+      setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
     }
@@ -1122,11 +1124,9 @@ const CourseDetail = () => {
                 return;
               }
 
-              const desiredTab = (isAdmin || isModerator)
-                ? "info"
-                : courseProgress.percentage > 0
-                  ? "lessons"
-                  : "details";
+              const desiredTab = courseProgress.percentage > 0
+                ? "lessons"
+                : "details";
 
               setActiveTab(desiredTab);
               setDefaultTabResolved(true);
@@ -1473,10 +1473,12 @@ const CourseDetail = () => {
                           <List className="h-4 w-4" />
                           Lessons ({lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length})
                         </TabsTrigger>
-                        <TabsTrigger value="info" className="gap-2">
-                          <BookOpen className="h-4 w-4" />
-                          Course Info
-                        </TabsTrigger>
+                        {user && (
+                          <TabsTrigger value="notes" className="gap-2">
+                            <StickyNote className="h-4 w-4" />
+                            Notes
+                          </TabsTrigger>
+                        )}
                       </TabsList>
 
                       {/* Course Details Tab */}
@@ -1693,20 +1695,17 @@ const CourseDetail = () => {
                         )}
                       </TabsContent>
 
-                      {/* Course Info Tab */}
-                      <TabsContent value="info">
-                        <CourseInfoTab
-                          course={course}
-                          careers={careers}
-                          totalPosts={posts.length}
-                          totalLessons={lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length}
-                          estimatedDuration={formatTotalReadingTime(posts)}
-                          lastUpdated={posts[0]?.updated_at 
-                            ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                            : undefined
-                          }
-                          authorName="Platform Team"
-                          authorRole="Admin"
+                      {/* Notes Tab */}
+                      <TabsContent value="notes">
+                        <CourseNotesTab
+                          courseId={course?.id}
+                          userId={user?.id}
+                          onNavigateToLesson={(lessonId) => {
+                            const post = posts.find(p => p.id === lessonId);
+                            if (post) {
+                              handleLessonClick(post);
+                            }
+                          }}
                         />
                       </TabsContent>
                     </Tabs>
@@ -1716,19 +1715,39 @@ const CourseDetail = () => {
             </Card>
           </main>
 
-          {/* RIGHT SIDEBAR - Premium Lesson Assistant */}
-          {selectedPost && user && courseStats.isEnrolled && (
-            <LessonRightSidebar
-              lessonId={selectedPost.id}
-              lessonTitle={selectedPost.title}
-              courseId={course?.id}
-              courseSlug={slug}
-              userId={user.id}
-              isLessonCompleted={isLessonCompleted(selectedPost.id)}
-              isHeaderVisible={isHeaderVisible}
-              showAnnouncement={showAnnouncement}
-              assignedModerator={null}
-            />
+          {/* RIGHT SIDEBAR */}
+          {selectedPost ? (
+            /* Lesson Assistant Sidebar - when viewing a lesson */
+            user && courseStats.isEnrolled && (
+              <LessonRightSidebar
+                lessonId={selectedPost.id}
+                lessonTitle={selectedPost.title}
+                courseId={course?.id}
+                courseSlug={slug}
+                userId={user.id}
+                isLessonCompleted={isLessonCompleted(selectedPost.id)}
+                isHeaderVisible={isHeaderVisible}
+                showAnnouncement={showAnnouncement}
+                assignedModerator={null}
+              />
+            )
+          ) : (
+            /* Course Metadata Sidebar - when on course overview tabs */
+            activeTab !== "notes" && (
+              <CourseMetadataSidebar
+                course={course}
+                careers={careers}
+                estimatedDuration={formatTotalReadingTime(posts)}
+                lastUpdated={posts[0]?.updated_at 
+                  ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                  : undefined
+                }
+                isAdmin={isAdmin}
+                isModerator={isModerator}
+                isHeaderVisible={isHeaderVisible}
+                showAnnouncement={showAnnouncement}
+              />
+            )
           )}
         </div>
       </div>
