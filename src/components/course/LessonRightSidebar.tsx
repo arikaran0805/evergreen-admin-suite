@@ -10,9 +10,6 @@ import {
   GitBranch,
   MessageSquareCode,
   ArrowRightCircle,
-  Target,
-  Lightbulb,
-  Lock,
   StickyNote,
   Play,
   FileText,
@@ -44,8 +41,6 @@ interface LessonRightSidebarProps {
 const LESSON_FLOW_SECTIONS = [
   { id: "chat-bubbles", label: "Chat Bubbles", icon: MessageSquareCode, selector: "[data-chat-bubble], .chat-bubble-container" },
   { id: "cause-effect", label: "Cause & Effect", icon: ArrowRightCircle, selector: "[data-cause-effect], .explanation-block, .rich-text-explanation" },
-  { id: "practice-points", label: "Practice Points", icon: Target, selector: "[data-practice], .practice-prompt, .exercise-block" },
-  { id: "key-takeaway", label: "Key Takeaway", icon: Lightbulb, locked: true, selector: "[data-takeaway], .takeaway-block" },
 ];
 
 // Practice items
@@ -104,8 +99,7 @@ export function LessonRightSidebar({
   // Scroll spy for active section based on lesson flow
   useEffect(() => {
     const handleScroll = () => {
-      const sections = LESSON_FLOW_SECTIONS.filter(s => !s.locked);
-      for (const section of sections) {
+      for (const section of LESSON_FLOW_SECTIONS) {
         const element = document.querySelector(section.selector);
         if (element) {
           const rect = element.getBoundingClientRect();
@@ -153,26 +147,21 @@ export function LessonRightSidebar({
               {LESSON_FLOW_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
-                const isLocked = section.locked && !isLessonCompleted;
 
                 return (
                   <button
                     key={section.id}
-                    onClick={() => !isLocked && scrollToSection(section.id)}
-                    disabled={isLocked}
+                    onClick={() => scrollToSection(section.id)}
                     className={cn(
                       "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left relative",
                       isActive
                         ? "bg-primary/10 text-primary font-medium"
-                        : isLocked
-                        ? "text-muted-foreground/50 cursor-not-allowed"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                       isActive && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 flex-shrink-0" />
                     <span className="flex-1 truncate">{section.label}</span>
-                    {isLocked && <Lock className="h-3 w-3 text-muted-foreground/50" />}
                   </button>
                 );
               })}
