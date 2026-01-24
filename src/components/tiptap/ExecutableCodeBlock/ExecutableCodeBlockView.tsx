@@ -195,8 +195,8 @@ const ExecutableCodeBlockView = ({
   };
 
   return (
-    <NodeViewWrapper className="executable-code-block my-4" data-type="executableCodeBlock">
-      <div className="group relative">
+    <NodeViewWrapper className="executable-code-block my-4 w-full" data-type="executableCodeBlock">
+      <div className="group relative w-full">
         {/* Close button - floating top-right corner, only in edit mode */}
         {isEditable && (
           <Button
