@@ -93,8 +93,14 @@ export const CourseSidebar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  // Get the currently expanded lesson ID (single-open accordion)
+  const expandedLessonId = useMemo(() => {
+    const expandedArray = Array.from(expandedLessons);
+    return expandedArray.length > 0 ? expandedArray[0] : null;
+  }, [expandedLessons]);
+
   // Filter lessons based on search query
-  const filteredLessons = useMemo(() => {
+  const baseLessons = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     
     if (!query) {
@@ -119,6 +125,20 @@ export const CourseSidebar = ({
         return lessonMatches || hasMatchingPosts;
       });
   }, [lessons, searchQuery, isPreviewMode, getPostsForLesson]);
+
+  // Reorder lessons: move expanded lesson to top, others maintain original order
+  const filteredLessons = useMemo(() => {
+    if (!expandedLessonId || searchQuery) {
+      // Don't reorder during search or when nothing is expanded
+      return baseLessons;
+    }
+
+    const expandedLesson = baseLessons.find(l => l.id === expandedLessonId);
+    if (!expandedLesson) return baseLessons;
+
+    const otherLessons = baseLessons.filter(l => l.id !== expandedLessonId);
+    return [expandedLesson, ...otherLessons];
+  }, [baseLessons, expandedLessonId, searchQuery]);
 
   // Get filtered posts for a lesson (when searching)
   const getFilteredPostsForLesson = (lessonId: string) => {
@@ -341,8 +361,18 @@ export const CourseSidebar = ({
                   const panelId = `lesson-panel-${lesson.id}`;
                   const headerId = `lesson-header-${lesson.id}`;
 
+                  // Check if this lesson is the one that moved to top
+                  const isMovedToTop = expandedLessonId === lesson.id && !searchQuery;
+
                   return (
-                    <div key={lesson.id} className="mb-1" role="presentation">
+                    <div 
+                      key={lesson.id} 
+                      className={cn(
+                        "mb-1 transition-all duration-300 ease-out",
+                        isMovedToTop && "relative z-10"
+                      )} 
+                      role="presentation"
+                    >
                       {/* Module Header - Accordion Trigger */}
                       <button
                         id={headerId}
