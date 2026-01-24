@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLessonNotes } from "@/hooks/useLessonNotes";
+import { useLessonFlowNavigation } from "@/hooks/useLessonFlowNavigation";
 import {
   GitBranch,
   MessageSquareCode,
@@ -37,10 +38,20 @@ interface LessonRightSidebarProps {
   } | null;
 }
 
-// Lesson Flow sections - semantic flow of the lesson
+// Lesson Flow sections - semantic flow of the lesson with stable selectors
 const LESSON_FLOW_SECTIONS = [
-  { id: "chat-bubbles", label: "Chat Bubbles", icon: MessageSquareCode, selector: "[data-chat-bubble], .chat-bubble-container" },
-  { id: "cause-effect", label: "Cause & Effect", icon: ArrowRightCircle, selector: "[data-cause-effect], .explanation-block, .rich-text-explanation" },
+  { 
+    id: "chat-bubbles", 
+    label: "Chat Bubbles", 
+    icon: MessageSquareCode, 
+    selector: "#lesson-chat-bubbles, [data-section='chat-bubbles']" 
+  },
+  { 
+    id: "cause-effect", 
+    label: "Cause & Effect", 
+    icon: ArrowRightCircle, 
+    selector: "#lesson-cause-effect, [data-section='cause-effect']" 
+  },
 ];
 
 // Practice items
@@ -76,8 +87,22 @@ export function LessonRightSidebar({
   showAnnouncement,
   assignedModerator,
 }: LessonRightSidebarProps) {
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+
+  // Calculate scroll offset based on header visibility
+  const scrollOffset = isHeaderVisible
+    ? (showAnnouncement ? 140 : 104)
+    : (showAnnouncement ? 76 : 40);
+
+  // Lesson Flow navigation with scroll-spy and scroll-to
+  const { 
+    activeSection, 
+    sections: lessonFlowSections, 
+    scrollToSection 
+  } = useLessonFlowNavigation(
+    LESSON_FLOW_SECTIONS.map(s => ({ id: s.id, label: s.label, selector: s.selector })),
+    { scrollOffset }
+  );
 
   // Notes hook
   const { content, updateContent, isSaving, lastSaved, isLoading } = useLessonNotes({
@@ -95,35 +120,6 @@ export function LessonRightSidebar({
     if (diff < 3600) return `Saved ${Math.floor(diff / 60)}m ago`;
     return `Saved ${Math.floor(diff / 3600)}h ago`;
   }, [lastSaved]);
-
-  // Scroll spy for active section based on lesson flow
-  useEffect(() => {
-    const handleScroll = () => {
-      for (const section of LESSON_FLOW_SECTIONS) {
-        const element = document.querySelector(section.selector);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top >= 0 && rect.top <= 200) {
-            setActiveSection(section.id);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToSection = (sectionId: string) => {
-    const section = LESSON_FLOW_SECTIONS.find(s => s.id === sectionId);
-    if (section) {
-      const element = document.querySelector(section.selector);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  };
 
   // Calculate sticky top position based on header visibility (matching left sidebar)
   const stickyTopClass = isHeaderVisible
@@ -143,21 +139,29 @@ export function LessonRightSidebar({
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
-            <nav className="space-y-1">
+            <nav className="space-y-1" role="navigation" aria-label="Lesson sections">
               {LESSON_FLOW_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
+                // Find if this section exists in the DOM
+                const sectionData = lessonFlowSections.find(s => s.id === section.id);
+                const exists = sectionData?.exists ?? false;
+                const isDisabled = !exists;
 
                 return (
                   <button
                     key={section.id}
-                    onClick={() => scrollToSection(section.id)}
+                    onClick={() => !isDisabled && scrollToSection(section.id)}
+                    disabled={isDisabled}
+                    aria-current={isActive ? "location" : undefined}
                     className={cn(
                       "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left relative",
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                      isActive && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
+                      isDisabled
+                        ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                        : isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      isActive && !isDisabled && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 flex-shrink-0" />
