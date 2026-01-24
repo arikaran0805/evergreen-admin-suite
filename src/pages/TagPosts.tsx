@@ -2,12 +2,13 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Tag, ArrowLeft, BookOpen, GraduationCap, Clock, Play, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { Tag, ArrowLeft, BookOpen, GraduationCap, Clock, Play, ChevronDown, ChevronUp, Layers, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { calculateReadingTime } from "@/lib/readingTime";
 
@@ -55,6 +56,7 @@ const TagPosts = () => {
   const [contentFilter, setContentFilter] = useState<ContentFilter>("all");
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all");
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (slug) {
@@ -173,21 +175,41 @@ const TagPosts = () => {
   // Filter and group lessons
   const filteredLessons = useMemo(() => {
     return lessons.filter(lesson => {
+      // Level filter
       if (levelFilter !== "all" && lesson.course?.level !== levelFilter) {
         return false;
       }
-      return true;
-    });
-  }, [lessons, levelFilter]);
-
-  const filteredCourses = useMemo(() => {
-    return courses.filter(course => {
-      if (levelFilter !== "all" && course.level !== levelFilter) {
-        return false;
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = lesson.title.toLowerCase().includes(query);
+        const matchesCourse = lesson.course?.name.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesCourse) {
+          return false;
+        }
       }
       return true;
     });
-  }, [courses, levelFilter]);
+  }, [lessons, levelFilter, searchQuery]);
+
+  const filteredCourses = useMemo(() => {
+    return courses.filter(course => {
+      // Level filter
+      if (levelFilter !== "all" && course.level !== levelFilter) {
+        return false;
+      }
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = course.name.toLowerCase().includes(query);
+        const matchesDescription = course.description?.toLowerCase().includes(query);
+        if (!matchesName && !matchesDescription) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [courses, levelFilter, searchQuery]);
 
   // Group lessons by course
   const lessonsByCourse = useMemo(() => {
@@ -286,9 +308,33 @@ const TagPosts = () => {
               )}
             </header>
 
-            {/* Filter Controls */}
+            {/* Search and Filter Controls */}
             {!loading && (lessons.length > 0 || courses.length > 0) && (
-              <div className="flex flex-wrap gap-3 mb-8">
+              <div className="space-y-4 mb-8">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search lessons and courses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10 h-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap gap-3">
                 {/* Content Type Filter */}
                 <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
                   {(["all", "lessons", "courses"] as ContentFilter[]).map((filter) => (
@@ -329,6 +375,7 @@ const TagPosts = () => {
                   ))}
                 </div>
               </div>
+            </div>
             )}
 
             {/* Loading State */}
