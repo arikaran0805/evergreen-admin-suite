@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Tag, Search, X, Hash, TrendingUp, SortAsc, SortDesc, Grid3X3, List } from "lucide-react";
+import { Tag, Search, X, Hash, TrendingUp, SortAsc, Grid3X3, List, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,6 +148,17 @@ const Tags = () => {
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         <div className="container px-4 py-8 md:py-12">
           <div className="max-w-5xl mx-auto">
+            {/* Back Navigation */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-6 gap-2 text-muted-foreground hover:text-foreground -ml-2"
+              onClick={() => window.history.back()}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+
             {/* Header */}
             <header className="mb-8">
               <div className="flex items-start gap-4 mb-4">
