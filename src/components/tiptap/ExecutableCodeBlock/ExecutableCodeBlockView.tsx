@@ -137,24 +137,43 @@ const ExecutableCodeBlockView = ({
     updateAttributes({ language: newLang });
   }, [updateAttributes]);
 
+  const discardEdits = useCallback(() => {
+    setEditedCode(originalCodeRef.current);
+    // Defensive: ensure the underlying node attrs are also reverted
+    // (prevents accidental persistence from any other transactions)
+    updateAttributes({ code: originalCodeRef.current });
+  }, [updateAttributes]);
+
   const handleEditToggle = () => {
     if (!isEditingCode) {
-      // Entering edit mode - store the original code
-      originalCodeRef.current = code;
+      // Entering edit mode - store what is currently displayed
+      originalCodeRef.current = editedCode;
       setIsEditingCode(true);
       setTimeout(() => textareaRef.current?.focus(), 0);
     } else {
       // Exiting edit mode via pencil click - discard changes
-      setEditedCode(originalCodeRef.current);
+      discardEdits();
       setIsEditingCode(false);
     }
   };
 
   const handleCancelEdit = () => {
-    // Discard changes and revert to original
-    setEditedCode(originalCodeRef.current);
+    discardEdits();
     setIsEditingCode(false);
   };
+
+  // If the editor/view is closed while editing, always discard drafts
+  useEffect(() => {
+    return () => {
+      if (isEditingCode) {
+        try {
+          updateAttributes({ code: originalCodeRef.current });
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, [isEditingCode, updateAttributes]);
 
   const handleCopy = async () => {
     try {
@@ -330,15 +349,15 @@ const ExecutableCodeBlockView = ({
 
         {/* Output panel - matches reference design */}
         {showOutput && (
-          <div className="mt-3 rounded-xl border border-border/60 bg-muted/40 overflow-hidden">
+          <div className="mt-4 rounded-2xl border border-border/60 bg-secondary/35 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/50"
+              className="w-full flex items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50"
               type="button"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-background/70">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-background/70 border border-border/40">
                   {outputExpanded ? (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
@@ -348,8 +367,8 @@ const ExecutableCodeBlockView = ({
 
                 <span
                   className={cn(
-                    'text-sm font-medium',
-                    outputError ? 'text-destructive' : 'text-muted-foreground'
+                    'text-base font-semibold',
+                    outputError ? 'text-destructive' : 'text-foreground'
                   )}
                 >
                   {outputError ? 'Error' : 'Output'}
@@ -363,7 +382,7 @@ const ExecutableCodeBlockView = ({
                   e.stopPropagation();
                   handleCloseOutput();
                 }}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -379,8 +398,8 @@ const ExecutableCodeBlockView = ({
               )}
             >
               <div className="overflow-hidden">
-                <div className="px-4 pb-4">
-                  <div className="rounded-xl border border-border/40 bg-background px-5 py-4">
+                <div className="px-6 pb-6">
+                  <div className="rounded-2xl border border-border/40 bg-background px-6 py-5">
                     <pre
                       className={cn(
                         'm-0 whitespace-pre-wrap overflow-x-auto text-sm font-mono leading-relaxed',
