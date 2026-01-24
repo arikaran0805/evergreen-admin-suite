@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -16,12 +17,22 @@ import {
   Check,
   Edit2,
   Info,
+  BookOpen,
+  User,
+  Users,
 } from "lucide-react";
 
 interface Career {
   id: string;
   name: string;
   slug: string;
+}
+
+interface TeamMember {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string;
 }
 
 interface CourseMetadataSidebarProps {
@@ -42,6 +53,9 @@ interface CourseMetadataSidebarProps {
   isHeaderVisible: boolean;
   showAnnouncement: boolean;
   onEdit?: () => void;
+  prerequisites?: string[];
+  creator?: TeamMember | null;
+  maintenanceTeam?: TeamMember[];
 }
 
 // Compact info row component
@@ -67,6 +81,26 @@ const InfoRow = ({
   </div>
 );
 
+// Team member display component
+const TeamMemberRow = ({ member, roleLabel }: { member: TeamMember; roleLabel?: string }) => (
+  <div className="flex items-center gap-2 py-1.5">
+    <Avatar className="h-6 w-6 border border-border/50">
+      <AvatarImage src={member.avatar_url || undefined} />
+      <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+        {member.full_name?.charAt(0)?.toUpperCase() || "U"}
+      </AvatarFallback>
+    </Avatar>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-medium text-foreground truncate">
+        {member.full_name || "Unknown"}
+      </p>
+      {roleLabel && (
+        <p className="text-[10px] text-muted-foreground">{roleLabel}</p>
+      )}
+    </div>
+  </div>
+);
+
 export function CourseMetadataSidebar({
   course,
   careers,
@@ -77,6 +111,9 @@ export function CourseMetadataSidebar({
   isHeaderVisible,
   showAnnouncement,
   onEdit,
+  prerequisites = [],
+  creator,
+  maintenanceTeam = [],
 }: CourseMetadataSidebarProps) {
   const [copiedUrl, setCopiedUrl] = useState(false);
 
@@ -110,6 +147,7 @@ export function CourseMetadataSidebar({
     <aside className="hidden xl:block w-[280px] flex-shrink-0">
       <div className={cn("sticky transition-[top] duration-200 ease-out", stickyTopClass)}>
         <div className="space-y-4 p-1 pb-6">
+          {/* Course Info Card */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
@@ -206,6 +244,96 @@ export function CourseMetadataSidebar({
                     )}
                   </Button>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Prerequisites Card */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                Prerequisites
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
+              {prerequisites.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {prerequisites.map((prereq, index) => (
+                    <li key={index} className="text-xs text-muted-foreground flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>{prereq}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  No prerequisites required
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Creator & Maintenance Team Card */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                Team
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-0 space-y-3">
+              {/* Creator */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                  Created by
+                </p>
+                {creator ? (
+                  <TeamMemberRow member={creator} />
+                ) : (
+                  <div className="flex items-center gap-2 py-1.5">
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                      <User className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Platform Team</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Maintenance Team */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                  Maintained by
+                </p>
+                {maintenanceTeam.length > 0 ? (
+                  <div className="space-y-1">
+                    {maintenanceTeam.slice(0, 3).map((member) => (
+                      <TeamMemberRow 
+                        key={member.id} 
+                        member={member} 
+                        roleLabel={
+                          member.role === "senior_moderator" 
+                            ? "Senior Mod" 
+                            : member.role === "moderator" 
+                            ? "Moderator" 
+                            : undefined
+                        }
+                      />
+                    ))}
+                    {maintenanceTeam.length > 3 && (
+                      <p className="text-[10px] text-muted-foreground pl-8">
+                        +{maintenanceTeam.length - 3} more
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 py-1.5">
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Platform Team</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
