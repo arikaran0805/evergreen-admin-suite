@@ -1,9 +1,9 @@
 /**
  * ExecutableCodeBlockView - TipTap NodeView for interactive code blocks
- * 
+ *
  * Renders an editable, executable code block with language selection,
  * matching chat bubble code blocks exactly.
- * 
+ *
  * ROLES: All users can edit and execute code (editing code ≠ editing content)
  */
 
@@ -11,16 +11,22 @@ import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Copy, Check, Play, Loader2, X, Pencil,
-  ChevronUp, ChevronDown 
+import {
+  Copy,
+  Check,
+  Play,
+  Loader2,
+  X,
+  Pencil,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Prism from '@/lib/prism';
@@ -58,18 +64,18 @@ const LANGUAGE_MAP: Record<string, string> = {
   sh: 'bash',
 };
 
-const ExecutableCodeBlockView = ({ 
-  node, 
-  updateAttributes, 
+const ExecutableCodeBlockView = ({
+  node,
+  updateAttributes,
   editor,
   deleteNode,
 }: NodeViewProps) => {
   const { language = 'python', code = '' } = node.attrs;
   const { theme: codeTheme } = useCodeTheme();
-  
+
   // Generate stable ID for this code block instance
   const instanceId = useId();
-  
+
   // Get code edit context (may be undefined if not wrapped in provider)
   let codeEditContext: ReturnType<typeof useCodeEdit> | null = null;
   try {
@@ -77,7 +83,7 @@ const ExecutableCodeBlockView = ({
   } catch {
     // Context not available - that's okay, we just won't track edits
   }
-  
+
   const [editedCode, setEditedCode] = useState(code);
   const [isEditingCode, setIsEditingCode] = useState(false); // Toggle between view/edit
   const [copied, setCopied] = useState(false);
@@ -86,14 +92,15 @@ const ExecutableCodeBlockView = ({
   const [outputError, setOutputError] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(true);
-  
+
   // Store original code for comparison
   const [originalCode] = useState(code);
-  
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const codeRef = useRef<HTMLElement>(null);
-  
-  const normalizedLang = LANGUAGE_MAP[language?.toLowerCase()] || language?.toLowerCase() || 'plaintext';
+
+  const normalizedLang =
+    LANGUAGE_MAP[language?.toLowerCase()] || language?.toLowerCase() || 'plaintext';
   const canExecute = EXECUTABLE_LANGUAGES.includes(normalizedLang);
   const isEditable = editor?.isEditable ?? true;
 
@@ -101,7 +108,7 @@ const ExecutableCodeBlockView = ({
   useEffect(() => {
     setEditedCode(code);
   }, [code]);
-  
+
   // Report code edits to context
   useEffect(() => {
     if (codeEditContext) {
@@ -126,23 +133,30 @@ const ExecutableCodeBlockView = ({
 
   // Store a copy of original code when entering edit mode
   const originalCodeRef = useRef(code);
-  
-  const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newCode = e.target.value;
-    setEditedCode(newCode);
-    // Don't save to node attrs during editing - only on explicit save
-  }, []);
 
-  const handleLanguageChange = useCallback((newLang: string) => {
-    updateAttributes({ language: newLang });
-  }, [updateAttributes]);
+  const handleCodeChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setEditedCode(e.target.value);
+      // Don't save to node attrs during editing - only on explicit save
+    },
+    []
+  );
 
+  const handleLanguageChange = useCallback(
+    (newLang: string) => {
+      updateAttributes({ language: newLang });
+    },
+    [updateAttributes]
+  );
+
+  /**
+   * Discard draft changes: revert local state to what was captured when edit mode started.
+   * We intentionally do NOT call updateAttributes here because the node's attrs were never
+   * modified during editing (changes are local-only until an explicit save).
+   */
   const discardEdits = useCallback(() => {
     setEditedCode(originalCodeRef.current);
-    // Defensive: ensure the underlying node attrs are also reverted
-    // (prevents accidental persistence from any other transactions)
-    updateAttributes({ code: originalCodeRef.current });
-  }, [updateAttributes]);
+  }, []);
 
   const handleEditToggle = () => {
     if (!isEditingCode) {
@@ -162,19 +176,6 @@ const ExecutableCodeBlockView = ({
     setIsEditingCode(false);
   };
 
-  // If the editor/view is closed while editing, always discard drafts
-  useEffect(() => {
-    return () => {
-      if (isEditingCode) {
-        try {
-          updateAttributes({ code: originalCodeRef.current });
-        } catch {
-          // ignore
-        }
-      }
-    };
-  }, [isEditingCode, updateAttributes]);
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(editedCode);
@@ -187,7 +188,7 @@ const ExecutableCodeBlockView = ({
 
   const handleRun = async () => {
     if (!canExecute) return;
-    
+
     setIsRunning(true);
     setOutput(null);
     setOutputError(false);
@@ -229,20 +230,24 @@ const ExecutableCodeBlockView = ({
       const textarea = e.currentTarget;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const newCode = editedCode.substring(0, start) + '  ' + editedCode.substring(end);
+      const newCode =
+        editedCode.substring(0, start) + '  ' + editedCode.substring(end);
       setEditedCode(newCode);
       // Reset cursor position after state update
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
       }, 0);
     }
-    
+
     // Prevent TipTap from capturing arrow keys and other navigation
     e.stopPropagation();
   };
 
   return (
-    <NodeViewWrapper className="executable-code-block-wrapper my-2" data-type="executableCodeBlock">
+    <NodeViewWrapper
+      className="executable-code-block-wrapper my-2"
+      data-type="executableCodeBlock"
+    >
       <div className="group relative w-full">
         {/* Close button - floating top-right corner, only in edit mode */}
         {isEditable && (
@@ -258,7 +263,12 @@ const ExecutableCodeBlockView = ({
         )}
 
         {/* Single flat container - no nested inner box */}
-        <div className={cn("rounded-lg border border-border/50 bg-muted/20 overflow-hidden", `code-theme-${codeTheme}`)}>
+        <div
+          className={cn(
+            'rounded-lg border border-border/50 bg-muted/20 overflow-hidden',
+            `code-theme-${codeTheme}`
+          )}
+        >
           {/* Header row */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             {/* Language Label */}
@@ -268,8 +278,12 @@ const ExecutableCodeBlockView = ({
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.map(lang => (
-                    <SelectItem key={lang.value} value={lang.value} className="text-xs">
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem
+                      key={lang.value}
+                      value={lang.value}
+                      className="text-xs"
+                    >
                       {lang.label}
                     </SelectItem>
                   ))}
@@ -288,9 +302,13 @@ const ExecutableCodeBlockView = ({
                 size="icon"
                 onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
                 className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
-                title={isEditingCode ? "Cancel edit" : "Edit code"}
+                title={isEditingCode ? 'Cancel edit' : 'Edit code'}
               >
-                {isEditingCode ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                {isEditingCode ? (
+                  <X className="w-4 h-4" />
+                ) : (
+                  <Pencil className="w-4 h-4" />
+                )}
               </Button>
 
               {canExecute && (
@@ -302,10 +320,14 @@ const ExecutableCodeBlockView = ({
                   className="h-7 w-7 text-muted-foreground/60 hover:text-primary hover:bg-transparent"
                   title="Run code"
                 >
-                  {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  {isRunning ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
                 </Button>
               )}
-              
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -313,7 +335,11 @@ const ExecutableCodeBlockView = ({
                 className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
                 title="Copy code"
               >
-                {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+                {copied ? (
+                  <Check className="w-4 h-4 text-primary" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -327,9 +353,9 @@ const ExecutableCodeBlockView = ({
                 onChange={handleCodeChange}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
-                  "min-h-[1.5em] overflow-hidden",
-                  "text-foreground placeholder:text-muted-foreground/60"
+                  'w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed',
+                  'min-h-[1.5em] overflow-hidden',
+                  'text-foreground placeholder:text-muted-foreground/60'
                 )}
                 placeholder="// Write your code here..."
                 spellCheck={false}
@@ -347,27 +373,24 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - matches reference design */}
+        {/* Output panel - pre-migration style (simpler, smaller radius, no circular icon bg) */}
         {showOutput && (
-          <div className="mt-4 rounded-2xl border border-border/60 bg-secondary/35 overflow-hidden">
+          <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50"
+              className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/40"
               type="button"
             >
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-background/70 border border-border/40">
-                  {outputExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </span>
-
+              <div className="flex items-center gap-2">
+                {outputExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
                 <span
                   className={cn(
-                    'text-base font-semibold',
+                    'text-sm font-medium',
                     outputError ? 'text-destructive' : 'text-foreground'
                   )}
                 >
@@ -382,7 +405,7 @@ const ExecutableCodeBlockView = ({
                   e.stopPropagation();
                   handleCloseOutput();
                 }}
-                className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-transparent"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -398,8 +421,8 @@ const ExecutableCodeBlockView = ({
               )}
             >
               <div className="overflow-hidden">
-                <div className="px-6 pb-6">
-                  <div className="rounded-2xl border border-border/40 bg-background px-6 py-5">
+                <div className="px-4 pb-4">
+                  <div className="rounded-lg border border-border/40 bg-background px-4 py-3">
                     <pre
                       className={cn(
                         'm-0 whitespace-pre-wrap overflow-x-auto text-sm font-mono leading-relaxed',
