@@ -134,6 +134,12 @@ export function LessonRightSidebar({
               <GitBranch className="h-4 w-4 text-muted-foreground" />
               Lesson Flow
             </CardTitle>
+            {/* Contextual helper text - shows active section */}
+            {activeSection && (
+              <p className="text-xs text-muted-foreground mt-1">
+                You're in: {LESSON_FLOW_SECTIONS.find(s => s.id === activeSection)?.label}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
             <nav className="space-y-1" role="navigation" aria-label="Lesson sections">
