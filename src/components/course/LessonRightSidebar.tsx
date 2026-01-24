@@ -146,31 +146,29 @@ export function LessonRightSidebar({
                 const isDisabled = !exists;
 
                 return (
-                  <div key={section.id}>
-                    {/* Show "You're in:" label above active item */}
-                    {isActive && !isDisabled && (
-                      <p className="text-xs text-muted-foreground mb-1 pl-2">
-                        You're in:
-                      </p>
+                  <button
+                    key={section.id}
+                    onClick={() => !isDisabled && scrollToSection(section.id)}
+                    disabled={isDisabled}
+                    aria-current={isActive ? "location" : undefined}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left relative",
+                      isDisabled
+                        ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                        : isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      isActive && !isDisabled && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
                     )}
-                    <button
-                      onClick={() => !isDisabled && scrollToSection(section.id)}
-                      disabled={isDisabled}
-                      aria-current={isActive ? "location" : undefined}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left relative",
-                        isDisabled
-                          ? "opacity-40 cursor-not-allowed text-muted-foreground"
-                          : isActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                        isActive && !isDisabled && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
+                  >
+                    <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="flex-1 truncate">
+                      {isActive && !isDisabled && (
+                        <span className="text-muted-foreground font-normal">You're in: </span>
                       )}
-                    >
-                      <Icon className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="flex-1 truncate">{section.label}</span>
-                    </button>
-                  </div>
+                      {section.label}
+                    </span>
+                  </button>
                 );
               })}
             </nav>
