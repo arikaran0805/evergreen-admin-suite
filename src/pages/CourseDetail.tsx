@@ -1724,12 +1724,6 @@ const CourseDetail = () => {
               courseId={course?.id}
               courseSlug={slug}
               userId={user.id}
-              nextLesson={(() => {
-                const orderedPosts = getAllOrderedPosts();
-                const currentIndex = orderedPosts.findIndex(p => p.id === selectedPost.id);
-                const nextPost = orderedPosts[currentIndex + 1];
-                return nextPost ? { title: nextPost.title, slug: nextPost.slug } : null;
-              })()}
               isLessonCompleted={isLessonCompleted(selectedPost.id)}
               isHeaderVisible={isHeaderVisible}
               showAnnouncement={showAnnouncement}
