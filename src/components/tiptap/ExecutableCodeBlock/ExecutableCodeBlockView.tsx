@@ -283,34 +283,32 @@ const ExecutableCodeBlockView = ({
             </div>
           </div>
 
-          {/* Code Editor/Viewer - full width styled box */}
-          <div className="p-3">
-            <div className="rounded-xl bg-muted/50 p-4 w-full">
-              {isEditingCode ? (
-                <textarea
-                  ref={textareaRef}
-                  value={editedCode}
-                  onChange={handleCodeChange}
-                  onKeyDown={handleKeyDown}
-                  className={cn(
-                    "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
-                    "min-h-[60px] overflow-hidden",
-                    "text-foreground placeholder:text-muted-foreground"
-                  )}
-                  placeholder="// Write your code here..."
-                  spellCheck={false}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                />
-              ) : (
-                <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full">
-                  <code ref={codeRef} className={`language-${normalizedLang}`}>
-                    {editedCode || '// Write your code here...'}
-                  </code>
-                </pre>
-              )}
-            </div>
+          {/* Code Editor/Viewer - fills the full available width */}
+          <div className="w-full bg-muted/50 p-4">
+            {isEditingCode ? (
+              <textarea
+                ref={textareaRef}
+                value={editedCode}
+                onChange={handleCodeChange}
+                onKeyDown={handleKeyDown}
+                className={cn(
+                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
+                  "min-h-[60px] overflow-hidden",
+                  "text-foreground placeholder:text-muted-foreground"
+                )}
+                placeholder="// Write your code here..."
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+            ) : (
+              <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full">
+                <code ref={codeRef} className={`language-${normalizedLang}`}>
+                  {editedCode || '// Write your code here...'}
+                </code>
+              </pre>
+            )}
           </div>
         </div>
 
