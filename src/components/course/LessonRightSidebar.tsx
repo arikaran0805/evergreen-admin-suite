@@ -134,7 +134,7 @@ export function LessonRightSidebar({
 
   return (
     <aside className="hidden xl:block w-[300px] flex-shrink-0">
-      <div className="sticky top-28 space-y-4 p-1">
+      <div className="space-y-4 p-1">
         {/* SECTION 1: Concept Index (Mini TOC) */}
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4">
