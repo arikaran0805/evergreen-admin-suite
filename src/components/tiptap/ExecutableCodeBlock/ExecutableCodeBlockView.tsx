@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { 
-  Copy, Check, Play, Loader2, X, 
+  Copy, Check, Play, Loader2, X, Pencil,
   ChevronUp, ChevronDown 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,6 +65,7 @@ const ExecutableCodeBlockView = ({
   const { language = 'python', code = '' } = node.attrs;
   
   const [editedCode, setEditedCode] = useState(code);
+  const [isEditingCode, setIsEditingCode] = useState(false); // Toggle between view/edit
   const [copied, setCopied] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
@@ -84,20 +85,20 @@ const ExecutableCodeBlockView = ({
     setEditedCode(code);
   }, [code]);
 
-  // Apply syntax highlighting when not editing
+  // Apply syntax highlighting when not editing code
   useEffect(() => {
-    if (codeRef.current && !isEditable) {
+    if (codeRef.current && !isEditingCode) {
       Prism.highlightElement(codeRef.current);
     }
-  }, [editedCode, normalizedLang, isEditable]);
+  }, [editedCode, normalizedLang, isEditingCode]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea when editing
   useEffect(() => {
-    if (textareaRef.current) {
+    if (textareaRef.current && isEditingCode) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [editedCode]);
+  }, [editedCode, isEditingCode]);
 
   const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newCode = e.target.value;
@@ -108,6 +109,23 @@ const ExecutableCodeBlockView = ({
   const handleLanguageChange = useCallback((newLang: string) => {
     updateAttributes({ language: newLang });
   }, [updateAttributes]);
+
+  const handleEditToggle = () => {
+    if (isEditingCode) {
+      // Exiting edit mode - save changes
+      updateAttributes({ code: editedCode });
+    }
+    setIsEditingCode(!isEditingCode);
+    if (!isEditingCode) {
+      // Entering edit mode - focus textarea
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingCode(false);
+    setEditedCode(code); // Reset to original
+  };
 
   const handleCopy = async () => {
     try {
@@ -217,6 +235,23 @@ const ExecutableCodeBlockView = ({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1">
+              {/* Edit/Cancel button - only when editor is editable */}
+              {isEditable && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title={isEditingCode ? "Cancel edit" : "Edit code"}
+                >
+                  {isEditingCode ? (
+                    <X className="w-3.5 h-3.5" />
+                  ) : (
+                    <Pencil className="w-3.5 h-3.5" />
+                  )}
+                </Button>
+              )}
+
               {/* Run button */}
               {canExecute && (
                 <Button
@@ -250,9 +285,9 @@ const ExecutableCodeBlockView = ({
             </div>
           </div>
 
-          {/* Code Editor */}
+          {/* Code Editor/Viewer */}
           <div className="p-4">
-            {isEditable ? (
+            {isEditingCode ? (
               <textarea
                 ref={textareaRef}
                 value={editedCode}
@@ -272,7 +307,7 @@ const ExecutableCodeBlockView = ({
             ) : (
               <pre className="text-sm font-mono leading-relaxed overflow-x-auto">
                 <code ref={codeRef} className={`language-${normalizedLang}`}>
-                  {editedCode}
+                  {editedCode || '// Write your code here...'}
                 </code>
               </pre>
             )}
