@@ -70,6 +70,7 @@ const CodeBlock = ({
 }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const originalCodeRef = useRef(code); // Store original code for discarding edits
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(code);
@@ -119,6 +120,7 @@ const CodeBlock = ({
   };
 
   const handleEdit = () => {
+    originalCodeRef.current = code; // Store original before editing
     setIsEditing(true);
     setEditedCode(code);
     setLineCount(code.split('\n').length);
@@ -133,8 +135,9 @@ const CodeBlock = ({
   };
 
   const handleCancelEdit = () => {
+    // Discard all changes and revert to original
     setIsEditing(false);
-    setEditedCode(code);
+    setEditedCode(originalCodeRef.current);
     setShowOutput(false);
     setOutput(null);
   };
@@ -361,46 +364,41 @@ const CodeBlock = ({
         )}
       </pre>
       
-      {/* Collapsible Output section */}
-      {showOutput && output !== null && (
+      {/* Output section - matching reference design */}
+      {showOutput && (
         <div className={cn(
-          "mt-0 rounded-b-xl border border-t-0 overflow-hidden",
+          "mt-3 rounded-2xl border overflow-hidden",
           isCleanTheme 
-            ? "bg-gray-100 border-gray-200" 
-            : "bg-muted/50 border-border/50"
+            ? "bg-gray-50 border-gray-200" 
+            : "bg-muted/20 border-border/50"
         )}>
           {/* Header - clickable to toggle */}
           <button
             onClick={handleToggleOutput}
             className={cn(
-              "w-full flex items-center justify-between px-3 py-2 transition-colors",
-              isCleanTheme ? "hover:bg-gray-200/50" : "hover:bg-muted"
+              "w-full flex items-center justify-between px-4 py-3 transition-colors",
+              isCleanTheme ? "hover:bg-gray-100" : "hover:bg-muted/30"
             )}
           >
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform duration-200",
-                isCleanTheme ? "bg-gray-200" : "bg-muted"
-              )}>
-                {outputExpanded ? (
-                  <ChevronUp className={cn(
-                    "w-3 h-3",
-                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-                  )} />
-                ) : (
-                  <ChevronDown className={cn(
-                    "w-3 h-3",
-                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-                  )} />
-                )}
-              </div>
+            <div className="flex items-center gap-2.5">
+              {outputExpanded ? (
+                <ChevronUp className={cn(
+                  "w-4 h-4",
+                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                )} />
+              ) : (
+                <ChevronDown className={cn(
+                  "w-4 h-4",
+                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                )} />
+              )}
               <span className={cn(
-                "text-xs font-medium",
+                "text-sm font-medium",
                 outputError 
                   ? "text-red-500" 
                   : isCleanTheme 
-                    ? "text-gray-600" 
-                    : "text-muted-foreground"
+                    ? "text-gray-700" 
+                    : "text-foreground"
               )}>
                 {outputError ? "Error" : "Output"}
               </span>
@@ -413,13 +411,13 @@ const CodeBlock = ({
                 handleCloseOutput();
               }}
               className={cn(
-                "h-5 w-5 rounded-full",
+                "h-6 w-6",
                 isCleanTheme
-                  ? "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "text-gray-400 hover:text-gray-600 hover:bg-transparent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
               )}
             >
-              <X className="w-3 h-3" />
+              <X className="w-4 h-4" />
             </Button>
           </button>
           
@@ -431,17 +429,23 @@ const CodeBlock = ({
             )}
           >
             <div className="overflow-hidden">
-              <div className="px-3 pb-3">
-                <pre className={cn(
-                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
-                  outputError 
-                    ? "text-red-500" 
-                    : isCleanTheme 
-                      ? "text-gray-800" 
-                      : "text-foreground"
+              <div className="px-4 pb-4">
+                <div className={cn(
+                  "rounded-xl px-4 py-3",
+                  isCleanTheme ? "bg-white" : "bg-background/80"
                 )}>
-                  {output}
-                </pre>
+                  <pre className={cn(
+                    "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
+                    outputError 
+                      ? "text-red-500" 
+                      : isCleanTheme 
+                        ? "text-gray-800" 
+                        : "text-foreground",
+                    !output && "text-muted-foreground"
+                  )}>
+                    {output || 'No output'}
+                  </pre>
+                </div>
               </div>
             </div>
           </div>
