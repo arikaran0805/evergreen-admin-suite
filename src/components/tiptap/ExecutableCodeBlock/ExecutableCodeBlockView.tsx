@@ -210,14 +210,14 @@ const ExecutableCodeBlockView = ({
           </Button>
         )}
 
-        {/* Single flat container */}
-        <div className="rounded-md border border-border/60 bg-muted/30 overflow-hidden">
-          {/* Compact header */}
-          <div className="flex items-center justify-between px-3 py-1 border-b border-border/40">
+        {/* Single flat container - no nested inner box */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+          {/* Header row */}
+          <div className="flex items-center justify-between px-4 pt-3 pb-2">
             {/* Language Label */}
             {isEditable ? (
               <Select value={language} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="h-5 w-auto gap-0.5 px-0 text-[10px] uppercase tracking-wider font-medium text-muted-foreground/70 border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
+                <SelectTrigger className="h-5 w-auto gap-0.5 px-0 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,21 +229,21 @@ const ExecutableCodeBlockView = ({
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/70">
+              <span className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
                 {language}
               </span>
             )}
 
-            {/* Compact action buttons */}
-            <div className="flex items-center gap-0">
+            {/* Action buttons */}
+            <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
-                className="h-6 w-6 text-muted-foreground/50 hover:text-foreground hover:bg-transparent"
+                className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
                 title={isEditingCode ? "Cancel edit" : "Edit code"}
               >
-                {isEditingCode ? <X className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                {isEditingCode ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
               </Button>
 
               {canExecute && (
@@ -252,10 +252,10 @@ const ExecutableCodeBlockView = ({
                   size="icon"
                   onClick={handleRun}
                   disabled={isRunning}
-                  className="h-6 w-6 text-muted-foreground/50 hover:text-primary hover:bg-transparent"
+                  className="h-7 w-7 text-muted-foreground/60 hover:text-primary hover:bg-transparent"
                   title="Run code"
                 >
-                  {isRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                  {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 </Button>
               )}
               
@@ -263,16 +263,16 @@ const ExecutableCodeBlockView = ({
                 variant="ghost"
                 size="icon"
                 onClick={handleCopy}
-                className="h-6 w-6 text-muted-foreground/50 hover:text-foreground hover:bg-transparent"
+                className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
                 title="Copy code"
               >
-                {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
           </div>
 
-          {/* Compact code content - no inner container */}
-          <div className="px-3 py-2">
+          {/* Code content - directly in container, no inner box */}
+          <div className="px-4 pb-4">
             {isEditingCode ? (
               <textarea
                 ref={textareaRef}
@@ -280,7 +280,7 @@ const ExecutableCodeBlockView = ({
                 onChange={handleCodeChange}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                  "w-full bg-transparent resize-none outline-none text-[13px] font-mono leading-snug",
+                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
                   "min-h-[1.5em] overflow-hidden",
                   "text-foreground placeholder:text-muted-foreground/60"
                 )}
@@ -291,7 +291,7 @@ const ExecutableCodeBlockView = ({
                 autoCapitalize="off"
               />
             ) : (
-              <pre className="text-[13px] font-mono leading-snug overflow-x-auto w-full m-0">
+              <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full m-0">
                 <code ref={codeRef} className={`language-${normalizedLang}`}>
                   {editedCode || '// Write your code here...'}
                 </code>
