@@ -124,29 +124,35 @@ const ExecutableCodeBlockView = ({
     }
   }, [editedCode, isEditingCode]);
 
+  // Store a copy of original code when entering edit mode
+  const originalCodeRef = useRef(code);
+  
   const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newCode = e.target.value;
     setEditedCode(newCode);
-    updateAttributes({ code: newCode });
-  }, [updateAttributes]);
+    // Don't save to node attrs during editing - only on explicit save
+  }, []);
 
   const handleLanguageChange = useCallback((newLang: string) => {
     updateAttributes({ language: newLang });
   }, [updateAttributes]);
 
   const handleEditToggle = () => {
-    setIsEditingCode(!isEditingCode);
     if (!isEditingCode) {
-      // Entering edit mode - focus textarea
+      // Entering edit mode - store the original code
+      originalCodeRef.current = code;
+      setIsEditingCode(true);
       setTimeout(() => textareaRef.current?.focus(), 0);
     } else {
-      // Exiting edit mode - discard changes, revert to original
-      setEditedCode(code);
+      // Exiting edit mode via pencil click - discard changes
+      setEditedCode(originalCodeRef.current);
+      setIsEditingCode(false);
     }
   };
 
   const handleCancelEdit = () => {
-    setEditedCode(code); // Reset to original node attribute code
+    // Discard changes and revert to original
+    setEditedCode(originalCodeRef.current);
     setIsEditingCode(false);
   };
 
@@ -323,22 +329,20 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - styled like second image */}
+        {/* Output panel - matches reference design */}
         {showOutput && (
-          <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+          <div className="mt-3 rounded-2xl border border-border/50 bg-muted/20 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted/60">
-                  {outputExpanded ? (
-                    <ChevronUp className="w-3 h-3 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3 text-muted-foreground" />
-                  )}
-                </div>
+              <div className="flex items-center gap-2.5">
+                {outputExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
                 <span className={cn(
                   "text-sm font-medium",
                   outputError ? "text-destructive" : "text-foreground"
@@ -355,7 +359,7 @@ const ExecutableCodeBlockView = ({
                 }}
                 className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-transparent"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </Button>
             </button>
 
@@ -365,8 +369,8 @@ const ExecutableCodeBlockView = ({
               outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
             )}>
               <div className="overflow-hidden">
-                <div className="mx-3 mb-3">
-                  <div className="rounded-lg bg-background border border-border/40 px-4 py-3">
+                <div className="px-4 pb-4">
+                  <div className="rounded-xl bg-background/80 px-4 py-3">
                     <pre className={cn(
                       "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
                       outputError ? "text-destructive" : "text-foreground",
