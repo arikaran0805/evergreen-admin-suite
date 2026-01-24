@@ -2177,6 +2177,27 @@ export type Database = {
         }
         Relationships: []
       }
+      tag_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           author_id: string | null

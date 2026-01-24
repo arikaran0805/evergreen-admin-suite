@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Tag, Search, X, Hash, TrendingUp, SortAsc, Grid3X3, List, ArrowLeft, Clock, Trash2 } from "lucide-react";
+import { Tag, Search, X, Hash, TrendingUp, SortAsc, Grid3X3, List, ArrowLeft, Clock, Trash2, Bookmark, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentlyViewedTags } from "@/hooks/useRecentlyViewedTags";
+import { useTagBookmarks } from "@/hooks/useTagBookmarks";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface TagWithCount {
   id: string;
@@ -36,6 +39,10 @@ const Tags = () => {
   
   // Recently viewed tags
   const { recentTags, removeRecentTag, clearRecentTags } = useRecentlyViewedTags();
+  
+  // Tag bookmarks
+  const { user } = useAuth();
+  const { bookmarkedTags, isBookmarked, toggleBookmark, loading: bookmarksLoading } = useTagBookmarks();
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -207,6 +214,40 @@ const Tags = () => {
                 </div>
               )}
             </header>
+
+            {/* Bookmarked Tags */}
+            {user && bookmarkedTags.length > 0 && !loading && (
+              <section className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  <h2 className="text-sm font-medium text-foreground">Favorite Tags</h2>
+                  <Badge variant="secondary" className="text-xs">{bookmarkedTags.length}</Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {bookmarkedTags.map((tag) => (
+                    <Link key={tag.id} to={`/tag/${tag.slug}`}>
+                      <Badge
+                        variant="outline"
+                        className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors cursor-pointer group pl-2 pr-1 border-yellow-500/30 bg-yellow-500/5"
+                      >
+                        <Star className="h-3 w-3 mr-1.5 text-yellow-500 fill-yellow-500" />
+                        {tag.name}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleBookmark(tag);
+                          }}
+                          className="ml-1.5 p-0.5 rounded hover:bg-destructive/20 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Recently Viewed Tags */}
             {recentTags.length > 0 && !loading && (
@@ -442,27 +483,47 @@ const Tags = () => {
             {!loading && filteredTags.length > 0 && viewMode === "grid" && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {filteredTags.map((tag) => (
-                  <Link key={tag.id} to={`/tag/${tag.slug}`}>
-                    <Card className="p-4 h-full hover:shadow-md hover:border-primary/30 transition-all group">
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <Tag className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                          <Badge variant="secondary" className="text-xs">
-                            {tag.postCount}
-                          </Badge>
-                        </div>
-                        <h3 className={cn(
-                          "text-foreground group-hover:text-primary transition-colors line-clamp-2",
-                          getTagSize(tag.postCount)
-                        )}>
-                          {tag.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-auto pt-2">
-                          {tag.postCount} lesson{tag.postCount !== 1 ? "s" : ""}
-                        </p>
+                  <Card key={tag.id} className="p-4 h-full hover:shadow-md hover:border-primary/30 transition-all group relative">
+                    {/* Bookmark button */}
+                    {user && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleBookmark(tag).then(result => {
+                            if (result.success) {
+                              toast.success(isBookmarked(tag.id) ? "Removed from favorites" : "Added to favorites");
+                            }
+                          });
+                        }}
+                        className={cn(
+                          "absolute top-2 right-2 p-1.5 rounded-md transition-all",
+                          isBookmarked(tag.id)
+                            ? "text-yellow-500 bg-yellow-500/10"
+                            : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted"
+                        )}
+                      >
+                        <Bookmark className={cn("h-4 w-4", isBookmarked(tag.id) && "fill-current")} />
+                      </button>
+                    )}
+                    <Link to={`/tag/${tag.slug}`} className="flex flex-col h-full">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <Tag className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        <Badge variant="secondary" className="text-xs">
+                          {tag.postCount}
+                        </Badge>
                       </div>
-                    </Card>
-                  </Link>
+                      <h3 className={cn(
+                        "text-foreground group-hover:text-primary transition-colors line-clamp-2",
+                        getTagSize(tag.postCount)
+                      )}>
+                        {tag.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-auto pt-2">
+                        {tag.postCount} lesson{tag.postCount !== 1 ? "s" : ""}
+                      </p>
+                    </Link>
+                  </Card>
                 ))}
               </div>
             )}
@@ -471,28 +532,49 @@ const Tags = () => {
             {!loading && filteredTags.length > 0 && viewMode === "list" && (
               <div className="space-y-2">
                 {filteredTags.map((tag) => (
-                  <Link key={tag.id} to={`/tag/${tag.slug}`}>
-                    <Card className="p-4 hover:shadow-md hover:border-primary/30 transition-all group">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
-                            <Tag className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                              {tag.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {tag.postCount} lesson{tag.postCount !== 1 ? "s" : ""}
-                            </p>
-                          </div>
+                  <Card key={tag.id} className="p-4 hover:shadow-md hover:border-primary/30 transition-all group">
+                    <div className="flex items-center justify-between gap-4">
+                      <Link to={`/tag/${tag.slug}`} className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                          <Tag className="h-4 w-4 text-primary" />
                         </div>
+                        <div className="min-w-0">
+                          <h3 className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                            {tag.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {tag.postCount} lesson{tag.postCount !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      </Link>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {user && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggleBookmark(tag).then(result => {
+                                if (result.success) {
+                                  toast.success(isBookmarked(tag.id) ? "Removed from favorites" : "Added to favorites");
+                                }
+                              });
+                            }}
+                            className={cn(
+                              "p-1.5 rounded-md transition-all",
+                              isBookmarked(tag.id)
+                                ? "text-yellow-500 bg-yellow-500/10"
+                                : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted"
+                            )}
+                          >
+                            <Bookmark className={cn("h-4 w-4", isBookmarked(tag.id) && "fill-current")} />
+                          </button>
+                        )}
                         <Badge variant="secondary" className="flex-shrink-0">
                           {tag.postCount}
                         </Badge>
                       </div>
-                    </Card>
-                  </Link>
+                    </div>
+                  </Card>
                 ))}
               </div>
             )}
