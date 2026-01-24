@@ -312,9 +312,13 @@ export const CourseSidebar = ({
           </div>
         )}
 
-        {/* === SECTION 4: LESSON TREE === */}
+        {/* === SECTION 4: LESSON TREE (Single-Open Accordion) === */}
         <ScrollArea className="flex-1 h-[calc(100%-16rem)]">
-          <nav className="p-2" aria-label="Course lessons">
+          <nav 
+            className="p-2" 
+            aria-label="Course lessons"
+            role="region"
+          >
             {noResults ? (
               /* Empty State: No Search Results */
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -327,26 +331,37 @@ export const CourseSidebar = ({
                 </p>
               </div>
             ) : filteredLessons.length > 0 ? (
-              filteredLessons.map((lesson) => {
-                const lessonPosts = getFilteredPostsForLesson(lesson.id);
-                const isExpanded = expandedLessons.has(lesson.id);
-                const hasActivePost = lessonPosts.some(p => p.id === selectedPost?.id);
-                const lessonProgress = getLessonProgress(lesson.id);
-                const isSingleModule = filteredLessons.length === 1;
+              <div role="group" aria-label="Lesson modules">
+                {filteredLessons.map((lesson) => {
+                  const lessonPosts = getFilteredPostsForLesson(lesson.id);
+                  const isExpanded = expandedLessons.has(lesson.id);
+                  const hasActivePost = lessonPosts.some(p => p.id === selectedPost?.id);
+                  const lessonProgress = getLessonProgress(lesson.id);
+                  const isSingleModule = filteredLessons.length === 1;
+                  const panelId = `lesson-panel-${lesson.id}`;
+                  const headerId = `lesson-header-${lesson.id}`;
 
-                return (
-                  <div key={lesson.id} className="mb-1">
-                    {/* Module Header */}
-                    <button
-                      onClick={() => toggleLessonExpansion(lesson.id)}
-                      className={cn(
-                        "w-full rounded-lg transition-all duration-200 text-left",
-                        "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/40",
-                        hasActivePost
-                          ? "bg-sidebar-accent border border-sidebar-primary/20"
-                          : "hover:bg-sidebar-accent"
-                      )}
-                      aria-expanded={isExpanded}
+                  return (
+                    <div key={lesson.id} className="mb-1" role="presentation">
+                      {/* Module Header - Accordion Trigger */}
+                      <button
+                        id={headerId}
+                        onClick={() => toggleLessonExpansion(lesson.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleLessonExpansion(lesson.id);
+                          }
+                        }}
+                        className={cn(
+                          "w-full rounded-lg transition-all duration-200 text-left",
+                          "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/40",
+                          hasActivePost
+                            ? "bg-sidebar-accent border border-sidebar-primary/20"
+                            : "hover:bg-sidebar-accent"
+                        )}
+                        aria-expanded={isExpanded}
+                        aria-controls={panelId}
                     >
                       <div className="px-3 py-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -388,9 +403,14 @@ export const CourseSidebar = ({
                       </div>
                     </button>
 
-                    {/* Lesson Posts */}
+                    {/* Lesson Posts - Accordion Panel */}
                     {(isExpanded || isSingleModule) && (
-                      <div className="ml-3 mt-1 border-l-2 border-sidebar-border pl-2 space-y-0.5">
+                      <div 
+                        id={panelId}
+                        role="region"
+                        aria-labelledby={headerId}
+                        className="ml-3 mt-1 border-l-2 border-sidebar-border pl-2 space-y-0.5"
+                      >
                         {lessonPosts.length > 0 ? (
                           lessonPosts.map((post) => {
                             const isActive = selectedPost?.id === post.id;
@@ -513,7 +533,8 @@ export const CourseSidebar = ({
                     )}
                   </div>
                 );
-              })
+              })}
+              </div>
             ) : (
               /* Empty State: No Lessons */
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">

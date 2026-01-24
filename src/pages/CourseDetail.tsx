@@ -781,13 +781,9 @@ const CourseDetail = () => {
   };
 
   const handleLessonClick = (post: Post) => {
-    // Expand the parent lesson in the sidebar
+    // Single-open accordion: when clicking a lesson, make its group the only open one
     if (post.lesson_id) {
-      setExpandedLessons((prev) => {
-        const newSet = new Set(prev);
-        newSet.add(post.lesson_id!);
-        return newSet;
-      });
+      setExpandedLessons(new Set([post.lesson_id]));
     }
 
     // Ensure the Lessons tab is active and persists across refresh
@@ -981,15 +977,15 @@ const CourseDetail = () => {
   };
 
   // Toggle lesson expansion
+  // Single-open accordion behavior: only one lesson group can be expanded at a time
   const toggleLessonExpansion = (lessonId: string) => {
     setExpandedLessons(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(lessonId)) {
-        newSet.delete(lessonId);
-      } else {
-        newSet.add(lessonId);
+      // If clicking the already-open lesson, close it (empty set)
+      if (prev.has(lessonId)) {
+        return new Set();
       }
-      return newSet;
+      // Otherwise, close all and open only the clicked lesson
+      return new Set([lessonId]);
     });
   };
 
