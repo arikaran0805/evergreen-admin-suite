@@ -84,23 +84,35 @@ export function useLessonFlowNavigation(
       timeoutId = window.setTimeout(() => {
         timeoutId = null;
 
-        // Find the section that's currently in view
+        // Find the section that's currently in the reading zone
+        // Strategy: Find the LAST section whose top has scrolled past the activation line
+        // This ensures we highlight the section the user is currently reading
         let foundActive: string | null = null;
+        const activationLine = scrollOffset + 100; // Line where content is being read
         
-        for (const section of sections) {
+        // Iterate in reverse to find the topmost section that has passed the activation line
+        for (let i = sections.length - 1; i >= 0; i--) {
+          const section = sections[i];
           const element = document.querySelector(section.selector);
           if (element) {
             const rect = element.getBoundingClientRect();
             
-            // Section is "active" if its top is at or above the scroll offset + small buffer
-            // This makes the highlight shift as soon as the section enters the "reading zone"
-            const activationThreshold = scrollOffset + 50;
-            const isInView = rect.top <= activationThreshold && rect.bottom > scrollOffset;
-            
-            if (isInView) {
+            // Section is active if its top is above the activation line
+            // (meaning the user has scrolled into it)
+            if (rect.top <= activationLine) {
               foundActive = section.id;
-              // Don't break - we want the LAST section that matches
-              // (the one furthest down that's still visible)
+              break; // Found the current section, stop looking
+            }
+          }
+        }
+        
+        // Fallback: if nothing found and we're at the top, use first section
+        if (!foundActive && sections.length > 0) {
+          const firstElement = document.querySelector(sections[0].selector);
+          if (firstElement) {
+            const rect = firstElement.getBoundingClientRect();
+            if (rect.top <= window.innerHeight) {
+              foundActive = sections[0].id;
             }
           }
         }
