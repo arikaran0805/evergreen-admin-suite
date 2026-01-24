@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useLessonNotes } from "@/hooks/useLessonNotes";
 import {
@@ -19,7 +17,6 @@ import {
   FileText,
   HelpCircle,
   User,
-  ChevronRight,
   Loader2,
   Check,
   Sparkles,
@@ -31,10 +28,6 @@ interface LessonRightSidebarProps {
   courseId: string | undefined;
   courseSlug: string;
   userId: string | undefined;
-  nextLesson: {
-    title: string;
-    slug: string;
-  } | null;
   isLessonCompleted: boolean;
   isHeaderVisible: boolean;
   showAnnouncement: boolean;
@@ -82,7 +75,6 @@ export function LessonRightSidebar({
   courseId,
   courseSlug,
   userId,
-  nextLesson,
   isLessonCompleted,
   isHeaderVisible,
   showAnnouncement,
@@ -325,45 +317,6 @@ export function LessonRightSidebar({
               <p className="text-xs text-muted-foreground mt-2">
                 Usually replies in 2–4 hrs
               </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* SECTION 6: What's Next */}
-        {nextLesson && (
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                Up Next
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              {isLessonCompleted ? (
-                <Link
-                  to={`/courses/${courseSlug}?lesson=${nextLesson.slug}`}
-                  className="block p-2 rounded-md hover:bg-muted/50 transition-colors group"
-                >
-                  <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                    {nextLesson.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Continue learning →
-                  </p>
-                </Link>
-              ) : (
-                <div className="p-2 rounded-md bg-muted/30">
-                  <p className="text-sm font-medium text-muted-foreground truncate blur-[2px] select-none">
-                    {nextLesson.title}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Lock className="h-3 w-3 text-muted-foreground/70" />
-                    <p className="text-xs text-muted-foreground/70">
-                      Unlocks after completion
-                    </p>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
