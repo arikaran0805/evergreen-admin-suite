@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLessonNotes } from "@/hooks/useLessonNotes";
 import {
-  MessageCircle,
-  Workflow,
+  GitBranch,
+  MessageSquareCode,
+  ArrowRightCircle,
   Target,
   Lightbulb,
   Lock,
@@ -41,8 +42,8 @@ interface LessonRightSidebarProps {
 
 // Lesson Flow sections - semantic flow of the lesson
 const LESSON_FLOW_SECTIONS = [
-  { id: "chat-bubbles", label: "Chat Bubbles", icon: MessageCircle, selector: "[data-chat-bubble], .chat-bubble-container" },
-  { id: "cause-effect", label: "Cause & Effect", icon: Workflow, selector: "[data-cause-effect], .explanation-block, .rich-text-explanation" },
+  { id: "chat-bubbles", label: "Chat Bubbles", icon: MessageSquareCode, selector: "[data-chat-bubble], .chat-bubble-container" },
+  { id: "cause-effect", label: "Cause & Effect", icon: ArrowRightCircle, selector: "[data-cause-effect], .explanation-block, .rich-text-explanation" },
   { id: "practice-points", label: "Practice Points", icon: Target, selector: "[data-practice], .practice-prompt, .exercise-block" },
   { id: "key-takeaway", label: "Key Takeaway", icon: Lightbulb, locked: true, selector: "[data-takeaway], .takeaway-block" },
 ];
@@ -143,7 +144,7 @@ export function LessonRightSidebar({
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-muted-foreground" />
+              <GitBranch className="h-4 w-4 text-muted-foreground" />
               Lesson Flow
             </CardTitle>
           </CardHeader>
