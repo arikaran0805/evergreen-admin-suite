@@ -69,6 +69,7 @@ import {
   Clock,
 } from "lucide-react";
 import CourseSidebar from "@/components/course/CourseSidebar";
+import LessonRightSidebar from "@/components/course/LessonRightSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1715,12 +1716,24 @@ const CourseDetail = () => {
             </Card>
           </main>
 
-          {/* RIGHT SIDEBAR - Reserved for future use */}
-          <aside className="hidden xl:block w-[300px] flex-shrink-0">
-            <div className="sticky top-28 p-4">
-              {/* Empty sidebar */}
-            </div>
-          </aside>
+          {/* RIGHT SIDEBAR - Premium Lesson Assistant */}
+          {selectedPost && user && courseStats.isEnrolled && (
+            <LessonRightSidebar
+              lessonId={selectedPost.id}
+              lessonTitle={selectedPost.title}
+              courseId={course?.id}
+              courseSlug={slug}
+              userId={user.id}
+              nextLesson={(() => {
+                const orderedPosts = getAllOrderedPosts();
+                const currentIndex = orderedPosts.findIndex(p => p.id === selectedPost.id);
+                const nextPost = orderedPosts[currentIndex + 1];
+                return nextPost ? { title: nextPost.title, slug: nextPost.slug } : null;
+              })()}
+              isLessonCompleted={isLessonCompleted(selectedPost.id)}
+              assignedModerator={null}
+            />
+          )}
         </div>
       </div>
 
