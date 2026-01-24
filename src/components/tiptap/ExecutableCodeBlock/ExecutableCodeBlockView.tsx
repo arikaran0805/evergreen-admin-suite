@@ -235,22 +235,20 @@ const ExecutableCodeBlockView = ({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1">
-              {/* Edit/Cancel button - only when editor is editable */}
-              {isEditable && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
-                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-                  title={isEditingCode ? "Cancel edit" : "Edit code"}
-                >
-                  {isEditingCode ? (
-                    <X className="w-3.5 h-3.5" />
-                  ) : (
-                    <Pencil className="w-3.5 h-3.5" />
-                  )}
-                </Button>
-              )}
+              {/* Edit/Cancel button - always visible so users can edit code even in view mode */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
+                className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                title={isEditingCode ? "Cancel edit" : "Edit code"}
+              >
+                {isEditingCode ? (
+                  <X className="w-3.5 h-3.5" />
+                ) : (
+                  <Pencil className="w-3.5 h-3.5" />
+                )}
+              </Button>
 
               {/* Run button */}
               {canExecute && (
