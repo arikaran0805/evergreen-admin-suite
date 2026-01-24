@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Tag, Search, X, Hash, TrendingUp, SortAsc, Grid3X3, List, ArrowLeft } from "lucide-react";
+import { Tag, Search, X, Hash, TrendingUp, SortAsc, Grid3X3, List, ArrowLeft, Clock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useRecentlyViewedTags } from "@/hooks/useRecentlyViewedTags";
 
 interface TagWithCount {
   id: string;
@@ -32,6 +33,9 @@ const Tags = () => {
   
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Recently viewed tags
+  const { recentTags, removeRecentTag, clearRecentTags } = useRecentlyViewedTags();
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -203,6 +207,50 @@ const Tags = () => {
                 </div>
               )}
             </header>
+
+            {/* Recently Viewed Tags */}
+            {recentTags.length > 0 && !loading && (
+              <section className="mb-8">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <h2 className="text-sm font-medium text-muted-foreground">Recently Viewed</h2>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearRecentTags}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Clear
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {recentTags.map((tag) => (
+                    <Link key={tag.id} to={`/tag/${tag.slug}`}>
+                      <Badge
+                        variant="secondary"
+                        className="hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer group pl-2 pr-1"
+                      >
+                        <Tag className="h-3 w-3 mr-1.5" />
+                        {tag.name}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeRecentTag(tag.id);
+                          }}
+                          className="ml-1.5 p-0.5 rounded hover:bg-destructive/20 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Search and Controls */}
             <div className="space-y-4 mb-8">
