@@ -710,6 +710,19 @@
   border-radius: 0;
 }
 
+/* Prism theme CSS often sets a background on pre/code (sometimes with !important).
+   For executable blocks we want ONE container background, not an inner "box". */
+.executable-code-block-wrapper [class^="code-theme-"] pre[class*="language-"],
+.executable-code-block-wrapper [class^="code-theme-"] code[class*="language-"] {
+  background: transparent !important;
+}
+
+/* Full-block theming for clean light (match the "clean" Prism theme intent) */
+.executable-code-block-wrapper .code-theme-clean {
+  background: hsl(var(--background)) !important;
+  border-color: hsl(var(--border) / 0.7) !important;
+}
+
 /* Syntax highlighting in executable blocks */
 .executable-code-block .hljs-comment,
 .executable-code-block .hljs-quote {
