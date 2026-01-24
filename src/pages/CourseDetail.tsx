@@ -179,6 +179,12 @@ const CourseDetail = () => {
   const [careers, setCareers] = useState<Array<{id: string; name: string; slug: string}>>([]);
   const [courseCreator, setCourseCreator] = useState<{id: string; full_name: string | null; avatar_url: string | null; role: string} | null>(null);
   const [maintenanceTeam, setMaintenanceTeam] = useState<Array<{id: string; full_name: string | null; avatar_url: string | null; role: string}>>([]);
+  const [linkedPrerequisites, setLinkedPrerequisites] = useState<Array<{
+    id: string;
+    prerequisite_course_id: string | null;
+    prerequisite_text: string | null;
+    linkedCourse?: { id: string; name: string; slug: string } | null;
+  }>>([]);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
   const { isBookmarked, toggleBookmark } = useBookmarks();
@@ -393,6 +399,7 @@ const CourseDetail = () => {
     if (course?.id) {
       fetchCareers();
       fetchCourseTeam();
+      fetchLinkedPrerequisites();
     }
   }, [course?.id]);
 
@@ -455,6 +462,48 @@ const CourseDetail = () => {
       }
     } catch (error) {
       console.error("Error fetching course team:", error);
+    }
+  };
+
+  const fetchLinkedPrerequisites = async () => {
+    if (!course?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from("course_prerequisites")
+        .select("id, prerequisite_course_id, prerequisite_text, display_order")
+        .eq("course_id", course.id)
+        .order("display_order");
+
+      if (error) throw error;
+
+      // Fetch linked course details
+      const courseIds = (data || [])
+        .filter(p => p.prerequisite_course_id)
+        .map(p => p.prerequisite_course_id);
+
+      let coursesMap: Record<string, { id: string; name: string; slug: string }> = {};
+      
+      if (courseIds.length > 0) {
+        const { data: courses, error: coursesError } = await supabase
+          .from("courses")
+          .select("id, name, slug")
+          .in("id", courseIds);
+
+        if (!coursesError && courses) {
+          coursesMap = Object.fromEntries(courses.map(c => [c.id, c]));
+        }
+      }
+
+      const enrichedPrereqs = (data || []).map(p => ({
+        id: p.id,
+        prerequisite_course_id: p.prerequisite_course_id,
+        prerequisite_text: p.prerequisite_text,
+        linkedCourse: p.prerequisite_course_id ? coursesMap[p.prerequisite_course_id] || null : null,
+      }));
+
+      setLinkedPrerequisites(enrichedPrereqs);
+    } catch (error) {
+      console.error("Error fetching prerequisites:", error);
     }
   };
 
@@ -1798,7 +1847,7 @@ const CourseDetail = () => {
                 isModerator={isModerator}
                 isHeaderVisible={isHeaderVisible}
                 showAnnouncement={showAnnouncement}
-                prerequisites={course?.prerequisites || []}
+                linkedPrerequisites={linkedPrerequisites}
                 creator={courseCreator}
                 maintenanceTeam={maintenanceTeam}
               />
