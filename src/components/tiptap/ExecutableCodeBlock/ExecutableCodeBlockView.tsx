@@ -195,7 +195,7 @@ const ExecutableCodeBlockView = ({
   };
 
   return (
-    <NodeViewWrapper className="executable-code-block-wrapper my-4" data-type="executableCodeBlock">
+    <NodeViewWrapper className="executable-code-block-wrapper my-2" data-type="executableCodeBlock">
       <div className="group relative w-full">
         {/* Close button - floating top-right corner, only in edit mode */}
         {isEditable && (
@@ -203,20 +203,21 @@ const ExecutableCodeBlockView = ({
             variant="ghost"
             size="icon"
             onClick={() => deleteNode()}
-            className="absolute -top-2 -right-2 z-10 h-6 w-6 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute -top-1.5 -right-1.5 z-10 h-5 w-5 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 opacity-0 group-hover:opacity-100 transition-opacity"
             title="Remove code block"
           >
-            <X className="w-3 h-3" />
+            <X className="w-2.5 h-2.5" />
           </Button>
         )}
 
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-          {/* Header: Language label + Actions */}
-          <div className="flex items-center justify-between px-4 pt-3 pb-0">
+        {/* Single flat container */}
+        <div className="rounded-md border border-border/60 bg-muted/30 overflow-hidden">
+          {/* Compact header */}
+          <div className="flex items-center justify-between px-3 py-1 border-b border-border/40">
             {/* Language Label */}
             {isEditable ? (
               <Select value={language} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="h-6 w-auto gap-1 px-0 text-[11px] uppercase tracking-widest font-medium text-muted-foreground border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
+                <SelectTrigger className="h-5 w-auto gap-0.5 px-0 text-[10px] uppercase tracking-wider font-medium text-muted-foreground/70 border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,65 +229,50 @@ const ExecutableCodeBlockView = ({
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-[11px] uppercase tracking-widest font-medium text-muted-foreground">
+              <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/70">
                 {language}
               </span>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-0.5">
-              {/* Edit/Cancel button */}
+            {/* Compact action buttons */}
+            <div className="flex items-center gap-0">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
-                className="h-8 w-8 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
+                className="h-6 w-6 text-muted-foreground/50 hover:text-foreground hover:bg-transparent"
                 title={isEditingCode ? "Cancel edit" : "Edit code"}
               >
-                {isEditingCode ? (
-                  <X className="w-4 h-4" />
-                ) : (
-                  <Pencil className="w-4 h-4" />
-                )}
+                {isEditingCode ? <X className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
               </Button>
 
-              {/* Run button */}
               {canExecute && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleRun}
                   disabled={isRunning}
-                  className="h-8 w-8 text-muted-foreground/60 hover:text-primary hover:bg-transparent"
+                  className="h-6 w-6 text-muted-foreground/50 hover:text-primary hover:bg-transparent"
                   title="Run code"
                 >
-                  {isRunning ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
+                  {isRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                 </Button>
               )}
               
-              {/* Copy button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleCopy}
-                className="h-8 w-8 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
+                className="h-6 w-6 text-muted-foreground/50 hover:text-foreground hover:bg-transparent"
                 title="Copy code"
               >
-                {copied ? (
-                  <Check className="w-4 h-4 text-primary" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
+                {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
               </Button>
             </div>
           </div>
 
-          {/* Code Editor/Viewer */}
-          <div className="w-full px-4 py-4">
+          {/* Compact code content - no inner container */}
+          <div className="px-3 py-2">
             {isEditingCode ? (
               <textarea
                 ref={textareaRef}
@@ -294,9 +280,9 @@ const ExecutableCodeBlockView = ({
                 onChange={handleCodeChange}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
-                  "min-h-[60px] overflow-hidden",
-                  "text-foreground placeholder:text-muted-foreground"
+                  "w-full bg-transparent resize-none outline-none text-[13px] font-mono leading-snug",
+                  "min-h-[1.5em] overflow-hidden",
+                  "text-foreground placeholder:text-muted-foreground/60"
                 )}
                 placeholder="// Write your code here..."
                 spellCheck={false}
@@ -305,7 +291,7 @@ const ExecutableCodeBlockView = ({
                 autoCapitalize="off"
               />
             ) : (
-              <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full">
+              <pre className="text-[13px] font-mono leading-snug overflow-x-auto w-full m-0">
                 <code ref={codeRef} className={`language-${normalizedLang}`}>
                   {editedCode || '// Write your code here...'}
                 </code>
@@ -314,25 +300,22 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output Panel */}
+        {/* Compact output panel */}
         {showOutput && output !== null && (
-          <div className="mt-2 rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-            {/* Output Header */}
+          <div className="mt-1.5 rounded-md border border-border/60 bg-muted/30 overflow-hidden">
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-1 hover:bg-muted/50 transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center bg-muted">
-                  {outputExpanded ? (
-                    <ChevronUp className="w-3 h-3 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3 text-muted-foreground" />
-                  )}
-                </div>
+              <div className="flex items-center gap-1.5">
+                {outputExpanded ? (
+                  <ChevronUp className="w-3 h-3 text-muted-foreground/60" />
+                ) : (
+                  <ChevronDown className="w-3 h-3 text-muted-foreground/60" />
+                )}
                 <span className={cn(
-                  "text-[11px] uppercase tracking-widest font-medium",
-                  outputError ? "text-destructive" : "text-muted-foreground"
+                  "text-[10px] uppercase tracking-wider font-medium",
+                  outputError ? "text-destructive" : "text-muted-foreground/70"
                 )}>
                   {outputError ? 'Error' : 'Output'}
                 </span>
@@ -344,21 +327,20 @@ const ExecutableCodeBlockView = ({
                   e.stopPropagation();
                   handleCloseOutput();
                 }}
-                className="h-6 w-6 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
+                className="h-5 w-5 text-muted-foreground/50 hover:text-foreground hover:bg-transparent"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-2.5 h-2.5" />
               </Button>
             </button>
 
-            {/* Collapsible Output Content */}
             <div className={cn(
-              "grid transition-all duration-200 ease-out",
+              "grid transition-all duration-150 ease-out",
               outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
             )}>
               <div className="overflow-hidden">
-                <div className="px-4 pb-4">
+                <div className="px-3 py-2 border-t border-border/40">
                   <pre className={cn(
-                    "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+                    "text-[13px] font-mono leading-snug whitespace-pre-wrap overflow-x-auto m-0",
                     outputError ? "text-destructive" : "text-foreground"
                   )}>
                     {output}
@@ -371,7 +353,7 @@ const ExecutableCodeBlockView = ({
 
         {/* Copied toast */}
         {copied && (
-          <div className="absolute top-2 right-20 px-2 py-1 text-xs bg-primary text-primary-foreground rounded shadow-lg animate-in fade-in-0 zoom-in-95 z-10">
+          <div className="absolute top-0 right-16 px-1.5 py-0.5 text-[10px] bg-primary text-primary-foreground rounded shadow-sm animate-in fade-in-0 zoom-in-95 z-10">
             Copied!
           </div>
         )}
