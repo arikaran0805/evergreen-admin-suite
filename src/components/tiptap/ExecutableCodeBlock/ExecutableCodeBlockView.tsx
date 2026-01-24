@@ -123,8 +123,8 @@ const ExecutableCodeBlockView = ({
   };
 
   const handleCancelEdit = () => {
+    setEditedCode(code); // Reset to original node attribute code
     setIsEditingCode(false);
-    setEditedCode(code); // Reset to original
   };
 
   const handleCopy = async () => {
@@ -283,32 +283,34 @@ const ExecutableCodeBlockView = ({
             </div>
           </div>
 
-          {/* Code Editor/Viewer */}
+          {/* Code Editor/Viewer - maintains styled box in both modes */}
           <div className="p-4">
-            {isEditingCode ? (
-              <textarea
-                ref={textareaRef}
-                value={editedCode}
-                onChange={handleCodeChange}
-                onKeyDown={handleKeyDown}
-                className={cn(
-                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
-                  "min-h-[60px] overflow-hidden",
-                  "text-foreground placeholder:text-muted-foreground"
-                )}
-                placeholder="// Write your code here..."
-                spellCheck={false}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-              />
-            ) : (
-              <pre className="text-sm font-mono leading-relaxed overflow-x-auto">
-                <code ref={codeRef} className={`language-${normalizedLang}`}>
-                  {editedCode || '// Write your code here...'}
-                </code>
-              </pre>
-            )}
+            <div className="rounded-lg bg-muted/50 p-4">
+              {isEditingCode ? (
+                <textarea
+                  ref={textareaRef}
+                  value={editedCode}
+                  onChange={handleCodeChange}
+                  onKeyDown={handleKeyDown}
+                  className={cn(
+                    "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
+                    "min-h-[60px] overflow-hidden",
+                    "text-foreground placeholder:text-muted-foreground"
+                  )}
+                  placeholder="// Write your code here..."
+                  spellCheck={false}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                />
+              ) : (
+                <pre className="text-sm font-mono leading-relaxed overflow-x-auto">
+                  <code ref={codeRef} className={`language-${normalizedLang}`}>
+                    {editedCode || '// Write your code here...'}
+                  </code>
+                </pre>
+              )}
+            </div>
           </div>
         </div>
 
