@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLessonNotes } from "@/hooks/useLessonNotes";
 import { useLessonFlowNavigation } from "@/hooks/useLessonFlowNavigation";
+import { useCodeEdit } from "@/contexts/CodeEditContext";
 import { LessonNotesCard } from "./LessonNotesCard";
 import {
   GitBranch,
@@ -16,6 +17,7 @@ import {
   HelpCircle,
   User,
   Sparkles,
+  Zap,
 } from "lucide-react";
 
 interface LessonRightSidebarProps {
@@ -85,6 +87,16 @@ export function LessonRightSidebar({
   assignedModerator,
 }: LessonRightSidebarProps) {
   
+  // Get code edit context to detect when learners edit code
+  let codeEditContext: ReturnType<typeof useCodeEdit> | null = null;
+  try {
+    codeEditContext = useCodeEdit();
+  } catch {
+    // Context not available
+  }
+  
+  const hasEditedCode = codeEditContext?.hasEditedCode ?? false;
+  const editedCodeBlock = codeEditContext?.editedCodeBlock ?? null;
 
   // Calculate scroll offset based on header visibility
   const scrollOffset = isHeaderVisible
@@ -197,20 +209,48 @@ export function LessonRightSidebar({
           <CardContent className="px-4 pb-4 pt-0 space-y-2">
             {PRACTICE_ITEMS.map((item) => {
               const Icon = item.icon;
+              const isRunCode = item.id === "run-code";
+              const isActivated = isRunCode && hasEditedCode;
+              
               return (
                 <button
                   key={item.id}
-                  className="w-full flex items-start gap-3 p-2 rounded-md text-left transition-all hover:bg-muted/50 hover:shadow-sm group"
+                  onClick={() => {
+                    if (isRunCode && editedCodeBlock) {
+                      // TODO: Open playground with edited code
+                      console.log("Open playground with:", editedCodeBlock);
+                    }
+                  }}
+                  className={cn(
+                    "w-full flex items-start gap-3 p-2 rounded-md text-left transition-all group",
+                    isActivated
+                      ? "bg-primary/10 ring-1 ring-primary/30 shadow-sm"
+                      : "hover:bg-muted/50 hover:shadow-sm"
+                  )}
                 >
-                  <div className="p-1.5 rounded-md bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    <Icon className="h-3.5 w-3.5" />
+                  <div className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    isActivated
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                  )}>
+                    {isActivated ? <Zap className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
+                    <p className={cn(
+                      "text-sm font-medium truncate",
+                      isActivated ? "text-primary" : "text-foreground"
+                    )}>
                       {item.title}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {item.description}
+                    <p className={cn(
+                      "text-xs truncate",
+                      isActivated ? "text-primary/70" : "text-muted-foreground"
+                    )}>
+                      {isActivated 
+                        ? `Your ${editedCodeBlock?.language || 'code'} is ready to run`
+                        : item.description
+                      }
                     </p>
                   </div>
                 </button>

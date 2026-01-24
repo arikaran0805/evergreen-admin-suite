@@ -7,7 +7,7 @@
  * ROLES: All users can edit and execute code (editing code ≠ editing content)
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import Prism from '@/lib/prism';
 import { useCodeTheme } from '@/hooks/useCodeTheme';
+import { useCodeEdit } from '@/contexts/CodeEditContext';
 
 // Supported languages for execution
 const EXECUTABLE_LANGUAGES = ['python', 'javascript', 'typescript'];
@@ -66,6 +67,17 @@ const ExecutableCodeBlockView = ({
   const { language = 'python', code = '' } = node.attrs;
   const { theme: codeTheme } = useCodeTheme();
   
+  // Generate stable ID for this code block instance
+  const instanceId = useId();
+  
+  // Get code edit context (may be undefined if not wrapped in provider)
+  let codeEditContext: ReturnType<typeof useCodeEdit> | null = null;
+  try {
+    codeEditContext = useCodeEdit();
+  } catch {
+    // Context not available - that's okay, we just won't track edits
+  }
+  
   const [editedCode, setEditedCode] = useState(code);
   const [isEditingCode, setIsEditingCode] = useState(false); // Toggle between view/edit
   const [copied, setCopied] = useState(false);
@@ -74,6 +86,9 @@ const ExecutableCodeBlockView = ({
   const [outputError, setOutputError] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(true);
+  
+  // Store original code for comparison
+  const [originalCode] = useState(code);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const codeRef = useRef<HTMLElement>(null);
@@ -86,6 +101,13 @@ const ExecutableCodeBlockView = ({
   useEffect(() => {
     setEditedCode(code);
   }, [code]);
+  
+  // Report code edits to context
+  useEffect(() => {
+    if (codeEditContext) {
+      codeEditContext.reportCodeEdit(instanceId, editedCode, originalCode, language);
+    }
+  }, [editedCode, originalCode, language, instanceId, codeEditContext]);
 
   // Apply syntax highlighting when not editing code
   useEffect(() => {
