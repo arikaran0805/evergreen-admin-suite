@@ -345,8 +345,8 @@ All colors MUST be HSL.
   /* Clean Light code theme - matches the minimal white design */
   .code-theme-clean code[class*="language-"],
   .code-theme-clean pre[class*="language-"] {
-    color: #333 !important;
-    background: #fff !important;
+    color: #1a1a2e !important;
+    background: transparent !important;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
     font-size: 0.9rem !important;
     line-height: 1.6 !important;
@@ -361,17 +361,21 @@ All colors MUST be HSL.
   }
 
   .code-theme-clean .token.punctuation {
-    color: #333 !important;
+    color: #1a1a2e !important;
   }
 
   .code-theme-clean .token.property,
   .code-theme-clean .token.tag,
   .code-theme-clean .token.boolean,
-  .code-theme-clean .token.number,
   .code-theme-clean .token.constant,
   .code-theme-clean .token.symbol,
   .code-theme-clean .token.deleted {
-    color: #0550ae !important;
+    color: #2563eb !important;
+  }
+
+  /* Numbers in orange/rust */
+  .code-theme-clean .token.number {
+    color: #c2410c !important;
   }
 
   .code-theme-clean .token.selector,
@@ -380,7 +384,7 @@ All colors MUST be HSL.
   .code-theme-clean .token.char,
   .code-theme-clean .token.builtin,
   .code-theme-clean .token.inserted {
-    color: #a31515 !important;
+    color: #16a34a !important;
   }
 
   .code-theme-clean .token.operator,
@@ -388,24 +392,25 @@ All colors MUST be HSL.
   .code-theme-clean .token.url,
   .code-theme-clean .language-css .token.string,
   .code-theme-clean .style .token.string {
-    color: #333 !important;
+    color: #1a1a2e !important;
   }
 
+  /* Keywords in blue */
   .code-theme-clean .token.atrule,
   .code-theme-clean .token.attr-value,
   .code-theme-clean .token.keyword {
-    color: #0000ff !important;
+    color: #2563eb !important;
   }
 
   .code-theme-clean .token.function,
   .code-theme-clean .token.class-name {
-    color: #795e26 !important;
+    color: #7c3aed !important;
   }
 
   .code-theme-clean .token.regex,
   .code-theme-clean .token.important,
   .code-theme-clean .token.variable {
-    color: #811f3f !important;
+    color: #dc2626 !important;
   }
 
   /* Gray code theme - custom styling with !important to override Prism defaults */
