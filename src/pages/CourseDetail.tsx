@@ -1731,6 +1731,8 @@ const CourseDetail = () => {
                 return nextPost ? { title: nextPost.title, slug: nextPost.slug } : null;
               })()}
               isLessonCompleted={isLessonCompleted(selectedPost.id)}
+              isHeaderVisible={isHeaderVisible}
+              showAnnouncement={showAnnouncement}
               assignedModerator={null}
             />
           )}

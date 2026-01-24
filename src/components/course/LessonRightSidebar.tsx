@@ -36,6 +36,8 @@ interface LessonRightSidebarProps {
     slug: string;
   } | null;
   isLessonCompleted: boolean;
+  isHeaderVisible: boolean;
+  showAnnouncement: boolean;
   assignedModerator?: {
     id: string;
     full_name: string | null;
@@ -82,6 +84,8 @@ export function LessonRightSidebar({
   userId,
   nextLesson,
   isLessonCompleted,
+  isHeaderVisible,
+  showAnnouncement,
   assignedModerator,
 }: LessonRightSidebarProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -134,9 +138,15 @@ export function LessonRightSidebar({
     }
   };
 
+  // Calculate sticky top position based on header visibility (matching left sidebar)
+  const stickyTopClass = isHeaderVisible
+    ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
+    : (showAnnouncement ? 'top-[4.75rem]' : 'top-10');
+
   return (
     <aside className="hidden xl:block w-[300px] flex-shrink-0">
-      <div className="space-y-4 p-1">
+      <div className={cn("sticky transition-[top] duration-200 ease-out h-[calc(100vh-6.5rem)]", stickyTopClass)}>
+        <div className="space-y-4 p-1 overflow-y-auto h-full">
         {/* SECTION 1: Lesson Flow (Semantic Navigation) */}
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4">
@@ -357,6 +367,7 @@ export function LessonRightSidebar({
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </aside>
   );
