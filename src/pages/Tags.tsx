@@ -126,9 +126,11 @@ const Tags = () => {
     return letters;
   }, [tags]);
 
-  // Stats
+  // Stats - total and filtered
   const totalTags = tags.length;
   const totalPosts = tags.reduce((sum, tag) => sum + tag.postCount, 0);
+  const filteredPostCount = filteredTags.reduce((sum, tag) => sum + tag.postCount, 0);
+  const isFiltered = debouncedSearchQuery || selectedLetter;
 
   const getTagSize = (postCount: number) => {
     const maxCount = Math.max(...tags.map(t => t.postCount), 1);
@@ -177,14 +179,26 @@ const Tags = () => {
 
               {/* Stats */}
               {!loading && (
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1.5">
                     <Tag className="h-4 w-4" />
-                    {totalTags} tag{totalTags !== 1 ? "s" : ""}
+                    {isFiltered ? (
+                      <>
+                        <span className="font-medium text-foreground">{filteredTags.length}</span> of {totalTags} tag{totalTags !== 1 ? "s" : ""}
+                      </>
+                    ) : (
+                      <>{totalTags} tag{totalTags !== 1 ? "s" : ""}</>
+                    )}
                   </span>
                   <span className="text-border">•</span>
                   <span>
-                    {totalPosts} lesson{totalPosts !== 1 ? "s" : ""} tagged
+                    {isFiltered ? (
+                      <>
+                        <span className="font-medium text-foreground">{filteredPostCount}</span> of {totalPosts} lesson{totalPosts !== 1 ? "s" : ""} tagged
+                      </>
+                    ) : (
+                      <>{totalPosts} lesson{totalPosts !== 1 ? "s" : ""} tagged</>
+                    )}
                   </span>
                 </div>
               )}
