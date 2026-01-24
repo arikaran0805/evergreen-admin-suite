@@ -15,6 +15,17 @@ import { useRecentlyViewedTags } from "@/hooks/useRecentlyViewedTags";
 import { useTagBookmarks } from "@/hooks/useTagBookmarks";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TagWithCount {
   id: string;
@@ -257,15 +268,32 @@ const Tags = () => {
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <h2 className="text-sm font-medium text-muted-foreground">Recently Viewed</h2>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={clearRecentTags}
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Clear
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Clear
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Clear recently viewed tags?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will remove all {recentTags.length} recently viewed tag{recentTags.length !== 1 ? "s" : ""} from your history. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={clearRecentTags}>
+                          Clear All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {recentTags.map((tag) => (
