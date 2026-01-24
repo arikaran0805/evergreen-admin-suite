@@ -145,8 +145,8 @@ export function LessonRightSidebar({
 
   return (
     <aside className="hidden xl:block w-[300px] flex-shrink-0">
-      <div className={cn("sticky transition-[top] duration-200 ease-out h-[calc(100vh-6.5rem)]", stickyTopClass)}>
-        <div className="space-y-4 p-1 overflow-y-auto h-full">
+      <div className={cn("sticky transition-[top] duration-200 ease-out max-h-[calc(100vh-7rem)] overflow-y-auto", stickyTopClass)}>
+        <div className="space-y-4 p-1 pb-6">
         {/* SECTION 1: Lesson Flow (Semantic Navigation) */}
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4">
