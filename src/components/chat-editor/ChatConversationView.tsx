@@ -583,8 +583,12 @@ const ChatConversationView = ({
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="p-6 space-y-4">
+        {/* Messages - Chat Bubbles Section */}
+        <div 
+          id="lesson-chat-bubbles" 
+          data-section="chat-bubbles"
+          className="p-6 space-y-4"
+        >
           {messages.map((message, index) => {
             // Render freeform canvas blocks
             if (message.type === "freeform") {
@@ -718,9 +722,13 @@ const ChatConversationView = ({
         `}</style>
       </div>
 
-      {/* Explanation section (if present) */}
+      {/* Explanation section (if present) - Cause & Effect Section */}
       {explanation && (
-        <div className="prose prose-sm dark:prose-invert max-w-none p-6 rounded-xl bg-muted/30 border border-border/50">
+        <div 
+          id="lesson-cause-effect" 
+          data-section="cause-effect"
+          className="prose prose-sm dark:prose-invert max-w-none p-6 rounded-xl bg-muted/30 border border-border/50"
+        >
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <span className="text-xl">📝</span> Explanation
           </h3>
