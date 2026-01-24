@@ -212,7 +212,6 @@ const ExecutableCodeBlockView = ({
       const end = textarea.selectionEnd;
       const newCode = editedCode.substring(0, start) + '  ' + editedCode.substring(end);
       setEditedCode(newCode);
-      updateAttributes({ code: newCode });
       // Reset cursor position after state update
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
@@ -331,25 +330,32 @@ const ExecutableCodeBlockView = ({
 
         {/* Output panel - matches reference design */}
         {showOutput && (
-          <div className="mt-3 rounded-2xl border border-border/50 bg-muted/20 overflow-hidden">
+          <div className="mt-3 rounded-xl border border-border/60 bg-muted/40 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/50"
+              type="button"
             >
-              <div className="flex items-center gap-2.5">
-                {outputExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                )}
-                <span className={cn(
-                  "text-sm font-medium",
-                  outputError ? "text-destructive" : "text-foreground"
-                )}>
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-background/70">
+                  {outputExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </span>
+
+                <span
+                  className={cn(
+                    'text-sm font-medium',
+                    outputError ? 'text-destructive' : 'text-muted-foreground'
+                  )}
+                >
                   {outputError ? 'Error' : 'Output'}
                 </span>
               </div>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -357,25 +363,31 @@ const ExecutableCodeBlockView = ({
                   e.stopPropagation();
                   handleCloseOutput();
                 }}
-                className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </Button>
             </button>
 
             {/* Content area */}
-            <div className={cn(
-              "grid transition-all duration-200 ease-out",
-              outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-            )}>
+            <div
+              className={cn(
+                'grid transition-all duration-200 ease-out',
+                outputExpanded
+                  ? 'grid-rows-[1fr] opacity-100'
+                  : 'grid-rows-[0fr] opacity-0'
+              )}
+            >
               <div className="overflow-hidden">
                 <div className="px-4 pb-4">
-                  <div className="rounded-xl bg-background/80 px-4 py-3">
-                    <pre className={cn(
-                      "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
-                      outputError ? "text-destructive" : "text-foreground",
-                      !output && "text-muted-foreground"
-                    )}>
+                  <div className="rounded-xl border border-border/40 bg-background px-5 py-4">
+                    <pre
+                      className={cn(
+                        'm-0 whitespace-pre-wrap overflow-x-auto text-sm font-mono leading-relaxed',
+                        outputError ? 'text-destructive' : 'text-foreground',
+                        !output && 'text-muted-foreground'
+                      )}
+                    >
                       {output || 'No output'}
                     </pre>
                   </div>
