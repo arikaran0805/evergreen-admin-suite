@@ -531,8 +531,10 @@ const ChatConversationView = ({
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Chat conversation */}
+      {/* Chat conversation - Chat Bubbles Section */}
       <div
+        id="lesson-chat-bubbles"
+        data-section="chat-bubbles"
         className={cn(
           "chat-conversation-view rounded-2xl overflow-hidden",
           "bg-gradient-to-b from-background via-background to-muted/30",
@@ -583,12 +585,8 @@ const ChatConversationView = ({
           </div>
         </div>
 
-        {/* Messages - Chat Bubbles Section */}
-        <div 
-          id="lesson-chat-bubbles" 
-          data-section="chat-bubbles"
-          className="p-6 space-y-4"
-        >
+        {/* Messages */}
+        <div className="p-6 space-y-4">
           {messages.map((message, index) => {
             // Render freeform canvas blocks
             if (message.type === "freeform") {
