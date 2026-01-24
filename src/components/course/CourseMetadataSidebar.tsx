@@ -20,6 +20,7 @@ import {
   BookOpen,
   User,
   Users,
+  ExternalLink,
 } from "lucide-react";
 
 interface Career {
@@ -33,6 +34,17 @@ interface TeamMember {
   full_name: string | null;
   avatar_url: string | null;
   role: string;
+}
+
+interface LinkedPrerequisite {
+  id: string;
+  prerequisite_course_id: string | null;
+  prerequisite_text: string | null;
+  linkedCourse?: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
 }
 
 interface CourseMetadataSidebarProps {
@@ -53,7 +65,7 @@ interface CourseMetadataSidebarProps {
   isHeaderVisible: boolean;
   showAnnouncement: boolean;
   onEdit?: () => void;
-  prerequisites?: string[];
+  linkedPrerequisites?: LinkedPrerequisite[];
   creator?: TeamMember | null;
   maintenanceTeam?: TeamMember[];
 }
@@ -111,7 +123,7 @@ export function CourseMetadataSidebar({
   isHeaderVisible,
   showAnnouncement,
   onEdit,
-  prerequisites = [],
+  linkedPrerequisites = [],
   creator,
   maintenanceTeam = [],
 }: CourseMetadataSidebarProps) {
@@ -257,12 +269,22 @@ export function CourseMetadataSidebar({
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4 pt-0">
-              {prerequisites.length > 0 ? (
+              {linkedPrerequisites.length > 0 ? (
                 <ul className="space-y-1.5">
-                  {prerequisites.map((prereq, index) => (
-                    <li key={index} className="text-xs text-muted-foreground flex items-start gap-2">
+                  {linkedPrerequisites.map((prereq) => (
+                    <li key={prereq.id} className="text-xs flex items-start gap-2">
                       <span className="text-primary mt-0.5">•</span>
-                      <span>{prereq}</span>
+                      {prereq.linkedCourse ? (
+                        <Link 
+                          to={`/course/${prereq.linkedCourse.slug}`}
+                          className="text-primary hover:underline flex items-center gap-1 group"
+                        >
+                          {prereq.linkedCourse.name}
+                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">{prereq.prerequisite_text}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
