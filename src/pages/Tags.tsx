@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface TagWithCount {
   id: string;
@@ -28,6 +29,9 @@ const Tags = () => {
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
+  
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -81,9 +85,9 @@ const Tags = () => {
   const filteredTags = useMemo(() => {
     let result = [...tags];
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // Search filter (using debounced value)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       result = result.filter(tag => tag.name.toLowerCase().includes(query));
     }
 
@@ -108,7 +112,7 @@ const Tags = () => {
     }
 
     return result;
-  }, [tags, searchQuery, selectedLetter, sortBy]);
+  }, [tags, debouncedSearchQuery, selectedLetter, sortBy]);
 
   // Get letters that have tags
   const availableLetters = useMemo(() => {

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { calculateReadingTime } from "@/lib/readingTime";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface Lesson {
   id: string;
@@ -65,6 +66,9 @@ const TagPosts = () => {
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [popularTags, setPopularTags] = useState<PopularTag[]>([]);
+  
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     fetchPopularTags();
@@ -228,9 +232,9 @@ const TagPosts = () => {
       if (levelFilter !== "all" && lesson.course?.level !== levelFilter) {
         return false;
       }
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+      // Search filter (using debounced value)
+      if (debouncedSearchQuery.trim()) {
+        const query = debouncedSearchQuery.toLowerCase();
         const matchesTitle = lesson.title.toLowerCase().includes(query);
         const matchesCourse = lesson.course?.name.toLowerCase().includes(query);
         if (!matchesTitle && !matchesCourse) {
@@ -239,7 +243,7 @@ const TagPosts = () => {
       }
       return true;
     });
-  }, [lessons, levelFilter, searchQuery]);
+  }, [lessons, levelFilter, debouncedSearchQuery]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
@@ -247,9 +251,9 @@ const TagPosts = () => {
       if (levelFilter !== "all" && course.level !== levelFilter) {
         return false;
       }
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+      // Search filter (using debounced value)
+      if (debouncedSearchQuery.trim()) {
+        const query = debouncedSearchQuery.toLowerCase();
         const matchesName = course.name.toLowerCase().includes(query);
         const matchesDescription = course.description?.toLowerCase().includes(query);
         if (!matchesName && !matchesDescription) {
@@ -258,7 +262,7 @@ const TagPosts = () => {
       }
       return true;
     });
-  }, [courses, levelFilter, searchQuery]);
+  }, [courses, levelFilter, debouncedSearchQuery]);
 
   // Group lessons by course
   const lessonsByCourse = useMemo(() => {
