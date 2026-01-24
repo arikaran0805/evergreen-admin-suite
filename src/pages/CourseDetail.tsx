@@ -239,9 +239,9 @@ const CourseDetail = () => {
       return;
     }
 
-    // Priority 3: Admin / Super Moderator / Senior Moderator → Lessons tab
+    // Priority 3: Admin / Super Moderator / Senior Moderator → Course Details
     if (isAdmin || isModerator) {
-      setActiveTab("lessons");
+      setActiveTab("details");
       setDefaultTabResolved(true);
       return;
     }
