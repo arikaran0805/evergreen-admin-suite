@@ -21,6 +21,8 @@ import {
   User,
   Users,
   ExternalLink,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 
 interface Career {
@@ -45,6 +47,8 @@ interface LinkedPrerequisite {
     name: string;
     slug: string;
   } | null;
+  isCompleted?: boolean;
+  progressPercentage?: number;
 }
 
 interface CourseMetadataSidebarProps {
@@ -266,25 +270,65 @@ export function CourseMetadataSidebar({
               <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
                 Prerequisites
+                {linkedPrerequisites.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">
+                    {linkedPrerequisites.filter(p => p.isCompleted).length}/{linkedPrerequisites.length}
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4 pt-0">
               {linkedPrerequisites.length > 0 ? (
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {linkedPrerequisites.map((prereq) => (
                     <li key={prereq.id} className="text-xs flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
                       {prereq.linkedCourse ? (
-                        <Link 
-                          to={`/course/${prereq.linkedCourse.slug}`}
-                          className="text-primary hover:underline flex items-center gap-1 group"
-                        >
-                          {prereq.linkedCourse.name}
-                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </Link>
+                        // Linked course prerequisite with completion status
+                        prereq.isCompleted ? (
+                          <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        )
                       ) : (
-                        <span className="text-muted-foreground">{prereq.prerequisite_text}</span>
+                        // Text prerequisite - just a bullet
+                        <span className="text-primary mt-0.5 w-4 text-center flex-shrink-0">•</span>
                       )}
+                      <div className="flex-1 min-w-0">
+                        {prereq.linkedCourse ? (
+                          <div className="flex flex-col gap-0.5">
+                            <Link 
+                              to={`/course/${prereq.linkedCourse.slug}`}
+                              className={cn(
+                                "hover:underline flex items-center gap-1 group",
+                                prereq.isCompleted ? "text-primary" : "text-foreground"
+                              )}
+                            >
+                              <span className={cn(
+                                "truncate",
+                                prereq.isCompleted && "line-through opacity-70"
+                              )}>
+                                {prereq.linkedCourse.name}
+                              </span>
+                              <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            </Link>
+                            {prereq.progressPercentage !== undefined && prereq.progressPercentage > 0 && !prereq.isCompleted && (
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-1 flex-1 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-primary/60 rounded-full transition-all"
+                                    style={{ width: `${prereq.progressPercentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {prereq.progressPercentage}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">{prereq.prerequisite_text}</span>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

@@ -184,6 +184,8 @@ const CourseDetail = () => {
     prerequisite_course_id: string | null;
     prerequisite_text: string | null;
     linkedCourse?: { id: string; name: string; slug: string } | null;
+    isCompleted?: boolean;
+    progressPercentage?: number;
   }>>([]);
   const { toast } = useToast();
   const { settings: adSettings } = useAdSettings();
@@ -399,9 +401,15 @@ const CourseDetail = () => {
     if (course?.id) {
       fetchCareers();
       fetchCourseTeam();
-      fetchLinkedPrerequisites();
     }
   }, [course?.id]);
+
+  // Fetch prerequisites separately so it can re-run when user changes (for completion data)
+  useEffect(() => {
+    if (course?.id) {
+      fetchLinkedPrerequisites();
+    }
+  }, [course?.id, user?.id]);
 
   const fetchCareers = async () => {
     if (!course?.id) return;
@@ -479,11 +487,13 @@ const CourseDetail = () => {
       // Fetch linked course details
       const courseIds = (data || [])
         .filter(p => p.prerequisite_course_id)
-        .map(p => p.prerequisite_course_id);
+        .map(p => p.prerequisite_course_id) as string[];
 
       let coursesMap: Record<string, { id: string; name: string; slug: string }> = {};
+      let completionMap: Record<string, { isCompleted: boolean; progressPercentage: number }> = {};
       
       if (courseIds.length > 0) {
+        // Fetch course details
         const { data: courses, error: coursesError } = await supabase
           .from("courses")
           .select("id, name, slug")
@@ -492,14 +502,53 @@ const CourseDetail = () => {
         if (!coursesError && courses) {
           coursesMap = Object.fromEntries(courses.map(c => [c.id, c]));
         }
+
+        // Fetch completion data for logged-in user
+        if (user) {
+          // For each prerequisite course, get total lessons and completed lessons
+          const completionPromises = courseIds.map(async (prereqCourseId) => {
+            // Get total published lessons for this course
+            const { count: totalLessons } = await supabase
+              .from("posts")
+              .select("*", { count: "exact", head: true })
+              .eq("category_id", prereqCourseId)
+              .eq("status", "published")
+              .is("deleted_at", null);
+
+            // Get completed lessons for this user
+            const { count: completedLessons } = await supabase
+              .from("lesson_progress")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("course_id", prereqCourseId)
+              .eq("completed", true);
+
+            const total = totalLessons || 0;
+            const completed = completedLessons || 0;
+            const progressPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const isCompleted = total > 0 && completed >= total;
+
+            return { courseId: prereqCourseId, isCompleted, progressPercentage };
+          });
+
+          const completionResults = await Promise.all(completionPromises);
+          completionMap = Object.fromEntries(
+            completionResults.map(r => [r.courseId, { isCompleted: r.isCompleted, progressPercentage: r.progressPercentage }])
+          );
+        }
       }
 
-      const enrichedPrereqs = (data || []).map(p => ({
-        id: p.id,
-        prerequisite_course_id: p.prerequisite_course_id,
-        prerequisite_text: p.prerequisite_text,
-        linkedCourse: p.prerequisite_course_id ? coursesMap[p.prerequisite_course_id] || null : null,
-      }));
+      const enrichedPrereqs = (data || []).map(p => {
+        const completion = p.prerequisite_course_id ? completionMap[p.prerequisite_course_id] : undefined;
+        return {
+          id: p.id,
+          prerequisite_course_id: p.prerequisite_course_id,
+          prerequisite_text: p.prerequisite_text,
+          linkedCourse: p.prerequisite_course_id ? coursesMap[p.prerequisite_course_id] || null : null,
+          isCompleted: completion?.isCompleted,
+          progressPercentage: completion?.progressPercentage,
+        };
+      });
 
       setLinkedPrerequisites(enrichedPrereqs);
     } catch (error) {
