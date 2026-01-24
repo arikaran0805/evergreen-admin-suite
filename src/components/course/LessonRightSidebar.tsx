@@ -1,23 +1,20 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLessonNotes } from "@/hooks/useLessonNotes";
 import { useLessonFlowNavigation } from "@/hooks/useLessonFlowNavigation";
+import { LessonNotesCard } from "./LessonNotesCard";
 import {
   GitBranch,
   MessageSquareCode,
   ArrowRightCircle,
-  StickyNote,
   Play,
   FileText,
   HelpCircle,
   User,
-  Loader2,
-  Check,
   Sparkles,
 } from "lucide-react";
 
@@ -87,7 +84,7 @@ export function LessonRightSidebar({
   showAnnouncement,
   assignedModerator,
 }: LessonRightSidebarProps) {
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  
 
   // Calculate scroll offset based on header visibility
   const scrollOffset = isHeaderVisible
@@ -175,46 +172,13 @@ export function LessonRightSidebar({
 
         {/* SECTION 2: Notes (Premium Feature) */}
         {userId && (
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <StickyNote className="h-4 w-4 text-muted-foreground" />
-                  Your Notes
-                </CardTitle>
-                {isSaving ? (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Saving...
-                  </span>
-                ) : lastSavedText ? (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Check className="h-3 w-3" />
-                    {lastSavedText}
-                  </span>
-                ) : null}
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              {isLoading ? (
-                <div className="h-20 flex items-center justify-center">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <Textarea
-                  value={content}
-                  onChange={(e) => updateContent(e.target.value)}
-                  placeholder="Write your thoughts, shortcuts, or reminders…"
-                  className={cn(
-                    "resize-none border-border/50 bg-background/50 text-sm transition-all",
-                    isNotesExpanded ? "min-h-[120px]" : "min-h-[60px]"
-                  )}
-                  onFocus={() => setIsNotesExpanded(true)}
-                  onBlur={() => !content && setIsNotesExpanded(false)}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <LessonNotesCard
+            content={content}
+            updateContent={updateContent}
+            isSaving={isSaving}
+            lastSavedText={lastSavedText}
+            isLoading={isLoading}
+          />
         )}
 
         {/* SECTION 3: Practice & Reinforcement */}
