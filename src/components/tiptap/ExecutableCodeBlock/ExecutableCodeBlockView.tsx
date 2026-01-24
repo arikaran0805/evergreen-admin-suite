@@ -135,14 +135,13 @@ const ExecutableCodeBlockView = ({
   }, [updateAttributes]);
 
   const handleEditToggle = () => {
-    if (isEditingCode) {
-      // Exiting edit mode - save changes
-      updateAttributes({ code: editedCode });
-    }
     setIsEditingCode(!isEditingCode);
     if (!isEditingCode) {
       // Entering edit mode - focus textarea
       setTimeout(() => textareaRef.current?.focus(), 0);
+    } else {
+      // Exiting edit mode - discard changes, revert to original
+      setEditedCode(code);
     }
   };
 
@@ -324,22 +323,25 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Compact output panel */}
-        {showOutput && output !== null && (
-          <div className="mt-1.5 rounded-md border border-border/60 bg-muted/30 overflow-hidden">
+        {/* Output panel - styled like second image */}
+        {showOutput && (
+          <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+            {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-3 py-1 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/50 transition-colors"
             >
-              <div className="flex items-center gap-1.5">
-                {outputExpanded ? (
-                  <ChevronUp className="w-3 h-3 text-muted-foreground/60" />
-                ) : (
-                  <ChevronDown className="w-3 h-3 text-muted-foreground/60" />
-                )}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted/60">
+                  {outputExpanded ? (
+                    <ChevronUp className="w-3 h-3 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                  )}
+                </div>
                 <span className={cn(
-                  "text-[10px] uppercase tracking-wider font-medium",
-                  outputError ? "text-destructive" : "text-muted-foreground/70"
+                  "text-sm font-medium",
+                  outputError ? "text-destructive" : "text-foreground"
                 )}>
                   {outputError ? 'Error' : 'Output'}
                 </span>
@@ -351,24 +353,28 @@ const ExecutableCodeBlockView = ({
                   e.stopPropagation();
                   handleCloseOutput();
                 }}
-                className="h-5 w-5 text-muted-foreground/50 hover:text-foreground hover:bg-transparent"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-transparent"
               >
-                <X className="w-2.5 h-2.5" />
+                <X className="w-3.5 h-3.5" />
               </Button>
             </button>
 
+            {/* Content area */}
             <div className={cn(
-              "grid transition-all duration-150 ease-out",
+              "grid transition-all duration-200 ease-out",
               outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
             )}>
               <div className="overflow-hidden">
-                <div className="px-3 py-2 border-t border-border/40">
-                  <pre className={cn(
-                    "text-[13px] font-mono leading-snug whitespace-pre-wrap overflow-x-auto m-0",
-                    outputError ? "text-destructive" : "text-foreground"
-                  )}>
-                    {output}
-                  </pre>
+                <div className="mx-3 mb-3">
+                  <div className="rounded-lg bg-background border border-border/40 px-4 py-3">
+                    <pre className={cn(
+                      "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
+                      outputError ? "text-destructive" : "text-foreground",
+                      !output && "text-muted-foreground"
+                    )}>
+                      {output || 'No output'}
+                    </pre>
+                  </div>
                 </div>
               </div>
             </div>
