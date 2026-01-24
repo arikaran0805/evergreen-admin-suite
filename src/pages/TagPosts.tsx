@@ -675,6 +675,14 @@ const TagPosts = () => {
                   )}
                 </Card>
 
+                {/* Browse All Tags Link */}
+                <Link to="/tags">
+                  <Button variant="outline" className="w-full gap-2">
+                    <Tag className="h-4 w-4" />
+                    Browse All Tags
+                  </Button>
+                </Link>
+
                 {/* Trending Indicator */}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground px-2">
                   <TrendingUp className="h-3.5 w-3.5" />
