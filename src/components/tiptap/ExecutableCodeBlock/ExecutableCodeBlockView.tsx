@@ -60,6 +60,7 @@ const ExecutableCodeBlockView = ({
   node, 
   updateAttributes, 
   editor,
+  deleteNode,
 }: NodeViewProps) => {
   const { language = 'python', code = '' } = node.attrs;
   
@@ -233,6 +234,19 @@ const ExecutableCodeBlockView = ({
                   <Copy className="w-3.5 h-3.5" />
                 )}
               </Button>
+
+              {/* Delete/Close button - only in edit mode */}
+              {isEditable && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteNode()}
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  title="Remove code block"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              )}
             </div>
           </div>
 
