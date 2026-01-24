@@ -197,7 +197,7 @@ const ExecutableCodeBlockView = ({
   };
 
   return (
-    <NodeViewWrapper className={cn("executable-code-block-wrapper my-2", `code-theme-${codeTheme}`)} data-type="executableCodeBlock">
+    <NodeViewWrapper className="executable-code-block-wrapper my-2" data-type="executableCodeBlock">
       <div className="group relative w-full">
         {/* Close button - floating top-right corner, only in edit mode */}
         {isEditable && (
@@ -274,7 +274,7 @@ const ExecutableCodeBlockView = ({
           </div>
 
           {/* Code content - directly in container, no inner box */}
-          <div className="px-4 pb-4">
+          <div className={cn("px-4 pb-4", `code-theme-${codeTheme}`)}>
             {isEditingCode ? (
               <textarea
                 ref={textareaRef}
