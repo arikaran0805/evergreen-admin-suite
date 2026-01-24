@@ -19,11 +19,11 @@ declare module '@tiptap/core' {
       /**
        * Set an executable code block
        */
-      setExecutableCodeBlock: (attributes?: { language?: string; code?: string }) => ReturnType;
+      setExecutableCodeBlock: (attributes?: { language?: string; code?: string; autofocus?: boolean }) => ReturnType;
       /**
        * Toggle an executable code block
        */
-      toggleExecutableCodeBlock: (attributes?: { language?: string }) => ReturnType;
+      toggleExecutableCodeBlock: (attributes?: { language?: string; autofocus?: boolean }) => ReturnType;
     };
   }
 }
@@ -33,13 +33,19 @@ export const ExecutableCodeBlock = Node.create<ExecutableCodeBlockOptions>({
 
   group: 'block',
 
-  content: 'text*',
+  // This node is rendered by a React NodeView (textarea). It should be atomic
+  // so ProseMirror doesn't try to manage a text cursor inside it.
+  atom: true,
+
+  content: '',
 
   marks: '',
 
   code: true,
 
   defining: true,
+
+  isolating: true,
 
   addOptions() {
     return {
@@ -63,6 +69,12 @@ export const ExecutableCodeBlock = Node.create<ExecutableCodeBlockOptions>({
         parseHTML: element => element.textContent || '',
         renderHTML: () => ({}),
       },
+      autofocus: {
+        default: false,
+        parseHTML: element => element.getAttribute('data-autofocus') === 'true',
+        // Don't serialize autofocus into HTML output
+        renderHTML: () => ({}),
+      },
     };
   },
 
@@ -79,17 +91,19 @@ export const ExecutableCodeBlock = Node.create<ExecutableCodeBlockOptions>({
           const element = node as HTMLElement;
           const code = element.querySelector('code');
           const language = code?.className?.match(/language-(\w+)/)?.[1] || 'python';
-          return { language };
+          const text = code?.textContent || element.textContent || '';
+          return { language, code: text };
         },
       },
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-type': 'executableCodeBlock' }),
-      ['pre', {}, ['code', {}, 0]],
+      // Serialize code from attributes (we do not store code in ProseMirror content)
+      ['pre', {}, ['code', { class: node.attrs?.language ? `language-${node.attrs.language}` : undefined }, node.attrs?.code || '']],
     ];
   },
 
@@ -102,12 +116,32 @@ export const ExecutableCodeBlock = Node.create<ExecutableCodeBlockOptions>({
       setExecutableCodeBlock:
         (attributes) =>
         ({ commands }) => {
-          return commands.setNode(this.name, attributes);
+          // Insert a fresh node instead of converting the current paragraph.
+          // Converting can leave hidden ProseMirror text selections (double cursor).
+          return commands.insertContent({
+            type: this.name,
+            attrs: {
+              language: attributes?.language ?? 'python',
+              code: attributes?.code ?? '',
+              autofocus: attributes?.autofocus ?? false,
+            },
+          });
         },
       toggleExecutableCodeBlock:
         (attributes) =>
-        ({ commands }) => {
-          return commands.toggleNode(this.name, 'paragraph', attributes);
+        ({ editor, commands }) => {
+          if (editor.isActive(this.name)) {
+            // Remove the node by converting back to paragraph
+            return commands.clearNodes();
+          }
+          return commands.insertContent({
+            type: this.name,
+            attrs: {
+              language: attributes?.language ?? 'python',
+              code: '',
+              autofocus: attributes?.autofocus ?? false,
+            },
+          });
         },
     };
   },
