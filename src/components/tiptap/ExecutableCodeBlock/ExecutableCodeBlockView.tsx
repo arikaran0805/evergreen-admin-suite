@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Prism from '@/lib/prism';
+import { useCodeTheme } from '@/hooks/useCodeTheme';
 
 // Supported languages for execution
 const EXECUTABLE_LANGUAGES = ['python', 'javascript', 'typescript'];
@@ -63,6 +64,7 @@ const ExecutableCodeBlockView = ({
   deleteNode,
 }: NodeViewProps) => {
   const { language = 'python', code = '' } = node.attrs;
+  const { theme: codeTheme } = useCodeTheme();
   
   const [editedCode, setEditedCode] = useState(code);
   const [isEditingCode, setIsEditingCode] = useState(false); // Toggle between view/edit
@@ -272,7 +274,7 @@ const ExecutableCodeBlockView = ({
           </div>
 
           {/* Code content - directly in container, no inner box */}
-          <div className="px-4 pb-4">
+          <div className={cn("px-4 pb-4", `code-theme-${codeTheme}`)}>
             {isEditingCode ? (
               <textarea
                 ref={textareaRef}
@@ -291,7 +293,7 @@ const ExecutableCodeBlockView = ({
                 autoCapitalize="off"
               />
             ) : (
-              <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full m-0">
+              <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full m-0 bg-transparent">
                 <code ref={codeRef} className={`language-${normalizedLang}`}>
                   {editedCode || '// Write your code here...'}
                 </code>
