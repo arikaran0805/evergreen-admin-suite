@@ -213,7 +213,7 @@ const ExecutableCodeBlockView = ({
         )}
 
         {/* Single flat container - no nested inner box */}
-        <div className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+        <div className={cn("rounded-lg border border-border/50 bg-muted/20 overflow-hidden", `code-theme-${codeTheme}`)}>
           {/* Header row */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             {/* Language Label */}
@@ -274,7 +274,7 @@ const ExecutableCodeBlockView = ({
           </div>
 
           {/* Code content - directly in container, no inner box */}
-          <div className={cn("px-4 pb-4", `code-theme-${codeTheme}`)}>
+          <div className="px-4 pb-4">
             {isEditingCode ? (
               <textarea
                 ref={textareaRef}
