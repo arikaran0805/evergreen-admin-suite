@@ -179,6 +179,19 @@ const ExecutableCodeBlockView = ({
   return (
     <NodeViewWrapper className="executable-code-block my-4" data-type="executableCodeBlock">
       <div className="group relative">
+        {/* Close button - floating top-right corner, only in edit mode */}
+        {isEditable && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => deleteNode()}
+            className="absolute -top-2 -right-2 z-10 h-6 w-6 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Remove code block"
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        )}
+
         <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
           {/* Header: Language selector + Actions */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/50">
@@ -234,19 +247,6 @@ const ExecutableCodeBlockView = ({
                   <Copy className="w-3.5 h-3.5" />
                 )}
               </Button>
-
-              {/* Delete/Close button - only in edit mode */}
-              {isEditable && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteNode()}
-                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  title="Remove code block"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              )}
             </div>
           </div>
 
