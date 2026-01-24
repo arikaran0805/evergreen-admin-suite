@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Tag, ArrowLeft, BookOpen, GraduationCap, Clock, Play, ChevronDown, ChevronUp, Layers, Search, X } from "lucide-react";
+import { Tag, ArrowLeft, BookOpen, GraduationCap, Clock, Play, ChevronDown, ChevronUp, Layers, Search, X, TrendingUp, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,13 @@ interface RelatedTag {
   count: number;
 }
 
+interface PopularTag {
+  id: string;
+  name: string;
+  slug: string;
+  postCount: number;
+}
+
 type ContentFilter = "all" | "lessons" | "courses";
 type LevelFilter = "all" | "Beginner" | "Intermediate" | "Advanced";
 
@@ -57,12 +64,54 @@ const TagPosts = () => {
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all");
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [popularTags, setPopularTags] = useState<PopularTag[]>([]);
+
+  useEffect(() => {
+    fetchPopularTags();
+  }, []);
 
   useEffect(() => {
     if (slug) {
       fetchTagData();
     }
   }, [slug]);
+
+  const fetchPopularTags = async () => {
+    try {
+      // Get all post_tags and count by tag_id
+      const { data: postTagsData, error } = await supabase
+        .from("post_tags")
+        .select("tag_id, tags:tag_id (id, name, slug)");
+
+      if (error) throw error;
+
+      // Count occurrences of each tag
+      const tagCounts = new Map<string, { tag: PopularTag; count: number }>();
+      postTagsData?.forEach(pt => {
+        const tag = pt.tags as unknown as { id: string; name: string; slug: string };
+        if (tag) {
+          const existing = tagCounts.get(tag.id);
+          if (existing) {
+            existing.count++;
+          } else {
+            tagCounts.set(tag.id, { 
+              tag: { id: tag.id, name: tag.name, slug: tag.slug, postCount: 1 }, 
+              count: 1 
+            });
+          }
+        }
+      });
+
+      const sortedTags = Array.from(tagCounts.values())
+        .map(({ tag, count }) => ({ ...tag, postCount: count }))
+        .sort((a, b) => b.postCount - a.postCount)
+        .slice(0, 12);
+
+      setPopularTags(sortedTags);
+    } catch (error) {
+      console.error("Error fetching popular tags:", error);
+    }
+  };
 
   const fetchTagData = async () => {
     setLoading(true);
@@ -267,7 +316,9 @@ const TagPosts = () => {
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         <div className="container px-4 py-8 md:py-12">
-          <div className="max-w-5xl mx-auto">
+          <div className="flex gap-8 max-w-6xl mx-auto">
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
             {/* Back Navigation */}
             <Link to="/courses">
               <Button variant="ghost" size="sm" className="mb-6 gap-2 text-muted-foreground hover:text-foreground -ml-2">
@@ -530,6 +581,69 @@ const TagPosts = () => {
                 )}
               </div>
             )}
+            </div>
+
+            {/* Sidebar - Popular Tags */}
+            <aside className="hidden lg:block w-72 flex-shrink-0">
+              <div className="sticky top-24 space-y-6">
+                {/* Popular Tags Section */}
+                <Card className="p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="p-1.5 rounded-lg bg-orange-500/10">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <h3 className="font-semibold text-foreground">Popular Tags</h3>
+                  </div>
+                  
+                  {popularTags.length === 0 ? (
+                    <div className="space-y-2">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Skeleton key={i} className="h-8 w-full" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {popularTags.map((tag, index) => (
+                        <Link
+                          key={tag.id}
+                          to={`/tag/${tag.slug}`}
+                          className={cn(
+                            "flex items-center justify-between px-3 py-2 rounded-lg transition-colors",
+                            slug === tag.slug
+                              ? "bg-primary/10 text-primary"
+                              : "hover:bg-muted text-foreground"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {index < 3 && (
+                              <span className={cn(
+                                "text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center",
+                                index === 0 && "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+                                index === 1 && "bg-gray-400/20 text-gray-600 dark:text-gray-400",
+                                index === 2 && "bg-orange-600/20 text-orange-600 dark:text-orange-400"
+                              )}>
+                                {index + 1}
+                              </span>
+                            )}
+                            <Tag className={cn("h-3.5 w-3.5 flex-shrink-0", index >= 3 && "ml-5")} />
+                            <span className="truncate text-sm">{tag.name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {tag.postCount}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {/* Trending Indicator */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground px-2">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span>Based on lesson count</span>
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </div>
