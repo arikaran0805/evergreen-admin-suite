@@ -658,8 +658,27 @@
    EXECUTABLE CODE BLOCK
    ============================================ */
 
-.executable-code-block {
+/* Full-width code block - spans 100% of parent, counteracting editor padding */
+.executable-code-block-wrapper {
   margin: 1rem 0;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  width: calc(100% + 2rem);
+}
+
+/* Adjust for light editor (0.75rem padding) */
+.tiptap-light-editor .executable-code-block-wrapper,
+.tiptap-chat-editor .executable-code-block-wrapper {
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+  width: calc(100% + 1.5rem);
+}
+
+/* Renderer context - no padding to counteract */
+.tiptap-renderer .executable-code-block-wrapper {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
 }
 
 .executable-code-block textarea {
