@@ -9,10 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useLessonNotes } from "@/hooks/useLessonNotes";
 import {
-  List,
-  MessageSquare,
-  Code2,
-  BookOpen,
+  MessageCircle,
+  GitBranch,
+  Target,
+  Lightbulb,
   Lock,
   StickyNote,
   Play,
@@ -20,7 +20,6 @@ import {
   HelpCircle,
   User,
   ChevronRight,
-  Save,
   Loader2,
   Check,
   Sparkles,
@@ -45,12 +44,12 @@ interface LessonRightSidebarProps {
   } | null;
 }
 
-// Mini TOC sections
-const CONCEPT_SECTIONS = [
-  { id: "comments", label: "Comments", icon: MessageSquare },
-  { id: "keywords", label: "Keywords", icon: Code2 },
-  { id: "examples", label: "Examples", icon: BookOpen },
-  { id: "summary", label: "Summary", icon: FileText, locked: true },
+// Lesson Flow sections - semantic flow of the lesson
+const LESSON_FLOW_SECTIONS = [
+  { id: "chat-bubbles", label: "Chat Bubbles", icon: MessageCircle, selector: "[data-chat-bubble], .chat-bubble-container" },
+  { id: "cause-effect", label: "Cause & Effect", icon: GitBranch, selector: "[data-cause-effect], .explanation-block, .rich-text-explanation" },
+  { id: "practice-points", label: "Practice Points", icon: Target, selector: "[data-practice], .practice-prompt, .exercise-block" },
+  { id: "key-takeaway", label: "Key Takeaway", icon: Lightbulb, locked: true, selector: "[data-takeaway], .takeaway-block" },
 ];
 
 // Practice items
@@ -105,16 +104,16 @@ export function LessonRightSidebar({
     return `Saved ${Math.floor(diff / 3600)}h ago`;
   }, [lastSaved]);
 
-  // Scroll spy for active section
+  // Scroll spy for active section based on lesson flow
   useEffect(() => {
     const handleScroll = () => {
-      const sections = CONCEPT_SECTIONS.filter(s => !s.locked).map(s => s.id);
-      for (const sectionId of sections) {
-        const element = document.getElementById(sectionId);
+      const sections = LESSON_FLOW_SECTIONS.filter(s => !s.locked);
+      for (const section of sections) {
+        const element = document.querySelector(section.selector);
         if (element) {
           const rect = element.getBoundingClientRect();
           if (rect.top >= 0 && rect.top <= 200) {
-            setActiveSection(sectionId);
+            setActiveSection(section.id);
             break;
           }
         }
@@ -126,29 +125,32 @@ export function LessonRightSidebar({
   }, []);
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    const section = LESSON_FLOW_SECTIONS.find(s => s.id === sectionId);
+    if (section) {
+      const element = document.querySelector(section.selector);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
   };
 
   return (
     <aside className="hidden xl:block w-[300px] flex-shrink-0">
       <div className="space-y-4 p-1">
-        {/* SECTION 1: Concept Index (Mini TOC) */}
+        {/* SECTION 1: Lesson Flow (Semantic Navigation) */}
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <List className="h-4 w-4 text-muted-foreground" />
-              In this lesson
+              <GitBranch className="h-4 w-4 text-muted-foreground" />
+              Lesson Flow
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
             <nav className="space-y-1">
-              {CONCEPT_SECTIONS.map((section) => {
+              {LESSON_FLOW_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
-                const isLocked = section.locked;
+                const isLocked = section.locked && !isLessonCompleted;
 
                 return (
                   <button
@@ -156,12 +158,13 @@ export function LessonRightSidebar({
                     onClick={() => !isLocked && scrollToSection(section.id)}
                     disabled={isLocked}
                     className={cn(
-                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left",
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left relative",
                       isActive
                         ? "bg-primary/10 text-primary font-medium"
                         : isLocked
                         ? "text-muted-foreground/50 cursor-not-allowed"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      isActive && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 flex-shrink-0" />
@@ -269,7 +272,7 @@ export function LessonRightSidebar({
                 size="sm"
                 className="w-full text-sm border-border/50 hover:bg-muted/50"
               >
-                <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                <HelpCircle className="h-3.5 w-3.5 mr-2" />
                 Ask a Question
               </Button>
             </CardContent>
