@@ -1057,6 +1057,7 @@ export type Database = {
           learning_hours: number | null
           level: string | null
           name: string
+          prerequisites: string[] | null
           slug: string
           status: string
           updated_at: string | null
@@ -1075,6 +1076,7 @@ export type Database = {
           learning_hours?: number | null
           level?: string | null
           name: string
+          prerequisites?: string[] | null
           slug: string
           status?: string
           updated_at?: string | null
@@ -1093,6 +1095,7 @@ export type Database = {
           learning_hours?: number | null
           level?: string | null
           name?: string
+          prerequisites?: string[] | null
           slug?: string
           status?: string
           updated_at?: string | null

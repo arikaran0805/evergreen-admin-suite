@@ -92,6 +92,7 @@ interface Course {
   author_id?: string | null;
   created_at?: string;
   updated_at?: string | null;
+  prerequisites?: string[] | null;
 }
 
 interface CourseLesson {
@@ -1797,6 +1798,7 @@ const CourseDetail = () => {
                 isModerator={isModerator}
                 isHeaderVisible={isHeaderVisible}
                 showAnnouncement={showAnnouncement}
+                prerequisites={course?.prerequisites || []}
                 creator={courseCreator}
                 maintenanceTeam={maintenanceTeam}
               />

@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight, FileText, MessageCircle, Highlighter, Loader2, Check, BookOpen } from "lucide-react";
+import { ArrowLeft, Upload, X, Image, icons, Save, Send, User, UserCog, Shield, Users, Settings, ChevronRight, FileText, MessageCircle, Highlighter, Loader2, Check, BookOpen, Plus, Trash2 } from "lucide-react";
 import { isChatTranscript } from "@/lib/chatContent";
 import LessonManager from "@/components/LessonManager";
 
@@ -75,6 +75,7 @@ const AdminCourseEditor = () => {
     learning_hours: 0,
     status: "draft" as string,
     assigned_to: "" as string,
+    prerequisites: [] as string[],
   });
   const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
   const [originalContent, setOriginalContent] = useState<string>("");
@@ -288,6 +289,7 @@ const AdminCourseEditor = () => {
           learning_hours: (data as any).learning_hours || 0,
           status: data.status || "draft",
           assigned_to: (data as any).assigned_to || "",
+          prerequisites: (data as any).prerequisites || [],
         }));
 
         // Store original content for change detection
@@ -346,6 +348,7 @@ const AdminCourseEditor = () => {
         featured_image: formData.featured_image || null,
         icon: formData.icon,
         learning_hours: formData.learning_hours,
+        prerequisites: formData.prerequisites,
         status,
         author_id: originalAuthorId || session.user.id,
       };
@@ -1038,6 +1041,63 @@ const AdminCourseEditor = () => {
                     onChange={(e) => setFormData({ ...formData, learning_hours: parseFloat(e.target.value) || 0 })}
                   />
                   <p className="text-xs text-muted-foreground">Estimated hours to complete</p>
+                </div>
+
+                {/* Prerequisites Editor */}
+                <div className="space-y-2">
+                  <Label className="flex items-center justify-between">
+                    <span>Prerequisites</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setFormData({ 
+                        ...formData, 
+                        prerequisites: [...formData.prerequisites, ""] 
+                      })}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </Label>
+                  {formData.prerequisites.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">
+                      No prerequisites defined. Click "Add" to add one.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {formData.prerequisites.map((prereq, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            value={prereq}
+                            onChange={(e) => {
+                              const updated = [...formData.prerequisites];
+                              updated[index] = e.target.value;
+                              setFormData({ ...formData, prerequisites: updated });
+                            }}
+                            placeholder="e.g. Basic programming knowledge"
+                            className="text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => {
+                              const updated = formData.prerequisites.filter((_, i) => i !== index);
+                              setFormData({ ...formData, prerequisites: updated });
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    List knowledge or skills learners should have before starting
+                  </p>
                 </div>
 
                 <div className="space-y-2">
