@@ -12,6 +12,7 @@ import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import Profile from "@/pages/Profile";
 import TagPosts from "@/pages/TagPosts";
+import Tags from "@/pages/Tags";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import AccessDenied from "@/pages/AccessDenied";
@@ -29,6 +30,7 @@ export const publicRoutes = [
   <Route key="arcade" path="/arcade" element={<Arcade />} />,
   <Route key="practice-lab" path="/practice-lab" element={<Navigate to="/profile?tab=practice" replace />} />,
   <Route key="tag-posts" path="/tag/:slug" element={<TagPosts />} />,
+  <Route key="tags" path="/tags" element={<Tags />} />,
   <Route key="about" path="/about" element={<About />} />,
   <Route key="contact" path="/contact" element={<Contact />} />,
   <Route key="terms" path="/terms" element={<Terms />} />,
