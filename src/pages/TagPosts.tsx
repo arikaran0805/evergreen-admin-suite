@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { calculateReadingTime } from "@/lib/readingTime";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useRecentlyViewedTags } from "@/hooks/useRecentlyViewedTags";
 
 interface Lesson {
   id: string;
@@ -66,9 +67,13 @@ const TagPosts = () => {
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [popularTags, setPopularTags] = useState<PopularTag[]>([]);
+  const [tagId, setTagId] = useState<string | null>(null);
   
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Track recently viewed tags
+  const { addRecentTag } = useRecentlyViewedTags();
 
   useEffect(() => {
     fetchPopularTags();
@@ -79,6 +84,13 @@ const TagPosts = () => {
       fetchTagData();
     }
   }, [slug]);
+
+  // Track tag view when tag data is loaded
+  useEffect(() => {
+    if (tagId && tagName && slug) {
+      addRecentTag({ id: tagId, name: tagName, slug });
+    }
+  }, [tagId, tagName, slug, addRecentTag]);
 
   const fetchPopularTags = async () => {
     try {
@@ -128,6 +140,7 @@ const TagPosts = () => {
         .single();
 
       if (tagError) throw tagError;
+      setTagId(tagData.id);
       setTagName(tagData.name);
 
       // Get post IDs with this tag
