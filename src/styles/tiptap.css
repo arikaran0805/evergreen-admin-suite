@@ -688,14 +688,26 @@
   -moz-tab-size: 2;
 }
 
-.executable-code-block pre {
+/* Override default pre/code styling inside executable blocks - no nested box */
+.executable-code-block-wrapper pre,
+.tiptap-editor .executable-code-block-wrapper pre,
+.tiptap-content .executable-code-block-wrapper pre {
   margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
-.executable-code-block code {
+.executable-code-block-wrapper code,
+.tiptap-editor .executable-code-block-wrapper code,
+.tiptap-content .executable-code-block-wrapper code {
   font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
   font-size: 0.875rem;
   line-height: 1.6;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 /* Syntax highlighting in executable blocks */
