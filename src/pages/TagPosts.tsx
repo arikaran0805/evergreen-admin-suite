@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
-import { Tag, ArrowLeft, BookOpen, GraduationCap, Clock, Play, ChevronDown, ChevronUp, Layers, Search, X, TrendingUp, Flame } from "lucide-react";
+import { Tag, ArrowLeft, BookOpen, GraduationCap, Clock, Play, ChevronDown, ChevronUp, Layers, Search, X, TrendingUp, Flame, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,9 @@ import { cn } from "@/lib/utils";
 import { calculateReadingTime } from "@/lib/readingTime";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentlyViewedTags } from "@/hooks/useRecentlyViewedTags";
+import { useTagBookmarks } from "@/hooks/useTagBookmarks";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface Lesson {
   id: string;
@@ -74,6 +77,10 @@ const TagPosts = () => {
   
   // Track recently viewed tags
   const { addRecentTag } = useRecentlyViewedTags();
+  
+  // Tag bookmarks
+  const { user } = useAuth();
+  const { isBookmarked, toggleBookmark } = useTagBookmarks();
 
   useEffect(() => {
     fetchPopularTags();
@@ -351,12 +358,40 @@ const TagPosts = () => {
                   <Tag className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                    {loading ? <Skeleton className="h-8 w-48" /> : tagName}
-                  </h1>
-                  <p className="text-muted-foreground">
-                    Explore lessons and courses related to {tagName}
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+                        {loading ? <Skeleton className="h-8 w-48" /> : tagName}
+                      </h1>
+                      <p className="text-muted-foreground">
+                        Explore lessons and courses related to {tagName}
+                      </p>
+                    </div>
+                    {/* Bookmark Button */}
+                    {!loading && tagId && (
+                      <Button
+                        variant={isBookmarked(tagId) ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "gap-2 flex-shrink-0",
+                          isBookmarked(tagId) && "bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"
+                        )}
+                        onClick={async () => {
+                          if (!user) {
+                            toast.error("Please log in to bookmark tags");
+                            return;
+                          }
+                          const result = await toggleBookmark({ id: tagId, name: tagName, slug: slug || "" });
+                          if (result.success) {
+                            toast.success(isBookmarked(tagId) ? "Tag removed from favorites" : "Tag added to favorites");
+                          }
+                        }}
+                      >
+                        <Bookmark className={cn("h-4 w-4", isBookmarked(tagId) && "fill-current")} />
+                        {isBookmarked(tagId) ? "Saved" : "Save"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
               
