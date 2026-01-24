@@ -283,9 +283,9 @@ const ExecutableCodeBlockView = ({
             </div>
           </div>
 
-          {/* Code Editor/Viewer - maintains styled box in both modes */}
-          <div className="p-4">
-            <div className="rounded-lg bg-muted/50 p-4">
+          {/* Code Editor/Viewer - full width styled box */}
+          <div className="p-3">
+            <div className="rounded-xl bg-muted/50 p-4 w-full">
               {isEditingCode ? (
                 <textarea
                   ref={textareaRef}
@@ -304,7 +304,7 @@ const ExecutableCodeBlockView = ({
                   autoCapitalize="off"
                 />
               ) : (
-                <pre className="text-sm font-mono leading-relaxed overflow-x-auto">
+                <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full">
                   <code ref={codeRef} className={`language-${normalizedLang}`}>
                     {editedCode || '// Write your code here...'}
                   </code>
