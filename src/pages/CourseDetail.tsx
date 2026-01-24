@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CodeEditProvider } from "@/contexts/CodeEditContext";
 import { useAdSettings } from "@/hooks/useAdSettings";
 import { useCourseStats } from "@/hooks/useCourseStats";
 import { useBookmarks } from "@/hooks/useBookmarks";
@@ -1197,6 +1198,7 @@ const CourseDetail = () => {
   const CtaIcon = ctaProps.icon;
 
   return (
+    <CodeEditProvider>
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead 
         title={`${course.name} - Course`}
@@ -1955,6 +1957,7 @@ const CourseDetail = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </CodeEditProvider>
   );
 };
 
