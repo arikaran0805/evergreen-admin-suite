@@ -100,7 +100,7 @@ export const CourseSidebar = ({
   }, [expandedLessons]);
 
   // Filter lessons based on search query
-  const baseLessons = useMemo(() => {
+  const filteredLessons = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     
     if (!query) {
@@ -126,19 +126,11 @@ export const CourseSidebar = ({
       });
   }, [lessons, searchQuery, isPreviewMode, getPostsForLesson]);
 
-  // Reorder lessons: move expanded lesson to top, others maintain original order
-  const filteredLessons = useMemo(() => {
-    if (!expandedLessonId || searchQuery) {
-      // Don't reorder during search or when nothing is expanded
-      return baseLessons;
-    }
-
-    const expandedLesson = baseLessons.find(l => l.id === expandedLessonId);
-    if (!expandedLesson) return baseLessons;
-
-    const otherLessons = baseLessons.filter(l => l.id !== expandedLessonId);
-    return [expandedLesson, ...otherLessons];
-  }, [baseLessons, expandedLessonId, searchQuery]);
+  // Find the index of the expanded lesson to determine which lessons to hide
+  const expandedLessonIndex = useMemo(() => {
+    if (!expandedLessonId || searchQuery) return -1;
+    return filteredLessons.findIndex(l => l.id === expandedLessonId);
+  }, [filteredLessons, expandedLessonId, searchQuery]);
 
   // Get filtered posts for a lesson (when searching)
   const getFilteredPostsForLesson = (lessonId: string) => {
@@ -352,7 +344,7 @@ export const CourseSidebar = ({
               </div>
             ) : filteredLessons.length > 0 ? (
               <div role="group" aria-label="Lesson modules">
-                {filteredLessons.map((lesson) => {
+                {filteredLessons.map((lesson, index) => {
                   const lessonPosts = getFilteredPostsForLesson(lesson.id);
                   const isExpanded = expandedLessons.has(lesson.id);
                   const hasActivePost = lessonPosts.some(p => p.id === selectedPost?.id);
@@ -361,15 +353,19 @@ export const CourseSidebar = ({
                   const panelId = `lesson-panel-${lesson.id}`;
                   const headerId = `lesson-header-${lesson.id}`;
 
-                  // Check if this lesson is the one that moved to top
-                  const isMovedToTop = expandedLessonId === lesson.id && !searchQuery;
+                  // Determine if this lesson should be hidden (above the expanded one)
+                  const isAboveExpanded = expandedLessonIndex !== -1 && index < expandedLessonIndex;
+                  const isTheExpanded = lesson.id === expandedLessonId;
 
                   return (
                     <div 
                       key={lesson.id} 
                       className={cn(
-                        "mb-1 transition-all duration-300 ease-out",
-                        isMovedToTop && "relative z-10"
+                        "transition-all duration-300 ease-out overflow-hidden",
+                        isAboveExpanded 
+                          ? "max-h-0 opacity-0 mb-0" 
+                          : "max-h-[500px] opacity-100 mb-1",
+                        isTheExpanded && "relative z-10"
                       )} 
                       role="presentation"
                     >
