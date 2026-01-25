@@ -225,7 +225,7 @@ export function LessonRightSidebar({
                   className={cn(
                     "w-full flex items-start gap-3 p-2 rounded-md text-left transition-all group",
                     isActivated
-                      ? "bg-primary/10 ring-1 ring-primary/30 shadow-sm"
+                      ? "bg-primary/10 shadow-sm"
                       : "hover:bg-muted/50 hover:shadow-sm"
                   )}
                 >
