@@ -201,6 +201,7 @@ const CourseDetail = () => {
   const [restartModalOpen, setRestartModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null); // Defer until we know user context
   const [defaultTabResolved, setDefaultTabResolved] = useState(false);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
   // Course stats hook
   const {
@@ -1790,7 +1791,9 @@ const CourseDetail = () => {
                                                       onClick={(e) => {
                                                         e.stopPropagation();
                                                         navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                                        setCopiedPostId(post.id);
                                                         toast({ title: "Link copied!" });
+                                                        setTimeout(() => setCopiedPostId(null), 2000);
                                                       }}
                                                       className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                                                     >
@@ -1798,7 +1801,7 @@ const CourseDetail = () => {
                                                     </button>
                                                   </TooltipTrigger>
                                                   <TooltipContent side="top" className="text-xs">
-                                                    Copy link
+                                                    {copiedPostId === post.id ? "Copied" : "Copy link"}
                                                   </TooltipContent>
                                                 </Tooltip>
                                                 
