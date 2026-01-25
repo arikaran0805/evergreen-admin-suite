@@ -17,11 +17,16 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
   const initialLoadRef = useRef(true);
   const noteIdRef = useRef<string | null>(null);
 
-  // Load existing note
+  // Reset state immediately when lessonId changes to prevent stale data
   useEffect(() => {
+    // Reset everything before loading new note
+    initialLoadRef.current = true;
+    noteIdRef.current = null;
+    setContent("");
+    setLastSaved(null);
+    
     if (!lessonId || !userId) {
       setIsLoading(false);
-      setContent("");
       return;
     }
 
@@ -42,12 +47,16 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
           setContent(data.content || "");
           setLastSaved(new Date(data.updated_at));
         } else {
+          // Explicitly keep empty state for non-existent notes
           noteIdRef.current = null;
           setContent("");
           setLastSaved(null);
         }
       } catch (error) {
         console.error("Error loading lesson note:", error);
+        // On error, ensure clean state
+        noteIdRef.current = null;
+        setContent("");
       } finally {
         setIsLoading(false);
         initialLoadRef.current = false;
