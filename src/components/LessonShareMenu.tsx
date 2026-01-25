@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Share2, Linkedin, Copy } from "lucide-react";
+import { Share2, Linkedin } from "lucide-react";
 import { trackPostShare } from "@/lib/shareAnalytics";
 
 interface LessonShareMenuProps {
@@ -15,7 +15,6 @@ interface LessonShareMenuProps {
 const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false }: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -67,15 +66,6 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
   const handleShare = (platform: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-
-    if (platform === "copy") {
-      navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      trackPostShare(postId, "copy_link");
-      toast({ title: "Link copied!" });
-      setTimeout(() => setCopied(false), 1500);
-      return;
-    }
     
     if (platform === "instagram") {
       navigator.clipboard.writeText(shareUrl);
@@ -194,18 +184,6 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
               title="Instagram"
             >
               <InstagramIcon />
-            </button>
-
-            {/* Separator */}
-            <div className="w-px h-5 bg-border mx-0.5" />
-
-            {/* Copy */}
-            <button
-              onClick={(e) => handleShare("copy", e)}
-              className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
-              title={copied ? "Copied!" : "Copy link"}
-            >
-              <Copy className={`h-[18px] w-[18px] ${copied ? "text-primary" : ""}`} />
             </button>
           </div>
         </TooltipContent>
