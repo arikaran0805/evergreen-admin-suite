@@ -86,12 +86,12 @@ export function useLessonFlowNavigation(
 
         // Find the section that's currently in the reading zone
         // Strategy: Find the LAST section whose top has scrolled past the activation line
-        // This ensures we highlight the section the user is currently reading
+        // This ensures we highlight the deepest section the user has scrolled to
         let foundActive: string | null = null;
         const activationLine = scrollOffset + 100; // Line where content is being read
         
-        // Iterate in reverse to find the topmost section that has passed the activation line
-        for (let i = sections.length - 1; i >= 0; i--) {
+        // Iterate forward to find the last section that has passed the activation line
+        for (let i = 0; i < sections.length; i++) {
           const section = sections[i];
           const element = document.querySelector(section.selector);
           if (element) {
@@ -101,7 +101,7 @@ export function useLessonFlowNavigation(
             // (meaning the user has scrolled into it)
             if (rect.top <= activationLine) {
               foundActive = section.id;
-              break; // Found the current section, stop looking
+              // Don't break - keep looking for deeper sections
             }
           }
         }
