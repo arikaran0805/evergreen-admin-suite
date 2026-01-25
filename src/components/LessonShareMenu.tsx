@@ -38,10 +38,6 @@ const LessonShareMenu = ({
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(postTitle);
 
-  // Build context label for the trigger tooltip
-  const contextLabel = sectionName 
-    ? `Share: ${sectionName} → ${postTitle}`
-    : `Share: ${postTitle}`;
 
   const clearAllTimeouts = () => {
     if (openTimeoutRef.current) {
@@ -199,7 +195,6 @@ const LessonShareMenu = ({
             className={`relative inline-block ${className || ''}`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            title={contextLabel}
           >
             <button
               className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible || open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
