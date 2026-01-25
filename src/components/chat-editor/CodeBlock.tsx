@@ -1,15 +1,8 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import Prism from "@/lib/prism";
 import { cn } from "@/lib/utils";
 import { Copy, Check, Play, Pencil, Loader2, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +25,7 @@ const loadTheme = async (theme: string) => {
       await import("prismjs/themes/prism-funky.css");
       break;
     case "gray":
+      // Gray theme uses custom inline styles applied via className
       await import("prismjs/themes/prism.css");
       break;
     case "tomorrow":
@@ -41,7 +35,7 @@ const loadTheme = async (theme: string) => {
   }
 };
 
-export interface CodeBlockProps {
+interface CodeBlockProps {
   code: string;
   language?: string;
   isMentorBubble?: boolean;
@@ -49,20 +43,6 @@ export interface CodeBlockProps {
   onEdit?: (code: string) => void;
   editable?: boolean;
   showToolbarAlways?: boolean;
-  /** Show language selector dropdown instead of static label */
-  showLanguageSelector?: boolean;
-  /** Available languages for selector */
-  languageOptions?: Array<{ value: string; label: string }>;
-  /** Callback when language changes */
-  onLanguageChange?: (language: string) => void;
-  /** Show delete button in corner */
-  showDeleteButton?: boolean;
-  /** Callback when delete is clicked */
-  onDelete?: () => void;
-  /** Placeholder text for empty code */
-  placeholder?: string;
-  /** Controls whether run button appears (for executable languages) */
-  showRunButton?: boolean;
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -87,20 +67,13 @@ const CodeBlock = ({
   onEdit,
   editable = false,
   showToolbarAlways = false,
-  showLanguageSelector = false,
-  languageOptions,
-  onLanguageChange,
-  showDeleteButton = false,
-  onDelete,
-  placeholder = "// Write your code here...",
-  showRunButton,
 }: CodeBlockProps) => {
   const codeRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const originalCodeRef = useRef(code);
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(code);
+  const [lineCount, setLineCount] = useState(code.split('\n').length);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputError, setOutputError] = useState(false);
@@ -108,26 +81,21 @@ const CodeBlock = ({
   const [outputExpanded, setOutputExpanded] = useState(true);
   const { theme: globalTheme } = useCodeTheme();
   
+  // Use override theme if provided, otherwise fall back to global theme
   const theme = overrideTheme || globalTheme;
+  
+  // Check theme types
   const isGrayTheme = theme === "gray";
   const isCleanTheme = theme === "clean";
   const isCustomTheme = isGrayTheme || isCleanTheme;
   
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
-  
-  // Determine if run button should show
   const canExecute = EXECUTABLE_LANGUAGES.includes(normalizedLang);
-  const shouldShowRun = showRunButton !== undefined ? showRunButton : canExecute;
-
-  // Sync code when prop changes
-  useEffect(() => {
-    setEditedCode(code);
-    originalCodeRef.current = code;
-  }, [code]);
 
   // Load theme dynamically
   useEffect(() => {
     if (isCustomTheme) {
+      // Custom themes use base prism.css with CSS overrides
       import("prismjs/themes/prism.css");
     } else {
       loadTheme(theme);
@@ -140,14 +108,6 @@ const CodeBlock = ({
     }
   }, [code, editedCode, normalizedLang, theme, isEditing]);
 
-  // Auto-resize textarea when editing
-  useEffect(() => {
-    if (textareaRef.current && isEditing) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [editedCode, isEditing]);
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(isEditing ? editedCode : code);
@@ -159,20 +119,28 @@ const CodeBlock = ({
   };
 
   const handleEdit = () => {
-    originalCodeRef.current = editedCode;
     setIsEditing(true);
+    setEditedCode(code);
+    setLineCount(code.split('\n').length);
     setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const handleSaveEdit = () => {
+    setIsEditing(false);
+    if (onEdit) {
+      onEdit(editedCode);
+    }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditedCode(originalCodeRef.current);
+    setEditedCode(code);
     setShowOutput(false);
     setOutput(null);
   };
 
   const handleRun = async () => {
-    if (!shouldShowRun) return;
+    if (!canExecute) return;
     
     setIsRunning(true);
     setOutput(null);
@@ -215,85 +183,88 @@ const CodeBlock = ({
     setOutputExpanded(!outputExpanded);
   };
 
+  // Calculate line height for textarea
+  const lineHeight = 24; // Approximate line height in pixels
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setEditedCode(newValue);
+    // Update line count based on content
+    setLineCount(newValue.split('\n').length);
   };
 
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Tab key for indentation
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newCode = editedCode.substring(0, start) + '  ' + editedCode.substring(end);
-      setEditedCode(newCode);
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 0);
+    // Shift+Enter adds a new line - expand by one line
+    if (e.key === 'Enter' && e.shiftKey) {
+      setLineCount(prev => prev + 1);
     }
-    // Prevent parent from capturing keys
-    e.stopPropagation();
+    // Backspace at the start of a line might reduce lines
+    if (e.key === 'Backspace') {
+      const textarea = e.currentTarget;
+      const cursorPos = textarea.selectionStart;
+      const textBefore = editedCode.substring(0, cursorPos);
+      // If cursor is at the start of a line (after a newline)
+      if (textBefore.endsWith('\n') || cursorPos === 0) {
+        const newLineCount = editedCode.split('\n').length - 1;
+        if (newLineCount >= 1) {
+          setTimeout(() => setLineCount(editedCode.split('\n').length), 0);
+        }
+      }
+    }
   };
 
+  // Get the appropriate theme class
   const getThemeClass = () => {
     if (isCleanTheme) return "code-theme-clean";
     if (isGrayTheme) return "code-theme-gray";
-    return `code-theme-${theme}`;
+    return "";
   };
 
-  const displayCode = isEditing ? editedCode : (code || placeholder);
+  // Get background/border styles based on theme
+  const getPreStyles = () => {
+    if (isMentorBubble) {
+      return "bg-blue-600/20 border-blue-400/30";
+    }
+    if (isCleanTheme) {
+      return "bg-white border-gray-200 shadow-sm";
+    }
+    if (isGrayTheme) {
+      return "bg-[#3a3a3a] border-[#555]";
+    }
+    return "bg-[#1d1f21] border-border/50";
+  };
+
+  const displayCode = isEditing ? editedCode : code;
+
+  // Visibility class for toolbar buttons
   const toolbarVisibility = showToolbarAlways ? "opacity-100" : "opacity-0 group-hover:opacity-100";
 
   return (
-    <div className={cn("group relative w-full", getThemeClass())}>
-      {/* Delete button - floating top-right corner */}
-      {showDeleteButton && onDelete && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onDelete}
-          className="absolute -top-1.5 -right-1.5 z-10 h-5 w-5 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 opacity-0 group-hover:opacity-100 transition-opacity"
-          title="Remove code block"
-        >
-          <X className="w-2.5 h-2.5" />
-        </Button>
+    <div 
+      className={cn(
+        "relative group mt-3 w-full",
+        !showToolbarAlways && "min-w-[450px]",
+        getThemeClass()
       )}
-
-      {/* Main container */}
-      <div
+    >
+      <pre
         className={cn(
-          "rounded-lg border border-border/50 overflow-hidden",
-          isMentorBubble ? "bg-primary/20" : "bg-muted/20"
+          "p-4 rounded-xl text-sm font-mono overflow-x-auto w-full",
+          "border",
+          getPreStyles()
         )}
       >
-        {/* Header row */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          {/* Language label or selector */}
-          {showLanguageSelector && languageOptions && onLanguageChange ? (
-            <Select value={language} onValueChange={onLanguageChange}>
-              <SelectTrigger className="h-5 w-auto gap-0.5 px-0 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                {languageOptions.map((lang) => (
-                  <SelectItem key={lang.value} value={lang.value} className="text-xs">
-                    {lang.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : language ? (
-            <span className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+        {/* Header with language and action buttons */}
+        <div className="flex items-center justify-between mb-2">
+          {language && (
+            <span className={cn(
+              "text-[10px] uppercase tracking-wider opacity-50",
+              isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+            )}>
               {language}
             </span>
-          ) : (
-            <span />
           )}
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             {/* Edit/Cancel button */}
             {editable && (
               <Button
@@ -301,36 +272,40 @@ const CodeBlock = ({
                 size="icon"
                 onClick={isEditing ? handleCancelEdit : handleEdit}
                 className={cn(
-                  "h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent transition-opacity",
-                  toolbarVisibility
+                  "h-7 w-7 rounded-full transition-opacity",
+                  toolbarVisibility,
+                  isCleanTheme
+                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
-                title={isEditing ? "Cancel edit" : "Edit code"}
               >
                 {isEditing ? (
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 ) : (
-                  <Pencil className="w-4 h-4" />
+                  <Pencil className="w-3.5 h-3.5" />
                 )}
               </Button>
             )}
             
             {/* Run button */}
-            {shouldShowRun && (
+            {canExecute && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleRun}
                 disabled={isRunning}
                 className={cn(
-                  "h-7 w-7 text-muted-foreground/60 hover:text-primary hover:bg-transparent transition-opacity",
-                  toolbarVisibility
+                  "h-7 w-7 rounded-full transition-opacity",
+                  toolbarVisibility,
+                  isCleanTheme
+                    ? "text-gray-400 hover:text-green-600 hover:bg-green-50"
+                    : "text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
                 )}
-                title="Run code"
               >
                 {isRunning ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Play className="w-4 h-4" />
+                  <Play className="w-3.5 h-3.5" />
                 )}
               </Button>
             )}
@@ -341,88 +316,91 @@ const CodeBlock = ({
               size="icon"
               onClick={handleCopy}
               className={cn(
-                "h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent transition-opacity",
-                toolbarVisibility
+                "h-7 w-7 rounded-full transition-opacity",
+                toolbarVisibility,
+                isMentorBubble 
+                  ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
+                  : isCleanTheme
+                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
-              title="Copy code"
             >
               {copied ? (
-                <Check className="w-4 h-4 text-primary" />
+                <Check className="w-3.5 h-3.5 text-green-500" />
               ) : (
-                <Copy className="w-4 h-4" />
+                <Copy className="w-3.5 h-3.5" />
               )}
             </Button>
           </div>
         </div>
         
-        {/* Code content */}
-        <div className="px-4 pb-4">
-          {isEditing ? (
-            <textarea
-              ref={textareaRef}
-              value={editedCode}
-              onChange={handleTextareaChange}
-              onKeyDown={handleTextareaKeyDown}
-              className={cn(
-                "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
-                "min-h-[1.5em] overflow-hidden",
-                "text-foreground placeholder:text-muted-foreground/60"
-              )}
-              placeholder={placeholder}
-              spellCheck={false}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-            />
-          ) : (
-            <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full m-0 bg-transparent">
-              <code
-                ref={codeRef}
-                className={`language-${normalizedLang}`}
-              >
-                {displayCode}
-              </code>
-            </pre>
-          )}
-        </div>
-      </div>
+        {/* Code content or editor */}
+        {isEditing ? (
+          <textarea
+            ref={textareaRef}
+            value={editedCode}
+            onChange={handleTextareaChange}
+            onKeyDown={handleTextareaKeyDown}
+            style={{ height: `${lineCount * lineHeight}px` }}
+            className={cn(
+              "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
+              isCleanTheme ? "text-gray-800" : "text-gray-100"
+            )}
+            spellCheck={false}
+          />
+        ) : (
+          <code
+            ref={codeRef}
+            className={cn(
+              `language-${normalizedLang} leading-relaxed`,
+              isCleanTheme && "text-gray-800"
+            )}
+          >
+            {displayCode}
+          </code>
+        )}
+      </pre>
       
-      {/* Output section - chat bubble style */}
-      {showOutput && (
+      {/* Collapsible Output section */}
+      {showOutput && output !== null && (
         <div className={cn(
-          "mt-3 rounded-2xl border overflow-hidden",
+          "mt-0 rounded-b-xl border border-t-0 overflow-hidden",
           isCleanTheme 
-            ? "bg-gray-50 border-gray-200" 
-            : "bg-muted/20 border-border/50"
+            ? "bg-gray-100 border-gray-200" 
+            : "bg-muted/50 border-border/50"
         )}>
           {/* Header - clickable to toggle */}
           <button
             onClick={handleToggleOutput}
             className={cn(
-              "w-full flex items-center justify-between px-4 py-3 transition-colors",
-              isCleanTheme ? "hover:bg-gray-100" : "hover:bg-muted/30"
+              "w-full flex items-center justify-between px-3 py-2 transition-colors",
+              isCleanTheme ? "hover:bg-gray-200/50" : "hover:bg-muted"
             )}
-            type="button"
           >
-            <div className="flex items-center gap-2.5">
-              {outputExpanded ? (
-                <ChevronUp className={cn(
-                  "w-4 h-4",
-                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-                )} />
-              ) : (
-                <ChevronDown className={cn(
-                  "w-4 h-4",
-                  isCleanTheme ? "text-gray-500" : "text-muted-foreground"
-                )} />
-              )}
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform duration-200",
+                isCleanTheme ? "bg-gray-200" : "bg-muted"
+              )}>
+                {outputExpanded ? (
+                  <ChevronUp className={cn(
+                    "w-3 h-3",
+                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                  )} />
+                ) : (
+                  <ChevronDown className={cn(
+                    "w-3 h-3",
+                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                  )} />
+                )}
+              </div>
               <span className={cn(
-                "text-sm font-medium",
+                "text-xs font-medium",
                 outputError 
                   ? "text-red-500" 
                   : isCleanTheme 
-                    ? "text-gray-700" 
-                    : "text-foreground"
+                    ? "text-gray-600" 
+                    : "text-muted-foreground"
               )}>
                 {outputError ? "Error" : "Output"}
               </span>
@@ -435,13 +413,13 @@ const CodeBlock = ({
                 handleCloseOutput();
               }}
               className={cn(
-                "h-6 w-6",
+                "h-5 w-5 rounded-full",
                 isCleanTheme
-                  ? "text-gray-400 hover:text-gray-600 hover:bg-transparent"
-                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                  ? "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </Button>
           </button>
           
@@ -453,23 +431,17 @@ const CodeBlock = ({
             )}
           >
             <div className="overflow-hidden">
-              <div className="px-4 pb-4">
-                <div className={cn(
-                  "rounded-xl px-4 py-3",
-                  isCleanTheme ? "bg-white" : "bg-background/80"
+              <div className="px-3 pb-3">
+                <pre className={cn(
+                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+                  outputError 
+                    ? "text-red-500" 
+                    : isCleanTheme 
+                      ? "text-gray-800" 
+                      : "text-foreground"
                 )}>
-                  <pre className={cn(
-                    "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
-                    outputError 
-                      ? "text-red-500" 
-                      : isCleanTheme 
-                        ? "text-gray-800" 
-                        : "text-foreground",
-                    !output && "text-muted-foreground"
-                  )}>
-                    {output || 'No output'}
-                  </pre>
-                </div>
+                  {output}
+                </pre>
               </div>
             </div>
           </div>
@@ -478,7 +450,7 @@ const CodeBlock = ({
       
       {/* Copied tooltip */}
       {copied && (
-        <div className="absolute top-0 right-16 px-1.5 py-0.5 text-[10px] bg-primary text-primary-foreground rounded shadow-sm animate-in fade-in-0 zoom-in-95 z-10">
+        <div className="absolute top-2 right-16 px-2 py-1 text-xs bg-green-500 text-white rounded shadow-lg animate-in fade-in-0 zoom-in-95">
           Copied!
         </div>
       )}
