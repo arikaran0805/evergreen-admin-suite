@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { StickyNote, Loader2, Check, ExternalLink } from "lucide-react";
+import { StickyNote, Loader2, Check, ExternalLink, Bold, Italic, Link2 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -194,21 +194,43 @@ export function LessonNotesCard({
           >
             <EditorContent editor={editor} />
             
-            {/* Minimal formatting hint */}
-            <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground/50 font-mono select-none">
-                <span className="font-semibold">bold</span> • <span className="italic">italic</span> • <span className="underline">link</span>
-              </span>
-              {courseId && (
-                <button
-                  type="button"
-                  onClick={handleOpenDeepNotes}
-                  className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
-                >
-                  Open in Deep Notes
-                  <ExternalLink className="h-2.5 w-2.5" />
-                </button>
-              )}
+            {/* Formatting toolbar */}
+            <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleBold().run()}
+                className={cn(
+                  "p-1.5 rounded hover:bg-muted transition-colors",
+                  editor?.isActive("bold") ? "bg-muted text-foreground" : "text-muted-foreground"
+                )}
+              >
+                <Bold className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleItalic().run()}
+                className={cn(
+                  "p-1.5 rounded hover:bg-muted transition-colors",
+                  editor?.isActive("italic") ? "bg-muted text-foreground" : "text-muted-foreground"
+                )}
+              >
+                <Italic className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = window.prompt("Enter URL:");
+                  if (url) {
+                    editor?.chain().focus().setLink({ href: url }).run();
+                  }
+                }}
+                className={cn(
+                  "p-1.5 rounded hover:bg-muted transition-colors",
+                  editor?.isActive("link") ? "bg-muted text-foreground" : "text-muted-foreground"
+                )}
+              >
+                <Link2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         ) : hasContent ? (
