@@ -33,6 +33,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const lastSavedContentRef = useRef<string>("");
   const selectedNoteIdRef = useRef<string | null>(null);
   const isLoadingRef = useRef(false);
+  const localTimestampRef = useRef<string>("");
 
   // Keep ref in sync with state to avoid stale closure issues
   useEffect(() => {
@@ -47,6 +48,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null;
 
   // Handle remote updates from other tabs (Quick Notes)
+  // SAFETY: Includes timestamp validation to prevent older content overwriting newer
   const handleRemoteUpdate = useCallback((remoteContent: string, updatedAt: string) => {
     // CRITICAL: Ignore remote updates while loading to prevent race conditions
     if (isLoadingRef.current) return;
@@ -54,9 +56,13 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     const currentNoteId = selectedNoteIdRef.current;
     if (!currentNoteId) return;
     
+    // Timestamp validation is now handled in useNotesSyncBridge
+    // If we reach here, the remote update is confirmed to be newer
+    
     isRemoteUpdateRef.current = true;
     setEditContent(remoteContent);
     lastSavedContentRef.current = remoteContent;
+    localTimestampRef.current = updatedAt;
     
     setNotes(prev => 
       prev.map(n => 
@@ -129,7 +135,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   }, []);
 
   // Set up cross-tab sync bridge
-  const { broadcastUpdate, broadcastCreated, broadcastDeleted } = useNotesSyncBridge({
+  const { broadcastUpdate, broadcastCreated, broadcastDeleted, updateLocalTimestamp } = useNotesSyncBridge({
     noteId: selectedNoteId,
     lessonId: selectedNote?.lesson_id || undefined,
     courseId,
@@ -216,7 +222,10 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     setSelectedNoteId(note.id);
     setEditContent(note.content);
     lastSavedContentRef.current = note.content;
-  }, []);
+    localTimestampRef.current = note.updated_at;
+    // Update sync bridge with the loaded timestamp
+    updateLocalTimestamp(note.updated_at);
+  }, [updateLocalTimestamp]);
 
   // Auto-save when content changes
   useEffect(() => {
@@ -237,6 +246,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
         if (error) throw error;
 
         lastSavedContentRef.current = debouncedContent;
+        localTimestampRef.current = now;
 
         setNotes(prev => 
           prev.map(n => 
@@ -246,6 +256,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
           )
         );
         
+        // Broadcast with timestamp for conflict resolution
         broadcastUpdate(debouncedContent, now);
       } catch (error) {
         console.error("Error saving note:", error);
