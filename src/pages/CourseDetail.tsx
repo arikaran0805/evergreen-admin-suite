@@ -57,6 +57,7 @@ import {
   BookmarkCheck, 
   Flag, 
   Edit, 
+  Lightbulb, 
   Star, 
   UserPlus, 
   CheckCircle, 
@@ -1378,7 +1379,7 @@ const CourseDetail = () => {
                                 <span>Report</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setSuggestDialogOpen(true)}>
-                                <Edit className="mr-2 h-4 w-4" />
+                                <Lightbulb className="mr-2 h-4 w-4" />
                                 <span>Suggest Changes</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
