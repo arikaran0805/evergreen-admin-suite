@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Share2, Linkedin } from "lucide-react";
 import { trackPostShare } from "@/lib/shareAnalytics";
@@ -25,7 +25,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(postTitle);
 
-  const handleMouseEnter = () => {
+  const scheduleOpen = () => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
@@ -36,13 +36,13 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
       openTimeoutRef.current = null;
     }
 
-    // Small delay so the trigger tooltip can show briefly
+    // Small delay so hover-revealed buttons don't flicker
     openTimeoutRef.current = setTimeout(() => {
       setOpen(true);
-    }, 250);
+    }, 120);
   };
 
-  const handleMouseLeave = () => {
+  const scheduleClose = () => {
     if (openTimeoutRef.current) {
       clearTimeout(openTimeoutRef.current);
       openTimeoutRef.current = null;
@@ -50,7 +50,19 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
 
     closeTimeoutRef.current = setTimeout(() => {
       setOpen(false);
-    }, 150);
+    }, 260);
+  };
+
+  const keepOpenNow = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+    setOpen(true);
   };
 
   // Cleanup timeout on unmount
@@ -125,72 +137,72 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
   );
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip open={open} onOpenChange={setOpen}>
-        <TooltipTrigger asChild>
-          <div 
-            ref={containerRef} 
-            className={`relative inline-block ${className || ''}`}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            <button
-              className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible || open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent 
-          side={side}
-          sideOffset={8}
-          className={`p-0 border-0 bg-transparent shadow-none animate-in fade-in-0 zoom-in-95 duration-150 ${side === "right" ? "slide-in-from-left-2" : "slide-in-from-bottom-2"}`}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          ref={containerRef}
+          className={`relative inline-block ${className || ""}`}
+          onMouseEnter={scheduleOpen}
+          onMouseLeave={scheduleClose}
         >
-          <div 
-            onClick={handleMenuClick}
-            className={`${vertical ? "flex flex-col" : "flex"} items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl`}
+          <button
+            className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible || open ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           >
-            {/* WhatsApp */}
-            <button
-              onClick={(e) => handleShare("whatsapp", e)}
-              className="flex items-center justify-center h-8 w-8 rounded-md text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-150 hover:scale-105"
-              title="WhatsApp"
-            >
-              <WhatsAppIcon />
-            </button>
+            <Share2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </PopoverTrigger>
 
-            {/* LinkedIn */}
-            <button
-              onClick={(e) => handleShare("linkedin", e)}
-              className="flex items-center justify-center h-8 w-8 rounded-md text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all duration-150 hover:scale-105"
-              title="LinkedIn"
-            >
-              <Linkedin className="h-[18px] w-[18px]" />
-            </button>
+      <PopoverContent
+        side={side}
+        sideOffset={8}
+        align="center"
+        className={`p-0 border-0 bg-transparent shadow-none z-50 animate-in fade-in-0 zoom-in-95 duration-150 ${side === "right" ? "slide-in-from-left-2" : "slide-in-from-bottom-2"}`}
+        onMouseEnter={keepOpenNow}
+        onMouseLeave={scheduleClose}
+      >
+        <div
+          onClick={handleMenuClick}
+          className={`${vertical ? "flex flex-col" : "flex"} items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl`}
+        >
+          {/* WhatsApp */}
+          <button
+            onClick={(e) => handleShare("whatsapp", e)}
+            className="flex items-center justify-center h-8 w-8 rounded-md text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-150 hover:scale-105"
+            title="WhatsApp"
+          >
+            <WhatsAppIcon />
+          </button>
 
-            {/* X */}
-            <button
-              onClick={(e) => handleShare("twitter", e)}
-              className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
-              title="X"
-            >
-              <XIcon />
-            </button>
+          {/* LinkedIn */}
+          <button
+            onClick={(e) => handleShare("linkedin", e)}
+            className="flex items-center justify-center h-8 w-8 rounded-md text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all duration-150 hover:scale-105"
+            title="LinkedIn"
+          >
+            <Linkedin className="h-[18px] w-[18px]" />
+          </button>
 
-            {/* Instagram */}
-            <button
-              onClick={(e) => handleShare("instagram", e)}
-              className="flex items-center justify-center h-8 w-8 rounded-md text-[#E4405F] hover:bg-[#E4405F]/10 transition-all duration-150 hover:scale-105"
-              title="Instagram"
-            >
-              <InstagramIcon />
-            </button>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          {/* X */}
+          <button
+            onClick={(e) => handleShare("twitter", e)}
+            className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+            title="X"
+          >
+            <XIcon />
+          </button>
+
+          {/* Instagram */}
+          <button
+            onClick={(e) => handleShare("instagram", e)}
+            className="flex items-center justify-center h-8 w-8 rounded-md text-[#E4405F] hover:bg-[#E4405F]/10 transition-all duration-150 hover:scale-105"
+            title="Instagram"
+          >
+            <InstagramIcon />
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
