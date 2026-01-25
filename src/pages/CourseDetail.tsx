@@ -1807,6 +1807,8 @@ const CourseDetail = () => {
                                                   postId={post.id}
                                                   postTitle={post.title}
                                                   postSlug={post.slug}
+                                                  side="right"
+                                                  vertical
                                                 />
                                                 
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
