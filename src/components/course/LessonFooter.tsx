@@ -81,16 +81,13 @@ const LessonFooter = ({
   const [justCompleted, setJustCompleted] = useState(false);
 
   const handleMarkComplete = useCallback(async () => {
-    if (isCompleted) {
-      // Allow unmarking
-      await onMarkComplete();
-      setJustCompleted(false);
-    } else {
-      await onMarkComplete();
-      setJustCompleted(true);
-      // Reset animation state after a short delay
-      setTimeout(() => setJustCompleted(false), 2000);
-    }
+    // Only allow marking complete, not unmarking
+    if (isCompleted) return;
+    
+    await onMarkComplete();
+    setJustCompleted(true);
+    // Reset animation state after a short delay
+    setTimeout(() => setJustCompleted(false), 2000);
   }, [isCompleted, onMarkComplete]);
 
   // Progress text for completed state
@@ -130,35 +127,22 @@ const LessonFooter = ({
               )}
             </Button>
           ) : (
-            /* STATE B: After Completion */
+            /* STATE B: After Completion - Non-interactive status display */
             <div className="flex flex-col items-center gap-2">
-              <Button
-                variant="outline"
-                size="lg"
+              <div
                 className={cn(
-                  "gap-2 px-8 py-6 text-lg font-semibold",
-                  "border-primary text-primary hover:bg-primary/10",
+                  "flex items-center gap-2 px-8 py-6 text-lg font-semibold rounded-md",
+                  "border border-primary text-primary",
                   "transition-all duration-200",
                   justCompleted && "animate-scale-in"
                 )}
-                disabled={isMarkingComplete}
-                onClick={handleMarkComplete}
               >
-                {isMarkingComplete ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className={cn(
-                      "h-5 w-5",
-                      justCompleted && "animate-[pulse_0.5s_ease-in-out]"
-                    )} />
-                    Lesson Completed
-                  </>
-                )}
-              </Button>
+                <CheckCircle className={cn(
+                  "h-5 w-5",
+                  justCompleted && "animate-[pulse_0.5s_ease-in-out]"
+                )} />
+                Lesson Completed
+              </div>
               <p className="text-sm text-muted-foreground">
                 You're making great progress
               </p>
