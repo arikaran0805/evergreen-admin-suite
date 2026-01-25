@@ -230,6 +230,10 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   // Auto-save when content changes
   useEffect(() => {
     if (!selectedNoteId || !selectedNote) return;
+    // CRITICAL SAFETY: never save a stale debounced value (e.g. from previous note
+    // or from initial empty editor mount). Only save once debounce has caught up
+    // with the current editor state.
+    if (debouncedContent !== editContent) return;
     if (debouncedContent === lastSavedContentRef.current) return;
     if (isRemoteUpdateRef.current) return;
 

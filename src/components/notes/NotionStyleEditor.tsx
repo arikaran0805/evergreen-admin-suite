@@ -107,7 +107,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
   const extensions = useMemo(() => getNotionExtensions(placeholder), [placeholder]);
 
   // Parse initial content
-  const initialContent = useMemo(() => parseContent(value), []);
+  const initialContent = useMemo(() => parseContent(value), [value]);
+
+  // Prevent programmatic hydration from triggering onChange (critical to avoid empty overwrites)
+  const applyingExternalValueRef = useRef(false);
 
   // Track if formatting was just applied via toolbar
   const justFormattedRef = useRef(false);
@@ -119,6 +122,7 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
     editable: !disabled,
     autofocus: autoFocus ? 'end' : false,
     onUpdate: ({ editor }) => {
+      if (applyingExternalValueRef.current) return;
       onChange(serializeContent(editor.getJSON()));
     },
     onSelectionUpdate: ({ editor }) => {
@@ -210,7 +214,14 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
     const current = JSON.stringify(editor.getJSON());
     const incoming = JSON.stringify(newContent);
     if (current !== incoming) {
-      editor.commands.setContent(newContent);
+      // CRITICAL: Do not emit an update during hydration/sync, otherwise the parent
+      // may interpret the intermediate empty doc as user input and auto-save it.
+      applyingExternalValueRef.current = true;
+      editor.commands.setContent(newContent, { emitUpdate: false });
+      // Release on next tick
+      setTimeout(() => {
+        applyingExternalValueRef.current = false;
+      }, 0);
     }
   }, [value, editor]);
 
