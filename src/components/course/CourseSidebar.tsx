@@ -93,6 +93,7 @@ export const CourseSidebar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [shareOpenPostId, setShareOpenPostId] = useState<string | null>(null);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
   // Get the currently expanded lesson ID (single-open accordion)
   const expandedLessonId = useMemo(() => {
@@ -501,7 +502,9 @@ export const CourseSidebar = ({
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                            setCopiedPostId(post.id);
                                             toast.success("Link copied!");
+                                            setTimeout(() => setCopiedPostId(null), 2000);
                                           }}
                                           className={cn(
                                             "p-0.5 rounded transition-colors",
@@ -514,7 +517,7 @@ export const CourseSidebar = ({
                                         </button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="text-xs">
-                                        Copy link
+                                        {copiedPostId === post.id ? "Copied" : "Copy link"}
                                       </TooltipContent>
                                     </Tooltip>
                                     
