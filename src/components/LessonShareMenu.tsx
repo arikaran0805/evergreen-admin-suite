@@ -16,6 +16,8 @@ interface LessonShareMenuProps {
   onOpenChange?: (isOpen: boolean) => void;
   /** Use sidebar-friendly colors (lighter icon on dark sidebar bg) */
   sidebarVariant?: boolean;
+  /** Use white text for active (e.g. on green primary bg) */
+  isActive?: boolean;
 }
 
 const LessonShareMenu = ({ 
@@ -28,7 +30,8 @@ const LessonShareMenu = ({
   side = "top", 
   vertical = false, 
   onOpenChange,
-  sidebarVariant = false
+  sidebarVariant = false,
+  isActive = false
 }: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -201,9 +204,11 @@ const LessonShareMenu = ({
           >
             <button
               className={`p-1 rounded transition-opacity ${alwaysVisible || open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${
-                sidebarVariant 
-                  ? 'text-sidebar-foreground/60 hover:text-sidebar-foreground' 
-                  : 'text-muted-foreground hover:text-foreground'
+                isActive
+                  ? 'text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground'
+                  : sidebarVariant 
+                    ? 'text-sidebar-foreground/60 hover:text-sidebar-foreground' 
+                    : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Share2 className="h-3.5 w-3.5" />
