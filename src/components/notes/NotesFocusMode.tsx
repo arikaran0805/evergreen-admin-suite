@@ -17,7 +17,9 @@ import {
   ChevronRight,
   Plus,
   Trash2,
+  Pencil,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { NotionStyleEditor } from './NotionStyleEditor';
 import { getTextPreview } from '@/lib/tiptapMigration';
 import { useCourseNotes } from '@/hooks/useCourseNotes';
@@ -64,9 +66,13 @@ export function NotesFocusMode({
     createUserNote,
     createLessonNote,
     deleteNote,
+    updateNoteTitle,
   } = useCourseNotes({ courseId, userId });
 
   const [showSaving, setShowSaving] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const savingTimeoutRef = useRef<NodeJS.Timeout>();
   const editorRef = useRef<any>(null);
 
@@ -96,6 +102,43 @@ export function NotesFocusMode({
         description: "Please try again",
         variant: "destructive",
       });
+    }
+  };
+
+  // Handle rename for user-created notes
+  const handleStartRename = () => {
+    if (selectedNote?.entity_type === 'user') {
+      setRenameValue(selectedNote.display_title);
+      setIsRenaming(true);
+      setTimeout(() => {
+        renameInputRef.current?.focus();
+        renameInputRef.current?.select();
+      }, 50);
+    }
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!selectedNote || !renameValue.trim()) {
+      setIsRenaming(false);
+      return;
+    }
+    
+    const success = await updateNoteTitle(selectedNote.id, renameValue.trim());
+    if (success) {
+      toast({
+        title: "Note renamed",
+        description: `Renamed to "${renameValue.trim()}"`,
+      });
+    }
+    setIsRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRenameSubmit();
+    } else if (e.key === 'Escape') {
+      setIsRenaming(false);
     }
   };
 
@@ -328,9 +371,35 @@ export function NotesFocusMode({
             <div className="max-w-[740px] mx-auto px-6 md:px-10 pt-14 pb-32">
               {/* Metadata Strip — Readable secondary text */}
               <div className="mb-10 flex items-center gap-3 text-[12px]">
-                <span className="text-foreground/70 bg-muted/50 px-2.5 py-1 rounded-md font-medium">
-                  {selectedNote.display_title}
-                </span>
+                {/* Title - Editable for user notes, static for lesson notes */}
+                {isRenaming ? (
+                  <Input
+                    ref={renameInputRef}
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={handleRenameSubmit}
+                    onKeyDown={handleRenameKeyDown}
+                    className="h-7 w-48 text-[12px] px-2.5 py-1"
+                    placeholder="Note title..."
+                  />
+                ) : (
+                  <div className="flex items-center gap-1.5 group">
+                    <span className="text-foreground/70 bg-muted/50 px-2.5 py-1 rounded-md font-medium">
+                      {selectedNote.display_title}
+                    </span>
+                    {/* Rename button - only for user-created notes */}
+                    {selectedNote.entity_type === 'user' && (
+                      <button
+                        onClick={handleStartRename}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all p-1 rounded hover:bg-muted"
+                        title="Rename note"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                
                 {/* Only show "Go to lesson" for lesson-type notes */}
                 {onNavigateToLesson && selectedNote.entity_type === 'lesson' && selectedNote.lesson_id && (
                   <button
