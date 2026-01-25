@@ -167,7 +167,7 @@ export const CourseSidebar = ({
   const noResults = searchQuery && filteredLessons.length === 0;
 
   return (
-    <aside className="lg:w-72 bg-sidebar border-r border-sidebar-border flex-shrink-0">
+    <aside className="lg:w-[280px] bg-sidebar border-r border-sidebar-border flex-shrink-0">
       <div className={cn("sticky transition-[top] duration-200 ease-out h-[calc(100vh-6.5rem)]", stickyTopClass)}>
         
         {/* === SECTION 1: COURSE PROGRESS HEADER === */}
