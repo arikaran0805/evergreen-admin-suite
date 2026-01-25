@@ -999,3 +999,83 @@
   border-top: 1px solid hsl(var(--border) / 0.5);
   margin: 2rem 0;
 }
+
+/* ============================================
+   QUICK NOTES EDITOR - Minimal inline editor
+   ============================================ */
+
+.quick-notes-editor {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+}
+
+.quick-notes-editor:focus {
+  outline: none;
+}
+
+/* Placeholder for quick notes */
+.quick-notes-editor.is-editor-empty::before,
+.quick-notes-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground) / 0.6);
+  font-style: italic;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* Paragraphs */
+.quick-notes-editor p {
+  margin: 0 0 0.5rem 0;
+}
+
+.quick-notes-editor p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.quick-notes-editor ul,
+.quick-notes-editor ol {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.quick-notes-editor li {
+  margin: 0.125rem 0;
+}
+
+.quick-notes-editor li p {
+  margin: 0;
+}
+
+/* Strong/Bold */
+.quick-notes-editor strong {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+/* Emphasis/Italic */
+.quick-notes-editor em {
+  font-style: italic;
+}
+
+/* Links */
+.quick-notes-editor a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.quick-notes-editor a:hover {
+  text-decoration-color: hsl(var(--primary));
+}
+
+/* Inline code */
+.quick-notes-editor code {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.8em;
+  background: hsl(var(--muted) / 0.5);
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+}

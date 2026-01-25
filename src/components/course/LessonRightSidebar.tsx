@@ -187,7 +187,7 @@ export function LessonRightSidebar({
           </CardContent>
         </Card>
 
-        {/* SECTION 2: Notes (Premium Feature) */}
+        {/* SECTION 2: Quick Notes (Inline) */}
         {userId && (
           <LessonNotesCard
             content={content}
@@ -195,6 +195,7 @@ export function LessonRightSidebar({
             isSaving={isSaving}
             lastSavedText={lastSavedText}
             isLoading={isLoading}
+            courseId={courseId}
           />
         )}
 
