@@ -213,19 +213,26 @@ export function NotesFocusMode({
                             key={note.id}
                             onClick={() => selectNote(note)}
                             className={cn(
-                              "w-full text-left px-2.5 py-2 rounded-md transition-colors",
+                              "w-full text-left px-2.5 py-2 rounded-md transition-all relative",
                               isSelected
-                                ? "bg-primary/8"
-                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+                                ? "bg-primary/10"
+                                : "hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"
                             )}
                           >
+                            {/* Left accent bar for selected state */}
+                            {isSelected && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] bg-primary rounded-full" />
+                            )}
                             <div className={cn(
-                              "text-[13px] font-medium truncate",
-                              isSelected ? "text-foreground" : "text-foreground/75"
+                              "text-[13px] font-medium truncate transition-colors",
+                              isSelected ? "text-foreground" : "text-foreground/70"
                             )}>
                               {note.lesson_title}
                             </div>
-                            <p className="text-[11px] text-muted-foreground/45 line-clamp-1 mt-0.5">
+                            <p className={cn(
+                              "text-[11px] line-clamp-1 mt-0.5",
+                              isSelected ? "text-muted-foreground/60" : "text-muted-foreground/45"
+                            )}>
                               {preview}
                             </p>
                           </button>
