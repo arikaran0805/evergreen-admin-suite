@@ -3,9 +3,12 @@
  * 
  * Opens in a new tab from the Course Detail page.
  * Renders NotesFocusMode in full isolation without course chrome.
+ * 
+ * CRITICAL: Listens for context-switch messages to display the correct note
+ * when opened from different lessons/contexts.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,9 +27,22 @@ const CourseNotes = () => {
   const navigate = useNavigate();
   const [course, setCourse] = useState<CourseInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Context switch state - when we receive a message to switch to a specific note
+  const [switchContext, setSwitchContext] = useState<{
+    noteId?: string;
+    lessonId?: string;
+    entityType?: string;
+  } | null>(null);
+
+  // Handle context switch messages from other tabs
+  const handleSwitchNote = useCallback((options: { noteId?: string; lessonId?: string; entityType?: string }) => {
+    setSwitchContext(options);
+  }, []);
 
   // Register this tab for single-tab-per-course management
-  const { closeAndFocusOpener } = useNotesTabRegistration(courseId);
+  // Pass the switch handler to receive context-switch messages
+  const { closeAndFocusOpener } = useNotesTabRegistration(courseId, handleSwitchNote);
 
   // Fetch course info
   useEffect(() => {
@@ -115,6 +131,8 @@ const CourseNotes = () => {
       onExit={handleBackToCourse}
       onNavigateToLesson={handleNavigateToLesson}
       isStandalonePage
+      switchToContext={switchContext}
+      onContextSwitched={() => setSwitchContext(null)}
     />
   );
 };

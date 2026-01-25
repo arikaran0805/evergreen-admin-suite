@@ -2,7 +2,10 @@
  * useNotesTabManager - Manages single Notes tab per course
  * 
  * Prevents multiple Notes tabs from opening for the same course.
- * Uses window.name for tab identification and cross-tab communication.
+ * Uses BroadcastChannel for cross-tab communication and context switching.
+ * 
+ * CRITICAL: When Deep Notes is already open and user opens from a different
+ * context (lesson, post, etc), the existing tab MUST switch to show that note.
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -12,6 +15,18 @@ const NOTES_TAB_PREFIX = 'lovable-notes-';
 
 // Storage key for tracking open notes tabs
 const NOTES_TAB_REGISTRY_KEY = 'lovable-notes-tabs';
+
+// Broadcast channel for context switching
+const NOTES_CONTEXT_CHANNEL = 'lovable-notes-context';
+
+export interface NotesContextMessage {
+  type: 'SWITCH_NOTE' | 'FOCUS_NOTE';
+  courseId: string;
+  noteId?: string;
+  lessonId?: string;
+  entityType?: 'lesson' | 'user' | 'post' | 'comment';
+  timestamp: number;
+}
 
 interface NotesTabInfo {
   courseId: string;
@@ -43,13 +58,26 @@ function updateTabRegistry(registry: Record<string, NotesTabInfo>) {
 
 /**
  * Hook for opening Notes in a managed tab (used by CourseDetail)
+ * Supports context switching - if tab exists, sends message to switch note
  */
 export function useNotesTabOpener(courseId: string | undefined) {
   const notesWindowRef = useRef<Window | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  // Initialize broadcast channel
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    
+    channelRef.current = new BroadcastChannel(NOTES_CONTEXT_CHANNEL);
+    
+    return () => {
+      channelRef.current?.close();
+      channelRef.current = null;
+    };
+  }, []);
 
   // Clean up stale registry entries on mount
   useEffect(() => {
-    // Cleanup stale entries (older than 1 hour)
     const registry = getTabRegistry();
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
     let hasChanges = false;
@@ -67,10 +95,14 @@ export function useNotesTabOpener(courseId: string | undefined) {
   }, []);
 
   /**
-   * Open or focus the Notes tab for this course
-   * Returns true if opened/focused successfully
+   * Open or focus the Notes tab for this course.
+   * If noteId/lessonId provided, will switch to that note in existing tab.
    */
-  const openNotesTab = useCallback(() => {
+  const openNotesTab = useCallback((options?: {
+    noteId?: string;
+    lessonId?: string;
+    entityType?: 'lesson' | 'user' | 'post' | 'comment';
+  }) => {
     if (!courseId) return false;
 
     const tabId = `${NOTES_TAB_PREFIX}${courseId}`;
@@ -80,9 +112,21 @@ export function useNotesTabOpener(courseId: string | undefined) {
     if (notesWindowRef.current && !notesWindowRef.current.closed) {
       try {
         notesWindowRef.current.focus();
+        
+        // Send context switch message if we have a specific note to show
+        if (options?.noteId || options?.lessonId) {
+          channelRef.current?.postMessage({
+            type: 'SWITCH_NOTE',
+            courseId,
+            noteId: options.noteId,
+            lessonId: options.lessonId,
+            entityType: options.entityType,
+            timestamp: Date.now(),
+          } as NotesContextMessage);
+        }
+        
         return true;
       } catch {
-        // Window reference is invalid, continue to open new
         notesWindowRef.current = null;
       }
     }
@@ -100,6 +144,21 @@ export function useNotesTabOpener(courseId: string | undefined) {
         openedAt: Date.now(),
       };
       updateTabRegistry(registry);
+      
+      // If opening with specific context, send message after small delay
+      // to give the new tab time to set up its listener
+      if (options?.noteId || options?.lessonId) {
+        setTimeout(() => {
+          channelRef.current?.postMessage({
+            type: 'SWITCH_NOTE',
+            courseId,
+            noteId: options.noteId,
+            lessonId: options.lessonId,
+            entityType: options.entityType,
+            timestamp: Date.now(),
+          } as NotesContextMessage);
+        }, 500);
+      }
     }
 
     return true;
@@ -110,9 +169,14 @@ export function useNotesTabOpener(courseId: string | undefined) {
 
 /**
  * Hook for registering a Notes tab (used by CourseNotes page)
- * Sets window.name and listens for focus messages
+ * Listens for context switch messages to change active note
  */
-export function useNotesTabRegistration(courseId: string | undefined) {
+export function useNotesTabRegistration(
+  courseId: string | undefined,
+  onSwitchNote?: (options: { noteId?: string; lessonId?: string; entityType?: string }) => void
+) {
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
   useEffect(() => {
     if (!courseId) return;
 
@@ -128,13 +192,38 @@ export function useNotesTabRegistration(courseId: string | undefined) {
     };
     updateTabRegistry(registry);
 
+    // Set up broadcast channel listener for context switching
+    if (typeof BroadcastChannel !== 'undefined') {
+      channelRef.current = new BroadcastChannel(NOTES_CONTEXT_CHANNEL);
+      
+      const handleMessage = (event: MessageEvent<NotesContextMessage>) => {
+        const message = event.data;
+        
+        // Only handle messages for this course
+        if (message.courseId !== courseId) return;
+        
+        if (message.type === 'SWITCH_NOTE' && onSwitchNote) {
+          onSwitchNote({
+            noteId: message.noteId,
+            lessonId: message.lessonId,
+            entityType: message.entityType,
+          });
+        }
+      };
+      
+      channelRef.current.addEventListener('message', handleMessage);
+    }
+
     // Cleanup on unmount
     return () => {
       const registry = getTabRegistry();
       delete registry[tabId];
       updateTabRegistry(registry);
+      
+      channelRef.current?.close();
+      channelRef.current = null;
     };
-  }, [courseId]);
+  }, [courseId, onSwitchNote]);
 
   /**
    * Focus the opener (course) tab if available
