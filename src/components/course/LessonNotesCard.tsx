@@ -1,8 +1,22 @@
-import { useState, useRef, useEffect } from "react";
+/**
+ * LessonNotesCard - Quick Notes (Inline)
+ * 
+ * A lightweight, inline note-taking card for lessons.
+ * Uses a minimal rich-text editor for proper formatting.
+ * Content is stored as TipTap JSON, never shown raw to users.
+ */
+
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { StickyNote, Loader2, Check } from "lucide-react";
+import { StickyNote, Loader2, Check, ExternalLink } from "lucide-react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import Link from "@tiptap/extension-link";
+import { getTextPreview, parseContent, serializeContent } from "@/lib/tiptapMigration";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import "@/styles/tiptap.css";
 
 interface LessonNotesCardProps {
   content: string;
@@ -10,7 +24,30 @@ interface LessonNotesCardProps {
   isSaving: boolean;
   lastSavedText: string | null;
   isLoading: boolean;
+  courseId?: string;
 }
+
+// Minimal extensions for quick notes - no heavy formatting
+const getQuickNotesExtensions = () => [
+  StarterKit.configure({
+    heading: false,
+    codeBlock: false,
+    blockquote: false,
+    horizontalRule: false,
+  }),
+  Placeholder.configure({
+    placeholder: "Jot down a quick note…",
+    emptyEditorClass: "is-editor-empty",
+  }),
+  Link.configure({
+    openOnClick: true,
+    HTMLAttributes: {
+      class: "text-primary underline underline-offset-2",
+      rel: "noopener noreferrer",
+      target: "_blank",
+    },
+  }),
+];
 
 export function LessonNotesCard({
   content,
@@ -18,62 +55,128 @@ export function LessonNotesCard({
   isSaving,
   lastSavedText,
   isLoading,
+  courseId,
 }: LessonNotesCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
-  // Focus textarea when expanded
+  // Parse content for preview
+  const textPreview = useMemo(() => {
+    if (!content) return "";
+    return getTextPreview(content, 100);
+  }, [content]);
+
+  const hasContent = textPreview.trim().length > 0;
+
+  // Initialize editor
+  const editor = useEditor({
+    extensions: getQuickNotesExtensions(),
+    content: parseContent(content),
+    editable: true,
+    autofocus: false,
+    onUpdate: ({ editor }) => {
+      const json = editor.getJSON();
+      updateContent(serializeContent(json));
+    },
+    editorProps: {
+      attributes: {
+        class: "quick-notes-editor outline-none text-sm leading-relaxed min-h-[80px] max-h-[200px] overflow-y-auto",
+      },
+    },
+  });
+
+  // Sync content when it changes externally
   useEffect(() => {
-    if (isExpanded && textareaRef.current) {
-      textareaRef.current.focus();
+    if (!editor || !content) return;
+    
+    const currentContent = serializeContent(editor.getJSON());
+    if (currentContent !== content) {
+      const parsed = parseContent(content);
+      editor.commands.setContent(parsed);
     }
-  }, [isExpanded]);
+  }, [content, editor]);
 
-  const handleExpand = () => {
+  // Focus editor when expanded
+  useEffect(() => {
+    if (isExpanded && editor) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        editor.commands.focus("end");
+      }, 50);
+    }
+  }, [isExpanded, editor]);
+
+  const handleExpand = useCallback(() => {
     if (!isExpanded) {
       setIsExpanded(true);
     }
-  };
+  }, [isExpanded]);
 
-  const handleBlur = (e: React.FocusEvent) => {
+  const handleBlur = useCallback((e: React.FocusEvent) => {
     // Check if focus is moving to another element within the card
     if (cardRef.current?.contains(e.relatedTarget as Node)) {
       return;
     }
     setIsExpanded(false);
-  };
+  }, []);
 
-  // Preview text: first 2 lines, clamped
-  const hasContent = content.trim().length > 0;
+  // Open Deep Notes in new tab
+  const handleOpenDeepNotes = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (courseId) {
+      window.open(`/courses/${courseId}/notes`, "_blank", "noopener,noreferrer");
+    }
+  }, [courseId]);
 
   return (
     <Card
       ref={cardRef}
       className={cn(
         "border-border/50 bg-card/50 backdrop-blur-sm shadow-sm transition-all duration-200 ease-out overflow-hidden",
-        !isExpanded && "cursor-pointer hover:bg-card/70"
+        "border-l-2 border-l-primary/20",
+        !isExpanded && "cursor-pointer hover:bg-card/70 hover:border-l-primary/40"
       )}
       onClick={handleExpand}
       onBlur={handleBlur}
     >
-      <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex items-center justify-between">
+      <CardHeader className="pb-2 pt-3 px-4">
+        <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-            <StickyNote className="h-4 w-4 text-muted-foreground" />
+            <StickyNote className="h-4 w-4 text-primary/60" />
             Your Notes
           </CardTitle>
-          {isSaving ? (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Saving...
-            </span>
-          ) : lastSavedText ? (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Check className="h-3 w-3" />
-              {lastSavedText}
-            </span>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {/* Save status */}
+            {isSaving ? (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span className="hidden sm:inline">Saving...</span>
+              </span>
+            ) : lastSavedText ? (
+              <span className="text-xs text-primary/70 flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                <span className="hidden sm:inline">{lastSavedText}</span>
+              </span>
+            ) : null}
+            
+            {/* Open Deep Notes */}
+            {courseId && isExpanded && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleOpenDeepNotes}
+                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Open in Deep Notes
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
       </CardHeader>
 
@@ -83,23 +186,38 @@ export function LessonNotesCard({
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : isExpanded ? (
-          // Expanded: comfortable textarea
-          <Textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => updateContent(e.target.value)}
-            placeholder="Write your thoughts, shortcuts, or reminders…"
-            className="resize-none border-border/50 bg-background/50 text-sm min-h-[100px] transition-all duration-200"
-          />
+          // Expanded: Rich text editor
+          <div 
+            ref={editorContainerRef}
+            className="rounded-md border border-border/50 bg-background/50 p-2 transition-all duration-200"
+          >
+            <EditorContent editor={editor} />
+            
+            {/* Minimal formatting hint */}
+            <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground/60">
+                **bold** • *italic* • [link](url)
+              </span>
+              {courseId && (
+                <button
+                  onClick={handleOpenDeepNotes}
+                  className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                >
+                  Open in Deep Notes
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </button>
+              )}
+            </div>
+          </div>
         ) : hasContent ? (
-          // Collapsed with content: preview
+          // Collapsed with content: preview (plain text, no JSON)
           <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-            {content}
+            {textPreview}
           </p>
         ) : (
           // Collapsed empty: placeholder
-          <p className="text-sm text-muted-foreground/70 italic">
-            Write your thoughts, shortcuts, or reminders…
+          <p className="text-sm text-muted-foreground/60 italic">
+            Jot down a quick note…
           </p>
         )}
       </CardContent>
