@@ -152,6 +152,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
         <TooltipContent 
           side={side}
           sideOffset={8}
+          avoidCollisions={false}
           className={`p-0 border-0 bg-transparent shadow-none animate-in fade-in-0 zoom-in-95 duration-150 ${side === "right" ? "slide-in-from-left-2" : "slide-in-from-bottom-2"}`}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
