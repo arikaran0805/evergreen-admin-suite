@@ -127,13 +127,13 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
         <Share2 className="h-3.5 w-3.5" />
       </button>
       
-      {/* Share Menu - Icon only, positioned above with down-to-up animation */}
+      {/* Share Menu - appears above with zoom animation like comments tooltip */}
       {open && (
         <div 
           onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 duration-150"
         >
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-lg">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl">
             <TooltipProvider delayDuration={200}>
               {/* WhatsApp */}
               <Tooltip>
