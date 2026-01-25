@@ -894,12 +894,20 @@
   outline: none;
 }
 
+/* Placeholder - only shows when editor is empty AND not focused */
 .notion-style-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: hsl(var(--muted-foreground));
+  opacity: 0.6;
   pointer-events: none;
-  float: left;
+  position: absolute;
   height: 0;
+}
+
+/* Hide placeholder completely when editor is focused to avoid double cursor */
+.notion-style-editor .ProseMirror:focus p.is-editor-empty:first-child::before,
+.notion-style-editor .ProseMirror.ProseMirror-focused p.is-editor-empty:first-child::before {
+  display: none;
 }
 
 .notion-style-editor .ProseMirror > * + * {
