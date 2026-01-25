@@ -1,0 +1,400 @@
+/**
+ * NotionStyleEditor - A distraction-free, Notion-inspired TipTap editor
+ * 
+ * Features:
+ * - Large, comfortable typography
+ * - Selection-based floating toolbar
+ * - Markdown shortcuts
+ * - Clean, minimal design
+ */
+
+import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { useEditor, EditorContent, type JSONContent, type Editor } from '@tiptap/react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  Bold, 
+  Italic, 
+  Underline as UnderlineIcon, 
+  Strikethrough, 
+  Code, 
+  Link as LinkIcon,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+} from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { parseContent, serializeContent } from '@/lib/tiptapMigration';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import CharacterCount from '@tiptap/extension-character-count';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import '@/styles/tiptap.css';
+
+export interface NotionStyleEditorProps {
+  /** Content (string or JSON) */
+  value: string;
+  /** Change handler */
+  onChange: (value: string) => void;
+  /** Placeholder text */
+  placeholder?: string;
+  /** Auto-focus on mount */
+  autoFocus?: boolean;
+  /** Custom class */
+  className?: string;
+  /** Disable editing */
+  disabled?: boolean;
+}
+
+export interface NotionStyleEditorRef {
+  getEditor: () => Editor | null;
+  getJSON: () => JSONContent | undefined;
+  getText: () => string;
+  isEmpty: () => boolean;
+  focus: () => void;
+}
+
+// Create extensions for the notion-style editor
+const getNotionExtensions = (placeholder: string) => [
+  StarterKit.configure({
+    heading: {
+      levels: [1, 2, 3],
+    },
+    codeBlock: false,
+  }),
+  Placeholder.configure({
+    placeholder,
+    emptyEditorClass: 'is-editor-empty',
+  }),
+  CharacterCount,
+  Underline,
+  Link.configure({
+    openOnClick: false,
+    HTMLAttributes: {
+      class: 'text-primary underline underline-offset-2 hover:text-primary/80 transition-colors',
+      rel: 'noopener noreferrer',
+      target: '_blank',
+    },
+  }),
+];
+
+export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEditorProps>(({
+  value,
+  onChange,
+  placeholder = 'Start writing...',
+  autoFocus = true,
+  className,
+  disabled = false,
+}, ref) => {
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Extensions
+  const extensions = useMemo(() => getNotionExtensions(placeholder), [placeholder]);
+
+  // Parse initial content
+  const initialContent = useMemo(() => parseContent(value), []);
+
+  // Editor instance
+  const editor = useEditor({
+    extensions,
+    content: initialContent,
+    editable: !disabled,
+    autofocus: autoFocus ? 'end' : false,
+    onUpdate: ({ editor }) => {
+      onChange(serializeContent(editor.getJSON()));
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      const hasSelection = from !== to;
+      
+      if (hasSelection && !editor.state.selection.empty) {
+        // Get the selection coordinates
+        const { view } = editor;
+        const start = view.coordsAtPos(from);
+        const end = view.coordsAtPos(to);
+        
+        // Position the toolbar above the selection
+        const containerRect = editorContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          const top = start.top - containerRect.top - 50;
+          const left = (start.left + end.left) / 2 - containerRect.left;
+          setToolbarPosition({ top: Math.max(0, top), left: Math.max(10, left) });
+        }
+        setShowToolbar(true);
+      } else {
+        setShowToolbar(false);
+      }
+    },
+    editorProps: {
+      attributes: {
+        class: 'notion-editor-content',
+      },
+    },
+  });
+
+  // Sync editable state
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [editor, disabled]);
+
+  // Sync external value changes
+  useEffect(() => {
+    if (!editor) return;
+    const newContent = parseContent(value);
+    const current = JSON.stringify(editor.getJSON());
+    const incoming = JSON.stringify(newContent);
+    if (current !== incoming) {
+      editor.commands.setContent(newContent);
+    }
+  }, [value, editor]);
+
+  // Link handler
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    if (!linkUrl) {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    } else {
+      const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+      editor.chain().focus().extendMarkRange('link')
+        .setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run();
+    }
+    setLinkUrl('');
+    setShowLinkInput(false);
+  }, [editor, linkUrl]);
+
+  // Expose ref
+  useImperativeHandle(ref, () => ({
+    getEditor: () => editor,
+    getJSON: () => editor?.getJSON(),
+    getText: () => editor?.getText() || '',
+    isEmpty: () => editor?.isEmpty ?? true,
+    focus: () => editor?.commands.focus(),
+  }));
+
+  if (!editor) {
+    return (
+      <div className={cn('animate-pulse bg-muted/20 rounded-lg', className)} style={{ minHeight: '200px' }} />
+    );
+  }
+
+  return (
+    <div 
+      ref={editorContainerRef}
+      className={cn(
+        'notion-style-editor relative',
+        disabled && 'opacity-60 pointer-events-none',
+        className
+      )}
+    >
+      {/* Selection-based floating toolbar */}
+      {showToolbar && (
+        <div
+          ref={toolbarRef}
+          className="absolute z-50 flex items-center gap-0.5 p-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-150"
+          style={{
+            top: `${toolbarPosition.top}px`,
+            left: `${toolbarPosition.left}px`,
+            transform: 'translateX(-50%)',
+          }}
+          onMouseDown={(e) => e.preventDefault()} // Prevent blur
+        >
+          {/* Text formatting */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            isActive={editor.isActive('bold')}
+            title="Bold"
+          >
+            <Bold className="h-4 w-4" />
+          </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            isActive={editor.isActive('italic')}
+            title="Italic"
+          >
+            <Italic className="h-4 w-4" />
+          </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            isActive={editor.isActive('underline')}
+            title="Underline"
+          >
+            <UnderlineIcon className="h-4 w-4" />
+          </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            isActive={editor.isActive('strike')}
+            title="Strikethrough"
+          >
+            <Strikethrough className="h-4 w-4" />
+          </ToolbarButton>
+
+          <div className="w-px h-5 bg-border mx-0.5" />
+
+          {/* Inline code */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            isActive={editor.isActive('code')}
+            title="Code"
+          >
+            <Code className="h-4 w-4" />
+          </ToolbarButton>
+
+          {/* Link */}
+          <Popover open={showLinkInput} onOpenChange={setShowLinkInput}>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  'p-1.5 rounded-md hover:bg-muted transition-colors',
+                  editor.isActive('link') && 'bg-primary/10 text-primary'
+                )}
+                onClick={() => {
+                  setLinkUrl(editor.getAttributes('link').href || '');
+                  setShowLinkInput(true);
+                }}
+                title="Link"
+              >
+                <LinkIcon className="h-4 w-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-2" align="start">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Paste link..."
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setLink())}
+                  className="flex-1 h-8 text-sm"
+                  autoFocus
+                />
+                <Button size="sm" className="h-8" onClick={setLink}>
+                  {editor.isActive('link') ? 'Update' : 'Add'}
+                </Button>
+              </div>
+              {editor.isActive('link') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 w-full text-destructive hover:text-destructive"
+                  onClick={() => {
+                    editor.chain().focus().unsetLink().run();
+                    setShowLinkInput(false);
+                  }}
+                >
+                  Remove link
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <div className="w-px h-5 bg-border mx-0.5" />
+
+          {/* Headings */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            isActive={editor.isActive('heading', { level: 1 })}
+            title="Heading 1"
+          >
+            <Heading1 className="h-4 w-4" />
+          </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            isActive={editor.isActive('heading', { level: 2 })}
+            title="Heading 2"
+          >
+            <Heading2 className="h-4 w-4" />
+          </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            isActive={editor.isActive('heading', { level: 3 })}
+            title="Heading 3"
+          >
+            <Heading3 className="h-4 w-4" />
+          </ToolbarButton>
+
+          <div className="w-px h-5 bg-border mx-0.5" />
+
+          {/* Lists */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            isActive={editor.isActive('bulletList')}
+            title="Bullet list"
+          >
+            <List className="h-4 w-4" />
+          </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            isActive={editor.isActive('orderedList')}
+            title="Numbered list"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </ToolbarButton>
+
+          {/* Quote */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            isActive={editor.isActive('blockquote')}
+            title="Quote"
+          >
+            <Quote className="h-4 w-4" />
+          </ToolbarButton>
+
+          {/* Clear formatting */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setParagraph().run()}
+            title="Normal text"
+          >
+            <Minus className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+      )}
+
+      {/* Editor content */}
+      <EditorContent editor={editor} />
+    </div>
+  );
+});
+
+NotionStyleEditor.displayName = 'NotionStyleEditor';
+
+// Toolbar button component
+interface ToolbarButtonProps {
+  onClick: () => void;
+  isActive?: boolean;
+  title: string;
+  children: React.ReactNode;
+}
+
+function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        'p-1.5 rounded-md hover:bg-muted transition-colors',
+        isActive && 'bg-primary/10 text-primary'
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default NotionStyleEditor;
