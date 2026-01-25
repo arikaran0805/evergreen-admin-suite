@@ -453,7 +453,9 @@ export const CourseSidebar = ({
                                   "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/40",
                                   isActive
                                     ? "bg-sidebar-primary shadow-sm"
-                                    : "hover:bg-sidebar-accent"
+                                    : shareOpenPostId === post.id
+                                      ? "bg-sidebar-accent/70"
+                                      : "hover:bg-sidebar-accent"
                                 )}
                               >
                                 <div className="px-3 py-2 flex items-center gap-2">

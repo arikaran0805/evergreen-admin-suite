@@ -28,6 +28,7 @@ import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
 import CourseNotesTab from "@/components/course/CourseNotesTab";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1764,9 +1765,11 @@ const CourseDetail = () => {
                                           return (
                                             <div 
                                               key={post.id}
-                                              className={`relative flex items-center justify-between hover:bg-muted/30 cursor-pointer transition-colors group ${
-                                                isActive ? "bg-primary/5" : ""
-                                              }`}
+                                              className={cn(
+                                                "relative flex items-center justify-between hover:bg-muted/30 cursor-pointer transition-colors group",
+                                                isActive && "bg-primary/5",
+                                                shareOpenPostId === post.id && !isActive && "bg-muted/40"
+                                              )}
                                               onClick={() => handleLessonClick(post)}
                                             >
                                               {/* Active lesson accent bar */}
