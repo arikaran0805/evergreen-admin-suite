@@ -20,11 +20,34 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
   const initialLoadRef = useRef(true);
   const isRemoteUpdateRef = useRef(false);
   const lastSavedContentRef = useRef<string>("");
+  const contentRef = useRef<string>("");
+  const pendingRemoteUpdateRef = useRef<{ content: string; updatedAt: string } | null>(null);
+
+  // Keep a ref of the latest content for conflict checks inside callbacks
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
 
   // Handle remote updates from other tabs (Deep Notes)
   const handleRemoteUpdate = useCallback((remoteContent: string, updatedAt: string) => {
     // CRITICAL: Ignore if we're still loading to prevent race conditions
     if (initialLoadRef.current) return;
+
+    // SAFETY: Never overwrite unsaved local edits (prevents "content disappears" while typing)
+    // If the user is actively editing, queue the remote update and apply it only after
+    // local content is saved (or returns to a non-dirty state).
+    const isDirty = contentRef.current !== lastSavedContentRef.current;
+    if (isDirty) {
+      const existing = pendingRemoteUpdateRef.current;
+      const existingTime = existing ? new Date(existing.updatedAt).getTime() : 0;
+      const incomingTime = new Date(updatedAt).getTime();
+
+      if (!existing || incomingTime > existingTime) {
+        pendingRemoteUpdateRef.current = { content: remoteContent, updatedAt };
+      }
+      setIsSyncing(true);
+      return;
+    }
     
     // Mark that this is a remote update to prevent broadcast echo
     isRemoteUpdateRef.current = true;
@@ -38,6 +61,29 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
       isRemoteUpdateRef.current = false;
     }, 100);
   }, []);
+
+  // Apply any queued remote update once we are no longer dirty
+  useEffect(() => {
+    if (initialLoadRef.current) return;
+    if (isRemoteUpdateRef.current) return;
+
+    const pending = pendingRemoteUpdateRef.current;
+    if (!pending) return;
+
+    const isDirty = contentRef.current !== lastSavedContentRef.current;
+    if (isDirty) return;
+
+    pendingRemoteUpdateRef.current = null;
+    isRemoteUpdateRef.current = true;
+    setContent(pending.content);
+    lastSavedContentRef.current = pending.content;
+    setLastSaved(new Date(pending.updatedAt));
+    setIsSyncing(false);
+
+    setTimeout(() => {
+      isRemoteUpdateRef.current = false;
+    }, 100);
+  }, [content]);
 
   // Handle note created in other tab
   const handleNoteCreated = useCallback((newNoteId: string, newLessonId: string) => {
