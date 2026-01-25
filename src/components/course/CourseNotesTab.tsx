@@ -164,7 +164,7 @@ export function CourseNotesTab({
                         <div className="flex items-center gap-2 mb-1">
                           <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           <span className="text-sm font-medium truncate">
-                            {note.lesson_title}
+                            {note.display_title}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2 ml-5.5">
@@ -198,8 +198,17 @@ export function CourseNotesTab({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="secondary" className="text-xs">
-                    <BookOpen className="h-3 w-3 mr-1" />
-                    Lesson
+                    {selectedNote.entity_type === 'lesson' ? (
+                      <>
+                        <BookOpen className="h-3 w-3 mr-1" />
+                        Lesson
+                      </>
+                    ) : (
+                      <>
+                        <StickyNote className="h-3 w-3 mr-1" />
+                        Note
+                      </>
+                    )}
                   </Badge>
                   {isSaving && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -215,7 +224,7 @@ export function CourseNotesTab({
                   )}
                 </div>
                 <h3 className="text-lg font-semibold truncate">
-                  {selectedNote.lesson_title}
+                  {selectedNote.display_title}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Last updated:{" "}
@@ -229,11 +238,12 @@ export function CourseNotesTab({
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {onNavigateToLesson && (
+                {/* Only show Go to Lesson for lesson-type notes */}
+                {onNavigateToLesson && selectedNote.entity_type === 'lesson' && selectedNote.lesson_id && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onNavigateToLesson(selectedNote.lesson_id)}
+                    onClick={() => onNavigateToLesson(selectedNote.lesson_id!)}
                   >
                     <BookOpen className="h-3.5 w-3.5 mr-1.5" />
                     Go to Lesson
@@ -249,7 +259,7 @@ export function CourseNotesTab({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete this note?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. The note for "{selectedNote.lesson_title}" will be permanently deleted.
+                        This action cannot be undone. The note "{selectedNote.display_title}" will be permanently deleted.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

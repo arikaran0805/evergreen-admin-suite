@@ -9,11 +9,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { StickyNote, Loader2, Check, ExternalLink, Bold, Italic, Link2 } from "lucide-react";
+import { StickyNote, Loader2, Check, ExternalLink, Bold, Italic, Link2, Code } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
 import { getTextPreview, parseContent, serializeContent } from "@/lib/tiptapMigration";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
@@ -29,11 +31,14 @@ interface LessonNotesCardProps {
   courseId?: string;
 }
 
-// Minimal extensions for quick notes - no heavy formatting
+// Create lowlight instance for syntax highlighting
+const lowlight = createLowlight(common);
+
+// Quick notes extensions with code block support
 const getQuickNotesExtensions = () => [
   StarterKit.configure({
     heading: false,
-    codeBlock: false,
+    codeBlock: false, // Disable default, use CodeBlockLowlight instead
     blockquote: false,
     horizontalRule: false,
   }),
@@ -47,6 +52,12 @@ const getQuickNotesExtensions = () => [
       class: "text-primary underline underline-offset-2",
       rel: "noopener noreferrer",
       target: "_blank",
+    },
+  }),
+  CodeBlockLowlight.configure({
+    lowlight,
+    HTMLAttributes: {
+      class: "quick-notes-code-block bg-muted/30 rounded-md p-2 my-2 text-xs font-mono",
     },
   }),
 ];
@@ -258,6 +269,20 @@ export function LessonNotesCard({
                 )}
               >
                 <Link2 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  editor?.chain().focus().toggleCodeBlock().run();
+                }}
+                className={cn(
+                  "p-1.5 rounded hover:bg-muted transition-colors",
+                  editor?.isActive("codeBlock") ? "bg-muted text-foreground" : "text-muted-foreground"
+                )}
+              >
+                <Code className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>

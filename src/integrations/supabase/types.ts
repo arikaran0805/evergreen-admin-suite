@@ -1215,8 +1215,10 @@ export type Database = {
           content: string
           course_id: string
           created_at: string
+          entity_type: string
           id: string
-          lesson_id: string
+          lesson_id: string | null
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -1224,8 +1226,10 @@ export type Database = {
           content?: string
           course_id: string
           created_at?: string
+          entity_type?: string
           id?: string
-          lesson_id: string
+          lesson_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1233,8 +1237,10 @@ export type Database = {
           content?: string
           course_id?: string
           created_at?: string
+          entity_type?: string
           id?: string
-          lesson_id?: string
+          lesson_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
