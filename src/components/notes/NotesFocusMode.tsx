@@ -16,19 +16,11 @@ import {
   StickyNote,
   ChevronRight,
   Plus,
-  ChevronDown,
 } from 'lucide-react';
 import { NotionStyleEditor } from './NotionStyleEditor';
 import { getTextPreview } from '@/lib/tiptapMigration';
 import { useCourseNotes } from '@/hooks/useCourseNotes';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface NotesFocusModeProps {
   courseId: string | undefined;
@@ -38,11 +30,6 @@ interface NotesFocusModeProps {
   onNavigateToLesson?: (lessonId: string) => void;
   /** When true, component is rendered as a standalone page (not overlay) */
   isStandalonePage?: boolean;
-}
-
-interface AvailableLesson {
-  id: string;
-  title: string;
 }
 
 export function NotesFocusMode({
@@ -62,12 +49,11 @@ export function NotesFocusMode({
     isSyncing,
     selectNote,
     setEditContent,
-    createNote,
+    createUserNote,
+    createLessonNote,
   } = useCourseNotes({ courseId, userId });
 
   const [showSaving, setShowSaving] = useState(false);
-  const [availableLessons, setAvailableLessons] = useState<AvailableLesson[]>([]);
-  const [isLoadingLessons, setIsLoadingLessons] = useState(false);
   const savingTimeoutRef = useRef<NodeJS.Timeout>();
   const editorRef = useRef<any>(null);
 
@@ -84,35 +70,10 @@ export function NotesFocusMode({
     };
   }, [isSaving]);
 
-  // Load available lessons when dropdown opens
-  const loadAvailableLessons = async () => {
-    if (!courseId) return;
-    setIsLoadingLessons(true);
-    
-    try {
-      // Get course lessons that don't have notes yet
-      const { data: courseLessons } = await supabase
-        .from("course_lessons")
-        .select("id, title")
-        .eq("course_id", courseId)
-        .is("deleted_at", null)
-        .order("lesson_rank", { ascending: true });
-
-      const existingLessonIds = new Set(notes.map(n => n.lesson_id));
-      const available = (courseLessons || []).filter(l => !existingLessonIds.has(l.id));
-      setAvailableLessons(available);
-    } catch (error) {
-      console.error("Error loading lessons:", error);
-    } finally {
-      setIsLoadingLessons(false);
-    }
-  };
-
-  // Handle new note creation
-  const handleCreateNote = async (lesson: AvailableLesson) => {
-    const newNote = await createNote(lesson.id, lesson.title);
+  // Handle new user-created note (instant, no lesson selection)
+  const handleCreateNewNote = async () => {
+    const newNote = await createUserNote();
     if (newNote) {
-      // Focus editor after creation
       setTimeout(() => {
         editorRef.current?.focus?.();
       }, 100);
@@ -264,36 +225,15 @@ export function NotesFocusMode({
       )}>
         {/* Left Sidebar — 260px, soft tint */}
         <aside className="w-[260px] bg-[hsl(142_20%_97%)] dark:bg-muted/10 flex-shrink-0 hidden md:flex flex-col border-r border-border/20">
-          {/* New Note — Functional dropdown */}
+          {/* New Note — Instant creation, no lesson selection */}
           <div className="px-3 pt-3 pb-2">
-            <DropdownMenu onOpenChange={(open) => open && loadAvailableLessons()}>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 text-[13px] text-foreground/70 hover:text-foreground transition-colors group">
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>New note</span>
-                  <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                {isLoadingLessons ? (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">Loading lessons…</div>
-                ) : availableLessons.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    All lessons have notes
-                  </div>
-                ) : (
-                  availableLessons.map((lesson) => (
-                    <DropdownMenuItem
-                      key={lesson.id}
-                      onClick={() => handleCreateNote(lesson)}
-                      className="cursor-pointer"
-                    >
-                      <span className="truncate">{lesson.title}</span>
-                    </DropdownMenuItem>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button 
+              onClick={handleCreateNewNote}
+              className="flex items-center gap-1.5 text-[13px] text-foreground/70 hover:text-foreground transition-colors group"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New note</span>
+            </button>
           </div>
           
           <ScrollArea className="flex-1 px-2">
@@ -344,7 +284,7 @@ export function NotesFocusMode({
                               "text-[13px] font-medium truncate transition-colors pl-1",
                               isSelected ? "text-foreground" : "text-foreground/80"
                             )}>
-                              {note.lesson_title}
+                              {note.display_title}
                             </div>
                             <p className={cn(
                               "text-[11px] line-clamp-1 mt-0.5 pl-1",
@@ -370,17 +310,18 @@ export function NotesFocusMode({
               <span className="text-sm text-muted-foreground">Loading…</span>
             </div>
           ) : notes.length === 0 ? (
-            <EmptyState onNewNote={() => loadAvailableLessons()} />
+            <EmptyState onNewNote={handleCreateNewNote} />
           ) : selectedNote ? (
             <div className="max-w-[740px] mx-auto px-6 md:px-10 pt-14 pb-32">
               {/* Metadata Strip — Readable secondary text */}
               <div className="mb-10 flex items-center gap-3 text-[12px]">
                 <span className="text-foreground/70 bg-muted/50 px-2.5 py-1 rounded-md font-medium">
-                  {selectedNote.lesson_title}
+                  {selectedNote.display_title}
                 </span>
-                {onNavigateToLesson && (
+                {/* Only show "Go to lesson" for lesson-type notes */}
+                {onNavigateToLesson && selectedNote.entity_type === 'lesson' && selectedNote.lesson_id && (
                   <button
-                    onClick={() => onNavigateToLesson(selectedNote.lesson_id)}
+                    onClick={() => onNavigateToLesson(selectedNote.lesson_id!)}
                     className="text-primary hover:text-primary/80 hover:underline transition-colors flex items-center gap-0.5 font-medium"
                   >
                     Go to lesson

@@ -3,14 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useNotesSyncBridge } from "@/hooks/useNotesSyncBridge";
 
-interface LessonNote {
+export interface CourseNote {
   id: string;
-  lesson_id: string;
+  lesson_id: string | null;
   course_id: string;
   content: string;
   created_at: string;
   updated_at: string;
-  lesson_title?: string;
+  entity_type: 'lesson' | 'user';
+  title: string | null;
+  // Derived display title
+  display_title: string;
 }
 
 interface UseCourseNotesOptions {
@@ -19,7 +22,7 @@ interface UseCourseNotesOptions {
 }
 
 export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
-  const [notes, setNotes] = useState<LessonNote[]>([]);
+  const [notes, setNotes] = useState<CourseNote[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,12 +37,10 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
   // Handle remote updates from other tabs (Quick Notes)
   const handleRemoteUpdate = useCallback((remoteContent: string, updatedAt: string) => {
-    // Mark as remote update to prevent broadcast echo
     isRemoteUpdateRef.current = true;
     setEditContent(remoteContent);
     lastSavedContentRef.current = remoteContent;
     
-    // Update the note in local state
     setNotes(prev => 
       prev.map(n => 
         n.id === selectedNoteId 
@@ -50,7 +51,6 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     
     setIsSyncing(false);
     
-    // Reset flag after state update
     setTimeout(() => {
       isRemoteUpdateRef.current = false;
     }, 100);
@@ -60,28 +60,35 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const handleNoteCreated = useCallback(async (newNoteId: string, lessonId: string) => {
     if (!courseId || !userId) return;
     
-    // Fetch the new note from database
     const { data, error } = await supabase
       .from("lesson_notes")
-      .select("id, lesson_id, course_id, content, created_at, updated_at")
+      .select("id, lesson_id, course_id, content, created_at, updated_at, entity_type, title")
       .eq("id", newNoteId)
       .single();
 
     if (error || !data) return;
 
-    // Fetch lesson title
-    const { data: postData } = await supabase
-      .from("posts")
-      .select("title")
-      .eq("id", lessonId)
-      .maybeSingle();
+    let displayTitle = data.title || "Untitled note";
+    
+    // If it's a lesson note, fetch the lesson title
+    if (data.entity_type === 'lesson' && data.lesson_id) {
+      const { data: postData } = await supabase
+        .from("posts")
+        .select("title")
+        .eq("id", data.lesson_id)
+        .maybeSingle();
+      
+      if (postData?.title) {
+        displayTitle = postData.title;
+      }
+    }
 
-    const newNote: LessonNote = {
+    const newNote: CourseNote = {
       ...data,
-      lesson_title: postData?.title || "Unknown Lesson",
+      entity_type: data.entity_type as 'lesson' | 'user',
+      display_title: displayTitle,
     };
 
-    // Add to notes list if not already present
     setNotes(prev => {
       if (prev.some(n => n.id === newNoteId)) return prev;
       return [newNote, ...prev];
@@ -103,7 +110,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   // Set up cross-tab sync bridge
   const { broadcastUpdate, broadcastCreated, broadcastDeleted } = useNotesSyncBridge({
     noteId: selectedNoteId,
-    lessonId: selectedNote?.lesson_id,
+    lessonId: selectedNote?.lesson_id || undefined,
     courseId,
     userId,
     source: 'deep-notes',
@@ -118,10 +125,9 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
     setIsLoading(true);
     try {
-      // Fetch notes with lesson titles
       const { data: notesData, error: notesError } = await supabase
         .from("lesson_notes")
-        .select("id, lesson_id, course_id, content, created_at, updated_at")
+        .select("id, lesson_id, course_id, content, created_at, updated_at, entity_type, title")
         .eq("course_id", courseId)
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
@@ -129,23 +135,38 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       if (notesError) throw notesError;
 
       if (notesData && notesData.length > 0) {
-        // Fetch lesson titles for these notes
-        const lessonIds = [...new Set(notesData.map(n => n.lesson_id))];
-        const { data: postsData } = await supabase
-          .from("posts")
-          .select("id, title")
-          .in("id", lessonIds);
+        // Fetch lesson titles for lesson-type notes
+        const lessonIds = notesData
+          .filter(n => n.entity_type === 'lesson' && n.lesson_id)
+          .map(n => n.lesson_id as string);
+        
+        let lessonTitleMap = new Map<string, string>();
+        
+        if (lessonIds.length > 0) {
+          const { data: postsData } = await supabase
+            .from("posts")
+            .select("id, title")
+            .in("id", lessonIds);
+          
+          lessonTitleMap = new Map(postsData?.map(p => [p.id, p.title]) || []);
+        }
 
-        const lessonTitleMap = new Map(postsData?.map(p => [p.id, p.title]) || []);
-
-        const enrichedNotes = notesData.map(note => ({
-          ...note,
-          lesson_title: lessonTitleMap.get(note.lesson_id) || "Unknown Lesson",
-        }));
+        const enrichedNotes: CourseNote[] = notesData.map(note => {
+          let displayTitle = note.title || "Untitled note";
+          
+          if (note.entity_type === 'lesson' && note.lesson_id) {
+            displayTitle = lessonTitleMap.get(note.lesson_id) || "Unknown Lesson";
+          }
+          
+          return {
+            ...note,
+            entity_type: note.entity_type as 'lesson' | 'user',
+            display_title: displayTitle,
+          };
+        });
 
         setNotes(enrichedNotes);
         
-        // Select first note by default if none selected
         if (!selectedNoteId) {
           setSelectedNoteId(enrichedNotes[0].id);
           setEditContent(enrichedNotes[0].content);
@@ -170,18 +191,16 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   }, [loadNotes]);
 
   // Select a note - update ID and sync content
-  const selectNote = useCallback((note: LessonNote) => {
+  const selectNote = useCallback((note: CourseNote) => {
     setSelectedNoteId(note.id);
     setEditContent(note.content);
     lastSavedContentRef.current = note.content;
   }, []);
 
-  // Auto-save when content changes (only for the selected note)
+  // Auto-save when content changes
   useEffect(() => {
     if (!selectedNoteId || !selectedNote) return;
     if (debouncedContent === lastSavedContentRef.current) return;
-    
-    // Skip save if this was a remote update (already saved by the other tab)
     if (isRemoteUpdateRef.current) return;
 
     const saveNote = async () => {
@@ -198,7 +217,6 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
         lastSavedContentRef.current = debouncedContent;
 
-        // Update the note in local state
         setNotes(prev => 
           prev.map(n => 
             n.id === selectedNoteId 
@@ -207,7 +225,6 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
           )
         );
         
-        // Broadcast update to other tabs (Quick Notes)
         broadcastUpdate(debouncedContent, now);
       } catch (error) {
         console.error("Error saving note:", error);
@@ -219,8 +236,57 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     saveNote();
   }, [debouncedContent, selectedNoteId, selectedNote, broadcastUpdate]);
 
-  // Create a new note for a lesson
-  const createNote = useCallback(async (lessonId: string, lessonTitle: string) => {
+  /**
+   * Create a new user-created note (not linked to any lesson)
+   * This is the default behavior for "+ New note"
+   */
+  const createUserNote = useCallback(async (title?: string) => {
+    if (!courseId || !userId) return null;
+
+    try {
+      const noteTitle = title || "Untitled note";
+      
+      const { data, error } = await supabase
+        .from("lesson_notes")
+        .insert({
+          user_id: userId,
+          lesson_id: null, // No lesson link
+          course_id: courseId,
+          content: "",
+          entity_type: "user",
+          title: noteTitle,
+        })
+        .select("id, lesson_id, course_id, content, created_at, updated_at, entity_type, title")
+        .single();
+
+      if (error) throw error;
+
+      const newNote: CourseNote = {
+        ...data,
+        entity_type: 'user',
+        display_title: noteTitle,
+      };
+
+      setNotes(prev => [newNote, ...prev]);
+      setSelectedNoteId(newNote.id);
+      setEditContent("");
+      lastSavedContentRef.current = "";
+      
+      // Broadcast with empty lessonId for user notes
+      broadcastCreated(newNote.id, "");
+
+      return newNote;
+    } catch (error) {
+      console.error("Error creating user note:", error);
+      return null;
+    }
+  }, [courseId, userId, broadcastCreated]);
+
+  /**
+   * Create a contextual note linked to a lesson
+   * Used by Quick Notes when user starts typing in a lesson
+   */
+  const createLessonNote = useCallback(async (lessonId: string, lessonTitle: string) => {
     if (!courseId || !userId) return null;
 
     try {
@@ -231,32 +297,58 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
           lesson_id: lessonId,
           course_id: courseId,
           content: "",
+          entity_type: "lesson",
+          title: null, // Uses lesson title instead
         })
-        .select("id, lesson_id, course_id, content, created_at, updated_at")
+        .select("id, lesson_id, course_id, content, created_at, updated_at, entity_type, title")
         .single();
 
       if (error) throw error;
 
-      const newNote: LessonNote = {
+      const newNote: CourseNote = {
         ...data,
-        lesson_title: lessonTitle,
+        entity_type: 'lesson',
+        display_title: lessonTitle,
       };
 
-      // Add to top of list and select it
       setNotes(prev => [newNote, ...prev]);
       setSelectedNoteId(newNote.id);
       setEditContent("");
       lastSavedContentRef.current = "";
       
-      // Broadcast note creation to other tabs
       broadcastCreated(newNote.id, lessonId);
 
       return newNote;
     } catch (error) {
-      console.error("Error creating note:", error);
+      console.error("Error creating lesson note:", error);
       return null;
     }
   }, [courseId, userId, broadcastCreated]);
+
+  // Update note title (only for user-created notes)
+  const updateNoteTitle = useCallback(async (noteId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from("lesson_notes")
+        .update({ title: newTitle, updated_at: new Date().toISOString() })
+        .eq("id", noteId);
+
+      if (error) throw error;
+
+      setNotes(prev => 
+        prev.map(n => 
+          n.id === noteId 
+            ? { ...n, title: newTitle, display_title: newTitle } 
+            : n
+        )
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Error updating note title:", error);
+      return false;
+    }
+  }, []);
 
   // Delete a note
   const deleteNote = useCallback(async (noteId: string) => {
@@ -285,9 +377,8 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
         }
       }
       
-      // Broadcast deletion to other tabs
       if (noteToDelete) {
-        broadcastDeleted(noteId, noteToDelete.lesson_id);
+        broadcastDeleted(noteId, noteToDelete.lesson_id || "");
       }
 
       return true;
@@ -297,19 +388,11 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     }
   }, [selectedNoteId, notes, broadcastDeleted]);
 
-  // Get lessons that don't have notes yet
+  // Get lessons that don't have notes yet (for lesson-linking feature)
   const getAvailableLessons = useCallback(async () => {
     if (!courseId) return [];
 
     try {
-      // Get all lessons for this course
-      const { data: lessons } = await supabase
-        .from("posts")
-        .select("id, title, lesson_id")
-        .not("lesson_id", "is", null)
-        .order("created_at", { ascending: true });
-
-      // Get course lessons
       const { data: courseLessons } = await supabase
         .from("course_lessons")
         .select("id, title")
@@ -318,17 +401,13 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
         .order("lesson_rank", { ascending: true });
 
       // Filter out lessons that already have notes
-      const existingLessonIds = new Set(notes.map(n => n.lesson_id));
+      const existingLessonIds = new Set(
+        notes.filter(n => n.entity_type === 'lesson').map(n => n.lesson_id)
+      );
       
-      // Use posts that are lessons for this course
-      const lessonPosts = lessons?.filter(l => l.lesson_id && courseLessons?.some(cl => cl.id === l.lesson_id)) || [];
-      
-      // Also include course_lessons entries
-      const allLessons = [
-        ...(courseLessons || []).map(cl => ({ id: cl.id, title: cl.title })),
-      ].filter(l => !existingLessonIds.has(l.id));
+      const available = (courseLessons || []).filter(l => !existingLessonIds.has(l.id));
 
-      return allLessons;
+      return available;
     } catch (error) {
       console.error("Error fetching available lessons:", error);
       return [];
@@ -344,7 +423,9 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     isSyncing,
     selectNote,
     setEditContent,
-    createNote,
+    createUserNote,
+    createLessonNote,
+    updateNoteTitle,
     deleteNote,
     getAvailableLessons,
     refreshNotes: loadNotes,
