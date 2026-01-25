@@ -12,7 +12,7 @@ import {
   MessageSquare,
   Share2,
   ThumbsUp,
-  StickyNote,
+  Lightbulb,
   Tag,
   Loader2,
 } from "lucide-react";
@@ -35,7 +35,7 @@ interface LessonFooterProps {
   
   // Action handlers
   onCommentClick: () => void;
-  onNotesClick?: () => void;
+  onSuggestChangesClick?: () => void;
   onLikeClick: () => void;
   likeCount: number;
   hasLiked: boolean;
@@ -64,7 +64,7 @@ const LessonFooter = ({
   courseProgressPercentage,
   tags,
   onCommentClick,
-  onNotesClick,
+  onSuggestChangesClick,
   onLikeClick,
   likeCount,
   hasLiked,
@@ -256,21 +256,21 @@ const LessonFooter = ({
               </Tooltip>
             )}
 
-            {/* Notes */}
-            {onNotesClick && (
+            {/* Suggest Changes - HIDDEN before completion, VISIBLE after */}
+            {isCompleted && onSuggestChangesClick && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8" 
-                    onClick={onNotesClick}
+                    onClick={onSuggestChangesClick}
                   >
-                    <StickyNote className="h-5 w-5" />
+                    <Lightbulb className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Open Notes</p>
+                  <p>Suggest Changes</p>
                 </TooltipContent>
               </Tooltip>
             )}

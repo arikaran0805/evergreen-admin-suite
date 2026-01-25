@@ -1427,7 +1427,7 @@ const CourseDetail = () => {
                       courseProgressPercentage={courseProgress.percentage}
                       tags={allTags}
                       onCommentClick={() => setCommentDialogOpen(true)}
-                      onNotesClick={() => openNotesTab({ lessonId: selectedPost?.id, entityType: 'lesson' })}
+                      onSuggestChangesClick={() => setSuggestDialogOpen(true)}
                       onLikeClick={handleLikeToggle}
                       likeCount={likeCount}
                       hasLiked={hasLiked}
