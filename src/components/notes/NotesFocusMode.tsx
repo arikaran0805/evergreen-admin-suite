@@ -16,11 +16,23 @@ import {
   StickyNote,
   ChevronRight,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { NotionStyleEditor } from './NotionStyleEditor';
 import { getTextPreview } from '@/lib/tiptapMigration';
 import { useCourseNotes } from '@/hooks/useCourseNotes';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface NotesFocusModeProps {
   courseId: string | undefined;
@@ -51,6 +63,7 @@ export function NotesFocusMode({
     setEditContent,
     createUserNote,
     createLessonNote,
+    deleteNote,
   } = useCourseNotes({ courseId, userId });
 
   const [showSaving, setShowSaving] = useState(false);
@@ -328,6 +341,36 @@ export function NotesFocusMode({
                     <ChevronRight className="h-3 w-3" />
                   </button>
                 )}
+                
+                {/* Delete button */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded hover:bg-destructive/10"
+                      title="Delete note"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. The note "{selectedNote.display_title}" will be permanently deleted.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteNote(selectedNote.id)}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                
                 <span className="text-muted-foreground ml-auto">
                   {formatTime(selectedNote.updated_at)}
                 </span>
