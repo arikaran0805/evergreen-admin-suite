@@ -1686,7 +1686,24 @@ const CourseDetail = () => {
                                       {enrolling ? "Processing..." : cardContent.buttonLabel}
                                     </Button>
                                     <span className="text-xs text-muted-foreground hidden sm:block text-center">
-                                      Resume where you left off
+                                      {(() => {
+                                        // Moderator/Admin context
+                                        if (isAdmin || isModerator) {
+                                          const draftCount = posts.filter(p => p.status === 'draft').length;
+                                          return draftCount > 0 
+                                            ? `${posts.length} lesson${posts.length !== 1 ? 's' : ''} • ${draftCount} draft${draftCount !== 1 ? 's' : ''} pending`
+                                            : `${posts.length} lesson${posts.length !== 1 ? 's' : ''} ready`;
+                                        }
+                                        // Learner with progress - find next incomplete lesson
+                                        if (courseProgress.hasStarted) {
+                                          const nextLesson = orderedPosts.find(p => !isLessonCompleted(p.id));
+                                          if (nextLesson) {
+                                            return `Resume from ${nextLesson.title}`;
+                                          }
+                                        }
+                                        // New learner
+                                        return "Start your learning journey";
+                                      })()}
                                     </span>
                                   </div>
                                 </div>
