@@ -136,25 +136,14 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Trigger + tooltip (matches comments icon behavior) */}
-      <TooltipProvider delayDuration={0}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div>
-              {children || (
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
-                  <Share2 className="h-5 w-5 text-foreground" />
-                </Button>
-              )}
-            </div>
-          </TooltipTrigger>
-          {!open && (
-            <TooltipContent>
-              <p>Share</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      {/* Trigger - hovering shows share options directly */}
+      <div>
+        {children || (
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
+            <Share2 className="h-5 w-5 text-foreground" />
+          </Button>
+        )}
+      </div>
       
       {/* Share Menu - appears above with zoom animation like comments tooltip */}
       {open && (
