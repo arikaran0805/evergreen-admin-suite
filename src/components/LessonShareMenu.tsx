@@ -135,7 +135,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
             onMouseLeave={handleMouseLeave}
           >
             <button
-              className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+              className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible || open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
             >
               <Share2 className="h-3.5 w-3.5" />
             </button>
