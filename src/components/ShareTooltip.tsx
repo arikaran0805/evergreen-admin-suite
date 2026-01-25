@@ -17,7 +17,6 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const encodedUrl = encodeURIComponent(url);
@@ -34,24 +33,10 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
-
-    if (openTimeoutRef.current) {
-      clearTimeout(openTimeoutRef.current);
-      openTimeoutRef.current = null;
-    }
-
-    // Delay opening slightly so the trigger tooltip can appear (like the comments icon tooltip)
-    openTimeoutRef.current = setTimeout(() => {
-      setOpen(true);
-    }, 250);
+    setOpen(true);
   };
 
   const handleMouseLeave = () => {
-    if (openTimeoutRef.current) {
-      clearTimeout(openTimeoutRef.current);
-      openTimeoutRef.current = null;
-    }
-
     closeTimeoutRef.current = setTimeout(() => {
       setOpen(false);
     }, 150);
@@ -60,9 +45,6 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (openTimeoutRef.current) {
-        clearTimeout(openTimeoutRef.current);
-      }
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -136,25 +118,14 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Trigger + tooltip (matches comments icon behavior) */}
-      <TooltipProvider delayDuration={0}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div>
-              {children || (
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
-                  <Share2 className="h-5 w-5 text-foreground" />
-                </Button>
-              )}
-            </div>
-          </TooltipTrigger>
-          {!open && (
-            <TooltipContent>
-              <p>Share</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      {/* Trigger */}
+      <div>
+        {children || (
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
+            <Share2 className="h-5 w-5 text-foreground" />
+          </Button>
+        )}
+      </div>
       
       {/* Share Menu - appears above with zoom animation like comments tooltip */}
       {open && (
