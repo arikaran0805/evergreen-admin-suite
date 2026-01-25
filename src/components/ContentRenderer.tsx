@@ -5,6 +5,7 @@ import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
 import { isTipTapJSON } from "@/lib/tiptapMigration";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { RichTextRenderer } from "@/components/tiptap/RichTextRenderer";
+import { CanvasRenderer, isCanvasContent } from "@/components/canvas-editor";
 
 interface ContentRendererProps {
   htmlContent: string;
@@ -63,8 +64,9 @@ const ContentRenderer = ({
   courseType = "python",
   codeTheme,
 }: ContentRendererProps) => {
-  const isChat = useMemo(() => isChatTranscript(htmlContent), [htmlContent]);
-  const isTipTap = useMemo(() => isTipTapJSON(htmlContent), [htmlContent]);
+  const isCanvas = useMemo(() => isCanvasContent(htmlContent), [htmlContent]);
+  const isChat = useMemo(() => !isCanvas && isChatTranscript(htmlContent), [htmlContent, isCanvas]);
+  const isTipTap = useMemo(() => !isCanvas && isTipTapJSON(htmlContent), [htmlContent, isCanvas]);
   const [editedCodes, setEditedCodes] = useState<Record<number, string>>({});
 
   // Extract code blocks and get processed HTML (only for legacy HTML content)
@@ -78,6 +80,15 @@ const ContentRenderer = ({
   const handleCodeEdit = (index: number, newCode: string) => {
     setEditedCodes(prev => ({ ...prev, [index]: newCode }));
   };
+
+  // Render Canvas content - blocks in reading order
+  if (isCanvas) {
+    return (
+      <div className="prose prose-lg max-w-none">
+        <CanvasRenderer content={htmlContent} codeTheme={codeTheme} />
+      </div>
+    );
+  }
 
   // Render chat conversation view for chat-style content
   if (isChat) {

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/tiptap";
 import { ChatStyleEditor } from "@/components/chat-editor";
+import { CanvasEditor } from "@/components/canvas-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -25,7 +26,7 @@ import AdminEditBanner from "@/components/AdminEditBanner";
 import SideBySideComparison from "@/components/SideBySideComparison";
 import VersionDiffViewer from "@/components/VersionDiffViewer";
 import { VersioningNoteDialog, VersioningNoteType } from "@/components/VersioningNoteDialog";
-import { ArrowLeft, Save, X, FileText, MessageCircle, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter, Settings } from "lucide-react";
+import { ArrowLeft, Save, X, FileText, MessageCircle, Send, AlertCircle, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2, Check, Highlighter, Settings, LayoutGrid } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { z } from "zod";
@@ -88,7 +89,7 @@ const AdminPostEditor = () => {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [editorType, setEditorType] = useState<"rich" | "chat">("rich");
+  const [editorType, setEditorType] = useState<"rich" | "chat" | "canvas">("rich");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -894,7 +895,7 @@ const AdminPostEditor = () => {
                    </span>
                  )}
               </div>
-              <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat")}>
+              <Tabs value={editorType} onValueChange={(v) => setEditorType(v as "rich" | "chat" | "canvas")}>
                 <TabsList className="h-9">
                   <TabsTrigger value="rich" className="text-xs px-3 gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
@@ -904,11 +905,15 @@ const AdminPostEditor = () => {
                     <MessageCircle className="w-3.5 h-3.5" />
                     Chat Style
                   </TabsTrigger>
+                  <TabsTrigger value="canvas" className="text-xs px-3 gap-1.5">
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    Canvas
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
             
-            <div className={`transition-all duration-300 rounded-lg ${annotationMode ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background [&_*]:cursor-crosshair' : ''}`}>
+            <div className={`transition-all duration-300 rounded-lg ${annotationMode && editorType !== 'canvas' ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background [&_*]:cursor-crosshair' : ''}`}>
             {editorType === "rich" ? (
               <RichTextEditor
                 value={formData.content}
@@ -957,7 +962,7 @@ const AdminPostEditor = () => {
                    });
                  }}
               />
-            ) : (
+            ) : editorType === "chat" ? (
               <ChatStyleEditor
                 value={formData.content}
                 onChange={(value) => setFormData({ ...formData, content: value })}
@@ -991,6 +996,12 @@ const AdminPostEditor = () => {
                     rect: selection.rect,
                   });
                 }}
+              />
+            ) : (
+              <CanvasEditor
+                value={formData.content}
+                onChange={(value) => setFormData({ ...formData, content: value })}
+                className="min-h-[600px]"
               />
             )}
             </div>
