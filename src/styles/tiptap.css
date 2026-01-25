@@ -723,6 +723,121 @@
   border-color: hsl(var(--border) / 0.7) !important;
 }
 
+/* ============================================
+   PRISM SYNTAX HIGHLIGHTING - Clean Theme
+   Matches the gold/blue style from Image 1
+   Uses higher specificity to override Prism defaults
+   ============================================ */
+
+/* Clean theme: Gold keywords, Blue constants */
+/* Applied to ExecutableCodeBlockView and standalone CodeBlock */
+.code-theme-clean .token.keyword,
+.code-theme-clean .token.tag,
+.code-theme-clean .token.class-name,
+.code-theme-clean .token.selector,
+.code-theme-clean .token.selector-tag,
+.code-theme-clean .token.addition,
+.code-theme-clean code .token.keyword,
+.code-theme-clean code .token.tag,
+.code-theme-clean code .token.class-name,
+.code-theme-clean pre .token.keyword,
+.code-theme-clean pre .token.tag,
+.code-theme-clean pre .token.class-name,
+.code-theme-clean pre code .token.keyword,
+.code-theme-clean pre code .token.tag,
+.code-theme-clean pre code .token.class-name {
+  color: hsl(38 90% 45%) !important; /* Gold */
+}
+
+.code-theme-clean .token.builtin,
+.code-theme-clean .token.constant,
+.code-theme-clean .token.boolean,
+.code-theme-clean .token.number,
+.code-theme-clean .token.attr-name,
+.code-theme-clean code .token.builtin,
+.code-theme-clean code .token.constant,
+.code-theme-clean code .token.boolean,
+.code-theme-clean code .token.number,
+.code-theme-clean pre .token.builtin,
+.code-theme-clean pre .token.constant,
+.code-theme-clean pre .token.boolean,
+.code-theme-clean pre .token.number,
+.code-theme-clean pre code .token.builtin,
+.code-theme-clean pre code .token.constant,
+.code-theme-clean pre code .token.boolean,
+.code-theme-clean pre code .token.number {
+  color: hsl(215 80% 50%) !important; /* Blue */
+}
+
+.code-theme-clean .token.function,
+.code-theme-clean .token.method,
+.code-theme-clean code .token.function,
+.code-theme-clean code .token.method,
+.code-theme-clean pre .token.function,
+.code-theme-clean pre .token.method,
+.code-theme-clean pre code .token.function,
+.code-theme-clean pre code .token.method {
+  color: hsl(142 40% 30%) !important; /* Dark green */
+}
+
+.code-theme-clean .token.string,
+.code-theme-clean .token.char,
+.code-theme-clean .token.attr-value,
+.code-theme-clean .token.regex,
+.code-theme-clean .token.inserted,
+.code-theme-clean code .token.string,
+.code-theme-clean code .token.char,
+.code-theme-clean code .token.attr-value,
+.code-theme-clean pre .token.string,
+.code-theme-clean pre .token.char,
+.code-theme-clean pre .token.attr-value,
+.code-theme-clean pre code .token.string,
+.code-theme-clean pre code .token.char,
+.code-theme-clean pre code .token.attr-value {
+  color: hsl(142 60% 35%) !important; /* Green for strings */
+}
+
+.code-theme-clean .token.comment,
+.code-theme-clean .token.prolog,
+.code-theme-clean .token.doctype,
+.code-theme-clean .token.cdata,
+.code-theme-clean code .token.comment,
+.code-theme-clean pre .token.comment,
+.code-theme-clean pre code .token.comment {
+  color: hsl(0 0% 55%) !important; /* Gray comments */
+  font-style: italic;
+}
+
+.code-theme-clean .token.punctuation,
+.code-theme-clean code .token.punctuation,
+.code-theme-clean pre .token.punctuation,
+.code-theme-clean pre code .token.punctuation {
+  color: hsl(0 0% 30%) !important;
+}
+
+.code-theme-clean .token.operator,
+.code-theme-clean .token.entity,
+.code-theme-clean .token.url,
+.code-theme-clean code .token.operator,
+.code-theme-clean pre .token.operator,
+.code-theme-clean pre code .token.operator {
+  color: hsl(0 0% 40%) !important;
+}
+
+.code-theme-clean .token.variable,
+.code-theme-clean .token.symbol,
+.code-theme-clean .token.property,
+.code-theme-clean code .token.variable,
+.code-theme-clean pre .token.variable,
+.code-theme-clean pre code .token.variable {
+  color: hsl(0 0% 20%) !important;
+}
+
+/* Fallback: plain text should be dark for readability */
+.code-theme-clean code {
+  color: hsl(0 0% 20%) !important;
+}
+
 /* Syntax highlighting in executable blocks */
 .executable-code-block .hljs-comment,
 .executable-code-block .hljs-quote {
