@@ -1759,26 +1759,35 @@ const CourseDetail = () => {
                                         {lessonPosts.map((post) => {
                                           const isCompleted = isLessonCompleted(post.id);
                                           
+                                          const isActive = selectedPost?.id === post.id;
+                                          
                                           return (
                                             <div 
                                               key={post.id}
-                                              className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 cursor-pointer transition-colors group"
+                                              className={`relative flex items-center justify-between hover:bg-muted/30 cursor-pointer transition-colors group ${
+                                                isActive ? "bg-primary/5" : ""
+                                              }`}
                                               onClick={() => handleLessonClick(post)}
                                             >
-                                              <div className="flex items-center gap-3">
+                                              {/* Active lesson accent bar */}
+                                              {isActive && (
+                                                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r" />
+                                              )}
+                                              
+                                              <div className="px-4 py-3 flex items-center gap-3 flex-1">
                                                 {isCompleted ? (
                                                   <CheckCircle className="h-4 w-4 text-primary" />
                                                 ) : (
                                                   <Circle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                                 )}
-                                                <span className="text-sm">{post.title}</span>
+                                                <span className={`text-sm ${isActive ? "font-medium" : ""}`}>{post.title}</span>
                                                 {post.post_type && post.post_type !== 'content' && (
                                                   <Badge variant="secondary" className="text-[10px]">
                                                     {post.post_type}
                                                   </Badge>
                                                 )}
                                               </div>
-                                              <div className="flex items-center gap-2">
+                                              <div className="flex items-center gap-2 pr-4">
                                                 {/* Estimated Time - always visible */}
                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                   <Clock className="h-3 w-3" />
@@ -1797,7 +1806,7 @@ const CourseDetail = () => {
                                                         setTimeout(() => setCopiedPostId(null), 2000);
                                                       }}
                                                       className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${
-                                                        shareOpenPostId === post.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                                                        shareOpenPostId === post.id || copiedPostId === post.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                                                       }`}
                                                     >
                                                       <Link2 className="h-3.5 w-3.5" />
@@ -1813,6 +1822,7 @@ const CourseDetail = () => {
                                                   postId={post.id}
                                                   postTitle={post.title}
                                                   postSlug={post.slug}
+                                                  sectionName={lesson.title}
                                                   side="right"
                                                   vertical
                                                   onOpenChange={(isOpen) =>
