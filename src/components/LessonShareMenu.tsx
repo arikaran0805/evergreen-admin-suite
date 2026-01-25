@@ -10,9 +10,11 @@ interface LessonShareMenuProps {
   postSlug: string;
   className?: string;
   alwaysVisible?: boolean;
+  side?: "top" | "right" | "bottom" | "left";
+  vertical?: boolean;
 }
 
-const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false }: LessonShareMenuProps) => {
+const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false, side = "top", vertical = false }: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,15 +142,15 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
           </div>
         </TooltipTrigger>
         <TooltipContent 
-          side="top" 
+          side={side}
           sideOffset={8}
-          className="p-0 border-0 bg-transparent shadow-none animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
+          className={`p-0 border-0 bg-transparent shadow-none animate-in fade-in-0 zoom-in-95 duration-150 ${side === "right" ? "slide-in-from-left-2" : "slide-in-from-bottom-2"}`}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           <div 
             onClick={handleMenuClick}
-            className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl"
+            className={`${vertical ? "flex flex-col" : "flex"} items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl`}
           >
             {/* WhatsApp */}
             <button
