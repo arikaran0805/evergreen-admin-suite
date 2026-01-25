@@ -233,33 +233,28 @@ const LessonFooter = ({
               </Button>
             </ShareTooltip>
 
-            {/* Like - DISABLED before completion, ENABLED after */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn(
-                    "h-8 w-8",
-                    !isCompleted && "opacity-40 cursor-not-allowed"
-                  )}
-                  onClick={isCompleted ? onLikeClick : undefined}
-                  disabled={isLiking || !isCompleted}
-                >
-                  <ThumbsUp className={cn(
-                    "h-5 w-5",
-                    hasLiked && isCompleted && "fill-current text-primary"
-                  )} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {!isCompleted ? (
-                  <p>Complete the lesson to like</p>
-                ) : (
+            {/* Like - HIDDEN before completion, VISIBLE after */}
+            {isCompleted && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={onLikeClick}
+                    disabled={isLiking}
+                  >
+                    <ThumbsUp className={cn(
+                      "h-5 w-5",
+                      hasLiked && "fill-current text-primary"
+                    )} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
                   <p>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</p>
-                )}
-              </TooltipContent>
-            </Tooltip>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {/* Notes */}
             {onNotesClick && (
