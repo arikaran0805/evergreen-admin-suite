@@ -164,7 +164,7 @@ export function LessonNotesCard({
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
             <StickyNote className="h-4 w-4 text-primary/60" />
-            Your Notes
+            Quick Notes
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* Save status */}
