@@ -16,6 +16,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import { getTextPreview, parseContent, serializeContent } from "@/lib/tiptapMigration";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
 import "@/styles/tiptap.css";
 
 interface LessonNotesCardProps {
@@ -60,6 +61,9 @@ export function LessonNotesCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+
+  // Use tab manager to prevent duplicate notes tabs
+  const { openNotesTab } = useNotesTabOpener(courseId);
 
   // Parse content for preview
   const textPreview = useMemo(() => {
@@ -127,13 +131,11 @@ export function LessonNotesCard({
     setIsExpanded(false);
   }, []);
 
-  // Open Deep Notes in new tab
+  // Open Deep Notes in new tab (uses tab manager to prevent duplicates)
   const handleOpenDeepNotes = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    if (courseId) {
-      window.open(`/courses/${courseId}/notes`, "_blank", "noopener,noreferrer");
-    }
-  }, [courseId]);
+    openNotesTab();
+  }, [openNotesTab]);
 
   return (
     <Card
