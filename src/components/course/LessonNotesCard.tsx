@@ -165,6 +165,7 @@ export function LessonNotesCard({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     onClick={handleOpenDeepNotes}
                     className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   >
@@ -195,11 +196,12 @@ export function LessonNotesCard({
             
             {/* Minimal formatting hint */}
             <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground/60">
-                **bold** • *italic* • [link](url)
+              <span className="text-[10px] text-muted-foreground/50 font-mono select-none">
+                <span className="font-semibold">bold</span> • <span className="italic">italic</span> • <span className="underline">link</span>
               </span>
               {courseId && (
                 <button
+                  type="button"
                   onClick={handleOpenDeepNotes}
                   className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
                 >
