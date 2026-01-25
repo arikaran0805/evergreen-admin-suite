@@ -130,28 +130,32 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   );
 
   return (
-    <div 
-      ref={containerRef} 
-      className="relative inline-block"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Trigger - hovering shows share options directly */}
-      <div>
-        {children || (
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
-            <Share2 className="h-5 w-5 text-foreground" />
-          </Button>
-        )}
-      </div>
-      
-      {/* Share Menu - appears above with zoom animation like comments tooltip */}
-      {open && (
-        <div 
-          onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
+    <TooltipProvider delayDuration={0}>
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <TooltipTrigger asChild>
+          <div 
+            ref={containerRef} 
+            className="relative inline-block"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            {children || (
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
+                <Share2 className="h-5 w-5 text-foreground" />
+              </Button>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent 
+          side="top" 
+          className="p-0 border-0 bg-transparent shadow-none"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl">
+          <div 
+            onClick={handleMenuClick}
+            className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl"
+          >
             <TooltipProvider delayDuration={200}>
               {/* WhatsApp */}
               <Tooltip>
@@ -247,15 +251,9 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          {/* Arrow */}
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5">
-            <svg width="12" height="6" viewBox="0 0 12 6" className="fill-popover drop-shadow-sm">
-              <path d="M6 6L0 0H12L6 6Z" />
-            </svg>
-          </div>
-        </div>
-      )}
-    </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
