@@ -92,19 +92,33 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
 
   return (
     <div ref={containerRef} className={`relative inline-block ${className || ''}`}>
-      {/* Trigger */}
-      <button
-        onClick={handleTriggerClick}
-        className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <Share2 className="h-3.5 w-3.5" />
-      </button>
+      {/* Trigger with tooltip */}
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleTriggerClick}
+              className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          {!open && (
+            <TooltipContent 
+              side="top" 
+              className="bg-foreground text-background text-xs px-2 py-1 rounded"
+            >
+              Share
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       
-      {/* Share Menu - Icon only, positioned above */}
+      {/* Share Menu - Icon only, positioned above with down-to-up animation */}
       {open && (
         <div 
           onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-lg">
             <TooltipProvider delayDuration={200}>
