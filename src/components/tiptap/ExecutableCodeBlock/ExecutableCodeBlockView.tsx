@@ -124,6 +124,7 @@ const ExecutableCodeBlockView = ({
       <CodeBlock
         code={currentCode}
         language={language}
+        variant="editor"
         editable={true}
         onEdit={handleCodeChange}
         showLanguageSelect={isEditable}
