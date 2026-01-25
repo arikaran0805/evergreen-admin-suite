@@ -165,7 +165,11 @@ export function LessonNotesCard({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={handleOpenDeepNotes}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleOpenDeepNotes(e);
+                    }}
                     className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -197,7 +201,11 @@ export function LessonNotesCard({
             <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => editor?.chain().focus().toggleBold().run()}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  editor?.chain().focus().toggleBold().run();
+                }}
                 className={cn(
                   "p-1.5 rounded hover:bg-muted transition-colors",
                   editor?.isActive("bold") ? "bg-muted text-foreground" : "text-muted-foreground"
@@ -207,7 +215,11 @@ export function LessonNotesCard({
               </button>
               <button
                 type="button"
-                onClick={() => editor?.chain().focus().toggleItalic().run()}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  editor?.chain().focus().toggleItalic().run();
+                }}
                 className={cn(
                   "p-1.5 rounded hover:bg-muted transition-colors",
                   editor?.isActive("italic") ? "bg-muted text-foreground" : "text-muted-foreground"
@@ -217,7 +229,9 @@ export function LessonNotesCard({
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   const url = window.prompt("Enter URL:");
                   if (url) {
                     editor?.chain().focus().setLink({ href: url }).run();
