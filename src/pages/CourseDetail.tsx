@@ -1676,7 +1676,7 @@ const CourseDetail = () => {
                                   </div>
 
                                   {/* Right: CTA */}
-                                  <div className="flex flex-col items-end gap-1.5 sm:ml-auto">
+                                  <div className="flex flex-col items-center gap-1.5 sm:ml-auto">
                                     <Button 
                                       onClick={ctaProps.onClick}
                                       disabled={posts.length === 0 || enrolling}
@@ -1685,7 +1685,7 @@ const CourseDetail = () => {
                                       <CardIcon className="h-4 w-4 mr-2 fill-current" />
                                       {enrolling ? "Processing..." : cardContent.buttonLabel}
                                     </Button>
-                                    <span className="text-xs text-muted-foreground hidden sm:block">
+                                    <span className="text-xs text-muted-foreground hidden sm:block text-center">
                                       Resume where you left off
                                     </span>
                                   </div>
