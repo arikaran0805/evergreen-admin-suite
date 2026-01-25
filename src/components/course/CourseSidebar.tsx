@@ -538,6 +538,7 @@ export const CourseSidebar = ({
                                       vertical
                                       onOpenChange={(isOpen) => setShareOpenPostId(isOpen ? post.id : null)}
                                       sidebarVariant
+                                      isActive={isActive}
                                     />
                                   </div>
                                 </div>
