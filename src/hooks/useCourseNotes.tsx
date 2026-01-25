@@ -19,11 +19,14 @@ interface UseCourseNotesOptions {
 
 export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const [notes, setNotes] = useState<LessonNote[]>([]);
-  const [selectedNote, setSelectedNote] = useState<LessonNote | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editContent, setEditContent] = useState("");
   const debouncedContent = useDebounce(editContent, 1000);
+
+  // Derive selectedNote from notes array to avoid stale state
+  const selectedNote = notes.find(n => n.id === selectedNoteId) || null;
 
   // Load all notes for this course
   const loadNotes = useCallback(async () => {
@@ -58,14 +61,14 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
         setNotes(enrichedNotes);
         
-        // Select first note by default
-        if (enrichedNotes.length > 0 && !selectedNote) {
-          setSelectedNote(enrichedNotes[0]);
+        // Select first note by default if none selected
+        if (!selectedNoteId) {
+          setSelectedNoteId(enrichedNotes[0].id);
           setEditContent(enrichedNotes[0].content);
         }
       } else {
         setNotes([]);
-        setSelectedNote(null);
+        setSelectedNoteId(null);
         setEditContent("");
       }
     } catch (error) {
@@ -73,22 +76,23 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [courseId, userId]);
+  }, [courseId, userId, selectedNoteId]);
 
   // Initial load
   useEffect(() => {
     loadNotes();
   }, [loadNotes]);
 
-  // Select a note
+  // Select a note - update ID and sync content
   const selectNote = useCallback((note: LessonNote) => {
-    setSelectedNote(note);
+    setSelectedNoteId(note.id);
     setEditContent(note.content);
   }, []);
 
-  // Auto-save when content changes
+  // Auto-save when content changes (only for the selected note)
   useEffect(() => {
-    if (!selectedNote || debouncedContent === selectedNote.content) return;
+    if (!selectedNoteId || !selectedNote) return;
+    if (debouncedContent === selectedNote.content) return;
 
     const saveNote = async () => {
       setIsSaving(true);
@@ -96,19 +100,18 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
         const { error } = await supabase
           .from("lesson_notes")
           .update({ content: debouncedContent, updated_at: new Date().toISOString() })
-          .eq("id", selectedNote.id);
+          .eq("id", selectedNoteId);
 
         if (error) throw error;
 
-        // Update local state
+        // Update the note in local state
         setNotes(prev => 
           prev.map(n => 
-            n.id === selectedNote.id 
+            n.id === selectedNoteId 
               ? { ...n, content: debouncedContent, updated_at: new Date().toISOString() } 
               : n
           )
         );
-        setSelectedNote(prev => prev ? { ...prev, content: debouncedContent } : null);
       } catch (error) {
         console.error("Error saving note:", error);
       } finally {
@@ -117,7 +120,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     };
 
     saveNote();
-  }, [debouncedContent, selectedNote]);
+  }, [debouncedContent, selectedNoteId, selectedNote]);
 
   // Delete a note
   const deleteNote = useCallback(async (noteId: string) => {
@@ -129,15 +132,15 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
       if (error) throw error;
 
-      setNotes(prev => prev.filter(n => n.id !== noteId));
+      const remaining = notes.filter(n => n.id !== noteId);
+      setNotes(remaining);
       
-      if (selectedNote?.id === noteId) {
-        const remaining = notes.filter(n => n.id !== noteId);
+      if (selectedNoteId === noteId) {
         if (remaining.length > 0) {
-          setSelectedNote(remaining[0]);
+          setSelectedNoteId(remaining[0].id);
           setEditContent(remaining[0].content);
         } else {
-          setSelectedNote(null);
+          setSelectedNoteId(null);
           setEditContent("");
         }
       }
@@ -147,7 +150,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       console.error("Error deleting note:", error);
       return false;
     }
-  }, [selectedNote, notes]);
+  }, [selectedNoteId, notes]);
 
   return {
     notes,
