@@ -6,9 +6,12 @@
  * 
  * Features:
  * - Real-time content sync across tabs
- * - Last-write-wins conflict resolution
+ * - Timestamp-based conflict resolution (newer always wins)
  * - Prevents stale content display
  * - Silent sync (no UI interruption)
+ * 
+ * SAFETY: This hook implements timestamp validation to prevent older content
+ * from overwriting newer content during race conditions.
  */
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -65,7 +68,37 @@ export function useNotesSyncBridge({
 }: UseNotesSyncBridgeOptions) {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const lastBroadcastRef = useRef<string>('');
+  const lastBroadcastTimeRef = useRef<string>('');
+  const localTimestampRef = useRef<string>('');
   const tabId = getTabId();
+
+  // Keep refs in sync with latest values to avoid stale closures
+  const noteIdRef = useRef(noteId);
+  const lessonIdRef = useRef(lessonId);
+  const courseIdRef = useRef(courseId);
+  const userIdRef = useRef(userId);
+  const onRemoteUpdateRef = useRef(onRemoteUpdate);
+  const onNoteCreatedRef = useRef(onNoteCreated);
+  const onNoteDeletedRef = useRef(onNoteDeleted);
+
+  // Update refs when values change
+  useEffect(() => {
+    noteIdRef.current = noteId;
+    lessonIdRef.current = lessonId;
+    courseIdRef.current = courseId;
+    userIdRef.current = userId;
+    onRemoteUpdateRef.current = onRemoteUpdate;
+    onNoteCreatedRef.current = onNoteCreated;
+    onNoteDeletedRef.current = onNoteDeleted;
+  }, [noteId, lessonId, courseId, userId, onRemoteUpdate, onNoteCreated, onNoteDeleted]);
+
+  /**
+   * CRITICAL: Track when we last saved locally to prevent applying
+   * older remote updates that arrive after our save.
+   */
+  const updateLocalTimestamp = useCallback((timestamp: string) => {
+    localTimestampRef.current = timestamp;
+  }, []);
 
   // Initialize BroadcastChannel
   useEffect(() => {
@@ -82,35 +115,53 @@ export function useNotesSyncBridge({
       // Ignore messages from self
       if (message.tabId === tabId) return;
       
-      // Ignore messages for different user/course/lesson
-      if (message.userId !== userId || message.courseId !== courseId) return;
+      // Ignore messages for different user/course
+      if (message.userId !== userIdRef.current || message.courseId !== courseIdRef.current) return;
 
       switch (message.type) {
         case 'NOTE_UPDATED':
           // Only update if it's for the same note we're viewing
-          if (message.noteId === noteId && message.lessonId === lessonId) {
+          // Use ref to get current noteId (avoids stale closure)
+          if (message.noteId === noteIdRef.current && message.lessonId === lessonIdRef.current) {
             // Prevent echo: don't apply if we just broadcast this content
-            if (message.content !== lastBroadcastRef.current) {
-              onRemoteUpdate?.(message.content || '', message.updatedAt);
+            if (message.content === lastBroadcastRef.current && message.updatedAt === lastBroadcastTimeRef.current) {
+              return;
+            }
+
+            // CRITICAL SAFETY CHECK: Timestamp-based conflict resolution
+            // Only apply remote update if it's NEWER than our last local save
+            const remoteTime = new Date(message.updatedAt).getTime();
+            const localTime = localTimestampRef.current ? new Date(localTimestampRef.current).getTime() : 0;
+            
+            if (remoteTime > localTime) {
+              // Remote is newer, apply it
+              onRemoteUpdateRef.current?.(message.content || '', message.updatedAt);
+              // Update our local timestamp to reflect we now have this content
+              localTimestampRef.current = message.updatedAt;
+            } else {
+              // Our local content is newer or same, ignore remote update
+              console.debug('[NotesSyncBridge] Ignored older remote update', {
+                remoteTime: message.updatedAt,
+                localTime: localTimestampRef.current,
+              });
             }
           }
           break;
 
         case 'NOTE_CREATED':
-          if (message.lessonId === lessonId) {
-            onNoteCreated?.(message.noteId, message.lessonId);
+          if (message.lessonId === lessonIdRef.current) {
+            onNoteCreatedRef.current?.(message.noteId, message.lessonId);
           }
           break;
 
         case 'NOTE_DELETED':
-          if (message.noteId === noteId || message.lessonId === lessonId) {
-            onNoteDeleted?.(message.noteId);
+          if (message.noteId === noteIdRef.current || message.lessonId === lessonIdRef.current) {
+            onNoteDeletedRef.current?.(message.noteId);
           }
           break;
 
         case 'REQUEST_SYNC':
-          // Another tab is requesting current state - ignore for now
-          // Could implement if needed for complex sync scenarios
+          // Another tab is requesting current state - could implement if needed
           break;
       }
     };
@@ -122,75 +173,93 @@ export function useNotesSyncBridge({
       channelRef.current?.close();
       channelRef.current = null;
     };
-  }, [noteId, lessonId, courseId, userId, tabId, onRemoteUpdate, onNoteCreated, onNoteDeleted]);
+  }, [tabId]); // Only depend on tabId which never changes
 
   /**
    * Broadcast a note update to other tabs
+   * IMPORTANT: Call this AFTER saving to database with the actual saved timestamp
    */
   const broadcastUpdate = useCallback((content: string, updatedAt?: string) => {
-    if (!channelRef.current || !noteId || !lessonId || !courseId || !userId) return;
+    const currentNoteId = noteIdRef.current;
+    const currentLessonId = lessonIdRef.current;
+    const currentCourseId = courseIdRef.current;
+    const currentUserId = userIdRef.current;
+    
+    if (!channelRef.current || !currentNoteId || !currentLessonId || !currentCourseId || !currentUserId) return;
+
+    const timestamp = updatedAt || new Date().toISOString();
 
     const message: NoteSyncMessage = {
       type: 'NOTE_UPDATED',
-      noteId,
-      lessonId,
-      courseId,
-      userId,
+      noteId: currentNoteId,
+      lessonId: currentLessonId,
+      courseId: currentCourseId,
+      userId: currentUserId,
       content,
-      updatedAt: updatedAt || new Date().toISOString(),
+      updatedAt: timestamp,
       source,
       tabId,
     };
 
-    // Track last broadcast to prevent echo
+    // Track last broadcast to prevent echo AND track timestamp for conflict resolution
     lastBroadcastRef.current = content;
+    lastBroadcastTimeRef.current = timestamp;
+    localTimestampRef.current = timestamp;
+    
     channelRef.current.postMessage(message);
-  }, [noteId, lessonId, courseId, userId, source, tabId]);
+  }, [source, tabId]);
 
   /**
    * Broadcast that a new note was created
    */
   const broadcastCreated = useCallback((newNoteId: string, newLessonId: string) => {
-    if (!channelRef.current || !courseId || !userId) return;
+    const currentCourseId = courseIdRef.current;
+    const currentUserId = userIdRef.current;
+    
+    if (!channelRef.current || !currentCourseId || !currentUserId) return;
 
     const message: NoteSyncMessage = {
       type: 'NOTE_CREATED',
       noteId: newNoteId,
       lessonId: newLessonId,
-      courseId,
-      userId,
+      courseId: currentCourseId,
+      userId: currentUserId,
       updatedAt: new Date().toISOString(),
       source,
       tabId,
     };
 
     channelRef.current.postMessage(message);
-  }, [courseId, userId, source, tabId]);
+  }, [source, tabId]);
 
   /**
    * Broadcast that a note was deleted
    */
   const broadcastDeleted = useCallback((deletedNoteId: string, deletedLessonId: string) => {
-    if (!channelRef.current || !courseId || !userId) return;
+    const currentCourseId = courseIdRef.current;
+    const currentUserId = userIdRef.current;
+    
+    if (!channelRef.current || !currentCourseId || !currentUserId) return;
 
     const message: NoteSyncMessage = {
       type: 'NOTE_DELETED',
       noteId: deletedNoteId,
       lessonId: deletedLessonId,
-      courseId,
-      userId,
+      courseId: currentCourseId,
+      userId: currentUserId,
       updatedAt: new Date().toISOString(),
       source,
       tabId,
     };
 
     channelRef.current.postMessage(message);
-  }, [courseId, userId, source, tabId]);
+  }, [source, tabId]);
 
   return {
     broadcastUpdate,
     broadcastCreated,
     broadcastDeleted,
+    updateLocalTimestamp,
     isSupported: typeof BroadcastChannel !== 'undefined',
   };
 }

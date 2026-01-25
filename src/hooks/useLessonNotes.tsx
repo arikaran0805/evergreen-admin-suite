@@ -15,16 +15,21 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [noteId, setNoteId] = useState<string | null>(null);
   const debouncedContent = useDebounce(content, 1000);
   const initialLoadRef = useRef(true);
-  const noteIdRef = useRef<string | null>(null);
   const isRemoteUpdateRef = useRef(false);
+  const lastSavedContentRef = useRef<string>("");
 
   // Handle remote updates from other tabs (Deep Notes)
   const handleRemoteUpdate = useCallback((remoteContent: string, updatedAt: string) => {
+    // CRITICAL: Ignore if we're still loading to prevent race conditions
+    if (initialLoadRef.current) return;
+    
     // Mark that this is a remote update to prevent broadcast echo
     isRemoteUpdateRef.current = true;
     setContent(remoteContent);
+    lastSavedContentRef.current = remoteContent;
     setLastSaved(new Date(updatedAt));
     setIsSyncing(false);
     
@@ -36,24 +41,28 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
 
   // Handle note created in other tab
   const handleNoteCreated = useCallback((newNoteId: string, newLessonId: string) => {
+    // Ignore if loading to prevent race conditions
+    if (initialLoadRef.current) return;
+    
     if (newLessonId === lessonId) {
-      noteIdRef.current = newNoteId;
+      setNoteId(newNoteId);
       setIsSyncing(false);
     }
   }, [lessonId]);
 
   // Handle note deleted in other tab
   const handleNoteDeleted = useCallback((deletedNoteId: string) => {
-    if (noteIdRef.current === deletedNoteId) {
-      noteIdRef.current = null;
+    if (noteId === deletedNoteId) {
+      setNoteId(null);
       setContent("");
+      lastSavedContentRef.current = "";
       setLastSaved(null);
     }
-  }, []);
+  }, [noteId]);
 
-  // Set up cross-tab sync bridge
-  const { broadcastUpdate, broadcastCreated } = useNotesSyncBridge({
-    noteId: noteIdRef.current,
+  // Set up cross-tab sync bridge - use state-based noteId for reactivity
+  const { broadcastUpdate, broadcastCreated, updateLocalTimestamp } = useNotesSyncBridge({
+    noteId,
     lessonId,
     courseId,
     userId,
@@ -67,8 +76,9 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
   useEffect(() => {
     // Reset everything before loading new note
     initialLoadRef.current = true;
-    noteIdRef.current = null;
+    setNoteId(null);
     setContent("");
+    lastSavedContentRef.current = "";
     setLastSaved(null);
     
     if (!lessonId || !userId) {
@@ -89,20 +99,25 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
         if (error) throw error;
 
         if (data) {
-          noteIdRef.current = data.id;
+          setNoteId(data.id);
           setContent(data.content || "");
+          lastSavedContentRef.current = data.content || "";
           setLastSaved(new Date(data.updated_at));
+          // Initialize the sync bridge with the loaded timestamp
+          updateLocalTimestamp(data.updated_at);
         } else {
           // Explicitly keep empty state for non-existent notes
-          noteIdRef.current = null;
+          setNoteId(null);
           setContent("");
+          lastSavedContentRef.current = "";
           setLastSaved(null);
         }
       } catch (error) {
         console.error("Error loading lesson note:", error);
         // On error, ensure clean state
-        noteIdRef.current = null;
+        setNoteId(null);
         setContent("");
+        lastSavedContentRef.current = "";
       } finally {
         setIsLoading(false);
         initialLoadRef.current = false;
@@ -110,27 +125,30 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
     };
 
     loadNote();
-  }, [lessonId, userId]);
+  }, [lessonId, userId, updateLocalTimestamp]);
 
   // Auto-save on debounced content change
   useEffect(() => {
     if (initialLoadRef.current || !lessonId || !courseId || !userId) return;
-    if (debouncedContent === "" && !noteIdRef.current) return; // Don't save empty new notes
+    if (debouncedContent === "" && !noteId) return; // Don't save empty new notes
     
     // Skip save if this was a remote update (already saved by the other tab)
     if (isRemoteUpdateRef.current) return;
+    
+    // Skip if content hasn't actually changed from last save
+    if (debouncedContent === lastSavedContentRef.current) return;
 
     const saveNote = async () => {
       setIsSaving(true);
       const now = new Date().toISOString();
       
       try {
-        if (noteIdRef.current) {
+        if (noteId) {
           // Update existing note
           const { error } = await supabase
             .from("lesson_notes")
             .update({ content: debouncedContent, updated_at: now })
-            .eq("id", noteIdRef.current);
+            .eq("id", noteId);
 
           if (error) throw error;
         } else if (debouncedContent.trim()) {
@@ -148,15 +166,16 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
             .single();
 
           if (error) throw error;
-          noteIdRef.current = data.id;
+          setNoteId(data.id);
           
           // Broadcast note creation to other tabs
           broadcastCreated(data.id, lessonId);
         }
         
+        lastSavedContentRef.current = debouncedContent;
         setLastSaved(new Date());
         
-        // Broadcast update to other tabs (Deep Notes)
+        // Broadcast update to other tabs (Deep Notes) with timestamp
         broadcastUpdate(debouncedContent, now);
       } catch (error) {
         console.error("Error saving lesson note:", error);
@@ -166,7 +185,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
     };
 
     saveNote();
-  }, [debouncedContent, lessonId, courseId, userId, broadcastUpdate, broadcastCreated]);
+  }, [debouncedContent, lessonId, courseId, userId, noteId, broadcastUpdate, broadcastCreated]);
 
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
@@ -179,7 +198,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
     isSyncing,
     lastSaved,
     isLoading,
-    noteId: noteIdRef.current,
+    noteId,
   };
 }
 
