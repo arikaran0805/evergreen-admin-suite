@@ -29,6 +29,7 @@ import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
 import CourseNotesTab from "@/components/course/CourseNotesTab";
+import LessonFooter from "@/components/course/LessonFooter";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -1403,122 +1404,43 @@ const CourseDetail = () => {
                       codeTheme={selectedPost.code_theme || undefined}
                     />
 
-                    {/* Mark as Complete Button */}
-                    {user && selectedPost && (
-                      <div className="mt-8 flex justify-center">
-                        <Button
-                          variant={isLessonCompleted(selectedPost.id) ? "outline" : "default"}
-                          size="lg"
-                          className={`gap-2 ${isLessonCompleted(selectedPost.id) ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary hover:bg-primary/90'}`}
-                          disabled={markingComplete}
-                          onClick={async () => {
-                            setMarkingComplete(true);
-                            const completed = !isLessonCompleted(selectedPost.id);
-                            const success = await markLessonCompleted(selectedPost.id, completed);
-                            if (success) {
-                              toast({
-                                title: completed ? "Lesson completed!" : "Lesson marked as incomplete",
-                                description: completed ? "Great job! Keep up the good work." : "You can mark it complete anytime.",
-                              });
-                            }
-                            setMarkingComplete(false);
-                          }}
-                        >
-                          {isLessonCompleted(selectedPost.id) ? (
-                            <>
-                              <CheckCircle className="h-5 w-5" />
-                              Completed
-                            </>
-                          ) : (
-                            <>
-                              <Circle className="h-5 w-5" />
-                              Mark as Complete
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Footer Section - Tags & Actions */}
-                    <div className="mt-8 pt-4 border-t">
-                      <div className="flex items-center justify-between gap-4">
-                        {/* Tags on left */}
-                        <div className="flex items-center gap-2 flex-wrap min-w-0">
-                          {allTags.length > 0 && (
-                            <>
-                              <div className="flex items-center gap-1.5 text-muted-foreground flex-shrink-0">
-                                <Tag className="h-4 w-4" />
-                                <span className="text-base font-medium">Tags:</span>
-                              </div>
-                              {allTags.map((tag) => (
-                                <Link 
-                                  key={tag.id} 
-                                  to={`/tag/${tag.slug}`}
-                                  className="text-sm text-primary bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors whitespace-nowrap"
-                                >
-                                  {tag.name}
-                                </Link>
-                              ))}
-                            </>
-                          )}
-                        </div>
-                        
-                        {/* Action icons on right */}
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCommentDialogOpen(true)}>
-                                  <MessageSquare className="h-5 w-5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{comments.length} comments</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <ShareTooltip
-                            title={selectedPost?.title || course?.name || ""}
-                            url={window.location.href}
-                            postId={selectedPost?.id}
-                          >
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Share2 className="h-5 w-5" />
-                            </Button>
-                          </ShareTooltip>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8" 
-                                  onClick={handleLikeToggle}
-                                  disabled={likingPost}
-                                >
-                                  <ThumbsUp className={`h-5 w-5 ${hasLiked ? 'fill-current text-primary' : ''}`} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSuggestDialogOpen(true)}>
-                                  <Edit className="h-5 w-5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Suggest Changes</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Lesson Footer - Completion, Tags, Actions, Navigation */}
+                    <LessonFooter
+                      isCompleted={selectedPost ? isLessonCompleted(selectedPost.id) : false}
+                      isMarkingComplete={markingComplete}
+                      onMarkComplete={async () => {
+                        if (!selectedPost) return;
+                        setMarkingComplete(true);
+                        const completed = !isLessonCompleted(selectedPost.id);
+                        const success = await markLessonCompleted(selectedPost.id, completed);
+                        if (success) {
+                          toast({
+                            title: completed ? "Lesson completed!" : "Lesson marked as incomplete",
+                            description: completed ? "Great job! Keep up the good work." : "You can mark it complete anytime.",
+                          });
+                        }
+                        setMarkingComplete(false);
+                      }}
+                      canComplete={!!user}
+                      currentLessonIndex={currentOrderedIndex}
+                      totalLessons={orderedPosts.length}
+                      courseProgressPercentage={courseProgress.percentage}
+                      tags={allTags}
+                      onCommentClick={() => setCommentDialogOpen(true)}
+                      onNotesClick={() => openNotesTab({ lessonId: selectedPost?.id, entityType: 'lesson' })}
+                      onLikeClick={handleLikeToggle}
+                      likeCount={likeCount}
+                      hasLiked={hasLiked}
+                      isLiking={likingPost}
+                      commentCount={comments.length}
+                      shareTitle={selectedPost?.title || course?.name || ""}
+                      shareUrl={window.location.href}
+                      postId={selectedPost?.id}
+                      previousLesson={hasPrevious ? orderedPosts[currentOrderedIndex - 1] : null}
+                      nextLesson={hasNext ? orderedPosts[currentOrderedIndex + 1] : null}
+                      onPrevious={handlePrevious}
+                      onNext={handleNext}
+                    />
 
                     {/* Dialogs */}
                     {selectedPost && (
@@ -1541,43 +1463,6 @@ const CourseDetail = () => {
                         />
                       </>
                     )}
-
-                    {/* Lesson Navigation */}
-                    <div className="mt-8">
-                      <div className="flex items-center justify-between gap-4">
-                        {hasPrevious ? (
-                          <Button 
-                            variant="outline" 
-                            size="lg"
-                            className="gap-2 flex-1 max-w-xs"
-                            onClick={handlePrevious}
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                            <div className="text-left min-w-0">
-                              <div className="text-xs text-muted-foreground">Previous</div>
-                              <div className="font-medium truncate">{orderedPosts[currentOrderedIndex - 1]?.title}</div>
-                            </div>
-                          </Button>
-                        ) : (
-                          <div className="flex-1" />
-                        )}
-                        {hasNext ? (
-                          <Button 
-                            size="lg"
-                            className="gap-2 bg-primary hover:bg-primary/90 flex-1 max-w-xs"
-                            onClick={handleNext}
-                          >
-                            <div className="text-right min-w-0">
-                              <div className="text-xs opacity-80">Next</div>
-                              <div className="font-medium truncate">{orderedPosts[currentOrderedIndex + 1]?.title}</div>
-                            </div>
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
-                        ) : (
-                          <div className="flex-1" />
-                        )}
-                      </div>
-                    </div>
                   </>
                 ) : (
                   /* Course Overview View */
