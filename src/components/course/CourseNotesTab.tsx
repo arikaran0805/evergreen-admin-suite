@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getTextPreview } from "@/lib/tiptapMigration";
 import { useCourseNotes } from "@/hooks/useCourseNotes";
 import {
   StickyNote,
@@ -147,10 +148,7 @@ export function CourseNotesTab({
                 <div className="space-y-2">
                   {groupNotes.map((note) => {
                     const isSelected = selectedNote?.id === note.id;
-                    const preview =
-                      note.content.length > 60
-                        ? note.content.substring(0, 60) + "..."
-                        : note.content || "Empty note";
+                    const preview = getTextPreview(note.content, 60) || "Empty note";
 
                     return (
                       <button
