@@ -147,6 +147,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   });
 
   // Load all notes for this course
+  // CRITICAL: Do NOT include selectedNoteId in deps - that causes reload on note switch!
   const loadNotes = useCallback(async () => {
     if (!courseId || !userId) return;
 
@@ -194,7 +195,9 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
         setNotes(enrichedNotes);
         
-        if (!selectedNoteId) {
+        // Only auto-select first note if nothing is selected yet
+        // Use ref to avoid dependency on state
+        if (!selectedNoteIdRef.current) {
           setSelectedNoteId(enrichedNotes[0].id);
           setEditContent(enrichedNotes[0].content);
           lastSavedContentRef.current = enrichedNotes[0].content;
@@ -210,7 +213,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [courseId, userId, selectedNoteId]);
+  }, [courseId, userId]); // Removed selectedNoteId - use ref instead
 
   // Initial load
   useEffect(() => {
