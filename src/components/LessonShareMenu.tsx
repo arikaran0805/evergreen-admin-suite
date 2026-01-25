@@ -12,9 +12,10 @@ interface LessonShareMenuProps {
   alwaysVisible?: boolean;
   side?: "top" | "right" | "bottom" | "left";
   vertical?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
-const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false, side = "top", vertical = false }: LessonShareMenuProps) => {
+const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false, side = "top", vertical = false, onOpenChange }: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +40,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
     // Small delay so the trigger tooltip can show briefly
     openTimeoutRef.current = setTimeout(() => {
       setOpen(true);
+      onOpenChange?.(true);
     }, 250);
   };
 
@@ -50,6 +52,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
 
     closeTimeoutRef.current = setTimeout(() => {
       setOpen(false);
+      onOpenChange?.(false);
     }, 150);
   };
 
@@ -124,9 +127,14 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
     </svg>
   );
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+  };
+
   return (
     <TooltipProvider delayDuration={0}>
-      <Tooltip open={open} onOpenChange={setOpen}>
+      <Tooltip open={open} onOpenChange={handleOpenChange}>
         <TooltipTrigger asChild>
           <div 
             ref={containerRef} 
