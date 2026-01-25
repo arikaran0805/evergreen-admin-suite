@@ -59,6 +59,7 @@ export function NotesFocusMode({
     editContent,
     isLoading,
     isSaving,
+    isSyncing,
     selectNote,
     setEditContent,
     createNote,
@@ -219,7 +220,17 @@ export function NotesFocusMode({
         <div className="flex-shrink-0">
           {selectedNote && (
             <AnimatePresence mode="wait">
-              {showSaving ? (
+              {isSyncing ? (
+                <motion.span
+                  key="syncing"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-[12px] text-muted-foreground"
+                >
+                  Syncing…
+                </motion.span>
+              ) : showSaving ? (
                 <motion.span
                   key="saving"
                   initial={{ opacity: 0 }}
