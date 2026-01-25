@@ -536,7 +536,11 @@ export const CourseSidebar = ({
                                       alwaysVisible
                                       side="right"
                                       vertical
-                                      onOpenChange={(isOpen) => setShareOpenPostId(isOpen ? post.id : null)}
+                                      onOpenChange={(isOpen) =>
+                                        setShareOpenPostId((prev) =>
+                                          isOpen ? post.id : prev === post.id ? null : prev
+                                        )
+                                      }
                                       sidebarVariant
                                       isActive={isActive}
                                     />
