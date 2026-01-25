@@ -95,9 +95,13 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showToolbar, setShowToolbar] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0, placement: 'above' as 'above' | 'below' });
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  
+  // Toolbar dimensions for collision detection
+  const TOOLBAR_HEIGHT = 40;
+  const TOOLBAR_OFFSET = 10;
 
   // Extensions
   const extensions = useMemo(() => getNotionExtensions(placeholder), [placeholder]);
@@ -119,17 +123,37 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
       const hasSelection = from !== to;
       
       if (hasSelection && !editor.state.selection.empty) {
-        // Get the selection coordinates
         const { view } = editor;
         const start = view.coordsAtPos(from);
         const end = view.coordsAtPos(to);
         
-        // Position the toolbar above the selection
         const containerRect = editorContainerRef.current?.getBoundingClientRect();
         if (containerRect) {
-          const top = start.top - containerRect.top - 50;
+          // Calculate horizontal center of selection
           const left = (start.left + end.left) / 2 - containerRect.left;
-          setToolbarPosition({ top: Math.max(0, top), left: Math.max(10, left) });
+          
+          // Calculate space available above and below selection
+          const spaceAbove = start.top - containerRect.top;
+          const spaceNeededAbove = TOOLBAR_HEIGHT + TOOLBAR_OFFSET;
+          
+          let placement: 'above' | 'below' = 'above';
+          let top: number;
+          
+          if (spaceAbove >= spaceNeededAbove) {
+            // Enough space above - position toolbar above selection
+            placement = 'above';
+            top = start.top - containerRect.top - TOOLBAR_HEIGHT - TOOLBAR_OFFSET;
+          } else {
+            // Not enough space above - position toolbar below selection
+            placement = 'below';
+            top = end.bottom - containerRect.top + TOOLBAR_OFFSET;
+          }
+          
+          setToolbarPosition({ 
+            top: Math.max(0, top), 
+            left: Math.max(10, Math.min(left, containerRect.width - 10)),
+            placement 
+          });
         }
         setShowToolbar(true);
       } else {
@@ -201,7 +225,11 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
       {showToolbar && (
         <div
           ref={toolbarRef}
-          className="absolute z-50 flex items-center gap-0.5 p-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-150"
+          className={cn(
+            "absolute z-50 flex items-center gap-0.5 p-1 bg-popover border border-border rounded-lg shadow-lg",
+            "animate-in fade-in-0 zoom-in-95 duration-100",
+            toolbarPosition.placement === 'above' ? "origin-bottom" : "origin-top"
+          )}
           style={{
             top: `${toolbarPosition.top}px`,
             left: `${toolbarPosition.left}px`,
