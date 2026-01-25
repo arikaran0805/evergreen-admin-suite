@@ -27,6 +27,7 @@ import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
 import CourseNotesTab from "@/components/course/CourseNotesTab";
+import { NotesFocusMode } from "@/components/notes";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -1871,18 +1872,12 @@ const CourseDetail = () => {
                         )}
                       </TabsContent>
 
-                      {/* Notes Tab */}
+                      {/* Notes Tab - Now uses Focus Mode */}
                       <TabsContent value="notes">
-                        <CourseNotesTab
-                          courseId={course?.id}
-                          userId={user?.id}
-                          onNavigateToLesson={(lessonId) => {
-                            const post = posts.find(p => p.id === lessonId);
-                            if (post) {
-                              handleLessonClick(post);
-                            }
-                          }}
-                        />
+                        {/* Placeholder - Focus mode renders as overlay */}
+                        <div className="py-8 text-center text-muted-foreground">
+                          <p>Loading notes...</p>
+                        </div>
                       </TabsContent>
                     </Tabs>
                   </>
@@ -1984,6 +1979,23 @@ const CourseDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Notes Focus Mode Overlay */}
+      {activeTab === "notes" && user && course && (
+        <NotesFocusMode
+          courseId={course.id}
+          userId={user.id}
+          courseName={course.name}
+          onExit={() => setActiveTab("details")}
+          onNavigateToLesson={(lessonId) => {
+            const post = posts.find(p => p.id === lessonId);
+            if (post) {
+              setActiveTab("lessons");
+              handleLessonClick(post);
+            }
+          }}
+        />
+      )}
     </div>
     </CodeEditProvider>
   );
