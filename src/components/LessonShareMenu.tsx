@@ -120,26 +120,12 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Trigger with tooltip */}
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-          </TooltipTrigger>
-          {!open && (
-            <TooltipContent 
-              side="top" 
-              className="bg-foreground text-background text-xs px-2 py-1 rounded"
-            >
-              Share
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      {/* Trigger */}
+      <button
+        className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <Share2 className="h-3.5 w-3.5" />
+      </button>
       
       {/* Share Menu - Icon only, positioned above with down-to-up animation */}
       {open && (

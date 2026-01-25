@@ -118,28 +118,14 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Trigger with tooltip */}
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div>
-              {children || (
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
-                  <Share2 className="h-5 w-5 text-foreground" />
-                </Button>
-              )}
-            </div>
-          </TooltipTrigger>
-          {!open && (
-            <TooltipContent 
-              side="top" 
-              className="bg-foreground text-background text-xs px-2 py-1 rounded"
-            >
-              Share
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      {/* Trigger */}
+      <div>
+        {children || (
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
+            <Share2 className="h-5 w-5 text-foreground" />
+          </Button>
+        )}
+      </div>
       
       {/* Share Menu - Icon only, bottom-to-top animation */}
       {open && (
