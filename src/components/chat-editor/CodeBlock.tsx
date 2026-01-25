@@ -5,6 +5,8 @@ import { Copy, Check, Play, Pencil, Loader2, X, ChevronUp, ChevronDown } from "l
 import { Button } from "@/components/ui/button";
 import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
+// Import tiptap CSS for clean theme syntax highlighting
+import "@/styles/tiptap.css";
 
 // Dynamic theme imports
 const loadTheme = async (theme: string) => {
@@ -92,14 +94,14 @@ const CodeBlock = ({
   const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
   const canExecute = EXECUTABLE_LANGUAGES.includes(normalizedLang);
 
-  // Load theme dynamically
+  // Load theme dynamically - skip for custom themes that use CSS overrides
   useEffect(() => {
+    // Clean and gray themes use custom CSS in tiptap.css, no Prism theme needed
     if (isCustomTheme) {
-      // Custom themes use base prism.css with CSS overrides
-      import("prismjs/themes/prism.css");
-    } else {
-      loadTheme(theme);
+      // Don't load any Prism theme - our CSS handles it
+      return;
     }
+    loadTheme(theme);
   }, [theme, isCustomTheme]);
 
   useEffect(() => {
