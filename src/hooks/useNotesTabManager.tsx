@@ -20,7 +20,7 @@ const NOTES_TAB_REGISTRY_KEY = 'lovable-notes-tabs';
 const NOTES_CONTEXT_CHANNEL = 'lovable-notes-context';
 
 export interface NotesContextMessage {
-  type: 'SWITCH_NOTE' | 'FOCUS_NOTE';
+  type: 'SWITCH_NOTE' | 'FOCUS_NOTE' | 'PING' | 'PONG';
   courseId: string;
   noteId?: string;
   lessonId?: string;
@@ -57,12 +57,41 @@ function updateTabRegistry(registry: Record<string, NotesTabInfo>) {
 }
 
 /**
+ * Check if a Deep Notes tab already exists for this course via BroadcastChannel ping
+ * Returns a promise that resolves to true if tab exists and responded
+ */
+function pingExistingTab(channel: BroadcastChannel, courseId: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(false), 200); // 200ms timeout
+    
+    const handlePong = (event: MessageEvent<NotesContextMessage>) => {
+      if (event.data.type === 'PONG' && event.data.courseId === courseId) {
+        clearTimeout(timeout);
+        channel.removeEventListener('message', handlePong);
+        resolve(true);
+      }
+    };
+    
+    channel.addEventListener('message', handlePong);
+    channel.postMessage({
+      type: 'PING',
+      courseId,
+      timestamp: Date.now(),
+    });
+  });
+}
+
+/**
  * Hook for opening Notes in a managed tab (used by CourseDetail)
- * Supports context switching - if tab exists, sends message to switch note
+ * 
+ * CRITICAL: Ensures exactly ONE Deep Notes tab per course.
+ * - First open: creates new tab
+ * - Subsequent opens: reuses existing tab, switches content via BroadcastChannel
  */
 export function useNotesTabOpener(courseId: string | undefined) {
   const notesWindowRef = useRef<Window | null>(null);
   const channelRef = useRef<BroadcastChannel | null>(null);
+  const isOpeningRef = useRef(false); // Prevent race conditions
 
   // Initialize broadcast channel
   useEffect(() => {
@@ -95,74 +124,105 @@ export function useNotesTabOpener(courseId: string | undefined) {
   }, []);
 
   /**
-   * Open or focus the Notes tab for this course.
-   * If noteId/lessonId provided, will switch to that note in existing tab.
+   * Send context switch message to existing Deep Notes tab
    */
-  const openNotesTab = useCallback((options?: {
+  const sendContextSwitch = useCallback((options?: {
+    noteId?: string;
+    lessonId?: string;
+    entityType?: 'lesson' | 'user' | 'post' | 'comment';
+  }) => {
+    if (!courseId || !channelRef.current) return;
+    
+    channelRef.current.postMessage({
+      type: 'SWITCH_NOTE',
+      courseId,
+      noteId: options?.noteId,
+      lessonId: options?.lessonId,
+      entityType: options?.entityType,
+      timestamp: Date.now(),
+    } as NotesContextMessage);
+  }, [courseId]);
+
+  /**
+   * Open or focus the Notes tab for this course.
+   * 
+   * BEHAVIOR:
+   * 1. If we have a valid window reference → focus it + send context switch
+   * 2. If not, ping via BroadcastChannel to check if tab exists elsewhere
+   * 3. If tab responds → it will focus itself, we send context switch
+   * 4. If no response → create new tab
+   */
+  const openNotesTab = useCallback(async (options?: {
     noteId?: string;
     lessonId?: string;
     entityType?: 'lesson' | 'user' | 'post' | 'comment';
   }) => {
     if (!courseId) return false;
-
-    const tabId = `${NOTES_TAB_PREFIX}${courseId}`;
-    const notesUrl = `/courses/${courseId}/notes`;
-
-    // Try to focus existing window if we have a reference
-    if (notesWindowRef.current && !notesWindowRef.current.closed) {
-      try {
-        notesWindowRef.current.focus();
-        
-        // Send context switch message if we have a specific note to show
-        if (options?.noteId || options?.lessonId) {
-          channelRef.current?.postMessage({
-            type: 'SWITCH_NOTE',
-            courseId,
-            noteId: options.noteId,
-            lessonId: options.lessonId,
-            entityType: options.entityType,
-            timestamp: Date.now(),
-          } as NotesContextMessage);
-        }
-        
-        return true;
-      } catch {
-        notesWindowRef.current = null;
-      }
-    }
-
-    // Try to open with a named window (browser will focus if same name exists)
-    const newWindow = window.open(notesUrl, tabId, 'noopener');
+    if (isOpeningRef.current) return false; // Prevent double-clicks
     
-    if (newWindow) {
-      notesWindowRef.current = newWindow;
-      
-      // Register this tab
-      const registry = getTabRegistry();
-      registry[tabId] = {
-        courseId,
-        openedAt: Date.now(),
-      };
-      updateTabRegistry(registry);
-      
-      // If opening with specific context, send message after small delay
-      // to give the new tab time to set up its listener
-      if (options?.noteId || options?.lessonId) {
-        setTimeout(() => {
-          channelRef.current?.postMessage({
-            type: 'SWITCH_NOTE',
-            courseId,
-            noteId: options.noteId,
-            lessonId: options.lessonId,
-            entityType: options.entityType,
-            timestamp: Date.now(),
-          } as NotesContextMessage);
-        }, 500);
-      }
-    }
+    isOpeningRef.current = true;
+    
+    try {
+      const tabId = `${NOTES_TAB_PREFIX}${courseId}`;
+      const notesUrl = `/courses/${courseId}/notes`;
 
-    return true;
-  }, [courseId]);
+      // Strategy 1: Try existing window reference
+      if (notesWindowRef.current && !notesWindowRef.current.closed) {
+        try {
+          notesWindowRef.current.focus();
+          sendContextSwitch(options);
+          return true;
+        } catch {
+          notesWindowRef.current = null;
+        }
+      }
+
+      // Strategy 2: Ping existing tab via BroadcastChannel
+      // This handles the case where tab exists but we lost the window reference
+      if (channelRef.current) {
+        const tabExists = await pingExistingTab(channelRef.current, courseId);
+        
+        if (tabExists) {
+          // Tab exists and will focus itself (via PING handler)
+          // Send context switch message
+          sendContextSwitch(options);
+          return true;
+        }
+      }
+
+      // Strategy 3: No existing tab found - create new one
+      // Use named window to prevent duplicates at browser level
+      // IMPORTANT: Don't use 'noopener' so we can keep the reference
+      const newWindow = window.open(notesUrl, tabId);
+      
+      if (newWindow) {
+        notesWindowRef.current = newWindow;
+        
+        // Register this tab
+        const registry = getTabRegistry();
+        registry[tabId] = {
+          courseId,
+          openedAt: Date.now(),
+        };
+        updateTabRegistry(registry);
+        
+        // If opening with specific context, send message after delay
+        // to give the new tab time to set up its listener
+        if (options?.noteId || options?.lessonId) {
+          setTimeout(() => {
+            sendContextSwitch(options);
+          }, 600);
+        }
+      }
+
+      return true;
+    } finally {
+      // Reset opening flag after a short delay
+      setTimeout(() => {
+        isOpeningRef.current = false;
+      }, 300);
+    }
+  }, [courseId, sendContextSwitch]);
 
   return { openNotesTab, notesWindowRef };
 }
@@ -202,7 +262,21 @@ export function useNotesTabRegistration(
         // Only handle messages for this course
         if (message.courseId !== courseId) return;
         
+        // Handle PING - respond with PONG and focus self
+        if (message.type === 'PING') {
+          channelRef.current?.postMessage({
+            type: 'PONG',
+            courseId,
+            timestamp: Date.now(),
+          } as NotesContextMessage);
+          // Focus this window when pinged
+          window.focus();
+          return;
+        }
+        
         if (message.type === 'SWITCH_NOTE' && onSwitchNote) {
+          // Focus window on context switch
+          window.focus();
           onSwitchNote({
             noteId: message.noteId,
             lessonId: message.lessonId,
