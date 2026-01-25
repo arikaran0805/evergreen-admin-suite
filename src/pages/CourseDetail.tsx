@@ -1013,7 +1013,7 @@ const CourseDetail = () => {
       return {
         label: "Manage Course",
         icon: Edit,
-        onClick: () => handleTabChange("info"),
+        onClick: () => navigate(`/admin/courses/edit/${course?.id}`),
       };
     }
 
@@ -1682,7 +1682,7 @@ const CourseDetail = () => {
                                       disabled={posts.length === 0 || enrolling}
                                       className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-10 font-medium shadow-sm"
                                     >
-                                      <CardIcon className="h-4 w-4 mr-2 fill-current" />
+                                      <CardIcon className="h-4 w-4 mr-2" />
                                       {enrolling ? "Processing..." : cardContent.buttonLabel}
                                     </Button>
                                     <span className="text-xs text-muted-foreground hidden sm:block text-center">
