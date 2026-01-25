@@ -323,9 +323,9 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - sharp top corners, rounded bottom, small gap from code */}
+        {/* Output panel - matching chat bubble style exactly */}
         {showOutput && (
-          <div className="mt-0.5 rounded-t-none rounded-b-xl border border-t-0 border-border/50 bg-muted/30 overflow-hidden">
+          <div className="mt-2 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
@@ -359,22 +359,20 @@ const ExecutableCodeBlockView = ({
               </Button>
             </button>
 
-            {/* Content area */}
+            {/* Content area - flat text, no inner box */}
             <div className={cn(
               "grid transition-all duration-200 ease-out",
               outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
             )}>
               <div className="overflow-hidden">
-                <div className="mx-3 mb-3">
-                  <div className="rounded-lg bg-background border border-border/40 px-4 py-3">
-                    <pre className={cn(
-                      "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
-                      outputError ? "text-destructive" : "text-foreground",
-                      !output && "text-muted-foreground"
-                    )}>
-                      {output || 'No output'}
-                    </pre>
-                  </div>
+                <div className="px-4 pb-4">
+                  <pre className={cn(
+                    "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
+                    outputError ? "text-destructive" : "text-foreground",
+                    !output && "text-muted-foreground"
+                  )}>
+                    {output || 'No output'}
+                  </pre>
                 </div>
               </div>
             </div>
