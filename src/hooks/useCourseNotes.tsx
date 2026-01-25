@@ -122,6 +122,41 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     saveNote();
   }, [debouncedContent, selectedNoteId, selectedNote]);
 
+  // Create a new note for a lesson
+  const createNote = useCallback(async (lessonId: string, lessonTitle: string) => {
+    if (!courseId || !userId) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from("lesson_notes")
+        .insert({
+          user_id: userId,
+          lesson_id: lessonId,
+          course_id: courseId,
+          content: "",
+        })
+        .select("id, lesson_id, course_id, content, created_at, updated_at")
+        .single();
+
+      if (error) throw error;
+
+      const newNote: LessonNote = {
+        ...data,
+        lesson_title: lessonTitle,
+      };
+
+      // Add to top of list and select it
+      setNotes(prev => [newNote, ...prev]);
+      setSelectedNoteId(newNote.id);
+      setEditContent("");
+
+      return newNote;
+    } catch (error) {
+      console.error("Error creating note:", error);
+      return null;
+    }
+  }, [courseId, userId]);
+
   // Delete a note
   const deleteNote = useCallback(async (noteId: string) => {
     try {
@@ -152,6 +187,44 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     }
   }, [selectedNoteId, notes]);
 
+  // Get lessons that don't have notes yet
+  const getAvailableLessons = useCallback(async () => {
+    if (!courseId) return [];
+
+    try {
+      // Get all lessons for this course
+      const { data: lessons } = await supabase
+        .from("posts")
+        .select("id, title, lesson_id")
+        .not("lesson_id", "is", null)
+        .order("created_at", { ascending: true });
+
+      // Get course lessons
+      const { data: courseLessons } = await supabase
+        .from("course_lessons")
+        .select("id, title")
+        .eq("course_id", courseId)
+        .is("deleted_at", null)
+        .order("lesson_rank", { ascending: true });
+
+      // Filter out lessons that already have notes
+      const existingLessonIds = new Set(notes.map(n => n.lesson_id));
+      
+      // Use posts that are lessons for this course
+      const lessonPosts = lessons?.filter(l => l.lesson_id && courseLessons?.some(cl => cl.id === l.lesson_id)) || [];
+      
+      // Also include course_lessons entries
+      const allLessons = [
+        ...(courseLessons || []).map(cl => ({ id: cl.id, title: cl.title })),
+      ].filter(l => !existingLessonIds.has(l.id));
+
+      return allLessons;
+    } catch (error) {
+      console.error("Error fetching available lessons:", error);
+      return [];
+    }
+  }, [courseId, notes]);
+
   return {
     notes,
     selectedNote,
@@ -160,7 +233,9 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     isSaving,
     selectNote,
     setEditContent,
+    createNote,
     deleteNote,
+    getAvailableLessons,
     refreshNotes: loadNotes,
   };
 }
