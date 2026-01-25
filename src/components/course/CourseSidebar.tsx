@@ -520,7 +520,7 @@ export const CourseSidebar = ({
                                       postId={post.id}
                                       postTitle={post.title}
                                       postSlug={post.slug}
-                                      className="!opacity-100"
+                                      alwaysVisible
                                     />
                                   </div>
                                 </div>
