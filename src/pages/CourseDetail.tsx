@@ -16,6 +16,7 @@ import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
@@ -225,6 +226,9 @@ const CourseDetail = () => {
 
   // Time tracking hook
   useLessonTimeTracking({ lessonId: selectedPost?.id, courseId: course?.id });
+
+  // Notes tab manager - prevents multiple notes tabs for same course
+  const { openNotesTab } = useNotesTabOpener(course?.id);
 
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
@@ -1634,16 +1638,28 @@ const CourseDetail = () => {
                         {user && course && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <a
-                                href={`/courses/${course.id}/notes`}
-                                target={isMobile ? "_self" : "_blank"}
-                                rel={isMobile ? undefined : "noopener noreferrer"}
-                                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-transparent hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                              >
-                                <StickyNote className="h-4 w-4" />
-                                Notes
-                                {!isMobile && <ExternalLink className="h-3 w-3 opacity-50" />}
-                              </a>
+                              {isMobile ? (
+                                <Link
+                                  to={`/courses/${course.id}/notes`}
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-transparent hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                >
+                                  <StickyNote className="h-4 w-4" />
+                                  Notes
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openNotesTab();
+                                  }}
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-transparent hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                >
+                                  <StickyNote className="h-4 w-4" />
+                                  Notes
+                                  <ExternalLink className="h-3 w-3 opacity-50" />
+                                </button>
+                              )}
                             </TooltipTrigger>
                             {!isMobile && (
                               <TooltipContent side="bottom" className="text-xs">

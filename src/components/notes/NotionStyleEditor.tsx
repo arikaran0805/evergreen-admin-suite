@@ -109,6 +109,9 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
   // Parse initial content
   const initialContent = useMemo(() => parseContent(value), []);
 
+  // Track if formatting was just applied via toolbar
+  const justFormattedRef = useRef(false);
+
   // Editor instance
   const editor = useEditor({
     extensions,
@@ -158,11 +161,39 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
         setShowToolbar(true);
       } else {
         setShowToolbar(false);
+        
+        // Reset justFormatted flag when selection collapses
+        if (!hasSelection) {
+          justFormattedRef.current = false;
+        }
       }
     },
     editorProps: {
       attributes: {
         class: 'notion-editor-content',
+      },
+      // Handle keydown to reset formatting after space/enter
+      handleKeyDown: (view, event) => {
+        // If space or enter is pressed after formatting was applied, unset marks
+        if ((event.key === ' ' || event.key === 'Enter') && justFormattedRef.current) {
+          justFormattedRef.current = false;
+          
+          // Use setTimeout to let the character be inserted first, then unset marks
+          setTimeout(() => {
+            const currentEditor = editor;
+            if (currentEditor && currentEditor.state.selection.empty) {
+              // Unset inline formatting marks for next typed text
+              currentEditor.chain()
+                .unsetBold()
+                .unsetItalic()
+                .unsetUnderline()
+                .unsetStrike()
+                .unsetCode()
+                .run();
+            }
+          }, 0);
+        }
+        return false; // Let TipTap handle the key normally
       },
     },
   });
@@ -239,7 +270,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
         >
           {/* Text formatting */}
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBold().run()}
+            onClick={() => {
+              editor.chain().focus().toggleBold().run();
+              justFormattedRef.current = true;
+            }}
             isActive={editor.isActive('bold')}
             title="Bold"
           >
@@ -247,7 +281,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
           </ToolbarButton>
           
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleItalic().run()}
+            onClick={() => {
+              editor.chain().focus().toggleItalic().run();
+              justFormattedRef.current = true;
+            }}
             isActive={editor.isActive('italic')}
             title="Italic"
           >
@@ -255,7 +292,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
           </ToolbarButton>
           
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            onClick={() => {
+              editor.chain().focus().toggleUnderline().run();
+              justFormattedRef.current = true;
+            }}
             isActive={editor.isActive('underline')}
             title="Underline"
           >
@@ -263,7 +303,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
           </ToolbarButton>
           
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleStrike().run()}
+            onClick={() => {
+              editor.chain().focus().toggleStrike().run();
+              justFormattedRef.current = true;
+            }}
             isActive={editor.isActive('strike')}
             title="Strikethrough"
           >
@@ -274,7 +317,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
 
           {/* Inline code */}
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleCode().run()}
+            onClick={() => {
+              editor.chain().focus().toggleCode().run();
+              justFormattedRef.current = true;
+            }}
             isActive={editor.isActive('code')}
             title="Code"
           >

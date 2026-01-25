@@ -10,6 +10,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotesFocusMode } from "@/components/notes";
+import { useNotesTabRegistration } from "@/hooks/useNotesTabManager";
 
 interface CourseInfo {
   id: string;
@@ -23,6 +24,9 @@ const CourseNotes = () => {
   const navigate = useNavigate();
   const [course, setCourse] = useState<CourseInfo | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Register this tab for single-tab-per-course management
+  const { closeAndFocusOpener } = useNotesTabRegistration(courseId);
 
   // Fetch course info
   useEffect(() => {
@@ -69,13 +73,11 @@ const CourseNotes = () => {
   const handleBackToCourse = () => {
     if (course?.slug) {
       // Try to close this tab and go back to opener
-      if (window.opener && !window.opener.closed) {
-        window.opener.focus();
-        window.close();
-      } else {
-        // Fallback: navigate in current tab
-        navigate(`/course/${course.slug}`);
+      if (closeAndFocusOpener()) {
+        return; // Successfully closed and focused opener
       }
+      // Fallback: navigate in current tab
+      navigate(`/course/${course.slug}`);
     }
   };
 
