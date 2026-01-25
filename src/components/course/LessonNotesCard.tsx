@@ -74,6 +74,8 @@ export function LessonNotesCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  // Prevent programmatic hydration from triggering updateContent (and therefore autosave)
+  const applyingExternalValueRef = useRef(false);
 
   // Use tab manager to prevent duplicate notes tabs
   const { openNotesTab } = useNotesTabOpener(courseId);
@@ -93,6 +95,7 @@ export function LessonNotesCard({
     editable: true,
     autofocus: false,
     onUpdate: ({ editor }) => {
+      if (applyingExternalValueRef.current) return;
       const json = editor.getJSON();
       updateContent(serializeContent(json));
     },
@@ -110,13 +113,15 @@ export function LessonNotesCard({
     const currentContent = serializeContent(editor.getJSON());
     // Handle both empty and non-empty content to prevent stale data
     if (currentContent !== content) {
-      if (content) {
-        const parsed = parseContent(content);
-        editor.commands.setContent(parsed);
-      } else {
-        // CRITICAL: Clear editor when content is empty
-        editor.commands.clearContent();
-      }
+      const parsed = parseContent(content);
+      // CRITICAL: Do not emit an update during hydration/sync, otherwise the parent
+      // may interpret the intermediate empty doc as user input and auto-save it.
+      applyingExternalValueRef.current = true;
+      // TipTap supports setContent(content, { emitUpdate: false })
+      editor.commands.setContent(parsed, { emitUpdate: false });
+      setTimeout(() => {
+        applyingExternalValueRef.current = false;
+      }, 0);
     }
   }, [content, editor]);
 
