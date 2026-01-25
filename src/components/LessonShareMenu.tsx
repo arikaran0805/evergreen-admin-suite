@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Share2, Linkedin } from "lucide-react";
+import { Share2, Linkedin, Copy } from "lucide-react";
 import { trackPostShare } from "@/lib/shareAnalytics";
 
 interface LessonShareMenuProps {
@@ -14,6 +14,7 @@ interface LessonShareMenuProps {
 const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const shareUrl = `${window.location.origin}/courses/${postSlug}`;
@@ -44,6 +45,15 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
   const handleShare = (platform: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+
+    if (platform === "copy") {
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      trackPostShare(postId, "copy_link");
+      toast({ title: "Link copied!" });
+      setTimeout(() => setCopied(false), 1500);
+      return;
+    }
     
     if (platform === "instagram") {
       navigator.clipboard.writeText(shareUrl);
@@ -64,6 +74,16 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
     if (platform === "linkedin") {
       trackPostShare(postId, "linkedin");
       window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (platform === "twitter") {
+      trackPostShare(postId, "twitter");
+      window.open(
+        `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
       return;
     }
   };
@@ -87,6 +107,12 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
   const InstagramIcon = () => (
     <svg className="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 24 24">
       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  );
+
+  const XIcon = () => (
+    <svg className="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
   );
 
@@ -118,7 +144,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
       {open && (
         <div 
           onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-lg">
             <TooltipProvider delayDuration={200}>
@@ -158,6 +184,24 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
                 </TooltipContent>
               </Tooltip>
 
+              {/* X */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => handleShare("twitter", e)}
+                    className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+                  >
+                    <XIcon />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
+                >
+                  X
+                </TooltipContent>
+              </Tooltip>
+
               {/* Instagram */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -173,6 +217,27 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
                   className="bg-foreground text-background text-xs px-2 py-1 rounded"
                 >
                   Instagram
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Separator */}
+              <div className="w-px h-5 bg-border mx-0.5" />
+
+              {/* Copy */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => handleShare("copy", e)}
+                    className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+                  >
+                    <Copy className={`h-[18px] w-[18px] ${copied ? "text-primary" : ""}`} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
+                >
+                  {copied ? "Copied!" : "Copy link"}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

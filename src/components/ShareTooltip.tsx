@@ -139,11 +139,11 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
         </Tooltip>
       </TooltipProvider>
       
-      {/* Share Menu - Icon only, down-to-up animation */}
+      {/* Share Menu - Icon only, bottom-to-top animation */}
       {open && (
         <div 
           onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-lg">
             <TooltipProvider delayDuration={200}>
