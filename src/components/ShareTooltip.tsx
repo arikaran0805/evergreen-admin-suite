@@ -148,7 +148,8 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
         </TooltipTrigger>
         <TooltipContent 
           side="top" 
-          className="p-0 border-0 bg-transparent shadow-none"
+          sideOffset={8}
+          className="p-0 border-0 bg-transparent shadow-none animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
