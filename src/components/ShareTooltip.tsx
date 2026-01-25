@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Share2, Linkedin } from "lucide-react";
+import { Share2, Linkedin, Copy } from "lucide-react";
 import { trackPostShare } from "@/lib/shareAnalytics";
 
 interface ShareTooltipProps {
@@ -15,6 +15,7 @@ interface ShareTooltipProps {
 const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const encodedUrl = encodeURIComponent(url);
@@ -23,6 +24,7 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   const shareLinks = {
     whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
   };
 
   // Handle click outside to close menu
@@ -60,6 +62,20 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
       });
       return;
     }
+
+    if (platform === "copy") {
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      if (postId) {
+        trackPostShare(postId, "copy_link");
+      }
+      toast({
+        title: "Link copied!",
+        description: "The link has been copied to your clipboard.",
+      });
+      setTimeout(() => setCopied(false), 1500);
+      return;
+    }
     
     const link = shareLinks[platform as keyof typeof shareLinks];
     if (link) {
@@ -92,22 +108,42 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
     </svg>
   );
 
+  const XIcon = () => (
+    <svg className="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  );
+
   return (
     <div ref={containerRef} className="relative inline-block">
-      {/* Trigger */}
-      <div onClick={handleTriggerClick}>
-        {children || (
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
-            <Share2 className="h-5 w-5 text-foreground" />
-          </Button>
-        )}
-      </div>
+      {/* Trigger with tooltip */}
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div onClick={handleTriggerClick}>
+              {children || (
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
+                  <Share2 className="h-5 w-5 text-foreground" />
+                </Button>
+              )}
+            </div>
+          </TooltipTrigger>
+          {!open && (
+            <TooltipContent 
+              side="top" 
+              className="bg-foreground text-background text-xs px-2 py-1 rounded"
+            >
+              Share
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       
-      {/* Share Menu - Icon only, chat bubble tooltip style */}
+      {/* Share Menu - Icon only, down-to-up animation */}
       {open && (
         <div 
           onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-lg">
             <TooltipProvider delayDuration={200}>
@@ -147,6 +183,24 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
                 </TooltipContent>
               </Tooltip>
 
+              {/* X (Twitter) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => handleShare("twitter", e)}
+                    className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+                  >
+                    <XIcon />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
+                >
+                  X
+                </TooltipContent>
+              </Tooltip>
+
               {/* Instagram */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -162,6 +216,27 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
                   className="bg-foreground text-background text-xs px-2 py-1 rounded"
                 >
                   Instagram
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Separator */}
+              <div className="w-px h-5 bg-border mx-0.5" />
+
+              {/* Copy Link */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => handleShare("copy", e)}
+                    className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+                  >
+                    <Copy className={`h-[18px] w-[18px] ${copied ? 'text-primary' : ''}`} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
+                >
+                  {copied ? 'Copied!' : 'Copy link'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
