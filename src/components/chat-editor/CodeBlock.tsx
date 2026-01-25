@@ -363,10 +363,10 @@ const CodeBlock = ({
         )}
       </pre>
       
-      {/* Collapsible Output section - sharp top, rounded bottom, close to code */}
+      {/* Collapsible Output section - sharp top, rounded bottom, small gap */}
       {showOutput && output !== null && (
         <div className={cn(
-          "-mt-3 rounded-t-none rounded-b-xl border border-t-0 overflow-hidden",
+          "mt-0.5 rounded-t-none rounded-b-xl border border-t-0 overflow-hidden",
           isCleanTheme 
             ? "bg-gray-100 border-gray-200" 
             : "bg-muted/50 border-border/50"

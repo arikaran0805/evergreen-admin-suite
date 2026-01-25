@@ -323,9 +323,9 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - sharp top corners, rounded bottom, close to code block */}
+        {/* Output panel - sharp top corners, rounded bottom, small gap from code */}
         {showOutput && (
-          <div className="-mt-1 rounded-t-none rounded-b-xl border border-t-0 border-border/50 bg-muted/30 overflow-hidden">
+          <div className="mt-0.5 rounded-t-none rounded-b-xl border border-t-0 border-border/50 bg-muted/30 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
