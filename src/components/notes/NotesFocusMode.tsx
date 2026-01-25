@@ -36,6 +36,8 @@ interface NotesFocusModeProps {
   courseName: string;
   onExit: () => void;
   onNavigateToLesson?: (lessonId: string) => void;
+  /** When true, component is rendered as a standalone page (not overlay) */
+  isStandalonePage?: boolean;
 }
 
 interface AvailableLesson {
@@ -49,6 +51,7 @@ export function NotesFocusMode({
   courseName,
   onExit,
   onNavigateToLesson,
+  isStandalonePage = false,
 }: NotesFocusModeProps) {
   const {
     notes,
@@ -167,7 +170,10 @@ export function NotesFocusMode({
   // Not authenticated
   if (!userId) {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex items-center justify-center">
+      <div className={cn(
+        "bg-white dark:bg-background flex items-center justify-center",
+        isStandalonePage ? "min-h-screen" : "fixed inset-0 z-50"
+      )}>
         <div className="text-center max-w-xs">
           <StickyNote className="h-10 w-10 text-muted-foreground/40 mx-auto mb-4" />
           <h3 className="text-base font-medium text-foreground mb-1.5">Sign in to view notes</h3>
@@ -186,7 +192,10 @@ export function NotesFocusMode({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
-      className="fixed inset-0 z-50 bg-white dark:bg-background"
+      className={cn(
+        "bg-white dark:bg-background",
+        isStandalonePage ? "min-h-screen" : "fixed inset-0 z-50"
+      )}
     >
       {/* Top Bar — 44px, readable contrast */}
       <header className="h-11 flex items-center px-4 border-b border-border/30">
@@ -238,7 +247,10 @@ export function NotesFocusMode({
       </header>
 
       {/* Main Layout */}
-      <div className="flex h-[calc(100vh-2.75rem)]">
+      <div className={cn(
+        "flex",
+        isStandalonePage ? "h-[calc(100vh-2.75rem)]" : "h-[calc(100vh-2.75rem)]"
+      )}>
         {/* Left Sidebar — 260px, soft tint */}
         <aside className="w-[260px] bg-[hsl(142_20%_97%)] dark:bg-muted/10 flex-shrink-0 hidden md:flex flex-col border-r border-border/20">
           {/* New Note — Functional dropdown */}

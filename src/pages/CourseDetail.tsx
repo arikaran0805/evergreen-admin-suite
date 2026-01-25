@@ -15,6 +15,7 @@ import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
@@ -27,7 +28,6 @@ import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
 import CourseNotesTab from "@/components/course/CourseNotesTab";
-import { NotesFocusMode } from "@/components/notes";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -74,6 +74,7 @@ import {
   Clock,
   Linkedin,
   Copy,
+  ExternalLink,
 } from "lucide-react";
 import CourseSidebar from "@/components/course/CourseSidebar";
 import LessonRightSidebar from "@/components/course/LessonRightSidebar";
@@ -168,6 +169,7 @@ const CourseDetail = () => {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
+  const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -256,7 +258,7 @@ const CourseDetail = () => {
     }
 
     // Priority 2: If tab is specified in URL, use it (for persistence across refresh)
-    if (tabParam && ["details", "lessons", "notes"].includes(tabParam)) {
+    if (tabParam && ["details", "lessons"].includes(tabParam)) {
       setActiveTab(tabParam);
       setDefaultTabResolved(true);
       return;
@@ -1629,11 +1631,26 @@ const CourseDetail = () => {
                           <List className="h-4 w-4" />
                           Lessons ({lessons.filter(l => l.is_published || (isPreviewMode && (isAdmin || isModerator))).length})
                         </TabsTrigger>
-                        {user && (
-                          <TabsTrigger value="notes" className="gap-2">
-                            <StickyNote className="h-4 w-4" />
-                            Notes
-                          </TabsTrigger>
+                        {user && course && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={`/courses/${course.id}/notes`}
+                                target={isMobile ? "_self" : "_blank"}
+                                rel={isMobile ? undefined : "noopener noreferrer"}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-transparent hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              >
+                                <StickyNote className="h-4 w-4" />
+                                Notes
+                                {!isMobile && <ExternalLink className="h-3 w-3 opacity-50" />}
+                              </a>
+                            </TooltipTrigger>
+                            {!isMobile && (
+                              <TooltipContent side="bottom" className="text-xs">
+                                Opens notes in a new tab
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
                         )}
                       </TabsList>
 
@@ -1872,13 +1889,7 @@ const CourseDetail = () => {
                         )}
                       </TabsContent>
 
-                      {/* Notes Tab - Now uses Focus Mode */}
-                      <TabsContent value="notes">
-                        {/* Placeholder - Focus mode renders as overlay */}
-                        <div className="py-8 text-center text-muted-foreground">
-                          <p>Loading notes...</p>
-                        </div>
-                      </TabsContent>
+                      {/* Notes now opens in a separate tab */}
                     </Tabs>
                   </>
                 )}
@@ -1980,22 +1991,7 @@ const CourseDetail = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Notes Focus Mode Overlay */}
-      {activeTab === "notes" && user && course && (
-        <NotesFocusMode
-          courseId={course.id}
-          userId={user.id}
-          courseName={course.name}
-          onExit={() => setActiveTab("details")}
-          onNavigateToLesson={(lessonId) => {
-            const post = posts.find(p => p.id === lessonId);
-            if (post) {
-              setActiveTab("lessons");
-              handleLessonClick(post);
-            }
-          }}
-        />
-      )}
+      {/* Notes now opens in a dedicated route: /courses/:courseId/notes */}
     </div>
     </CodeEditProvider>
   );

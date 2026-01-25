@@ -4,6 +4,7 @@ import { Route, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import Courses from "@/pages/Courses";
 import CourseDetail from "@/pages/CourseDetail";
+import CourseNotes from "@/pages/CourseNotes";
 import Library from "@/pages/Library";
 import Arcade from "@/pages/Arcade";
 import About from "@/pages/About";
@@ -26,6 +27,7 @@ export const publicRoutes = [
   <Route key="home" path="/" element={<Index />} />,
   <Route key="courses" path="/courses" element={<Courses />} />,
   <Route key="course-detail" path="/course/:slug" element={<CourseDetail />} />,
+  <Route key="course-notes" path="/courses/:courseId/notes" element={<CourseNotes />} />,
   <Route key="library" path="/library" element={<Library />} />,
   <Route key="arcade" path="/arcade" element={<Arcade />} />,
   <Route key="practice-lab" path="/practice-lab" element={<Navigate to="/profile?tab=practice" replace />} />,
