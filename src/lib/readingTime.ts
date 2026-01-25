@@ -4,6 +4,8 @@
  * We use 200 WPM for technical content (code, tutorials)
  */
 
+import { isTipTapJSON, parseContent, extractPlainText } from './tiptapMigration';
+
 const WORDS_PER_MINUTE = 200;
 
 /**
@@ -14,10 +16,24 @@ const stripHtml = (html: string): string => {
 };
 
 /**
- * Count words in a string
+ * Count words in a string (handles both HTML and TipTap JSON)
  */
 const countWords = (text: string): number => {
   if (!text) return 0;
+  
+  // Check if it's TipTap JSON
+  if (isTipTapJSON(text)) {
+    try {
+      const parsed = parseContent(text);
+      const plainText = extractPlainText(parsed);
+      const words = plainText.split(/\s+/).filter(word => word.length > 0);
+      return words.length;
+    } catch {
+      return 0;
+    }
+  }
+  
+  // Strip HTML and count words
   const plainText = stripHtml(text);
   const words = plainText.split(/\s+/).filter(word => word.length > 0);
   return words.length;

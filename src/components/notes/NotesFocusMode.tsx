@@ -26,6 +26,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { NotionStyleEditor } from './NotionStyleEditor';
+import { getTextPreview } from '@/lib/tiptapMigration';
 import { useCourseNotes } from '@/hooks/useCourseNotes';
 
 interface NotesFocusModeProps {
@@ -232,9 +233,7 @@ export function NotesFocusMode({
                     <div className="space-y-1">
                       {groupNotes.map((note) => {
                         const isSelected = selectedNote?.id === note.id;
-                        const preview = note.content.length > 40
-                          ? note.content.substring(0, 40) + "..."
-                          : note.content || "Empty note";
+                        const preview = getTextPreview(note.content, 40) || "Empty note";
 
                         return (
                           <button

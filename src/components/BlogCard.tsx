@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Users, ArrowRight, Star, Sparkles, TrendingUp, Flame, Layers } from "lucide-react";
+import { getTextPreview } from "@/lib/tiptapMigration";
 
 interface BlogCardProps {
   title: string;
@@ -79,10 +80,9 @@ const BlogCard = ({ title, excerpt, category, image, date, author, slug, lessonS
           )}
         </div>
 
-        <div 
-          className="text-sm text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground/80 transition-colors duration-300 h-[4.5rem] prose prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: excerpt }}
-        />
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground/80 transition-colors duration-300 h-[4.5rem]">
+          {getTextPreview(excerpt, 150) || 'Explore this course and learn new skills'}
+        </p>
 
         {/* Level and Get Started Row */}
         <div className="flex items-center justify-between mt-auto">

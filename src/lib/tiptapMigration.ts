@@ -172,12 +172,53 @@ export const extractPlainText = (content: JSONContent): string => {
   const getText = (node: JSONContent): string => {
     if (node.text) return node.text;
     if (node.content) {
-      return node.content.map(getText).join('');
+      return node.content.map(getText).join(' ');
     }
     return '';
   };
 
-  return getText(content).trim();
+  return getText(content).replace(/\s+/g, ' ').trim();
+};
+
+/**
+ * Get a safe text preview from any content format (HTML, TipTap JSON, or plain text)
+ * Useful for displaying excerpts/previews without raw JSON
+ */
+export const getTextPreview = (content: string | null | undefined, maxLength: number = 150): string => {
+  if (!content || !content.trim()) {
+    return '';
+  }
+
+  // Check if it's TipTap JSON
+  if (isTipTapJSON(content)) {
+    try {
+      const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+      const plainText = extractPlainText(parsed);
+      if (plainText.length > maxLength) {
+        return plainText.substring(0, maxLength).trim() + '...';
+      }
+      return plainText;
+    } catch {
+      return '';
+    }
+  }
+
+  // Strip HTML tags and get plain text
+  const plainText = content
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (plainText.length > maxLength) {
+    return plainText.substring(0, maxLength).trim() + '...';
+  }
+  return plainText;
 };
 
 /**
