@@ -1013,7 +1013,7 @@ const CourseDetail = () => {
       return {
         label: "Manage Course",
         icon: Edit,
-        onClick: () => navigate(`/admin/courses/edit/${course?.id}`),
+        onClick: () => window.open(`/admin/courses/${course?.id}`, '_blank'),
       };
     }
 
