@@ -1772,8 +1772,8 @@ const CourseDetail = () => {
                                               )}
                                               onClick={() => handleLessonClick(post)}
                                             >
-                                              {/* Active lesson accent bar */}
-                                              {isActive && (
+                                              {/* Accent bar - active or share open */}
+                                              {(isActive || shareOpenPostId === post.id) && (
                                                 <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r" />
                                               )}
                                               

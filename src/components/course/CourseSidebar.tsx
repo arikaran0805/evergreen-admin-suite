@@ -449,7 +449,7 @@ export const CourseSidebar = ({
                                 key={post.id}
                                 onClick={() => handleLessonClick(post)}
                                 className={cn(
-                                  "w-full rounded-md transition-all duration-200 text-left group/lesson",
+                                  "w-full rounded-md transition-all duration-200 text-left group/lesson relative",
                                   "focus:outline-none focus:ring-2 focus:ring-sidebar-ring/40",
                                   isActive
                                     ? "bg-sidebar-primary shadow-sm"
@@ -458,6 +458,10 @@ export const CourseSidebar = ({
                                       : "hover:bg-sidebar-accent"
                                 )}
                               >
+                                {/* Accent bar - share tooltip active */}
+                                {shareOpenPostId === post.id && !isActive && (
+                                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r" />
+                                )}
                                 <div className="px-3 py-2 flex items-center gap-2">
                                   {/* Lesson Status - Only show for authenticated users */}
                                   {isAuthenticated ? (
