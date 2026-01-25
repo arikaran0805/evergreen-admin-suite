@@ -323,9 +323,9 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - matching chat bubble style exactly */}
+        {/* Output panel - sharp top corners, rounded bottom, gray background */}
         {showOutput && (
-          <div className="mt-2 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+          <div className="mt-2 rounded-t-none rounded-b-xl border border-border/40 bg-muted/50 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
