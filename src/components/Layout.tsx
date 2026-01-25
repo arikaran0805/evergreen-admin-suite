@@ -2,6 +2,7 @@ import { ReactNode, useState, useCallback } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import { AnnouncementBar } from "./AnnouncementBar";
+import BackToTop from "./BackToTop";
 
 interface LayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ const Layout = ({ children, showFooter = true }: LayoutProps) => {
         {children}
       </main>
       {showFooter && <Footer />}
+      <BackToTop />
     </div>
   );
 };
