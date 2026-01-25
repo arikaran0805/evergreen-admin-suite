@@ -880,14 +880,22 @@
 
 /* ============================================
    NOTION-STYLE EDITOR - Focus Mode
+   A true writing workspace experience
    ============================================ */
+
+.notion-style-editor {
+  /* Ensure the editor takes full space */
+  width: 100%;
+}
 
 .notion-style-editor .ProseMirror {
   padding: 0;
   min-height: 400px;
-  font-size: 1.125rem;
-  line-height: 1.8;
+  font-size: 1.0625rem;
+  line-height: 1.75;
   color: hsl(var(--foreground));
+  /* Smooth caret for comfortable writing */
+  caret-color: hsl(var(--primary));
 }
 
 .notion-style-editor .ProseMirror:focus {
@@ -897,8 +905,7 @@
 /* Placeholder - only shows when editor is empty AND not focused */
 .notion-style-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: hsl(var(--muted-foreground));
-  opacity: 0.6;
+  color: hsl(var(--muted-foreground) / 0.5);
   pointer-events: none;
   position: absolute;
   height: 0;
@@ -911,41 +918,46 @@
 }
 
 .notion-style-editor .ProseMirror > * + * {
-  margin-top: 1em;
+  margin-top: 0.875em;
 }
 
+/* Headings - Comfortable reading scale */
 .notion-style-editor .ProseMirror h1 {
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   margin-top: 2rem;
   margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
 }
 
 .notion-style-editor .ProseMirror h2 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.35;
   margin-top: 1.75rem;
   margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
 
 .notion-style-editor .ProseMirror h3 {
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.4;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
 }
 
+/* Blockquote - Subtle emphasis */
 .notion-style-editor .ProseMirror blockquote {
-  border-left: 3px solid hsl(var(--primary) / 0.4);
+  border-left: 3px solid hsl(var(--border));
   padding-left: 1rem;
   margin-left: 0;
   color: hsl(var(--muted-foreground));
   font-style: italic;
 }
 
+/* Lists - Comfortable spacing */
 .notion-style-editor .ProseMirror ul,
 .notion-style-editor .ProseMirror ol {
   padding-left: 1.5rem;
@@ -955,10 +967,35 @@
   margin-bottom: 0.25rem;
 }
 
+.notion-style-editor .ProseMirror li::marker {
+  color: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* Inline code */
 .notion-style-editor .ProseMirror code {
-  background: hsl(var(--muted));
-  padding: 0.2rem 0.4rem;
+  background: hsl(var(--muted) / 0.5);
+  padding: 0.15rem 0.35rem;
   border-radius: 0.25rem;
   font-size: 0.9em;
-  font-family: ui-monospace, monospace;
+  font-family: ui-monospace, 'SF Mono', monospace;
+}
+
+/* Links */
+.notion-style-editor .ProseMirror a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: hsl(var(--primary) / 0.4);
+  transition: text-decoration-color 0.15s;
+}
+
+.notion-style-editor .ProseMirror a:hover {
+  text-decoration-color: hsl(var(--primary));
+}
+
+/* Horizontal rule */
+.notion-style-editor .ProseMirror hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  margin: 2rem 0;
 }
