@@ -201,6 +201,7 @@ const CourseDetail = () => {
   const [restartModalOpen, setRestartModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null); // Defer until we know user context
   const [defaultTabResolved, setDefaultTabResolved] = useState(false);
+  const [shareOpenPostId, setShareOpenPostId] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
   // Course stats hook
@@ -1795,7 +1796,9 @@ const CourseDetail = () => {
                                                         toast({ title: "Link copied!" });
                                                         setTimeout(() => setCopiedPostId(null), 2000);
                                                       }}
-                                                      className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                                      className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${
+                                                        shareOpenPostId === post.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                                                      }`}
                                                     >
                                                       <Link2 className="h-3.5 w-3.5" />
                                                     </button>
@@ -1812,6 +1815,11 @@ const CourseDetail = () => {
                                                   postSlug={post.slug}
                                                   side="right"
                                                   vertical
+                                                  onOpenChange={(isOpen) =>
+                                                    setShareOpenPostId((prev) =>
+                                                      isOpen ? post.id : prev === post.id ? null : prev
+                                                    )
+                                                  }
                                                 />
                                                 
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
