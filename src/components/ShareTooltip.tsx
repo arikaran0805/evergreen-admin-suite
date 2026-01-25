@@ -157,100 +157,53 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
             onClick={handleMenuClick}
             className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl"
           >
-            <TooltipProvider delayDuration={200}>
-              {/* WhatsApp */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => handleShare("whatsapp", e)}
-                    className="flex items-center justify-center h-8 w-8 rounded-md text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-150 hover:scale-105"
-                  >
-                    <WhatsAppIcon />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="top" 
-                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
-                >
-                  WhatsApp
-                </TooltipContent>
-              </Tooltip>
+            {/* WhatsApp */}
+            <button
+              onClick={(e) => handleShare("whatsapp", e)}
+              className="flex items-center justify-center h-8 w-8 rounded-md text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-150 hover:scale-105"
+              title="WhatsApp"
+            >
+              <WhatsAppIcon />
+            </button>
 
-              {/* LinkedIn */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => handleShare("linkedin", e)}
-                    className="flex items-center justify-center h-8 w-8 rounded-md text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all duration-150 hover:scale-105"
-                  >
-                    <Linkedin className="h-[18px] w-[18px]" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="top" 
-                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
-                >
-                  LinkedIn
-                </TooltipContent>
-              </Tooltip>
+            {/* LinkedIn */}
+            <button
+              onClick={(e) => handleShare("linkedin", e)}
+              className="flex items-center justify-center h-8 w-8 rounded-md text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all duration-150 hover:scale-105"
+              title="LinkedIn"
+            >
+              <Linkedin className="h-[18px] w-[18px]" />
+            </button>
 
-              {/* X (Twitter) */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => handleShare("twitter", e)}
-                    className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
-                  >
-                    <XIcon />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="top" 
-                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
-                >
-                  X
-                </TooltipContent>
-              </Tooltip>
+            {/* X (Twitter) */}
+            <button
+              onClick={(e) => handleShare("twitter", e)}
+              className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+              title="X"
+            >
+              <XIcon />
+            </button>
 
-              {/* Instagram */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => handleShare("instagram", e)}
-                    className="flex items-center justify-center h-8 w-8 rounded-md text-[#E4405F] hover:bg-[#E4405F]/10 transition-all duration-150 hover:scale-105"
-                  >
-                    <InstagramIcon />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="top" 
-                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
-                >
-                  Instagram
-                </TooltipContent>
-              </Tooltip>
+            {/* Instagram */}
+            <button
+              onClick={(e) => handleShare("instagram", e)}
+              className="flex items-center justify-center h-8 w-8 rounded-md text-[#E4405F] hover:bg-[#E4405F]/10 transition-all duration-150 hover:scale-105"
+              title="Instagram"
+            >
+              <InstagramIcon />
+            </button>
 
-              {/* Separator */}
-              <div className="w-px h-5 bg-border mx-0.5" />
+            {/* Separator */}
+            <div className="w-px h-5 bg-border mx-0.5" />
 
-              {/* Copy Link */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => handleShare("copy", e)}
-                    className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
-                  >
-                    <Copy className={`h-[18px] w-[18px] ${copied ? 'text-primary' : ''}`} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="top" 
-                  className="bg-foreground text-background text-xs px-2 py-1 rounded"
-                >
-                  {copied ? 'Copied!' : 'Copy link'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {/* Copy Link */}
+            <button
+              onClick={(e) => handleShare("copy", e)}
+              className="flex items-center justify-center h-8 w-8 rounded-md text-foreground hover:bg-muted transition-all duration-150 hover:scale-105"
+              title={copied ? 'Copied!' : 'Copy link'}
+            >
+              <Copy className={`h-[18px] w-[18px] ${copied ? 'text-primary' : ''}`} />
+            </button>
           </div>
         </TooltipContent>
       </Tooltip>
