@@ -12,9 +12,19 @@ interface LessonShareMenuProps {
   alwaysVisible?: boolean;
   side?: "top" | "right" | "bottom" | "left";
   vertical?: boolean;
+  onMenuOpenChange?: (open: boolean) => void;
 }
 
-const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false, side = "top", vertical = false }: LessonShareMenuProps) => {
+const LessonShareMenu = ({
+  postId,
+  postTitle,
+  postSlug,
+  className,
+  alwaysVisible = false,
+  side = "top",
+  vertical = false,
+  onMenuOpenChange,
+}: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,6 +34,11 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
   const shareUrl = `${window.location.origin}/courses/${postSlug}`;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(postTitle);
+
+  const setMenuOpen = (next: boolean) => {
+    setOpen(next);
+    onMenuOpenChange?.(next);
+  };
 
   const scheduleOpen = () => {
     if (closeTimeoutRef.current) {
@@ -38,7 +53,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
 
     // Small delay so hover-revealed buttons don't flicker
     openTimeoutRef.current = setTimeout(() => {
-      setOpen(true);
+      setMenuOpen(true);
     }, 120);
   };
 
@@ -49,8 +64,8 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
     }
 
     closeTimeoutRef.current = setTimeout(() => {
-      setOpen(false);
-    }, 260);
+      setMenuOpen(false);
+    }, 650);
   };
 
   const keepOpenNow = () => {
@@ -62,7 +77,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
       clearTimeout(openTimeoutRef.current);
       openTimeoutRef.current = null;
     }
-    setOpen(true);
+    setMenuOpen(true);
   };
 
   // Cleanup timeout on unmount
@@ -137,7 +152,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setMenuOpen}>
       <PopoverTrigger asChild>
         <div
           ref={containerRef}

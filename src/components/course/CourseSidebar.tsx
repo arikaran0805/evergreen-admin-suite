@@ -92,6 +92,7 @@ export const CourseSidebar = ({
 }: CourseSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [openSharePostId, setOpenSharePostId] = useState<string | null>(null);
 
   // Get the currently expanded lesson ID (single-open accordion)
   const expandedLessonId = useMemo(() => {
@@ -441,6 +442,7 @@ export const CourseSidebar = ({
                           lessonPosts.map((post) => {
                             const isActive = selectedPost?.id === post.id;
                             const isCompleted = isLessonCompleted(post.id);
+                             const isShareOpen = openSharePostId === post.id;
 
                             return (
                               <button
@@ -488,7 +490,7 @@ export const CourseSidebar = ({
                                   <div 
                                     className={cn(
                                       "flex items-center gap-1.5 opacity-0 group-hover/lesson:opacity-100 transition-opacity duration-200",
-                                      isActive && "opacity-100"
+                                       (isActive || isShareOpen) && "opacity-100"
                                     )}
                                   >
                                     {/* Copy Link */}
@@ -523,6 +525,12 @@ export const CourseSidebar = ({
                                       alwaysVisible
                                       side="right"
                                       vertical
+                                      onMenuOpenChange={(isOpen) =>
+                                        setOpenSharePostId((prev) => {
+                                          if (isOpen) return post.id;
+                                          return prev === post.id ? null : prev;
+                                        })
+                                      }
                                     />
                                   </div>
                                 </div>
