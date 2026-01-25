@@ -86,14 +86,20 @@ export function LessonNotesCard({
     },
   });
 
-  // Sync content when it changes externally
+  // Sync content when it changes externally - MUST handle empty content
   useEffect(() => {
-    if (!editor || !content) return;
+    if (!editor) return;
     
     const currentContent = serializeContent(editor.getJSON());
+    // Handle both empty and non-empty content to prevent stale data
     if (currentContent !== content) {
-      const parsed = parseContent(content);
-      editor.commands.setContent(parsed);
+      if (content) {
+        const parsed = parseContent(content);
+        editor.commands.setContent(parsed);
+      } else {
+        // CRITICAL: Clear editor when content is empty
+        editor.commands.clearContent();
+      }
     }
   }, [content, editor]);
 
