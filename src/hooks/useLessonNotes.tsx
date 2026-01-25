@@ -134,7 +134,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
 
           if (error) throw error;
         } else if (debouncedContent.trim()) {
-          // Create new note
+          // Create new lesson-contextual note
           const { data, error } = await supabase
             .from("lesson_notes")
             .insert({
@@ -142,6 +142,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
               lesson_id: lessonId,
               course_id: courseId,
               content: debouncedContent,
+              entity_type: "lesson", // Required: lesson-contextual note
             })
             .select("id")
             .single();
