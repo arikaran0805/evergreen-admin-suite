@@ -1,0 +1,340 @@
+import { useState, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ShareTooltip from "@/components/ShareTooltip";
+import { 
+  CheckCircle, 
+  Circle, 
+  ChevronLeft, 
+  ChevronRight,
+  MessageSquare,
+  Share2,
+  ThumbsUp,
+  StickyNote,
+  Tag,
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface LessonFooterProps {
+  // Completion state
+  isCompleted: boolean;
+  isMarkingComplete: boolean;
+  onMarkComplete: () => Promise<void>;
+  canComplete: boolean; // User is logged in
+  
+  // Progress info
+  currentLessonIndex: number;
+  totalLessons: number;
+  courseProgressPercentage: number;
+  
+  // Tags
+  tags: Array<{ id: string; name: string; slug: string }>;
+  
+  // Action handlers
+  onCommentClick: () => void;
+  onNotesClick?: () => void;
+  onLikeClick: () => void;
+  likeCount: number;
+  hasLiked: boolean;
+  isLiking: boolean;
+  commentCount: number;
+  
+  // Share props
+  shareTitle: string;
+  shareUrl: string;
+  postId?: string;
+  
+  // Navigation
+  previousLesson?: { title: string } | null;
+  nextLesson?: { title: string } | null;
+  onPrevious: () => void;
+  onNext: () => void;
+}
+
+const LessonFooter = ({
+  isCompleted,
+  isMarkingComplete,
+  onMarkComplete,
+  canComplete,
+  currentLessonIndex,
+  totalLessons,
+  courseProgressPercentage,
+  tags,
+  onCommentClick,
+  onNotesClick,
+  onLikeClick,
+  likeCount,
+  hasLiked,
+  isLiking,
+  commentCount,
+  shareTitle,
+  shareUrl,
+  postId,
+  previousLesson,
+  nextLesson,
+  onPrevious,
+  onNext,
+}: LessonFooterProps) => {
+  const [justCompleted, setJustCompleted] = useState(false);
+
+  const handleMarkComplete = useCallback(async () => {
+    if (isCompleted) {
+      // Allow unmarking
+      await onMarkComplete();
+      setJustCompleted(false);
+    } else {
+      await onMarkComplete();
+      setJustCompleted(true);
+      // Reset animation state after a short delay
+      setTimeout(() => setJustCompleted(false), 2000);
+    }
+  }, [isCompleted, onMarkComplete]);
+
+  // Progress text for completed state
+  const progressText = useMemo(() => {
+    return `Lesson ${currentLessonIndex + 1} of ${totalLessons} completed • ${courseProgressPercentage}% of course done`;
+  }, [currentLessonIndex, totalLessons, courseProgressPercentage]);
+
+  return (
+    <div className="mt-8 space-y-0">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* 1. COMPLETION CTA OR STATUS (TOP) */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {canComplete && (
+        <div className="flex flex-col items-center justify-center py-6">
+          {!isCompleted ? (
+            /* STATE A: Before Completion */
+            <Button
+              size="lg"
+              className={cn(
+                "gap-2 px-8 py-6 text-lg font-semibold",
+                "bg-primary hover:bg-primary/90 text-primary-foreground",
+                "transition-all duration-200"
+              )}
+              disabled={isMarkingComplete}
+              onClick={handleMarkComplete}
+            >
+              {isMarkingComplete ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Marking...
+                </>
+              ) : (
+                <>
+                  <Circle className="h-5 w-5" />
+                  Mark Lesson as Complete
+                </>
+              )}
+            </Button>
+          ) : (
+            /* STATE B: After Completion */
+            <div className="flex flex-col items-center gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className={cn(
+                  "gap-2 px-8 py-6 text-lg font-semibold",
+                  "border-primary text-primary hover:bg-primary/10",
+                  "transition-all duration-200",
+                  justCompleted && "animate-scale-in"
+                )}
+                disabled={isMarkingComplete}
+                onClick={handleMarkComplete}
+              >
+                {isMarkingComplete ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className={cn(
+                      "h-5 w-5",
+                      justCompleted && "animate-[pulse_0.5s_ease-in-out]"
+                    )} />
+                    Lesson Completed
+                  </>
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                You're making great progress
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                {progressText}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* 2. SEPARATOR LINE */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <Separator className="my-4" />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* 3. METADATA ROW (Tags + Icons) */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="flex items-center justify-between gap-4 py-4">
+        {/* Tags on left */}
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          {tags.length > 0 ? (
+            <>
+              <div className="flex items-center gap-1.5 text-muted-foreground flex-shrink-0">
+                <Tag className="h-4 w-4" />
+                <span className="text-base font-medium">Tags:</span>
+              </div>
+              {tags.map((tag) => (
+                <Link 
+                  key={tag.id} 
+                  to={`/tag/${tag.slug}`}
+                  className="text-sm text-primary bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors whitespace-nowrap"
+                >
+                  {tag.name}
+                </Link>
+              ))}
+            </>
+          ) : (
+            <div className="text-sm text-muted-foreground">No tags</div>
+          )}
+        </div>
+        
+        {/* Action icons on right */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <TooltipProvider>
+            {/* Comment */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={onCommentClick}
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{commentCount} comments</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Share */}
+            <ShareTooltip
+              title={shareTitle}
+              url={shareUrl}
+              postId={postId}
+            >
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Share2 className="h-5 w-5" />
+              </Button>
+            </ShareTooltip>
+
+            {/* Like - DISABLED before completion, ENABLED after */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn(
+                    "h-8 w-8",
+                    !isCompleted && "opacity-40 cursor-not-allowed"
+                  )}
+                  onClick={isCompleted ? onLikeClick : undefined}
+                  disabled={isLiking || !isCompleted}
+                >
+                  <ThumbsUp className={cn(
+                    "h-5 w-5",
+                    hasLiked && isCompleted && "fill-current text-primary"
+                  )} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {!isCompleted ? (
+                  <p>Complete the lesson to like</p>
+                ) : (
+                  <p>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Notes */}
+            {onNotesClick && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={onNotesClick}
+                  >
+                    <StickyNote className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Open Notes</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </TooltipProvider>
+        </div>
+      </div>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* 4. NAVIGATION ROW (Previous / Next) */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="flex items-center justify-between gap-4 pt-4">
+        {/* Previous Button */}
+        {previousLesson ? (
+          <Button 
+            variant="outline" 
+            size="lg"
+            className="gap-2 flex-1 max-w-xs"
+            onClick={onPrevious}
+          >
+            <ChevronLeft className="h-5 w-5 flex-shrink-0" />
+            <div className="text-left min-w-0">
+              <div className="text-xs text-muted-foreground">Previous</div>
+              <div className="font-medium truncate">{previousLesson.title}</div>
+            </div>
+          </Button>
+        ) : (
+          <div className="flex-1 max-w-xs" />
+        )}
+
+        {/* Next Button - Primary CTA after completion */}
+        {nextLesson ? (
+          <Button 
+            size="lg"
+            variant={isCompleted ? "default" : "outline"}
+            className={cn(
+              "gap-2 flex-1 max-w-xs",
+              isCompleted 
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground" 
+                : "border-border"
+            )}
+            onClick={onNext}
+          >
+            <div className="text-right min-w-0">
+              <div className={cn(
+                "text-xs",
+                isCompleted ? "opacity-80" : "text-muted-foreground"
+              )}>
+                {isCompleted ? "Continue →" : "Next"}
+              </div>
+              <div className="font-medium truncate">{nextLesson.title}</div>
+            </div>
+            <ChevronRight className="h-5 w-5 flex-shrink-0" />
+          </Button>
+        ) : (
+          <div className="flex-1 max-w-xs" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LessonFooter;
