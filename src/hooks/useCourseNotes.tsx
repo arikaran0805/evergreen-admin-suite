@@ -31,19 +31,36 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const debouncedContent = useDebounce(editContent, 1000);
   const isRemoteUpdateRef = useRef(false);
   const lastSavedContentRef = useRef<string>("");
+  const selectedNoteIdRef = useRef<string | null>(null);
+  const isLoadingRef = useRef(false);
+
+  // Keep ref in sync with state to avoid stale closure issues
+  useEffect(() => {
+    selectedNoteIdRef.current = selectedNoteId;
+  }, [selectedNoteId]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   // Derive selectedNote from notes array to avoid stale state
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null;
 
   // Handle remote updates from other tabs (Quick Notes)
   const handleRemoteUpdate = useCallback((remoteContent: string, updatedAt: string) => {
+    // CRITICAL: Ignore remote updates while loading to prevent race conditions
+    if (isLoadingRef.current) return;
+    
+    const currentNoteId = selectedNoteIdRef.current;
+    if (!currentNoteId) return;
+    
     isRemoteUpdateRef.current = true;
     setEditContent(remoteContent);
     lastSavedContentRef.current = remoteContent;
     
     setNotes(prev => 
       prev.map(n => 
-        n.id === selectedNoteId 
+        n.id === currentNoteId 
           ? { ...n, content: remoteContent, updated_at: updatedAt } 
           : n
       )
@@ -54,11 +71,13 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     setTimeout(() => {
       isRemoteUpdateRef.current = false;
     }, 100);
-  }, [selectedNoteId]);
+  }, []);
 
   // Handle note created in other tab
   const handleNoteCreated = useCallback(async (newNoteId: string, lessonId: string) => {
     if (!courseId || !userId) return;
+    // Ignore if loading to prevent race conditions
+    if (isLoadingRef.current) return;
     
     const { data, error } = await supabase
       .from("lesson_notes")
@@ -99,13 +118,15 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
   // Handle note deleted in other tab
   const handleNoteDeleted = useCallback((deletedNoteId: string) => {
+    const currentNoteId = selectedNoteIdRef.current;
+    
     setNotes(prev => prev.filter(n => n.id !== deletedNoteId));
     
-    if (selectedNoteId === deletedNoteId) {
+    if (currentNoteId === deletedNoteId) {
       setSelectedNoteId(null);
       setEditContent("");
     }
-  }, [selectedNoteId]);
+  }, []);
 
   // Set up cross-tab sync bridge
   const { broadcastUpdate, broadcastCreated, broadcastDeleted } = useNotesSyncBridge({
