@@ -44,6 +44,14 @@ interface NotesFocusModeProps {
   onNavigateToLesson?: (lessonId: string) => void;
   /** When true, component is rendered as a standalone page (not overlay) */
   isStandalonePage?: boolean;
+  /** Context to switch to (from cross-tab communication) */
+  switchToContext?: {
+    noteId?: string;
+    lessonId?: string;
+    entityType?: string;
+  } | null;
+  /** Callback when context switch is complete */
+  onContextSwitched?: () => void;
 }
 
 export function NotesFocusMode({
@@ -53,6 +61,8 @@ export function NotesFocusMode({
   onExit,
   onNavigateToLesson,
   isStandalonePage = false,
+  switchToContext,
+  onContextSwitched,
 }: NotesFocusModeProps) {
   const {
     notes,
@@ -62,6 +72,8 @@ export function NotesFocusMode({
     isSaving,
     isSyncing,
     selectNote,
+    selectNoteById,
+    selectNoteByLessonId,
     setEditContent,
     createUserNote,
     createLessonNote,
@@ -75,6 +87,34 @@ export function NotesFocusMode({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const savingTimeoutRef = useRef<NodeJS.Timeout>();
   const editorRef = useRef<any>(null);
+
+  // Handle context switch requests from other tabs
+  useEffect(() => {
+    if (!switchToContext || isLoading) return;
+    
+    let switched = false;
+    
+    // Try to switch by noteId first
+    if (switchToContext.noteId) {
+      switched = selectNoteById(switchToContext.noteId);
+    }
+    // Fallback to lessonId if no noteId or noteId not found
+    else if (switchToContext.lessonId) {
+      switched = selectNoteByLessonId(switchToContext.lessonId);
+    }
+    
+    // Notify that we've processed the switch request
+    if (onContextSwitched) {
+      onContextSwitched();
+    }
+    
+    // Focus editor after switching
+    if (switched) {
+      setTimeout(() => {
+        editorRef.current?.focus?.();
+      }, 100);
+    }
+  }, [switchToContext, isLoading, selectNoteById, selectNoteByLessonId, onContextSwitched]);
 
   // Show "Saving…" only briefly during active writes
   useEffect(() => {

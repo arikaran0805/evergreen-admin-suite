@@ -435,6 +435,30 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     }
   }, [courseId, notes]);
 
+  /**
+   * Select a note by ID (used for context switching from other tabs)
+   */
+  const selectNoteById = useCallback((noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+      selectNote(note);
+      return true;
+    }
+    return false;
+  }, [notes, selectNote]);
+
+  /**
+   * Select a note by lessonId (used for context switching from Quick Notes)
+   */
+  const selectNoteByLessonId = useCallback((lessonId: string) => {
+    const note = notes.find(n => n.lesson_id === lessonId && n.entity_type === 'lesson');
+    if (note) {
+      selectNote(note);
+      return true;
+    }
+    return false;
+  }, [notes, selectNote]);
+
   return {
     notes,
     selectedNote,
@@ -443,6 +467,8 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     isSaving,
     isSyncing,
     selectNote,
+    selectNoteById,
+    selectNoteByLessonId,
     setEditContent,
     createUserNote,
     createLessonNote,
