@@ -16,31 +16,34 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const shareUrl = `${window.location.origin}/courses/${postSlug}`;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(postTitle);
 
-  // Handle click outside to close menu
-  useEffect(() => {
-    if (!open) return;
+  const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setOpen(true);
+  };
 
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+  const handleMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
       }
     };
-
-    // Delay listener to avoid immediate close from the same click
-    const timeoutId = setTimeout(() => {
-      document.addEventListener("click", handleClickOutside);
-    }, 0);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [open]);
+  }, []);
 
   const handleShare = (platform: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -88,12 +91,6 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
     }
   };
 
-  const handleTriggerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setOpen(!open);
-  };
-
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -117,13 +114,17 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
   );
 
   return (
-    <div ref={containerRef} className={`relative inline-block ${className || ''}`}>
+    <div 
+      ref={containerRef} 
+      className={`relative inline-block ${className || ''}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Trigger with tooltip */}
       <TooltipProvider delayDuration={300}>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={handleTriggerClick}
               className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <Share2 className="h-3.5 w-3.5" />
