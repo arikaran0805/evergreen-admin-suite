@@ -15,7 +15,8 @@ export const CODE_THEMES = [
 export type CodeTheme = typeof CODE_THEMES[number]["value"];
 
 export const useCodeTheme = () => {
-  const [theme, setTheme] = useState<CodeTheme>("tomorrow");
+  // Default to "clean" theme (gold/blue syntax highlighting)
+  const [theme, setTheme] = useState<CodeTheme>("clean");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
