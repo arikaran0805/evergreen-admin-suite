@@ -131,7 +131,7 @@ const LessonFooter = ({
             <div className="flex flex-col items-center gap-2">
               <div
                 className={cn(
-                  "flex items-center gap-2 px-8 py-6 text-lg font-semibold rounded-md",
+                  "flex items-center gap-2 px-6 py-3 text-base font-semibold rounded-md",
                   "border border-primary text-primary",
                   "transition-all duration-200",
                   justCompleted && "animate-scale-in"
