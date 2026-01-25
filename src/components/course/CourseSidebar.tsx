@@ -526,6 +526,7 @@ export const CourseSidebar = ({
                                       postId={post.id}
                                       postTitle={post.title}
                                       postSlug={post.slug}
+                                      sectionName={lesson.title}
                                       alwaysVisible
                                       side="right"
                                       vertical

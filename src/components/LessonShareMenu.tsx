@@ -8,6 +8,7 @@ interface LessonShareMenuProps {
   postId: string;
   postTitle: string;
   postSlug: string;
+  sectionName?: string;
   className?: string;
   alwaysVisible?: boolean;
   side?: "top" | "right" | "bottom" | "left";
@@ -15,32 +16,69 @@ interface LessonShareMenuProps {
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false, side = "top", vertical = false, onOpenChange }: LessonShareMenuProps) => {
+const LessonShareMenu = ({ 
+  postId, 
+  postTitle, 
+  postSlug, 
+  sectionName,
+  className, 
+  alwaysVisible = false, 
+  side = "top", 
+  vertical = false, 
+  onOpenChange 
+}: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const shareUrl = `${window.location.origin}/courses/${postSlug}`;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(postTitle);
 
-  const handleMouseEnter = () => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
+  // Build context label for the trigger tooltip
+  const contextLabel = sectionName 
+    ? `Share: ${sectionName} → ${postTitle}`
+    : `Share: ${postTitle}`;
 
+  const clearAllTimeouts = () => {
     if (openTimeoutRef.current) {
       clearTimeout(openTimeoutRef.current);
       openTimeoutRef.current = null;
     }
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+      autoHideTimeoutRef.current = null;
+    }
+  };
+
+  const startAutoHideTimer = () => {
+    // Clear existing auto-hide timer
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+    }
+    // Auto-hide after 1.5s of no hover
+    autoHideTimeoutRef.current = setTimeout(() => {
+      setOpen(false);
+      onOpenChange?.(false);
+    }, 1500);
+  };
+
+  const handleMouseEnter = () => {
+    clearAllTimeouts();
 
     // Small delay so the trigger tooltip can show briefly
     openTimeoutRef.current = setTimeout(() => {
       setOpen(true);
       onOpenChange?.(true);
+      // Start auto-hide timer when popover opens
+      startAutoHideTimer();
     }, 250);
   };
 
@@ -56,15 +94,32 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
     }, 150);
   };
 
+  const handlePopoverMouseEnter = () => {
+    // Cancel close and auto-hide when entering popover
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+      autoHideTimeoutRef.current = null;
+    }
+  };
+
+  const handlePopoverMouseLeave = () => {
+    // Start auto-hide timer when leaving popover
+    startAutoHideTimer();
+    
+    closeTimeoutRef.current = setTimeout(() => {
+      setOpen(false);
+      onOpenChange?.(false);
+    }, 150);
+  };
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (openTimeoutRef.current) {
-        clearTimeout(openTimeoutRef.current);
-      }
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
+      clearAllTimeouts();
     };
   }, []);
 
@@ -130,6 +185,9 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     onOpenChange?.(newOpen);
+    if (newOpen) {
+      startAutoHideTimer();
+    }
   };
 
   return (
@@ -141,6 +199,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
             className={`relative inline-block ${className || ''}`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
+            title={contextLabel}
           >
             <button
               className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible || open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
@@ -154,12 +213,12 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible
           sideOffset={8}
           avoidCollisions={false}
           className={`p-0 border-0 bg-transparent shadow-none animate-in fade-in-0 zoom-in-95 duration-150 ${side === "right" ? "slide-in-from-left-2" : "slide-in-from-bottom-2"}`}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          onMouseEnter={handlePopoverMouseEnter}
+          onMouseLeave={handlePopoverMouseLeave}
         >
           <div 
             onClick={handleMenuClick}
-            className={`${vertical ? "flex flex-col" : "flex"} items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl`}
+            className={`${vertical ? "flex flex-col" : "flex"} items-center gap-1 rounded-lg border border-border/50 bg-popover/90 backdrop-blur-sm px-2 py-1.5 shadow-md`}
           >
             {/* WhatsApp */}
             <button
