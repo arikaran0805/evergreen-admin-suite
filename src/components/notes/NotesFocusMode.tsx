@@ -1,11 +1,11 @@
 /**
- * NotesFocusMode - Full-screen Notion-like notes experience
+ * NotesFocusMode - A true Notion-style writing workspace
  * 
- * A true writing workspace that makes users forget they're in an LMS.
- * Designed to feel indistinguishable from Notion.
+ * Users should forget they're inside an LMS.
+ * This is a personal thinking space, not a course feature.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   ArrowLeft, 
   Check, 
-  Loader2, 
   StickyNote,
   ChevronRight,
-  Plus,
 } from 'lucide-react';
 import { NotionStyleEditor } from './NotionStyleEditor';
 import { getTextPreview } from '@/lib/tiptapMigration';
@@ -45,10 +43,26 @@ export function NotesFocusMode({
     isSaving,
     selectNote,
     setEditContent,
-    refreshNotes,
   } = useCourseNotes({ courseId, userId });
 
-  // Group notes by date for sidebar
+  // Track if user is actively typing (for save indicator)
+  const [showSaving, setShowSaving] = useState(false);
+  const savingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Show "Saving…" only briefly during active writes
+  useEffect(() => {
+    if (isSaving) {
+      setShowSaving(true);
+      if (savingTimeoutRef.current) clearTimeout(savingTimeoutRef.current);
+    } else {
+      savingTimeoutRef.current = setTimeout(() => setShowSaving(false), 800);
+    }
+    return () => {
+      if (savingTimeoutRef.current) clearTimeout(savingTimeoutRef.current);
+    };
+  }, [isSaving]);
+
+  // Group notes by date
   const groupedNotes = useMemo(() => {
     const groups: { [key: string]: typeof notes } = {};
     
@@ -64,15 +78,10 @@ export function NotesFocusMode({
       } else if (date.toDateString() === yesterday.toDateString()) {
         groupKey = "Yesterday";
       } else {
-        groupKey = date.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-        });
+        groupKey = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
       }
       
-      if (!groups[groupKey]) {
-        groups[groupKey] = [];
-      }
+      if (!groups[groupKey]) groups[groupKey] = [];
       groups[groupKey].push(note);
     });
     
@@ -87,28 +96,26 @@ export function NotesFocusMode({
     });
   };
 
-  // Handle escape key to exit
+  // Escape to exit
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onExit();
-      }
+      if (e.key === 'Escape') onExit();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onExit]);
 
-  // Not authenticated state
+  // Not authenticated
   if (!userId) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
-        <div className="text-center">
-          <StickyNote className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Sign in to view your notes</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Create notes while learning and access them here anytime.
+      <div className="fixed inset-0 z-50 bg-white flex items-center justify-center">
+        <div className="text-center max-w-xs">
+          <StickyNote className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="text-base font-medium mb-1.5">Sign in to view notes</h3>
+          <p className="text-sm text-muted-foreground/60 mb-5">
+            Your notes are private and saved automatically.
           </p>
-          <Button onClick={onExit}>Go Back</Button>
+          <Button variant="outline" size="sm" onClick={onExit}>Go back</Button>
         </div>
       </div>
     );
@@ -119,126 +126,106 @@ export function NotesFocusMode({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-50 bg-background"
+      transition={{ duration: 0.12 }}
+      className="fixed inset-0 z-50 bg-white dark:bg-background"
     >
-      {/* Ultra-Minimal Top Bar - 48px height */}
-      <header className="h-12 border-b border-border/30 bg-background flex items-center px-4 gap-3">
-        {/* Left: Back button */}
+      {/* Top Bar — 44px, ultra-minimal */}
+      <header className="h-11 flex items-center px-4 border-b border-border/20">
+        {/* Back */}
         <button
           onClick={onExit}
-          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm"
+          className="flex items-center gap-1.5 text-muted-foreground/70 hover:text-foreground transition-colors text-[13px]"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Back to course</span>
         </button>
         
-        {/* Center-left: Title */}
-        <div className="flex-1 flex items-center gap-2 min-w-0">
-          <span className="text-border/60">|</span>
-          <span className="text-sm font-medium text-foreground truncate">
-            Notes
-          </span>
-          <span className="text-muted-foreground/50 text-sm hidden md:inline">—</span>
-          <span className="text-muted-foreground/70 text-sm truncate hidden md:inline">{courseName}</span>
+        {/* Title */}
+        <div className="flex-1 flex items-center gap-2.5 ml-4 min-w-0">
+          <span className="text-[13px] font-medium text-foreground/90">Notes</span>
+          <span className="text-muted-foreground/30 hidden md:inline">—</span>
+          <span className="text-[13px] text-muted-foreground/50 truncate hidden md:inline">{courseName}</span>
         </div>
 
-        {/* Right: Autosave status */}
-        <div className="flex-shrink-0">
-          <AnimatePresence mode="wait">
-            {isSaving ? (
-              <motion.div
-                key="saving"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground/70"
-              >
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Saving…</span>
-              </motion.div>
-            ) : selectedNote ? (
-              <motion.div
-                key="saved"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground/60"
-              >
-                <Check className="h-3 w-3 text-primary/70" />
-                <span>Saved</span>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+        {/* Save status — muted, no animation noise */}
+        <div className="flex-shrink-0 w-16 text-right">
+          {selectedNote && (
+            <span className={cn(
+              "text-[11px] transition-opacity duration-200",
+              showSaving ? "text-muted-foreground/50" : "text-muted-foreground/40"
+            )}>
+              {showSaving ? "Saving…" : (
+                <span className="flex items-center justify-end gap-1">
+                  <Check className="h-3 w-3" />
+                  Saved
+                </span>
+              )}
+            </span>
+          )}
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex h-[calc(100vh-3rem)]">
-        {/* Left Sidebar - Notes List */}
-        <aside className="w-[268px] border-r border-border/30 bg-muted/20 flex-shrink-0 hidden md:flex flex-col">
-          {/* New Note Button */}
-          <div className="p-3 border-b border-border/20">
+      {/* Main Layout */}
+      <div className="flex h-[calc(100vh-2.75rem)]">
+        {/* Left Sidebar — 260px, soft tint */}
+        <aside className="w-[260px] bg-[hsl(142_20%_97%)] dark:bg-muted/10 flex-shrink-0 hidden md:flex flex-col">
+          {/* New Note */}
+          <div className="px-3 pt-3 pb-2">
             <button
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full px-2 py-1.5 rounded-md hover:bg-muted/50"
-              onClick={() => {
-                // TODO: Navigate to a lesson to create a new note
-              }}
+              className="text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors"
+              onClick={() => {/* Navigate to lesson to create note */}}
             >
-              <Plus className="h-4 w-4" />
-              <span>New note</span>
+              + New note
             </button>
           </div>
           
-          <ScrollArea className="flex-1">
-            <div className="p-2">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" />
-                </div>
-              ) : notes.length === 0 ? (
-                <div className="text-center py-8 px-4">
-                  <p className="text-sm text-muted-foreground/60">
-                    No notes yet
-                  </p>
-                  <p className="text-xs text-muted-foreground/40 mt-1">
-                    Go to a lesson to start taking notes
-                  </p>
-                </div>
-              ) : (
-                Object.entries(groupedNotes).map(([dateGroup, groupNotes]) => (
-                  <div key={dateGroup} className="mb-4">
-                    {/* Date Group Label */}
+          <ScrollArea className="flex-1 px-2">
+            {isLoading ? (
+              <div className="py-12 text-center">
+                <span className="text-xs text-muted-foreground/40">Loading…</span>
+              </div>
+            ) : notes.length === 0 ? (
+              <div className="py-12 px-3 text-center">
+                <p className="text-[13px] text-muted-foreground/50">No notes yet</p>
+                <p className="text-[11px] text-muted-foreground/35 mt-1">
+                  Go to a lesson to start
+                </p>
+              </div>
+            ) : (
+              <div className="pb-4">
+                {Object.entries(groupedNotes).map(([dateGroup, groupNotes]) => (
+                  <div key={dateGroup} className="mt-4 first:mt-0">
+                    {/* Section Label */}
                     <div className="px-2 mb-1.5">
-                      <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                      <span className="text-[10px] font-medium text-muted-foreground/40 uppercase tracking-widest">
                         {dateGroup}
                       </span>
                     </div>
                     
-                    {/* Notes in Group */}
+                    {/* Notes */}
                     <div className="space-y-0.5">
                       {groupNotes.map((note) => {
                         const isSelected = selectedNote?.id === note.id;
-                        const preview = getTextPreview(note.content, 50) || "Empty note";
+                        const preview = getTextPreview(note.content, 45) || "Empty note";
 
                         return (
                           <button
                             key={note.id}
                             onClick={() => selectNote(note)}
                             className={cn(
-                              "w-full text-left px-2.5 py-2 rounded-lg transition-all group",
+                              "w-full text-left px-2.5 py-2 rounded-md transition-colors",
                               isSelected
-                                ? "bg-primary/10"
-                                : "hover:bg-muted/60"
+                                ? "bg-primary/8"
+                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
                             )}
                           >
                             <div className={cn(
-                              "text-sm font-medium truncate transition-colors",
-                              isSelected ? "text-foreground" : "text-foreground/80"
+                              "text-[13px] font-medium truncate",
+                              isSelected ? "text-foreground" : "text-foreground/75"
                             )}>
                               {note.lesson_title}
                             </div>
-                            <p className="text-xs text-muted-foreground/60 line-clamp-1 mt-0.5">
+                            <p className="text-[11px] text-muted-foreground/45 line-clamp-1 mt-0.5">
                               {preview}
                             </p>
                           </button>
@@ -246,53 +233,53 @@ export function NotesFocusMode({
                       })}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </ScrollArea>
         </aside>
 
-        {/* Editor Canvas - Main Area */}
-        <main className="flex-1 overflow-auto bg-background">
+        {/* Writing Canvas — The heart of the experience */}
+        <main className="flex-1 overflow-auto bg-white dark:bg-background">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+              <span className="text-xs text-muted-foreground/30">Loading…</span>
             </div>
           ) : notes.length === 0 ? (
             <EmptyState />
           ) : selectedNote ? (
-            <div className="max-w-[780px] mx-auto px-6 md:px-12 pt-12 pb-24">
-              {/* Metadata Strip - Minimal context */}
-              <div className="mb-8 flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-medium text-muted-foreground/70 bg-muted/40 px-2.5 py-1 rounded-md">
+            <div className="max-w-[740px] mx-auto px-6 md:px-10 pt-14 pb-32">
+              {/* Metadata Strip — Soft, informational */}
+              <div className="mb-10 flex items-center gap-3 text-[12px]">
+                <span className="text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded">
                   {selectedNote.lesson_title}
                 </span>
                 {onNavigateToLesson && (
                   <button
                     onClick={() => onNavigateToLesson(selectedNote.lesson_id)}
-                    className="text-xs text-primary/70 hover:text-primary transition-colors flex items-center gap-0.5"
+                    className="text-primary/60 hover:text-primary/80 transition-colors flex items-center gap-0.5"
                   >
                     Go to lesson
                     <ChevronRight className="h-3 w-3" />
                   </button>
                 )}
-                <span className="text-xs text-muted-foreground/40 ml-auto">
-                  Edited {formatTime(selectedNote.updated_at)}
+                <span className="text-muted-foreground/30 ml-auto">
+                  {formatTime(selectedNote.updated_at)}
                 </span>
               </div>
 
-              {/* Rich text editor - The heart of the experience */}
+              {/* Editor */}
               <NotionStyleEditor
                 value={editContent}
                 onChange={setEditContent}
                 placeholder="Start writing your notes…"
                 autoFocus
-                className="min-h-[60vh]"
+                className="min-h-[50vh]"
               />
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-muted-foreground/50">Select a note from the sidebar</p>
+              <p className="text-[13px] text-muted-foreground/40">Select a note</p>
             </div>
           )}
         </main>
@@ -301,22 +288,22 @@ export function NotesFocusMode({
   );
 }
 
-// Empty state component - Invites writing
+// Empty State — Calm invitation to write
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-6">
-      <div className="w-14 h-14 rounded-full bg-muted/30 flex items-center justify-center mb-5">
-        <StickyNote className="h-7 w-7 text-muted-foreground/40" />
+      <div className="w-12 h-12 rounded-full bg-muted/20 flex items-center justify-center mb-5">
+        <StickyNote className="h-6 w-6 text-muted-foreground/30" />
       </div>
-      <h2 className="text-xl font-medium text-foreground/90 mb-2">
-        Start writing your course notes
+      <h2 className="text-lg font-medium text-foreground/85 mb-1.5">
+        Your course notes
       </h2>
-      <p className="text-sm text-muted-foreground/60 max-w-sm mb-6">
-        Your notes are private and saved automatically. Go to a lesson to begin.
+      <p className="text-[13px] text-muted-foreground/50 max-w-[280px] leading-relaxed">
+        Notes are private and saved automatically. Go to a lesson to start writing.
       </p>
-      {/* Blinking cursor to invite writing */}
-      <div className="h-6 flex items-center">
-        <div className="w-0.5 h-5 bg-primary/50 animate-pulse rounded-full" />
+      {/* Soft blinking cursor */}
+      <div className="mt-8 h-5 flex items-center">
+        <div className="w-0.5 h-4 bg-primary/40 rounded-full animate-pulse" />
       </div>
     </div>
   );
