@@ -17,6 +17,7 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const encodedUrl = encodeURIComponent(url);
   const encodedTitle = encodeURIComponent(title);
@@ -27,26 +28,28 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
     twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
   };
 
-  // Handle click outside to close menu
-  useEffect(() => {
-    if (!open) return;
+  const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setOpen(true);
+  };
 
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+  const handleMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
       }
     };
-
-    // Delay listener to avoid immediate close from the same click
-    const timeoutId = setTimeout(() => {
-      document.addEventListener("click", handleClickOutside);
-    }, 0);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [open]);
+  }, []);
 
   const handleShare = (platform: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,12 +89,6 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
     }
   };
 
-  const handleTriggerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setOpen(!open);
-  };
-
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -115,12 +112,17 @@ const ShareTooltip = ({ title, url, postId, children }: ShareTooltipProps) => {
   );
 
   return (
-    <div ref={containerRef} className="relative inline-block">
+    <div 
+      ref={containerRef} 
+      className="relative inline-block"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Trigger with tooltip */}
       <TooltipProvider delayDuration={300}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div onClick={handleTriggerClick}>
+            <div>
               {children || (
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-transparent">
                   <Share2 className="h-5 w-5 text-foreground" />
