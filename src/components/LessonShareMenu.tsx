@@ -16,6 +16,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const shareUrl = `${window.location.origin}/courses/${postSlug}`;
@@ -27,10 +28,24 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
-    setOpen(true);
+
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+
+    // Small delay so the trigger tooltip can show briefly
+    openTimeoutRef.current = setTimeout(() => {
+      setOpen(true);
+    }, 250);
   };
 
   const handleMouseLeave = () => {
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+
     closeTimeoutRef.current = setTimeout(() => {
       setOpen(false);
     }, 150);
@@ -39,6 +54,9 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
+      if (openTimeoutRef.current) {
+        clearTimeout(openTimeoutRef.current);
+      }
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -120,18 +138,29 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Trigger */}
-      <button
-        className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <Share2 className="h-3.5 w-3.5" />
-      </button>
+      {/* Trigger + tooltip */}
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          {!open && (
+            <TooltipContent>
+              <p>Share</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       
       {/* Share Menu - appears above with zoom animation like comments tooltip */}
       {open && (
         <div 
           onClick={handleMenuClick}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 duration-150"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-150"
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover px-2 py-1.5 shadow-xl">
             <TooltipProvider delayDuration={200}>
