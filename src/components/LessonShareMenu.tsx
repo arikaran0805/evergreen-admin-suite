@@ -9,9 +9,10 @@ interface LessonShareMenuProps {
   postTitle: string;
   postSlug: string;
   className?: string;
+  alwaysVisible?: boolean;
 }
 
-const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShareMenuProps) => {
+const LessonShareMenu = ({ postId, postTitle, postSlug, className, alwaysVisible = false }: LessonShareMenuProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -142,7 +143,7 @@ const LessonShareMenu = ({ postId, postTitle, postSlug, className }: LessonShare
             onMouseLeave={handleMouseLeave}
           >
             <button
-              className="p-1 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              className={`p-1 rounded text-muted-foreground hover:text-foreground transition-opacity ${alwaysVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
             >
               <Share2 className="h-3.5 w-3.5" />
             </button>
