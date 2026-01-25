@@ -13,12 +13,12 @@ import {
   X,
   Sparkles,
   Award,
-  Share2,
   Link2,
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import LessonShareMenu from "@/components/LessonShareMenu";
 
 interface CourseLesson {
   id: string;
@@ -515,36 +515,13 @@ export const CourseSidebar = ({
                                       </TooltipContent>
                                     </Tooltip>
                                     
-                                    {/* Share */}
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (navigator.share) {
-                                              navigator.share({
-                                                title: post.title,
-                                                url: `${window.location.origin}/courses/${post.slug}`
-                                              });
-                                            } else {
-                                              navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
-                                              toast.success("Link copied!");
-                                            }
-                                          }}
-                                          className={cn(
-                                            "p-0.5 rounded transition-colors",
-                                            isActive 
-                                              ? "text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground" 
-                                              : "text-muted-foreground hover:text-foreground"
-                                          )}
-                                        >
-                                          <Share2 className="h-3 w-3" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="text-xs">
-                                        Share
-                                      </TooltipContent>
-                                    </Tooltip>
+                                    {/* Share - using LessonShareMenu for consistent behavior */}
+                                    <LessonShareMenu
+                                      postId={post.id}
+                                      postTitle={post.title}
+                                      postSlug={post.slug}
+                                      className="!opacity-100"
+                                    />
                                   </div>
                                 </div>
                               </button>
