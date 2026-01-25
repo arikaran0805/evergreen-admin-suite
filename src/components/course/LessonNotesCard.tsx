@@ -134,8 +134,7 @@ export function LessonNotesCard({
       ref={cardRef}
       className={cn(
         "border-border/50 bg-card/50 backdrop-blur-sm shadow-sm transition-all duration-200 ease-out overflow-hidden",
-        "border-l-2 border-l-primary/20",
-        !isExpanded && "cursor-pointer hover:bg-card/70 hover:border-l-primary/40"
+        !isExpanded && "cursor-pointer hover:bg-card/70"
       )}
       onClick={handleExpand}
       onBlur={handleBlur}
