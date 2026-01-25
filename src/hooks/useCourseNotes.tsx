@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useNotesSyncBridge } from "@/hooks/useNotesSyncBridge";
 
 interface LessonNote {
   id: string;
@@ -22,11 +23,94 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const debouncedContent = useDebounce(editContent, 1000);
+  const isRemoteUpdateRef = useRef(false);
+  const lastSavedContentRef = useRef<string>("");
 
   // Derive selectedNote from notes array to avoid stale state
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null;
+
+  // Handle remote updates from other tabs (Quick Notes)
+  const handleRemoteUpdate = useCallback((remoteContent: string, updatedAt: string) => {
+    // Mark as remote update to prevent broadcast echo
+    isRemoteUpdateRef.current = true;
+    setEditContent(remoteContent);
+    lastSavedContentRef.current = remoteContent;
+    
+    // Update the note in local state
+    setNotes(prev => 
+      prev.map(n => 
+        n.id === selectedNoteId 
+          ? { ...n, content: remoteContent, updated_at: updatedAt } 
+          : n
+      )
+    );
+    
+    setIsSyncing(false);
+    
+    // Reset flag after state update
+    setTimeout(() => {
+      isRemoteUpdateRef.current = false;
+    }, 100);
+  }, [selectedNoteId]);
+
+  // Handle note created in other tab
+  const handleNoteCreated = useCallback(async (newNoteId: string, lessonId: string) => {
+    if (!courseId || !userId) return;
+    
+    // Fetch the new note from database
+    const { data, error } = await supabase
+      .from("lesson_notes")
+      .select("id, lesson_id, course_id, content, created_at, updated_at")
+      .eq("id", newNoteId)
+      .single();
+
+    if (error || !data) return;
+
+    // Fetch lesson title
+    const { data: postData } = await supabase
+      .from("posts")
+      .select("title")
+      .eq("id", lessonId)
+      .maybeSingle();
+
+    const newNote: LessonNote = {
+      ...data,
+      lesson_title: postData?.title || "Unknown Lesson",
+    };
+
+    // Add to notes list if not already present
+    setNotes(prev => {
+      if (prev.some(n => n.id === newNoteId)) return prev;
+      return [newNote, ...prev];
+    });
+    
+    setIsSyncing(false);
+  }, [courseId, userId]);
+
+  // Handle note deleted in other tab
+  const handleNoteDeleted = useCallback((deletedNoteId: string) => {
+    setNotes(prev => prev.filter(n => n.id !== deletedNoteId));
+    
+    if (selectedNoteId === deletedNoteId) {
+      setSelectedNoteId(null);
+      setEditContent("");
+    }
+  }, [selectedNoteId]);
+
+  // Set up cross-tab sync bridge
+  const { broadcastUpdate, broadcastCreated, broadcastDeleted } = useNotesSyncBridge({
+    noteId: selectedNoteId,
+    lessonId: selectedNote?.lesson_id,
+    courseId,
+    userId,
+    source: 'deep-notes',
+    onRemoteUpdate: handleRemoteUpdate,
+    onNoteCreated: handleNoteCreated,
+    onNoteDeleted: handleNoteDeleted,
+  });
 
   // Load all notes for this course
   const loadNotes = useCallback(async () => {
@@ -65,11 +149,13 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
         if (!selectedNoteId) {
           setSelectedNoteId(enrichedNotes[0].id);
           setEditContent(enrichedNotes[0].content);
+          lastSavedContentRef.current = enrichedNotes[0].content;
         }
       } else {
         setNotes([]);
         setSelectedNoteId(null);
         setEditContent("");
+        lastSavedContentRef.current = "";
       }
     } catch (error) {
       console.error("Error loading course notes:", error);
@@ -87,31 +173,42 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const selectNote = useCallback((note: LessonNote) => {
     setSelectedNoteId(note.id);
     setEditContent(note.content);
+    lastSavedContentRef.current = note.content;
   }, []);
 
   // Auto-save when content changes (only for the selected note)
   useEffect(() => {
     if (!selectedNoteId || !selectedNote) return;
-    if (debouncedContent === selectedNote.content) return;
+    if (debouncedContent === lastSavedContentRef.current) return;
+    
+    // Skip save if this was a remote update (already saved by the other tab)
+    if (isRemoteUpdateRef.current) return;
 
     const saveNote = async () => {
       setIsSaving(true);
+      const now = new Date().toISOString();
+      
       try {
         const { error } = await supabase
           .from("lesson_notes")
-          .update({ content: debouncedContent, updated_at: new Date().toISOString() })
+          .update({ content: debouncedContent, updated_at: now })
           .eq("id", selectedNoteId);
 
         if (error) throw error;
+
+        lastSavedContentRef.current = debouncedContent;
 
         // Update the note in local state
         setNotes(prev => 
           prev.map(n => 
             n.id === selectedNoteId 
-              ? { ...n, content: debouncedContent, updated_at: new Date().toISOString() } 
+              ? { ...n, content: debouncedContent, updated_at: now } 
               : n
           )
         );
+        
+        // Broadcast update to other tabs (Quick Notes)
+        broadcastUpdate(debouncedContent, now);
       } catch (error) {
         console.error("Error saving note:", error);
       } finally {
@@ -120,7 +217,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     };
 
     saveNote();
-  }, [debouncedContent, selectedNoteId, selectedNote]);
+  }, [debouncedContent, selectedNoteId, selectedNote, broadcastUpdate]);
 
   // Create a new note for a lesson
   const createNote = useCallback(async (lessonId: string, lessonTitle: string) => {
@@ -149,16 +246,22 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       setNotes(prev => [newNote, ...prev]);
       setSelectedNoteId(newNote.id);
       setEditContent("");
+      lastSavedContentRef.current = "";
+      
+      // Broadcast note creation to other tabs
+      broadcastCreated(newNote.id, lessonId);
 
       return newNote;
     } catch (error) {
       console.error("Error creating note:", error);
       return null;
     }
-  }, [courseId, userId]);
+  }, [courseId, userId, broadcastCreated]);
 
   // Delete a note
   const deleteNote = useCallback(async (noteId: string) => {
+    const noteToDelete = notes.find(n => n.id === noteId);
+    
     try {
       const { error } = await supabase
         .from("lesson_notes")
@@ -174,10 +277,17 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
         if (remaining.length > 0) {
           setSelectedNoteId(remaining[0].id);
           setEditContent(remaining[0].content);
+          lastSavedContentRef.current = remaining[0].content;
         } else {
           setSelectedNoteId(null);
           setEditContent("");
+          lastSavedContentRef.current = "";
         }
+      }
+      
+      // Broadcast deletion to other tabs
+      if (noteToDelete) {
+        broadcastDeleted(noteId, noteToDelete.lesson_id);
       }
 
       return true;
@@ -185,7 +295,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       console.error("Error deleting note:", error);
       return false;
     }
-  }, [selectedNoteId, notes]);
+  }, [selectedNoteId, notes, broadcastDeleted]);
 
   // Get lessons that don't have notes yet
   const getAvailableLessons = useCallback(async () => {
@@ -231,6 +341,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     editContent,
     isLoading,
     isSaving,
+    isSyncing,
     selectNote,
     setEditContent,
     createNote,

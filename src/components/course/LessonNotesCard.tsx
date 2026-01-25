@@ -23,6 +23,7 @@ interface LessonNotesCardProps {
   content: string;
   updateContent: (content: string) => void;
   isSaving: boolean;
+  isSyncing?: boolean;
   lastSavedText: string | null;
   isLoading: boolean;
   courseId?: string;
@@ -54,6 +55,7 @@ export function LessonNotesCard({
   content,
   updateContent,
   isSaving,
+  isSyncing = false,
   lastSavedText,
   isLoading,
   courseId,
@@ -155,7 +157,12 @@ export function LessonNotesCard({
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* Save status */}
-            {isSaving ? (
+            {isSyncing ? (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span className="hidden sm:inline">Syncing...</span>
+              </span>
+            ) : isSaving ? (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span className="hidden sm:inline">Saving...</span>

@@ -114,7 +114,7 @@ export function LessonRightSidebar({
   );
 
   // Notes hook
-  const { content, updateContent, isSaving, lastSaved, isLoading } = useLessonNotes({
+  const { content, updateContent, isSaving, isSyncing, lastSaved, isLoading } = useLessonNotes({
     lessonId,
     courseId,
     userId,
@@ -193,6 +193,7 @@ export function LessonRightSidebar({
             content={content}
             updateContent={updateContent}
             isSaving={isSaving}
+            isSyncing={isSyncing}
             lastSavedText={lastSavedText}
             isLoading={isLoading}
             courseId={courseId}
