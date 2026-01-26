@@ -98,20 +98,32 @@ const CourseNotes = () => {
   };
 
   // Handle navigate to lesson - open in course tab
-  const handleNavigateToLesson = (lessonId: string) => {
+  const handleNavigateToLesson = async (lessonId: string) => {
     if (!course?.slug) return;
+    
+    // Fetch the lesson slug for proper navigation
+    const { data: lesson } = await supabase
+      .from("posts")
+      .select("slug")
+      .eq("id", lessonId)
+      .single();
+    
+    const lessonSlug = lesson?.slug;
     
     // Try to use opener window
     if (window.opener && !window.opener.closed) {
       // Post message to opener to navigate to lesson
       window.opener.postMessage(
-        { type: "NAVIGATE_TO_LESSON", lessonId, courseSlug: course.slug },
+        { type: "NAVIGATE_TO_LESSON", lessonId, lessonSlug, courseSlug: course.slug },
         window.location.origin
       );
       window.opener.focus();
+    } else if (lessonSlug) {
+      // Fallback: open course with lesson slug in current tab
+      navigate(`/course/${course.slug}?lesson=${lessonSlug}&tab=lessons`);
     } else {
-      // Fallback: open course with lesson in current tab
-      navigate(`/course/${course.slug}?tab=lessons&focusLesson=${lessonId}`);
+      // Ultimate fallback: just go to lessons tab
+      navigate(`/course/${course.slug}?tab=lessons`);
     }
   };
 
