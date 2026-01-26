@@ -102,18 +102,29 @@ export function useCourseNavigator() {
         const tabExists = await pingExistingCourseTab(channelRef.current, courseId);
         
         if (tabExists) {
-          // Tab exists - send navigation message
-          // The existing tab will handle navigation and focus itself
-          channelRef.current.postMessage({
-            type: 'NAVIGATE_TO_LESSON',
-            courseId,
-            courseSlug,
-            lessonId,
-            lessonSlug,
-            timestamp: Date.now(),
-          } as CourseNavigationMessage);
+          // Tab exists - send navigation or focus message
+          if (lessonSlug) {
+            // Navigate to specific lesson
+            channelRef.current.postMessage({
+              type: 'NAVIGATE_TO_LESSON',
+              courseId,
+              courseSlug,
+              lessonId,
+              lessonSlug,
+              timestamp: Date.now(),
+            } as CourseNavigationMessage);
+            console.log('[CourseNavigator] Found existing tab, sent lesson navigation');
+          } else {
+            // Just focus the tab (no lesson navigation)
+            channelRef.current.postMessage({
+              type: 'FOCUS',
+              courseId,
+              courseSlug,
+              timestamp: Date.now(),
+            } as CourseNavigationMessage);
+            console.log('[CourseNavigator] Found existing tab, sent focus message');
+          }
           
-          console.log('[CourseNavigator] Found existing tab, sent navigation message');
           return true;
         }
       }
