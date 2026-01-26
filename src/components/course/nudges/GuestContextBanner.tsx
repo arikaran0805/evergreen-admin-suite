@@ -1,18 +1,30 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Lock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const SESSION_KEY = "guest_banner_dismissed";
+
 interface GuestContextBannerProps {
   className?: string;
-  /** Callback when banner is dismissed */
-  onDismiss?: () => void;
 }
 
 /**
  * Subtle banner encouraging guests to sign in
- * Visibility is controlled by parent via useGuestBannerVisibility hook
+ * Dismissible - won't reappear in same session
  */
-export const GuestContextBanner = ({ className = "", onDismiss }: GuestContextBannerProps) => {
+export const GuestContextBanner = ({ className = "" }: GuestContextBannerProps) => {
+  const [dismissed, setDismissed] = useState(() => {
+    return sessionStorage.getItem(SESSION_KEY) === "true";
+  });
+
+  const handleDismiss = () => {
+    sessionStorage.setItem(SESSION_KEY, "true");
+    setDismissed(true);
+  };
+
+  if (dismissed) return null;
+
   return (
     <div className={`bg-muted/60 border border-border/50 rounded-lg px-4 py-3 flex items-center justify-between gap-4 ${className}`}>
       <div className="flex items-center gap-3">
@@ -34,7 +46,7 @@ export const GuestContextBanner = ({ className = "", onDismiss }: GuestContextBa
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          onClick={onDismiss}
+          onClick={handleDismiss}
           aria-label="Dismiss"
         >
           <X className="h-4 w-4" />
