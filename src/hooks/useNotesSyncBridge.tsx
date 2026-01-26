@@ -178,6 +178,7 @@ export function useNotesSyncBridge({
   /**
    * Broadcast a note update to other tabs
    * IMPORTANT: Call this AFTER saving to database with the actual saved timestamp
+   * NOTE: lessonId is optional - user-created notes may not have one
    */
   const broadcastUpdate = useCallback((content: string, updatedAt?: string) => {
     const currentNoteId = noteIdRef.current;
@@ -185,14 +186,15 @@ export function useNotesSyncBridge({
     const currentCourseId = courseIdRef.current;
     const currentUserId = userIdRef.current;
     
-    if (!channelRef.current || !currentNoteId || !currentLessonId || !currentCourseId || !currentUserId) return;
+    // Allow broadcast without lessonId (for user-created notes)
+    if (!channelRef.current || !currentNoteId || !currentCourseId || !currentUserId) return;
 
     const timestamp = updatedAt || new Date().toISOString();
 
     const message: NoteSyncMessage = {
       type: 'NOTE_UPDATED',
       noteId: currentNoteId,
-      lessonId: currentLessonId,
+      lessonId: currentLessonId || '', // Empty string for user-created notes
       courseId: currentCourseId,
       userId: currentUserId,
       content,
