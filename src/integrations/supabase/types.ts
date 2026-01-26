@@ -1260,6 +1260,39 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+        }
+        Relationships: []
+      }
       lesson_notes: {
         Row: {
           content: string
@@ -2022,6 +2055,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_role: Database["public"]["Enums"]["app_role"] | null
           avatar_url: string | null
           created_at: string
           current_streak: number | null
@@ -2037,6 +2071,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_role?: Database["public"]["Enums"]["app_role"] | null
           avatar_url?: string | null
           created_at?: string
           current_streak?: number | null
@@ -2052,6 +2087,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_role?: Database["public"]["Enums"]["app_role"] | null
           avatar_url?: string | null
           created_at?: string
           current_streak?: number | null
