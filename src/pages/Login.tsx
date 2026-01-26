@@ -33,8 +33,11 @@ const Login = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated && activeRole) {
-      const path = activeRole === "user" ? "/profile" : getRoleDashboardPath(activeRole);
+    if (!authLoading && isAuthenticated) {
+      // If user has a staff role, go to their dashboard; otherwise go to profile
+      const path = activeRole && activeRole !== "user" 
+        ? getRoleDashboardPath(activeRole) 
+        : "/profile";
       navigate(path, { replace: true });
     }
   }, [isAuthenticated, activeRole, authLoading, navigate]);
@@ -54,6 +57,7 @@ const Login = () => {
       // Check if email is verified for learners
       if (data.user && !data.user.email_confirmed_at) {
         await supabase.auth.signOut();
+        setIsLoading(false);
         navigate("/verify-email", { state: { email } });
         return;
       }
@@ -63,7 +67,8 @@ const Login = () => {
         description: "You've successfully signed in.",
       });
 
-      // Redirect will happen via AuthContext
+      // Don't reset isLoading here - let AuthContext handle the redirect
+      // The useEffect will trigger navigation once activeRole is set
     } catch (error: any) {
       toast({
         title: "Error",
