@@ -21,6 +21,15 @@ interface UseCourseNotesOptions {
   userId: string | undefined;
 }
 
+/**
+ * FIX v2: Added proper note switching guards to prevent content leaking between notes.
+ * 
+ * Key fixes:
+ * 1. Track which noteId the debounced content belongs to
+ * 2. Reset all save-related refs immediately on note switch
+ * 3. Validate noteId in save effect before saving
+ * 4. Prevent saves during note transition period
+ */
 export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const [notes, setNotes] = useState<CourseNote[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -34,6 +43,17 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   const selectedNoteIdRef = useRef<string | null>(null);
   const isLoadingRef = useRef(false);
   const localTimestampRef = useRef<string>("");
+  
+  /**
+   * FIX: Track which noteId the current editContent/debouncedContent belongs to
+   * This prevents saving stale content to a newly selected note
+   */
+  const contentForNoteIdRef = useRef<string | null>(null);
+  
+  /**
+   * FIX: Flag to prevent saves during note transition
+   */
+  const isTransitioningRef = useRef(false);
 
   // Keep ref in sync with state to avoid stale closure issues
   useEffect(() => {
@@ -54,8 +74,13 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     // Reset remote update flag
     isRemoteUpdateRef.current = false;
     
-    // Note: lastSavedContentRef and localTimestampRef are set in selectNote()
-    // This effect ensures the flags are clean for the new note context
+    // FIX: Reset transition flag after a brief delay to allow state to stabilize
+    isTransitioningRef.current = true;
+    const timeout = setTimeout(() => {
+      isTransitioningRef.current = false;
+    }, 100);
+    
+    return () => clearTimeout(timeout);
   }, [selectedNoteId]);
 
   // Derive selectedNote from notes array to avoid stale state
@@ -76,6 +101,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     isRemoteUpdateRef.current = true;
     setEditContent(remoteContent);
     lastSavedContentRef.current = remoteContent;
+    contentForNoteIdRef.current = currentNoteId; // FIX: Track content ownership
     localTimestampRef.current = updatedAt;
     
     setNotes(prev => 
@@ -145,6 +171,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     if (currentNoteId === deletedNoteId) {
       setSelectedNoteId(null);
       setEditContent("");
+      contentForNoteIdRef.current = null; // FIX: Clear content ownership
     }
   }, []);
 
@@ -215,12 +242,14 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
           setSelectedNoteId(enrichedNotes[0].id);
           setEditContent(enrichedNotes[0].content);
           lastSavedContentRef.current = enrichedNotes[0].content;
+          contentForNoteIdRef.current = enrichedNotes[0].id; // FIX: Track content ownership
         }
       } else {
         setNotes([]);
         setSelectedNoteId(null);
         setEditContent("");
         lastSavedContentRef.current = "";
+        contentForNoteIdRef.current = null; // FIX: Clear content ownership
       }
     } catch (error) {
       console.error("Error loading course notes:", error);
@@ -234,25 +263,65 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     loadNotes();
   }, [loadNotes]);
 
-  // Select a note - update ID and sync content
+  /**
+   * Select a note - update ID and sync content
+   * FIX: Properly reset all refs to prevent cross-note content saving
+   */
   const selectNote = useCallback((note: CourseNote) => {
+    // FIX: Mark as transitioning to prevent stale saves
+    isTransitioningRef.current = true;
+    
     setSelectedNoteId(note.id);
     setEditContent(note.content);
     lastSavedContentRef.current = note.content;
+    contentForNoteIdRef.current = note.id; // FIX: Track content ownership
     localTimestampRef.current = note.updated_at;
+    
     // Update sync bridge with the loaded timestamp
     updateLocalTimestamp(note.updated_at);
+    
+    // FIX: Reset transition flag after state stabilizes
+    setTimeout(() => {
+      isTransitioningRef.current = false;
+    }, 100);
   }, [updateLocalTimestamp]);
 
-  // Auto-save when content changes
+  /**
+   * Auto-save when content changes
+   * FIX: Added validation to ensure we're saving to the correct note
+   */
   useEffect(() => {
     if (!selectedNoteId || !selectedNote) return;
+    
+    // FIX: Don't save if we're transitioning between notes
+    if (isTransitioningRef.current) {
+      console.debug('[useCourseNotes] Skipping save during note transition');
+      return;
+    }
+    
+    // FIX: Validate that the debounced content belongs to the current note
+    // This prevents saving stale content when user switches notes rapidly
+    if (contentForNoteIdRef.current !== selectedNoteId) {
+      console.debug('[useCourseNotes] Skipping save - content belongs to different note', {
+        contentFor: contentForNoteIdRef.current,
+        selectedNote: selectedNoteId,
+      });
+      return;
+    }
+    
     // Skip if content hasn't changed from last save
     if (debouncedContent === lastSavedContentRef.current) return;
+    
     // Skip if this was a remote update (already saved by other tab)
     if (isRemoteUpdateRef.current) return;
 
     const saveNote = async () => {
+      // FIX: Double-check note ID hasn't changed during async gap
+      if (selectedNoteIdRef.current !== selectedNoteId) {
+        console.debug('[useCourseNotes] Note changed before save started, aborting');
+        return;
+      }
+      
       setIsSaving(true);
       const now = new Date().toISOString();
       
@@ -264,19 +333,22 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
         if (error) throw error;
 
-        lastSavedContentRef.current = debouncedContent;
-        localTimestampRef.current = now;
+        // FIX: Only update refs if we're still on the same note
+        if (selectedNoteIdRef.current === selectedNoteId) {
+          lastSavedContentRef.current = debouncedContent;
+          localTimestampRef.current = now;
 
-        setNotes(prev => 
-          prev.map(n => 
-            n.id === selectedNoteId 
-              ? { ...n, content: debouncedContent, updated_at: now } 
-              : n
-          )
-        );
-        
-        // Broadcast with timestamp for conflict resolution
-        broadcastUpdate(debouncedContent, now);
+          setNotes(prev => 
+            prev.map(n => 
+              n.id === selectedNoteId 
+                ? { ...n, content: debouncedContent, updated_at: now } 
+                : n
+            )
+          );
+          
+          // Broadcast with timestamp for conflict resolution
+          broadcastUpdate(debouncedContent, now);
+        }
       } catch (error) {
         console.error("Error saving note:", error);
       } finally {
@@ -286,6 +358,15 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
     saveNote();
   }, [debouncedContent, selectedNoteId, selectedNote, broadcastUpdate]);
+
+  /**
+   * FIX: Update content ownership when editContent changes from user input
+   */
+  const handleSetEditContent = useCallback((content: string) => {
+    setEditContent(content);
+    // Track that this content belongs to the currently selected note
+    contentForNoteIdRef.current = selectedNoteIdRef.current;
+  }, []);
 
   /**
    * Create a new user-created note (not linked to any lesson)
@@ -322,6 +403,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       setSelectedNoteId(newNote.id);
       setEditContent("");
       lastSavedContentRef.current = "";
+      contentForNoteIdRef.current = newNote.id; // FIX: Track content ownership
       
       // Broadcast with empty lessonId for user notes
       broadcastCreated(newNote.id, "");
@@ -366,6 +448,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       setSelectedNoteId(newNote.id);
       setEditContent("");
       lastSavedContentRef.current = "";
+      contentForNoteIdRef.current = newNote.id; // FIX: Track content ownership
       
       broadcastCreated(newNote.id, lessonId);
 
@@ -421,10 +504,12 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
           setSelectedNoteId(remaining[0].id);
           setEditContent(remaining[0].content);
           lastSavedContentRef.current = remaining[0].content;
+          contentForNoteIdRef.current = remaining[0].id; // FIX: Track content ownership
         } else {
           setSelectedNoteId(null);
           setEditContent("");
           lastSavedContentRef.current = "";
+          contentForNoteIdRef.current = null; // FIX: Clear content ownership
         }
       }
       
@@ -502,27 +587,18 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
       return existingNote;
     }
 
-    // Note doesn't exist, fetch lesson title and create one
-    if (!courseId || !userId) return null;
+    // Fetch lesson title for display
+    const { data: postData } = await supabase
+      .from("posts")
+      .select("title")
+      .eq("id", lessonId)
+      .maybeSingle();
 
-    try {
-      // Fetch the lesson title
-      const { data: lessonData } = await supabase
-        .from("posts")
-        .select("title")
-        .eq("id", lessonId)
-        .maybeSingle();
+    const lessonTitle = postData?.title || "Unknown Lesson";
 
-      const lessonTitle = lessonData?.title || "Unknown Lesson";
-      
-      // Create the note
-      const newNote = await createLessonNote(lessonId, lessonTitle);
-      return newNote;
-    } catch (error) {
-      console.error("Error finding or creating lesson note:", error);
-      return null;
-    }
-  }, [notes, selectNote, courseId, userId, createLessonNote]);
+    // Create new lesson note
+    return createLessonNote(lessonId, lessonTitle);
+  }, [notes, selectNote, createLessonNote]);
 
   return {
     notes,
@@ -535,13 +611,13 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     selectNoteById,
     selectNoteByLessonId,
     findOrCreateLessonNote,
-    setEditContent,
+    setEditContent: handleSetEditContent, // FIX: Use wrapped setter
     createUserNote,
     createLessonNote,
-    updateNoteTitle,
     deleteNote,
+    updateNoteTitle,
     getAvailableLessons,
-    refreshNotes: loadNotes,
+    reloadNotes: loadNotes,
   };
 }
 

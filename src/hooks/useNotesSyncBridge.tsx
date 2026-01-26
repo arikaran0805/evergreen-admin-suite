@@ -12,6 +12,9 @@
  * 
  * SAFETY: This hook implements timestamp validation to prevent older content
  * from overwriting newer content during race conditions.
+ * 
+ * FIX v2: Improved noteId-only matching to prevent cross-note content leaking.
+ * The lessonId is now ONLY used for note creation events, not for update matching.
  */
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -120,9 +123,17 @@ export function useNotesSyncBridge({
 
       switch (message.type) {
         case 'NOTE_UPDATED':
-          // Only update if it's for the same note we're viewing
-          // Use ref to get current noteId (avoids stale closure)
-          if (message.noteId === noteIdRef.current && message.lessonId === lessonIdRef.current) {
+          /**
+           * FIX: Match ONLY by noteId, NOT by lessonId
+           * 
+           * Previously: message.noteId === noteIdRef.current && message.lessonId === lessonIdRef.current
+           * This caused issues because:
+           * - User-created notes have lessonId=null/undefined locally but lessonId="" in broadcast
+           * - Different notes with same lessonId would incorrectly match
+           * 
+           * Now: Match only by noteId which is always unique
+           */
+          if (message.noteId && message.noteId === noteIdRef.current) {
             // Prevent echo: don't apply if we just broadcast this content
             if (message.content === lastBroadcastRef.current && message.updatedAt === lastBroadcastTimeRef.current) {
               return;
@@ -135,6 +146,7 @@ export function useNotesSyncBridge({
             
             if (remoteTime > localTime) {
               // Remote is newer, apply it
+              console.debug('[NotesSyncBridge] Applying remote update for noteId:', message.noteId);
               onRemoteUpdateRef.current?.(message.content || '', message.updatedAt);
               // Update our local timestamp to reflect we now have this content
               localTimestampRef.current = message.updatedAt;
@@ -149,13 +161,26 @@ export function useNotesSyncBridge({
           break;
 
         case 'NOTE_CREATED':
-          if (message.lessonId === lessonIdRef.current) {
+          /**
+           * FIX: For note creation, we DO use lessonId to match
+           * because we need to know if a note was created for the lesson we're viewing
+           * 
+           * Handle both lesson notes (lessonId matches) and user notes (no lessonId)
+           */
+          if (message.lessonId && message.lessonId === lessonIdRef.current) {
             onNoteCreatedRef.current?.(message.noteId, message.lessonId);
           }
           break;
 
         case 'NOTE_DELETED':
-          if (message.noteId === noteIdRef.current || message.lessonId === lessonIdRef.current) {
+          /**
+           * FIX: Match by noteId for deletion
+           * lessonId matching as fallback for Quick Notes that may not have noteId yet
+           */
+          if (message.noteId === noteIdRef.current) {
+            onNoteDeletedRef.current?.(message.noteId);
+          } else if (message.lessonId && message.lessonId === lessonIdRef.current) {
+            // Fallback: if lesson matches, the note for this lesson was deleted
             onNoteDeletedRef.current?.(message.noteId);
           }
           break;
@@ -186,7 +211,7 @@ export function useNotesSyncBridge({
     const currentCourseId = courseIdRef.current;
     const currentUserId = userIdRef.current;
     
-    // Allow broadcast without lessonId (for user-created notes)
+    // CRITICAL: Must have noteId to broadcast - this ensures we sync the right note
     if (!channelRef.current || !currentNoteId || !currentCourseId || !currentUserId) return;
 
     const timestamp = updatedAt || new Date().toISOString();
