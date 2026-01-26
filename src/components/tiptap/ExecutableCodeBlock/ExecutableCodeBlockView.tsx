@@ -142,7 +142,14 @@ const ExecutableCodeBlockView = ({
       // Entering edit mode - snapshot current code for potential revert
       setCodeBeforeEdit(code);
       setIsEditingCode(true);
-      setTimeout(() => textareaRef.current?.focus(), 0);
+      // Focus textarea and place cursor at end of code
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const len = textareaRef.current.value.length;
+          textareaRef.current.setSelectionRange(len, len);
+        }
+      }, 0);
     } else {
       // Exiting via toggle (X button) - revert to snapshot
       setEditedCode(codeBeforeEdit);
@@ -331,9 +338,9 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - sharp top corners, rounded bottom, visible gray background */}
+        {/* Output panel - matches chat bubble CodeBlock styling */}
         {showOutput && (
-          <div className="mt-2 rounded-t-none rounded-b-xl border border-border bg-muted overflow-hidden">
+          <div className="mt-0.5 rounded-t-none rounded-b-xl border border-t-0 border-border/50 bg-muted/50 overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
