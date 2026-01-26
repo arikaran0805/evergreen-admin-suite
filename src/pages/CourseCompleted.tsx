@@ -23,6 +23,7 @@ import {
   CourseSummaryCard,
   EngagementCard,
   NextStepsCard,
+  ReviewPreviewCard,
 } from "@/components/course-completed";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
@@ -424,7 +425,17 @@ const CourseCompleted = () => {
 
           <Separator className="my-8" />
 
-          {/* 2. CERTIFICATE SECTION */}
+          {/* 2. REVIEW PREVIEW - Social proof */}
+          {reviews.length > 0 && (
+            <section className="mb-8">
+              <ReviewPreviewCard
+                reviews={reviews}
+                averageRating={averageRating}
+              />
+            </section>
+          )}
+
+          {/* 3. CERTIFICATE SECTION */}
           <section className="mb-8">
             <CertificateCard
               learnerName={learnerName}
