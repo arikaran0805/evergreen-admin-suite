@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,6 +29,10 @@ interface LessonFooterProps {
   currentLessonIndex: number;
   totalLessons: number;
   courseProgressPercentage: number;
+  
+  // Course completion navigation
+  isLastLesson: boolean;
+  courseId: string;
   
   // Tags
   tags: Array<{ id: string; name: string; slug: string }>;
@@ -62,6 +66,8 @@ const LessonFooter = ({
   currentLessonIndex,
   totalLessons,
   courseProgressPercentage,
+  isLastLesson,
+  courseId,
   tags,
   onCommentClick,
   onSuggestChangesClick,
@@ -78,6 +84,7 @@ const LessonFooter = ({
   onPrevious,
   onNext,
 }: LessonFooterProps) => {
+  const navigate = useNavigate();
   const [justCompleted, setJustCompleted] = useState(false);
 
   const handleMarkComplete = useCallback(async () => {
@@ -263,7 +270,7 @@ const LessonFooter = ({
       </div>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* 4. NAVIGATION ROW (Previous / Next) */}
+      {/* 4. NAVIGATION ROW (Previous / Next / Finish Course) */}
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="flex items-center justify-between gap-4 pt-4">
         {/* Previous Button */}
@@ -284,8 +291,26 @@ const LessonFooter = ({
           <div className="flex-1 max-w-xs" />
         )}
 
-        {/* Next Button - Primary CTA after completion */}
-        {nextLesson ? (
+        {/* Next Button OR Finish Course Button */}
+        {isLastLesson && isCompleted ? (
+          /* Final lesson completed - Show "Finish Course" CTA */
+          <Button 
+            size="lg"
+            variant="default"
+            className={cn(
+              "gap-2 flex-1 max-w-xs",
+              "bg-primary hover:bg-primary/90 text-primary-foreground"
+            )}
+            onClick={() => navigate(`/course/${courseId}/completed`)}
+          >
+            <div className="text-right min-w-0">
+              <div className="text-xs opacity-80">Continue →</div>
+              <div className="font-medium">Finish Course</div>
+            </div>
+            <ChevronRight className="h-5 w-5 flex-shrink-0" />
+          </Button>
+        ) : nextLesson ? (
+          /* Has next lesson - Show regular navigation */
           <Button 
             size="lg"
             variant={isCompleted ? "default" : "outline"}
@@ -309,6 +334,7 @@ const LessonFooter = ({
             <ChevronRight className="h-5 w-5 flex-shrink-0" />
           </Button>
         ) : (
+          /* No next lesson and not marked as last - empty space */
           <div className="flex-1 max-w-xs" />
         )}
       </div>
