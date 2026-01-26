@@ -8,9 +8,9 @@
  * Shows Pro value proposition and pricing options.
  * Never rendered for Pro users.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Check, StickyNote, Sparkles, GraduationCap, Ban, Shield, Zap, Lock } from "lucide-react";
+import { Check, StickyNote, Sparkles, GraduationCap, Ban, Shield, Zap, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Sheet, 
@@ -29,6 +29,9 @@ import {
 import { usePricingDrawer } from "@/contexts/PricingDrawerContext";
 import { useUserState } from "@/hooks/useUserState";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Pro features to display
 const PRO_FEATURES = [
@@ -62,7 +65,9 @@ interface PricingContentProps {
 const PricingContent = ({ onClose }: PricingContentProps) => {
   const navigate = useNavigate();
   const { isGuest, isLearner } = useUserState();
+  const { user } = useAuth();
   const { closePricingDrawer, triggerSource } = usePricingDrawer();
+  const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -80,14 +85,52 @@ const PricingContent = ({ onClose }: PricingContentProps) => {
       // Guest: Redirect to login with upgrade intent
       closePricingDrawer();
       navigate("/login?intent=upgrade");
-    } else {
-      // Learner: Proceed to payment flow
-      // TODO: Integrate with Stripe checkout
-      console.log("[Payment] Initiating checkout for plan:", selectedPlan);
-      
-      // Simulate loading
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setIsLoading(false);
+    } else if (user) {
+      // Learner: Create Pro subscription (testing mode - no payment)
+      try {
+        // Calculate period dates
+        const now = new Date();
+        const periodEnd = new Date();
+        if (selectedPlan === "yearly") {
+          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+        } else {
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+        }
+
+        // Upsert subscription
+        const { error } = await supabase
+          .from("subscriptions")
+          .upsert({
+            user_id: user.id,
+            status: "active",
+            plan: "pro",
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            cancel_at_period_end: false,
+          }, {
+            onConflict: "user_id",
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "🎉 Welcome to Pro!",
+          description: "You now have full access to all Pro features.",
+        });
+
+        closePricingDrawer(true);
+        
+        // Refresh the page to update user state
+        window.location.reload();
+      } catch (error) {
+        console.error("Error creating subscription:", error);
+        toast({
+          title: "Error",
+          description: "Failed to upgrade. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      }
     }
   };
 
