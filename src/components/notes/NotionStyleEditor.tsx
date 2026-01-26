@@ -341,7 +341,7 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
 
           {/* Code Block - inserts a syntax-highlighted code block */}
           <button
-            onMouseDown={(e) => {
+            onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               editor.chain().focus().toggleCodeBlock().run();
