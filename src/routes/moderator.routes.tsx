@@ -9,6 +9,7 @@ import AdminPostEditor from "@/pages/AdminPostEditor";
 import AdminApprovals from "@/pages/AdminApprovals";
 import AdminComments from "@/pages/AdminComments";
 import AdminModeratorActivity from "@/pages/AdminModeratorActivity";
+import ModeratorCertificates from "@/pages/ModeratorCertificates";
 import NotFound from "@/pages/NotFound";
 
 /**
@@ -28,6 +29,7 @@ const ModeratorRoutes = () => {
           <Route path="posts/new" element={<AdminPostEditor />} />
           <Route path="posts/edit/:id" element={<AdminPostEditor />} />
           <Route path="review" element={<AdminApprovals />} />
+          <Route path="certificates" element={<ModeratorCertificates />} />
           <Route path="comments" element={<AdminComments />} />
           <Route path="activity" element={<AdminModeratorActivity />} />
           <Route path="*" element={<NotFound />} />
