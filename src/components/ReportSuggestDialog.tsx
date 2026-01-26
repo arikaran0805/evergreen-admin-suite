@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,13 +7,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Flag, Edit, Loader2 } from "lucide-react";
+import { Flag, Lightbulb, Loader2 } from "lucide-react";
+import { LightEditor, type LightEditorRef } from "@/components/tiptap/LightEditor";
 
 interface ReportSuggestDialogProps {
   open: boolean;
@@ -45,6 +45,7 @@ const ReportSuggestDialog = ({
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const editorRef = useRef<LightEditorRef>(null);
 
   const handleSubmit = async () => {
     if (!description.trim()) {
@@ -106,7 +107,7 @@ const ReportSuggestDialog = ({
               </>
             ) : (
               <>
-                <Edit className="h-5 w-5 text-primary" />
+                <Lightbulb className="h-5 w-5 text-primary" />
                 Suggest Changes
               </>
             )}
@@ -141,19 +142,21 @@ const ReportSuggestDialog = ({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="description">
+            <Label>
               {isReport ? "Additional details" : "Your suggestion"}
             </Label>
-            <Textarea
-              id="description"
+            <LightEditor
+              ref={editorRef}
+              value={description}
+              onChange={setDescription}
               placeholder={
                 isReport
                   ? "Please describe the issue in detail..."
                   : "Describe the changes you'd like to see..."
               }
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
+              minHeight="100px"
+              showCharCount={false}
+              className="border rounded-md"
             />
           </div>
 
