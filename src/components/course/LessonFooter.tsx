@@ -25,8 +25,8 @@ interface LessonFooterProps {
   onMarkComplete: () => Promise<void>;
   canComplete: boolean; // User is logged in
   
-  // Progress info
-  currentLessonIndex: number;
+  // Progress info (based on COMPLETED lessons, not position)
+  completedLessonsCount: number;
   totalLessons: number;
   courseProgressPercentage: number;
   
@@ -63,7 +63,7 @@ const LessonFooter = ({
   isMarkingComplete,
   onMarkComplete,
   canComplete,
-  currentLessonIndex,
+  completedLessonsCount,
   totalLessons,
   courseProgressPercentage,
   isCourseComplete,
@@ -97,10 +97,10 @@ const LessonFooter = ({
     setTimeout(() => setJustCompleted(false), 2000);
   }, [isCompleted, onMarkComplete]);
 
-  // Progress text for completed state
+  // Progress text for completed state - based on COMPLETED lessons count
   const progressText = useMemo(() => {
-    return `Lesson ${currentLessonIndex + 1} of ${totalLessons} completed • ${courseProgressPercentage}% of course done`;
-  }, [currentLessonIndex, totalLessons, courseProgressPercentage]);
+    return `${completedLessonsCount} of ${totalLessons} lessons completed • ${courseProgressPercentage}% of course done`;
+  }, [completedLessonsCount, totalLessons, courseProgressPercentage]);
 
   return (
     <div className="mt-8 space-y-0">
