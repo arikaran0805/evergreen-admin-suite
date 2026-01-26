@@ -87,8 +87,11 @@ const ExecutableCodeBlockView = ({
   const [showOutput, setShowOutput] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(true);
   
-  // Store original code for comparison
+  // Store original code for comparison (code edit context tracking)
   const [originalCode] = useState(code);
+  
+  // Store code snapshot when entering edit mode (for cancel/revert)
+  const [codeBeforeEdit, setCodeBeforeEdit] = useState(code);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const codeRef = useRef<HTMLElement>(null);
@@ -135,18 +138,23 @@ const ExecutableCodeBlockView = ({
   }, [updateAttributes]);
 
   const handleEditToggle = () => {
-    setIsEditingCode(!isEditingCode);
     if (!isEditingCode) {
-      // Entering edit mode - focus textarea
+      // Entering edit mode - snapshot current code for potential revert
+      setCodeBeforeEdit(code);
+      setIsEditingCode(true);
       setTimeout(() => textareaRef.current?.focus(), 0);
     } else {
-      // Exiting edit mode - discard changes, revert to original
-      setEditedCode(code);
+      // Exiting via toggle (X button) - revert to snapshot
+      setEditedCode(codeBeforeEdit);
+      updateAttributes({ code: codeBeforeEdit });
+      setIsEditingCode(false);
     }
   };
 
   const handleCancelEdit = () => {
-    setEditedCode(code); // Reset to original node attribute code
+    // Revert to code snapshot from before editing started
+    setEditedCode(codeBeforeEdit);
+    updateAttributes({ code: codeBeforeEdit });
     setIsEditingCode(false);
   };
 
@@ -323,9 +331,9 @@ const ExecutableCodeBlockView = ({
           </div>
         </div>
 
-        {/* Output panel - sharp top corners, rounded bottom, gray background */}
+        {/* Output panel - sharp top corners, rounded bottom, visible gray background */}
         {showOutput && (
-          <div className="mt-2 rounded-t-none rounded-b-xl border border-border/40 bg-muted/50 overflow-hidden">
+          <div className="mt-2 rounded-t-none rounded-b-xl border border-border bg-muted overflow-hidden">
             {/* Header row */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
