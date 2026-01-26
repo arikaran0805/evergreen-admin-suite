@@ -25,6 +25,7 @@ import SEOHead from "@/components/SEOHead";
 import CourseStructuredData from "@/components/CourseStructuredData";
 import ContentRenderer from "@/components/ContentRenderer";
 import CourseReviewDialog from "@/components/CourseReviewDialog";
+import { ReviewPreviewCard } from "@/components/course-completed";
 import ShareTooltip from "@/components/ShareTooltip";
 import CommentDialog from "@/components/CommentDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
@@ -1654,6 +1655,14 @@ const CourseDetail = () => {
                                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                               />
                             </div>
+                          )}
+
+                          {/* Review Preview - Social proof */}
+                          {courseReviews.length > 0 && (
+                            <ReviewPreviewCard
+                              reviews={courseReviews}
+                              averageRating={courseStats.averageRating}
+                            />
                           )}
 
                           {/* Action Reinforcement Card - mirrors Primary CTA */}
