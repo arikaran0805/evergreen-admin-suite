@@ -1491,7 +1491,7 @@ const CourseDetail = () => {
                       currentLessonIndex={currentOrderedIndex}
                       totalLessons={orderedPosts.length}
                       courseProgressPercentage={courseProgress.percentage}
-                      isLastLesson={currentOrderedIndex === orderedPosts.length - 1 && orderedPosts.length > 0}
+                      isCourseComplete={courseProgress.isCompleted}
                       courseId={course?.id || ""}
                       tags={allTags}
                       onCommentClick={() => setCommentDialogOpen(true)}

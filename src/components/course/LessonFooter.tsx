@@ -30,8 +30,8 @@ interface LessonFooterProps {
   totalLessons: number;
   courseProgressPercentage: number;
   
-  // Course completion navigation
-  isLastLesson: boolean;
+  // Course completion state (ALL lessons completed)
+  isCourseComplete: boolean;
   courseId: string;
   
   // Tags
@@ -66,7 +66,7 @@ const LessonFooter = ({
   currentLessonIndex,
   totalLessons,
   courseProgressPercentage,
-  isLastLesson,
+  isCourseComplete,
   courseId,
   tags,
   onCommentClick,
@@ -292,8 +292,8 @@ const LessonFooter = ({
         )}
 
         {/* Next Button OR Finish Course Button */}
-        {isLastLesson && isCompleted ? (
-          /* Final lesson completed - Show "Finish Course" CTA */
+        {isCourseComplete && isCompleted ? (
+          /* ALL lessons completed - Show "Finish Course" CTA */
           <Button 
             size="lg"
             variant="default"
