@@ -43,8 +43,12 @@ const NextStepsCard = ({ recommendedCourse }: NextStepsCardProps) => {
                   <p className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     {recommendedCourse.name}
                   </p>
+                  {/* Confidence tag */}
+                  <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                    Recommended Next Step
+                  </span>
                   {recommendedCourse.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {recommendedCourse.description}
                     </p>
                   )}
@@ -63,8 +67,8 @@ const NextStepsCard = ({ recommendedCourse }: NextStepsCardProps) => {
           </Link>
         )}
 
-        {/* Secondary Actions */}
-        <div className="flex flex-wrap gap-3 pt-2">
+        {/* Secondary Actions - Dashboard has slightly more prominence */}
+        <div className="flex flex-wrap items-center gap-3 pt-4">
           <Button variant="outline" asChild>
             <Link to="/courses" className="gap-2">
               <BookOpen className="h-4 w-4" />
@@ -72,7 +76,7 @@ const NextStepsCard = ({ recommendedCourse }: NextStepsCardProps) => {
             </Link>
           </Button>
           
-          <Button variant="ghost" asChild>
+          <Button variant="outline" asChild className="font-medium">
             <Link to="/profile" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
               Go to Dashboard
