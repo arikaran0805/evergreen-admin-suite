@@ -5,18 +5,21 @@
  * Provides download, LinkedIn share, and verification options.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Download, Linkedin, ShieldCheck, Award } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface CertificateCardProps {
   learnerName: string;
   courseName: string;
   completionDate: Date;
   courseId: string;
-  certificateId?: string;
 }
 
 const CertificateCard = ({
@@ -24,10 +27,62 @@ const CertificateCard = ({
   courseName,
   completionDate,
   courseId,
-  certificateId,
 }: CertificateCardProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
+
+  // Generate or fetch certificate on mount
+  useEffect(() => {
+    const ensureCertificate = async () => {
+      if (!user || !courseId) return;
+
+      try {
+        // Check if certificate already exists
+        const { data: existing } = await supabase
+          .from("certificates")
+          .select("certificate_id")
+          .eq("user_id", user.id)
+          .eq("course_id", courseId)
+          .maybeSingle();
+
+        if (existing) {
+          setCertificateId(existing.certificate_id);
+          return;
+        }
+
+        // Generate new certificate ID
+        const newCertId = `CERT-${courseId.slice(0, 8).toUpperCase()}-${user.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+
+        // Insert new certificate
+        const { error } = await supabase
+          .from("certificates")
+          .insert({
+            user_id: user.id,
+            course_id: courseId,
+            certificate_id: newCertId,
+            learner_name: learnerName,
+            course_name: courseName,
+            issued_at: completionDate.toISOString(),
+            status: "valid",
+          });
+
+        if (error) {
+          console.error("Error creating certificate:", error);
+          return;
+        }
+
+        setCertificateId(newCertId);
+      } catch (error) {
+        console.error("Error ensuring certificate:", error);
+      }
+    };
+
+    ensureCertificate();
+  }, [user, courseId, learnerName, courseName, completionDate]);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -187,10 +242,14 @@ const CertificateCard = ({
   };
 
   const handleVerify = () => {
-    // For now, just show an alert - in production this would link to a verification page
     if (certificateId) {
-      const verifyUrl = `${window.location.origin}/verify/${certificateId}`;
-      navigator.clipboard.writeText(verifyUrl);
+      // Navigate to public verification page
+      navigate(`/verify/certificate/${certificateId}`);
+    } else {
+      toast({
+        title: "Certificate not ready",
+        description: "Please wait while your certificate is being generated.",
+      });
     }
   };
 
@@ -267,14 +326,19 @@ const CertificateCard = ({
                 Share on LinkedIn
               </Button>
               
-              <Button 
-                variant="ghost" 
-                onClick={handleVerify}
-                className="flex-1 sm:flex-none"
-              >
-                <ShieldCheck className="h-4 w-4 mr-2" />
-                Verify Certificate
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button 
+                  variant="ghost" 
+                  onClick={handleVerify}
+                  className="flex-1 sm:flex-none"
+                >
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Verify Certificate
+                </Button>
+                <p className="text-xs text-muted-foreground text-center sm:text-left">
+                  Allows employers to verify this certificate
+                </p>
+              </div>
             </div>
             
             {/* Trust reinforcement text */}

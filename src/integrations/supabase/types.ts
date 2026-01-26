@@ -568,6 +568,50 @@ export type Database = {
         }
         Relationships: []
       }
+      certificates: {
+        Row: {
+          certificate_id: string
+          course_id: string
+          course_name: string
+          created_at: string
+          id: string
+          issued_at: string
+          learner_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          certificate_id: string
+          course_id: string
+          course_name: string
+          created_at?: string
+          id?: string
+          issued_at?: string
+          learner_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          certificate_id?: string
+          course_id?: string
+          course_name?: string
+          created_at?: string
+          id?: string
+          issued_at?: string
+          learner_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_reactions: {
         Row: {
           comment_id: string
