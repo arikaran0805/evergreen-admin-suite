@@ -1532,16 +1532,32 @@ const CourseDetail = () => {
                         </div>
                       </div>
 
-                      {/* Primary CTA */}
-                      <Button
-                        size="lg"
-                        className="bg-primary hover:bg-primary/90 gap-2 px-8 shadow-lg"
-                        onClick={ctaProps.onClick}
-                        disabled={posts.length === 0}
-                      >
-                        <CtaIcon className="h-5 w-5" />
-                        {ctaProps.label}
-                      </Button>
+                      {/* CTAs */}
+                      <div className="flex items-center justify-center gap-3">
+                        {/* Primary CTA */}
+                        <Button
+                          size="lg"
+                          className="bg-primary hover:bg-primary/90 gap-2 px-8 shadow-lg"
+                          onClick={ctaProps.onClick}
+                          disabled={posts.length === 0}
+                        >
+                          <CtaIcon className="h-5 w-5" />
+                          {ctaProps.label}
+                        </Button>
+                        
+                        {/* View Certificate - Only when course is completed */}
+                        {courseStats.isEnrolled && courseProgress.isCompleted && (
+                          <Button
+                            size="lg"
+                            variant="outline"
+                            className="gap-2 px-6"
+                            onClick={() => navigate(`/course/${course.id}/completed`)}
+                          >
+                            <Award className="h-5 w-5" />
+                            View Certificate
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     {/* TABS */}
