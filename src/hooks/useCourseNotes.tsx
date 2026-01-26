@@ -467,15 +467,50 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
 
   /**
    * Select a note by lessonId (used for context switching from Quick Notes)
+   * Returns the note if found, null otherwise
    */
-  const selectNoteByLessonId = useCallback((lessonId: string) => {
+  const selectNoteByLessonId = useCallback((lessonId: string): CourseNote | null => {
     const note = notes.find(n => n.lesson_id === lessonId && n.entity_type === 'lesson');
     if (note) {
       selectNote(note);
-      return true;
+      return note;
     }
-    return false;
+    return null;
   }, [notes, selectNote]);
+
+  /**
+   * Find or create a lesson note - ensures a note exists for the given lesson
+   * Used for context switching when the note may not exist yet
+   */
+  const findOrCreateLessonNote = useCallback(async (lessonId: string): Promise<CourseNote | null> => {
+    // First check if note already exists
+    const existingNote = notes.find(n => n.lesson_id === lessonId && n.entity_type === 'lesson');
+    if (existingNote) {
+      selectNote(existingNote);
+      return existingNote;
+    }
+
+    // Note doesn't exist, fetch lesson title and create one
+    if (!courseId || !userId) return null;
+
+    try {
+      // Fetch the lesson title
+      const { data: lessonData } = await supabase
+        .from("posts")
+        .select("title")
+        .eq("id", lessonId)
+        .maybeSingle();
+
+      const lessonTitle = lessonData?.title || "Unknown Lesson";
+      
+      // Create the note
+      const newNote = await createLessonNote(lessonId, lessonTitle);
+      return newNote;
+    } catch (error) {
+      console.error("Error finding or creating lesson note:", error);
+      return null;
+    }
+  }, [notes, selectNote, courseId, userId, createLessonNote]);
 
   return {
     notes,
@@ -487,6 +522,7 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     selectNote,
     selectNoteById,
     selectNoteByLessonId,
+    findOrCreateLessonNote,
     setEditContent,
     createUserNote,
     createLessonNote,

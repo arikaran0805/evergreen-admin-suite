@@ -74,6 +74,7 @@ export function NotesFocusMode({
     selectNote,
     selectNoteById,
     selectNoteByLessonId,
+    findOrCreateLessonNote,
     setEditContent,
     createUserNote,
     createLessonNote,
@@ -89,32 +90,45 @@ export function NotesFocusMode({
   const editorRef = useRef<any>(null);
 
   // Handle context switch requests from other tabs
+  // Uses an async effect to handle note creation if needed
   useEffect(() => {
     if (!switchToContext || isLoading) return;
     
-    let switched = false;
+    const performSwitch = async () => {
+      let switched = false;
+      
+      // Try to switch by noteId first
+      if (switchToContext.noteId) {
+        switched = selectNoteById(switchToContext.noteId);
+      }
+      // Fallback to lessonId - find existing or create new note
+      else if (switchToContext.lessonId) {
+        // selectNoteByLessonId now returns the note or null
+        const existingNote = selectNoteByLessonId(switchToContext.lessonId);
+        if (existingNote) {
+          switched = true;
+        } else {
+          // Note doesn't exist for this lesson - create one
+          const newNote = await findOrCreateLessonNote(switchToContext.lessonId);
+          switched = !!newNote;
+        }
+      }
+      
+      // Notify that we've processed the switch request
+      if (onContextSwitched) {
+        onContextSwitched();
+      }
+      
+      // Focus editor after switching
+      if (switched) {
+        setTimeout(() => {
+          editorRef.current?.focus?.();
+        }, 100);
+      }
+    };
     
-    // Try to switch by noteId first
-    if (switchToContext.noteId) {
-      switched = selectNoteById(switchToContext.noteId);
-    }
-    // Fallback to lessonId if no noteId or noteId not found
-    else if (switchToContext.lessonId) {
-      switched = selectNoteByLessonId(switchToContext.lessonId);
-    }
-    
-    // Notify that we've processed the switch request
-    if (onContextSwitched) {
-      onContextSwitched();
-    }
-    
-    // Focus editor after switching
-    if (switched) {
-      setTimeout(() => {
-        editorRef.current?.focus?.();
-      }, 100);
-    }
-  }, [switchToContext, isLoading, selectNoteById, selectNoteByLessonId, onContextSwitched]);
+    performSwitch();
+  }, [switchToContext, isLoading, selectNoteById, selectNoteByLessonId, findOrCreateLessonNote, onContextSwitched]);
 
   // Show "Saving…" only briefly during active writes
   useEffect(() => {
