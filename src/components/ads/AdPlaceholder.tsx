@@ -121,6 +121,11 @@ const AdPlaceholder = ({
     }
   };
 
+  // Don't render anything if no valid credentials in production
+  if (!hasValidCredentials) {
+    return null;
+  }
+
   return (
     <div 
       ref={adRef}
@@ -134,26 +139,14 @@ const AdPlaceholder = ({
       data-ad-client={googleAdClient}
       data-ad-type={adType}
     >
-      {hasValidCredentials ? (
-        <ins
-          className="adsbygoogle"
-          style={{ display: "block", width: "100%", height: "100%" }}
-          data-ad-client={googleAdClient}
-          data-ad-slot={googleAdSlot}
-          data-ad-format={getAdFormat()}
-          data-full-width-responsive="true"
-        />
-      ) : (
-        <div className="text-muted-foreground text-sm text-center">
-          <div className="font-medium">Ad Placeholder</div>
-          <div className="text-xs opacity-70 mt-1">{adType}</div>
-          {googleAdSlot && (
-            <div className="text-xs opacity-50 mt-2">
-              Slot: {googleAdSlot}
-            </div>
-          )}
-        </div>
-      )}
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%", height: "100%" }}
+        data-ad-client={googleAdClient}
+        data-ad-slot={googleAdSlot}
+        data-ad-format={getAdFormat()}
+        data-full-width-responsive="true"
+      />
     </div>
   );
 };
