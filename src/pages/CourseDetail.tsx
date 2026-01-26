@@ -435,17 +435,22 @@ const CourseDetail = () => {
       if (event.origin !== window.location.origin) return;
       
       if (event.data?.type === "NAVIGATE_TO_LESSON") {
+        console.log("Received NAVIGATE_TO_LESSON message:", event.data);
         const { lessonSlug: targetLessonSlug, courseSlug: targetCourseSlug } = event.data;
         
         // Navigate to the lesson if we have the slug
         if (targetLessonSlug && targetCourseSlug) {
           // If we're already on this course, just update the URL params
           if (slug === targetCourseSlug) {
+            console.log("Navigating to lesson in current course:", targetLessonSlug);
             setSearchParams({ lesson: targetLessonSlug, tab: "lessons" }, { replace: true });
           } else {
+            console.log("Navigating to lesson in different course:", targetCourseSlug, targetLessonSlug);
             // Navigate to the other course's lesson
             navigate(`/course/${targetCourseSlug}?lesson=${targetLessonSlug}&tab=lessons`);
           }
+        } else {
+          console.warn("Missing lessonSlug or courseSlug in message");
         }
       }
     };
