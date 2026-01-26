@@ -12,6 +12,10 @@ import Arcade from "@/pages/Arcade";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Auth from "@/pages/Auth";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import VerifyEmail from "@/pages/VerifyEmail";
+import AcceptInvite from "@/pages/AcceptInvite";
 import ResetPassword from "@/pages/ResetPassword";
 import Profile from "@/pages/Profile";
 import TagPosts from "@/pages/TagPosts";
@@ -41,8 +45,17 @@ export const publicRoutes = [
   <Route key="contact" path="/contact" element={<Contact />} />,
   <Route key="terms" path="/terms" element={<Terms />} />,
   <Route key="privacy" path="/privacy" element={<Privacy />} />,
-  <Route key="auth" path="/auth" element={<Auth />} />,
+  
+  // Auth Routes
+  <Route key="login" path="/login" element={<Login />} />,
+  <Route key="signup" path="/signup" element={<Signup />} />,
+  <Route key="verify-email" path="/verify-email" element={<VerifyEmail />} />,
+  <Route key="verify-email-confirm" path="/verify-email/confirm" element={<VerifyEmail />} />,
+  <Route key="forgot-password" path="/forgot-password" element={<Navigate to="/login" replace />} />,
+  <Route key="invite" path="/invite/:token" element={<AcceptInvite />} />,
+  <Route key="auth" path="/auth" element={<Navigate to="/login" replace />} />,
   <Route key="reset-password" path="/reset-password" element={<ResetPassword />} />,
+  
   <Route key="profile" path="/profile" element={<Profile />} />,
   <Route key="access-denied" path="/access-denied" element={<AccessDenied />} />,
   <Route key="unauthorized" path="/unauthorized" element={<AccessDenied />} />,
