@@ -38,7 +38,6 @@ import { LearningCockpit } from "@/components/course/LearningCockpit";
 import { CourseSidebarAds } from "@/components/course/CourseSidebarAds";
 import { 
   GuestContextBanner, 
-  ProgressTeaser, 
   CertificateTeaser, 
   CompletionNudge,
   LockedSidebarSection,
@@ -1543,10 +1542,6 @@ const CourseDetail = () => {
                       <GuestContextBanner className="mb-6" />
                     )}
 
-                    {/* Progress Teaser for Guests - where progress bar would be */}
-                    {isGuest && (
-                      <ProgressTeaser className="mb-6" />
-                    )}
 
                     {/* Completion Nudge for Learners - 40-60% trigger */}
                     {isLearner && courseStats.isEnrolled && course?.id && (
