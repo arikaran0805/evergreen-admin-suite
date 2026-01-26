@@ -415,7 +415,7 @@ export const CourseSidebar = ({
                           {/* Module Progress Indicator - Only for authenticated users */}
                           {isAuthenticated && lessonProgress.totalPosts > 0 && (
                             <span className="text-[10px] text-muted-foreground tabular-nums">
-                              {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
+                              {lessonProgress.completedPosts} of {lessonProgress.totalPosts} completed
                             </span>
                           )}
                           {/* Chevron - hide for single module if not needed */}
