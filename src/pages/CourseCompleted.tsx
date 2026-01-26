@@ -366,11 +366,6 @@ const CourseCompleted = () => {
     }
   };
 
-  // Generate certificate ID
-  const certificateId = course && user 
-    ? `CERT-${course.id.slice(0, 8).toUpperCase()}-${user.id.slice(0, 8).toUpperCase()}`
-    : undefined;
-
   if (loading || authLoading) {
     return (
       <Layout>
@@ -436,7 +431,6 @@ const CourseCompleted = () => {
               courseName={course.name}
               completionDate={completionData.completionDate}
               courseId={course.id}
-              certificateId={certificateId}
             />
           </section>
 
