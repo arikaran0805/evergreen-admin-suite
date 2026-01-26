@@ -15,6 +15,7 @@ import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useUserState } from "@/hooks/useUserState";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
 import { useCourseTabRegistration } from "@/hooks/useCourseTabManager";
@@ -32,6 +33,10 @@ import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
 import CourseNotesTab from "@/components/course/CourseNotesTab";
 import LessonFooter from "@/components/course/LessonFooter";
+import { GuestBanner } from "@/components/course/GuestBanner";
+import { ProTeaser } from "@/components/course/ProTeaser";
+import { LearningCockpit } from "@/components/course/LearningCockpit";
+import { CourseSidebarAds } from "@/components/course/CourseSidebarAds";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -174,6 +179,7 @@ const CourseDetail = () => {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
+  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, markAsInternal, isLoading: userStateLoading } = useUserState();
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
@@ -263,6 +269,32 @@ const CourseDetail = () => {
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
   }, [progress.completedLessons, posts.length]);
 
+  // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
+  useEffect(() => {
+    // Wait for data to load
+    if (loading || userStateLoading || posts.length === 0) return;
+    
+    // Only redirect guests from external sources who don't have a lesson already selected
+    if (isGuest && entrySource === "external" && !lessonSlug) {
+      const firstPost = posts[0];
+      if (firstPost) {
+        // Redirect to first lesson without showing Course Detail Page
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("lesson", firstPost.slug);
+        nextParams.set("tab", "lessons");
+        setSearchParams(nextParams, { replace: true });
+      }
+    }
+  }, [loading, userStateLoading, isGuest, entrySource, lessonSlug, posts, searchParams, setSearchParams]);
+
+  // Mark as internal navigation when user navigates within the app
+  useEffect(() => {
+    // Mark as internal after first interaction with course
+    if (user && course) {
+      markAsInternal();
+    }
+  }, [user, course, markAsInternal]);
+
   // Resolve default tab based on URL param, user role, and progress state
   useEffect(() => {
     // Skip if already resolved or still loading essential data
@@ -297,6 +329,13 @@ const CourseDetail = () => {
       return;
     }
 
+    // Priority 5: Learners see Lessons tab by default
+    if (isLearner || isPro) {
+      setActiveTab("lessons");
+      setDefaultTabResolved(true);
+      return;
+    }
+
     // Default: Not started / not enrolled / unknown → Course Details (onboarding)
     setActiveTab("details");
     setDefaultTabResolved(true);
@@ -310,6 +349,8 @@ const CourseDetail = () => {
     tabParam,
     courseStats.isEnrolled,
     courseProgress.hasStarted,
+    isLearner,
+    isPro,
   ]);
 
   // Persist active tab to URL when it changes
@@ -1464,6 +1505,11 @@ const CourseDetail = () => {
                       />
                     )}
 
+                    {/* Guest Banner - inform guests about limitations */}
+                    {isGuest && (
+                      <GuestBanner className="mb-6" />
+                    )}
+
                     {/* Lesson Content */}
                     <ContentRenderer 
                       htmlContent={selectedPost.content || ''}
@@ -1472,6 +1518,7 @@ const CourseDetail = () => {
                     />
 
                     {/* Lesson Footer - Completion, Tags, Actions, Navigation */}
+                    {/* Hide progress-related actions for guests */}
                     <LessonFooter
                       isCompleted={selectedPost ? isLessonCompleted(selectedPost.id) : false}
                       isMarkingComplete={markingComplete}
@@ -1488,15 +1535,15 @@ const CourseDetail = () => {
                         }
                         setMarkingComplete(false);
                       }}
-                      canComplete={!!user}
-                      completedLessonsCount={courseProgress.completedCount}
+                      canComplete={!!user && !isGuest}
+                      completedLessonsCount={isGuest ? 0 : courseProgress.completedCount}
                       totalLessons={orderedPosts.length}
-                      courseProgressPercentage={courseProgress.percentage}
-                      isCourseComplete={courseProgress.isCompleted}
+                      courseProgressPercentage={isGuest ? 0 : courseProgress.percentage}
+                      isCourseComplete={!isGuest && courseProgress.isCompleted}
                       courseId={course?.id || ""}
                       tags={allTags}
                       onCommentClick={() => setCommentDialogOpen(true)}
-                      onSuggestChangesClick={() => setSuggestDialogOpen(true)}
+                      onSuggestChangesClick={isGuest ? undefined : () => setSuggestDialogOpen(true)}
                       onLikeClick={handleLikeToggle}
                       likeCount={likeCount}
                       hasLiked={hasLiked}
@@ -1891,41 +1938,112 @@ const CourseDetail = () => {
             </Card>
           </main>
 
-          {/* RIGHT SIDEBAR */}
+          {/* RIGHT SIDEBAR - Role-based content */}
           {selectedPost ? (
-            /* Lesson Assistant Sidebar - when viewing a lesson */
-            user && courseStats.isEnrolled && (
-              <LessonRightSidebar
+            /* Lesson view sidebars */
+            isPro ? (
+              /* PRO: Learning Cockpit - full features, no ads */
+              <LearningCockpit
                 lessonId={selectedPost.id}
                 lessonTitle={selectedPost.title}
                 courseId={course?.id}
                 courseSlug={slug}
-                userId={user.id}
+                userId={user?.id || ""}
                 isLessonCompleted={isLessonCompleted(selectedPost.id)}
                 isHeaderVisible={isHeaderVisible}
                 showAnnouncement={showAnnouncement}
-                assignedModerator={null}
+                courseProgress={courseProgress}
+                certificateEligible={courseProgress.isCompleted}
+                onOpenNotes={() => openNotesTab()}
               />
-            )
-          ) : (
-            /* Course Metadata Sidebar - when on course overview tabs */
-            activeTab !== "notes" && (
-              <CourseMetadataSidebar
-                course={course}
-                careers={careers}
-                estimatedDuration={formatTotalReadingTime(posts)}
-                lastUpdated={posts[0]?.updated_at 
-                  ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                  : undefined
-                }
-                isAdmin={isAdmin}
-                isModerator={isModerator}
+            ) : isLearner && courseStats.isEnrolled ? (
+              /* LEARNER (enrolled): Show ads + Pro teaser */
+              <aside className="hidden xl:block w-[300px] flex-shrink-0">
+                <div className={cn(
+                  "sticky transition-[top] duration-200 ease-out",
+                  isHeaderVisible
+                    ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
+                    : (showAnnouncement ? 'top-[4.75rem]' : 'top-10')
+                )}>
+                  <div className="space-y-4 p-1 pb-6">
+                    {/* Ad slots for free learners */}
+                    <CourseSidebarAds
+                      adSettings={adSettings ? {
+                        googleAdClient: adSettings.googleAdClient,
+                        sidebarTopSlot: adSettings.sidebarTopSlot,
+                        sidebarMiddleSlot: adSettings.sidebarMiddleSlot,
+                        sidebarBottomSlot: adSettings.sidebarBottomSlot,
+                      } : null}
+                      isHeaderVisible={isHeaderVisible}
+                      showAnnouncement={showAnnouncement}
+                    />
+                    
+                    {/* Pro teaser for upgrade */}
+                    <ProTeaser />
+                  </div>
+                </div>
+              </aside>
+            ) : isGuest ? (
+              /* GUEST: Show ads only */
+              <CourseSidebarAds
+                adSettings={adSettings ? {
+                  googleAdClient: adSettings.googleAdClient,
+                  sidebarTopSlot: adSettings.sidebarTopSlot,
+                  sidebarMiddleSlot: adSettings.sidebarMiddleSlot,
+                  sidebarBottomSlot: adSettings.sidebarBottomSlot,
+                } : null}
                 isHeaderVisible={isHeaderVisible}
                 showAnnouncement={showAnnouncement}
-                linkedPrerequisites={linkedPrerequisites}
-                creator={courseCreator}
-                maintenanceTeam={maintenanceTeam}
               />
+            ) : null
+          ) : (
+            /* Course overview sidebars */
+            activeTab !== "notes" && (
+              <aside className="hidden xl:block w-[300px] flex-shrink-0">
+                <div className={cn(
+                  "sticky transition-[top] duration-200 ease-out",
+                  isHeaderVisible
+                    ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
+                    : (showAnnouncement ? 'top-[4.75rem]' : 'top-10')
+                )}>
+                  <div className="space-y-4 p-1 pb-6">
+                    {/* Course metadata always shown */}
+                    <CourseMetadataSidebar
+                      course={course}
+                      careers={careers}
+                      estimatedDuration={formatTotalReadingTime(posts)}
+                      lastUpdated={posts[0]?.updated_at 
+                        ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                        : undefined
+                      }
+                      isAdmin={isAdmin}
+                      isModerator={isModerator}
+                      isHeaderVisible={isHeaderVisible}
+                      showAnnouncement={showAnnouncement}
+                      linkedPrerequisites={linkedPrerequisites}
+                      creator={courseCreator}
+                      maintenanceTeam={maintenanceTeam}
+                    />
+                    
+                    {/* Ads for non-Pro users */}
+                    {shouldShowAds && (
+                      <CourseSidebarAds
+                        adSettings={adSettings ? {
+                          googleAdClient: adSettings.googleAdClient,
+                          sidebarTopSlot: adSettings.sidebarTopSlot,
+                          sidebarMiddleSlot: adSettings.sidebarMiddleSlot,
+                          sidebarBottomSlot: adSettings.sidebarBottomSlot,
+                        } : null}
+                        isHeaderVisible={isHeaderVisible}
+                        showAnnouncement={showAnnouncement}
+                      />
+                    )}
+                    
+                    {/* Pro teaser for free learners */}
+                    {isLearner && <ProTeaser />}
+                  </div>
+                </div>
+              </aside>
             )
           )}
         </div>
