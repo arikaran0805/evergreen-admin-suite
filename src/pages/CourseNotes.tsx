@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotesFocusMode } from "@/components/notes";
 import { useNotesTabRegistration } from "@/hooks/useNotesTabManager";
+import { useCourseNavigator } from "@/hooks/useCourseTabManager";
 
 interface CourseInfo {
   id: string;
@@ -43,6 +44,9 @@ const CourseNotes = () => {
   // Register this tab for single-tab-per-course management
   // Pass the switch handler to receive context-switch messages
   const { closeAndFocusOpener } = useNotesTabRegistration(courseId, handleSwitchNote);
+
+  // Course navigator - uses BroadcastChannel to find and navigate existing Course Detail tab
+  const { navigateToLesson } = useCourseNavigator();
 
   // Fetch course info
   useEffect(() => {
@@ -97,9 +101,9 @@ const CourseNotes = () => {
     }
   };
 
-  // Handle navigate to lesson - open in course tab
+  // Handle navigate to lesson - reuses existing Course Detail tab via BroadcastChannel
   const handleNavigateToLesson = async (lessonId: string) => {
-    if (!course?.slug) return;
+    if (!course?.slug || !course?.id) return;
     
     try {
       // Fetch the lesson slug for proper navigation
@@ -110,7 +114,7 @@ const CourseNotes = () => {
         .maybeSingle();
       
       if (error) {
-        console.error("Error fetching lesson:", error);
+        console.error("[CourseNotes] Error fetching lesson:", error);
         // Navigate to lessons tab as fallback
         navigate(`/course/${course.slug}?tab=lessons`);
         return;
@@ -118,29 +122,40 @@ const CourseNotes = () => {
       
       const lessonSlug = lesson?.slug;
       
-      console.log("Navigating to lesson:", { lessonId, lessonSlug, courseSlug: course.slug });
+      console.log("[CourseNotes] Navigating to lesson via BroadcastChannel:", { 
+        lessonId, 
+        lessonSlug, 
+        courseSlug: course.slug,
+        courseId: course.id 
+      });
       
-      // Try to use opener window
-      if (window.opener && !window.opener.closed) {
-        console.log("Sending message to opener window");
-        // Post message to opener to navigate to lesson
-        window.opener.postMessage(
-          { type: "NAVIGATE_TO_LESSON", lessonId, lessonSlug, courseSlug: course.slug },
-          window.location.origin
-        );
-        window.opener.focus();
-      } else if (lessonSlug) {
-        console.log("No opener window, navigating directly");
-        // Fallback: open course with lesson slug in current tab
-        navigate(`/course/${course.slug}?lesson=${lessonSlug}&tab=lessons`);
-      } else {
-        console.log("No lesson slug, navigating to lessons tab");
-        // Ultimate fallback: just go to lessons tab
-        navigate(`/course/${course.slug}?tab=lessons`);
+      // Use the Course Navigator to find/focus existing Course Detail tab
+      // This uses BroadcastChannel for reliable cross-tab communication
+      const navigated = await navigateToLesson({
+        courseId: course.id,
+        courseSlug: course.slug,
+        lessonId,
+        lessonSlug: lessonSlug || undefined,
+      });
+      
+      if (!navigated) {
+        console.warn("[CourseNotes] BroadcastChannel navigation failed, using fallback");
+        // Fallback: Try legacy window.opener method
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(
+            { type: "NAVIGATE_TO_LESSON", lessonId, lessonSlug, courseSlug: course.slug },
+            window.location.origin
+          );
+          window.opener.focus();
+        } else if (lessonSlug) {
+          // Ultimate fallback: navigate in current tab
+          navigate(`/course/${course.slug}?lesson=${lessonSlug}&tab=lessons`);
+        } else {
+          navigate(`/course/${course.slug}?tab=lessons`);
+        }
       }
     } catch (err) {
-      console.error("Failed to navigate to lesson:", err);
-      // Navigate to course as ultimate fallback
+      console.error("[CourseNotes] Failed to navigate to lesson:", err);
       navigate(`/course/${course.slug}?tab=lessons`);
     }
   };

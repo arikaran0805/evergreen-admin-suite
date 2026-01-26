@@ -17,6 +17,7 @@ import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
+import { useCourseTabRegistration } from "@/hooks/useCourseTabManager";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
@@ -232,6 +233,17 @@ const CourseDetail = () => {
   // Notes tab manager - prevents multiple notes tabs for same course
   const { openNotesTab } = useNotesTabOpener(course?.id);
 
+  // Handle navigation to lesson from external tabs (Deep Notes, etc.)
+  const handleExternalLessonNavigation = useCallback((lessonSlug: string) => {
+    console.log('[CourseDetail] External navigation to lesson:', lessonSlug);
+    setSearchParams({ lesson: lessonSlug, tab: "lessons" }, { replace: true });
+    // Scroll to top smoothly when navigating to a lesson
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [setSearchParams]);
+
+  // Register this Course Detail tab for single-tab-per-course management
+  useCourseTabRegistration(course?.id, slug, handleExternalLessonNavigation);
+
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
   }, []);
@@ -428,36 +440,25 @@ const CourseDetail = () => {
     }
   }, [course?.id, user?.id]);
 
-  // Listen for NAVIGATE_TO_LESSON messages from the Notes tab
+  // Legacy: Listen for NAVIGATE_TO_LESSON messages via window.postMessage (fallback)
+  // The primary method is now via BroadcastChannel in useCourseTabRegistration
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from same origin
       if (event.origin !== window.location.origin) return;
       
       if (event.data?.type === "NAVIGATE_TO_LESSON") {
-        console.log("Received NAVIGATE_TO_LESSON message:", event.data);
+        console.log("[CourseDetail] Legacy postMessage navigation:", event.data);
         const { lessonSlug: targetLessonSlug, courseSlug: targetCourseSlug } = event.data;
         
-        // Navigate to the lesson if we have the slug
-        if (targetLessonSlug && targetCourseSlug) {
-          // If we're already on this course, just update the URL params
-          if (slug === targetCourseSlug) {
-            console.log("Navigating to lesson in current course:", targetLessonSlug);
-            setSearchParams({ lesson: targetLessonSlug, tab: "lessons" }, { replace: true });
-          } else {
-            console.log("Navigating to lesson in different course:", targetCourseSlug, targetLessonSlug);
-            // Navigate to the other course's lesson
-            navigate(`/course/${targetCourseSlug}?lesson=${targetLessonSlug}&tab=lessons`);
-          }
-        } else {
-          console.warn("Missing lessonSlug or courseSlug in message");
+        if (targetLessonSlug && targetCourseSlug && slug === targetCourseSlug) {
+          handleExternalLessonNavigation(targetLessonSlug);
         }
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [slug, setSearchParams, navigate]);
+  }, [slug, handleExternalLessonNavigation]);
 
   const fetchCareers = async () => {
     if (!course?.id) return;
