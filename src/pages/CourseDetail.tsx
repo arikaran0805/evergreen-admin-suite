@@ -1603,6 +1603,7 @@ const CourseDetail = () => {
                         setMarkingComplete(false);
                       }}
                       canComplete={!!user && !isGuest}
+                      isGuest={isGuest}
                       completedLessonsCount={isGuest ? 0 : courseProgress.completedCount}
                       totalLessons={orderedPosts.length}
                       courseProgressPercentage={isGuest ? 0 : courseProgress.percentage}

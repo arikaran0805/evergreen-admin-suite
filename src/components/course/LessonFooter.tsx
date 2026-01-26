@@ -24,6 +24,7 @@ interface LessonFooterProps {
   isMarkingComplete: boolean;
   onMarkComplete: () => Promise<void>;
   canComplete: boolean; // User is logged in
+  isGuest: boolean; // User is not authenticated
   
   // Progress info (based on COMPLETED lessons, not position)
   completedLessonsCount: number;
@@ -63,6 +64,7 @@ const LessonFooter = ({
   isMarkingComplete,
   onMarkComplete,
   canComplete,
+  isGuest,
   completedLessonsCount,
   totalLessons,
   courseProgressPercentage,
@@ -196,7 +198,7 @@ const LessonFooter = ({
         {/* Action icons on right */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <TooltipProvider>
-            {/* Comment */}
+            {/* Comment - Always visible */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -213,7 +215,7 @@ const LessonFooter = ({
               </TooltipContent>
             </Tooltip>
 
-            {/* Share */}
+            {/* Share - Always visible */}
             <ShareTooltip
               title={shareTitle}
               url={shareUrl}
@@ -224,8 +226,8 @@ const LessonFooter = ({
               </Button>
             </ShareTooltip>
 
-            {/* Like - HIDDEN before completion, VISIBLE after */}
-            {isCompleted && (
+            {/* Like - Always visible for guests, visible after completion for logged-in users */}
+            {(isGuest || isCompleted) && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -247,8 +249,8 @@ const LessonFooter = ({
               </Tooltip>
             )}
 
-            {/* Suggest Changes - HIDDEN before completion, VISIBLE after */}
-            {isCompleted && onSuggestChangesClick && (
+            {/* Suggest Changes - Only for logged-in users after completion */}
+            {!isGuest && isCompleted && onSuggestChangesClick && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
