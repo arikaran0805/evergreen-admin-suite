@@ -49,7 +49,7 @@ const NextStepsCard = ({ recommendedCourse }: NextStepsCardProps) => {
                   </span>
                   {recommendedCourse.description && (
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {recommendedCourse.description}
+                      {recommendedCourse.description.replace(/<[^>]*>/g, '')}
                     </p>
                   )}
                 </div>
