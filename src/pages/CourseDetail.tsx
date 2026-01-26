@@ -1488,7 +1488,7 @@ const CourseDetail = () => {
                         setMarkingComplete(false);
                       }}
                       canComplete={!!user}
-                      currentLessonIndex={currentOrderedIndex}
+                      completedLessonsCount={courseProgress.completedCount}
                       totalLessons={orderedPosts.length}
                       courseProgressPercentage={courseProgress.percentage}
                       isCourseComplete={courseProgress.isCompleted}
