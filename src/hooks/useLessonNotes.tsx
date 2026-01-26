@@ -9,6 +9,15 @@ interface UseLessonNotesOptions {
   userId: string | undefined;
 }
 
+/**
+ * FIX v2: Added proper lesson switching guards to prevent content leaking between notes.
+ * 
+ * Key fixes:
+ * 1. Track which lessonId the debounced content belongs to
+ * 2. Reset all save-related refs immediately on lesson switch
+ * 3. Validate lessonId in save effect before saving
+ * 4. Prevent saves during lesson transition period
+ */
 export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOptions) {
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -22,6 +31,17 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
   const lastSavedContentRef = useRef<string>("");
   const contentRef = useRef<string>("");
   const pendingRemoteUpdateRef = useRef<{ content: string; updatedAt: string } | null>(null);
+  
+  /**
+   * FIX: Track which lessonId the current content/debouncedContent belongs to
+   * This prevents saving stale content to a newly selected lesson's note
+   */
+  const contentForLessonIdRef = useRef<string | undefined>(undefined);
+  
+  /**
+   * FIX: Flag to prevent saves during lesson transition
+   */
+  const isTransitioningRef = useRef(false);
 
   // Keep a ref of the latest content for conflict checks inside callbacks
   useEffect(() => {
@@ -102,6 +122,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
       setNoteId(null);
       setContent("");
       lastSavedContentRef.current = "";
+      contentForLessonIdRef.current = undefined; // FIX: Clear content ownership
       setLastSaved(null);
     }
   }, [noteId]);
@@ -120,15 +141,21 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
 
   // Reset state immediately when lessonId changes to prevent stale data
   useEffect(() => {
+    // FIX: Mark as transitioning to prevent stale saves
+    isTransitioningRef.current = true;
+    
     // Reset everything before loading new note
     initialLoadRef.current = true;
     setNoteId(null);
     setContent("");
     lastSavedContentRef.current = "";
+    contentForLessonIdRef.current = lessonId; // FIX: Track content ownership
     setLastSaved(null);
+    pendingRemoteUpdateRef.current = null;
     
     if (!lessonId || !userId) {
       setIsLoading(false);
+      isTransitioningRef.current = false;
       return;
     }
 
@@ -148,6 +175,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
           setNoteId(data.id);
           setContent(data.content || "");
           lastSavedContentRef.current = data.content || "";
+          contentForLessonIdRef.current = lessonId; // FIX: Track content ownership
           setLastSaved(new Date(data.updated_at));
           // Initialize the sync bridge with the loaded timestamp
           updateLocalTimestamp(data.updated_at);
@@ -156,6 +184,7 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
           setNoteId(null);
           setContent("");
           lastSavedContentRef.current = "";
+          contentForLessonIdRef.current = lessonId; // FIX: Track content ownership
           setLastSaved(null);
         }
       } catch (error) {
@@ -164,19 +193,43 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
         setNoteId(null);
         setContent("");
         lastSavedContentRef.current = "";
+        contentForLessonIdRef.current = lessonId;
       } finally {
         setIsLoading(false);
         initialLoadRef.current = false;
+        // FIX: Reset transition flag after load completes
+        setTimeout(() => {
+          isTransitioningRef.current = false;
+        }, 100);
       }
     };
 
     loadNote();
   }, [lessonId, userId, updateLocalTimestamp]);
 
-  // Auto-save on debounced content change
+  /**
+   * Auto-save on debounced content change
+   * FIX: Added validation to ensure we're saving to the correct lesson's note
+   */
   useEffect(() => {
     if (initialLoadRef.current || !lessonId || !courseId || !userId) return;
     if (debouncedContent === "" && !noteId) return; // Don't save empty new notes
+    
+    // FIX: Don't save if we're transitioning between lessons
+    if (isTransitioningRef.current) {
+      console.debug('[useLessonNotes] Skipping save during lesson transition');
+      return;
+    }
+    
+    // FIX: Validate that the debounced content belongs to the current lesson
+    // This prevents saving stale content when user switches lessons rapidly
+    if (contentForLessonIdRef.current !== lessonId) {
+      console.debug('[useLessonNotes] Skipping save - content belongs to different lesson', {
+        contentFor: contentForLessonIdRef.current,
+        currentLesson: lessonId,
+      });
+      return;
+    }
     
     // Skip save if this was a remote update (already saved by the other tab)
     if (isRemoteUpdateRef.current) return;
@@ -198,6 +251,13 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
 
           if (error) throw error;
         } else if (debouncedContent.trim()) {
+          // FIX: Double-check lesson hasn't changed during async gap
+          if (contentForLessonIdRef.current !== lessonId) {
+            console.debug('[useLessonNotes] Lesson changed before save started, aborting');
+            setIsSaving(false);
+            return;
+          }
+          
           // Create new lesson-contextual note
           const { data, error } = await supabase
             .from("lesson_notes")
@@ -218,11 +278,14 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
           broadcastCreated(data.id, lessonId);
         }
         
-        lastSavedContentRef.current = debouncedContent;
-        setLastSaved(new Date());
-        
-        // Broadcast update to other tabs (Deep Notes) with timestamp
-        broadcastUpdate(debouncedContent, now);
+        // FIX: Only update refs if we're still on the same lesson
+        if (contentForLessonIdRef.current === lessonId) {
+          lastSavedContentRef.current = debouncedContent;
+          setLastSaved(new Date());
+          
+          // Broadcast update to other tabs (Deep Notes) with timestamp
+          broadcastUpdate(debouncedContent, now);
+        }
       } catch (error) {
         console.error("Error saving lesson note:", error);
       } finally {
@@ -233,9 +296,14 @@ export function useLessonNotes({ lessonId, courseId, userId }: UseLessonNotesOpt
     saveNote();
   }, [debouncedContent, lessonId, courseId, userId, noteId, broadcastUpdate, broadcastCreated]);
 
+  /**
+   * FIX: Update content ownership when content changes from user input
+   */
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
-  }, []);
+    // Track that this content belongs to the currently selected lesson
+    contentForLessonIdRef.current = lessonId;
+  }, [lessonId]);
 
   return {
     content,
