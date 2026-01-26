@@ -81,13 +81,21 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     [placeholder, characterLimit]
   );
 
-  // Parse initial content
+  // Parse initial content - only use draft if parent value is empty
   const initialContent = useMemo(() => {
-    if (draftKey) {
+    // If the parent passes a non-empty value, always use it (don't load draft)
+    const parsedValue = parseContent(value);
+    const isValueEmpty = !value || 
+      (typeof value === 'string' && value.trim() === '') ||
+      (typeof value === 'object' && JSON.stringify(value) === JSON.stringify({ type: 'doc', content: [] }));
+    
+    // Only load draft if draftKey is set AND parent value is empty
+    if (draftKey && isValueEmpty) {
       const draft = autosave.loadDraft();
       if (draft) return draft;
     }
-    return parseContent(value);
+    
+    return parsedValue;
   }, []);
 
   // Editor instance
@@ -110,16 +118,29 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     editor?.setEditable(!disabled);
   }, [editor, disabled]);
 
-  // Sync external value
+  // Sync external value - when parent resets value to empty, clear editor and draft
   useEffect(() => {
     if (!editor) return;
+    
     const newContent = parseContent(value);
     const current = JSON.stringify(editor.getJSON());
     const incoming = JSON.stringify(newContent);
-    if (current !== incoming) {
+    
+    // Check if parent is explicitly passing empty value
+    const isValueEmpty = !value || 
+      (typeof value === 'string' && value.trim() === '') ||
+      (typeof value === 'object' && JSON.stringify(value) === JSON.stringify({ type: 'doc', content: [] }));
+    
+    if (isValueEmpty && current !== incoming) {
+      // Parent is resetting to empty - clear editor AND draft
+      editor.commands.setContent(newContent);
+      if (draftKey) {
+        autosave.clearDraft();
+      }
+    } else if (current !== incoming) {
       editor.commands.setContent(newContent);
     }
-  }, [value, editor]);
+  }, [value, editor, draftKey, autosave]);
 
   // Link handler
   const setLink = useCallback(() => {
