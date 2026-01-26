@@ -97,14 +97,36 @@ export function useCourseNavigator() {
       const lessonParam = lessonSlug ? `?lesson=${lessonSlug}&tab=lessons` : '';
       const courseUrl = `/course/${courseSlug}${lessonParam}`;
 
-      // Strategy 1: Ping existing tab via BroadcastChannel
+      // Strategy 1: Try to focus/reuse existing tab with window.open()
+      // This works even if the tab isn't responding to BroadcastChannel
+      const existingTab = window.open('', tabId);
+      if (existingTab && !existingTab.closed && existingTab.location.href !== 'about:blank') {
+        // Tab exists and has content - send navigation message and focus
+        console.log('[CourseNavigator] Found existing tab via window.open, focusing');
+        
+        if (lessonSlug && channelRef.current) {
+          // Navigate to specific lesson
+          channelRef.current.postMessage({
+            type: 'NAVIGATE_TO_LESSON',
+            courseId,
+            courseSlug,
+            lessonId,
+            lessonSlug,
+            timestamp: Date.now(),
+          } as CourseNavigationMessage);
+        }
+        
+        // Focus the existing tab
+        existingTab.focus();
+        return true;
+      }
+      
+      // Strategy 2: No existing tab found via window name - ping via BroadcastChannel
       if (channelRef.current) {
         const tabExists = await pingExistingCourseTab(channelRef.current, courseId);
         
         if (tabExists) {
-          // Tab exists - send navigation or focus message
           if (lessonSlug) {
-            // Navigate to specific lesson
             channelRef.current.postMessage({
               type: 'NAVIGATE_TO_LESSON',
               courseId,
@@ -113,23 +135,14 @@ export function useCourseNavigator() {
               lessonSlug,
               timestamp: Date.now(),
             } as CourseNavigationMessage);
-            console.log('[CourseNavigator] Found existing tab, sent lesson navigation');
-          } else {
-            // Just focus the tab (no lesson navigation)
-            channelRef.current.postMessage({
-              type: 'FOCUS',
-              courseId,
-              courseSlug,
-              timestamp: Date.now(),
-            } as CourseNavigationMessage);
-            console.log('[CourseNavigator] Found existing tab, sent focus message');
           }
           
+          console.log('[CourseNavigator] Found existing tab via BroadcastChannel');
           return true;
         }
       }
 
-      // Strategy 2: No existing tab found - open new one with named window
+      // Strategy 3: No existing tab found - open new one with named window
       console.log('[CourseNavigator] No existing tab, opening new:', courseUrl);
       window.open(courseUrl, tabId);
       
