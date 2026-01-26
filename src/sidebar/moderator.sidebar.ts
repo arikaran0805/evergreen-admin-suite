@@ -11,6 +11,7 @@ import {
   MessageSquare,
   ClipboardList,
   Activity,
+  Award,
 } from "lucide-react";
 import type { SidebarConfig, SidebarSection } from "./types";
 
@@ -35,6 +36,7 @@ const reviewSection: SidebarSection = {
   title: "Review",
   items: [
     { icon: ClipboardList, label: "Review Queue", path: "/moderator/review" },
+    { icon: Award, label: "Certificates", path: "/moderator/certificates" },
     { icon: MessageSquare, label: "Comments", path: "/moderator/comments" },
   ],
 };
