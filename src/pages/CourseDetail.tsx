@@ -1460,43 +1460,70 @@ const CourseDetail = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleBookmark(undefined, selectedPost?.id)}>
-                                  {isBookmarked(undefined, selectedPost?.id) ? (
-                                    <BookmarkCheck className="h-5 w-5 text-primary fill-primary" />
-                                  ) : (
-                                    <Bookmark className="h-5 w-5" />
-                                  )}
+                          {/* Like button - visible for guests, hidden for logged-in users (they see it in footer) */}
+                          {isGuest && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={handleLikeToggle}
+                                    disabled={likingPost}
+                                  >
+                                    <ThumbsUp className={cn("h-5 w-5", hasLiked && "fill-current text-primary")} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {/* Bookmark - only for logged-in users */}
+                          {!isGuest && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleBookmark(undefined, selectedPost?.id)}>
+                                    {isBookmarked(undefined, selectedPost?.id) ? (
+                                      <BookmarkCheck className="h-5 w-5 text-primary fill-primary" />
+                                    ) : (
+                                      <Bookmark className="h-5 w-5" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{isBookmarked(undefined, selectedPost?.id) ? 'Remove bookmark' : 'Add bookmark'}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {/* More options menu - only for logged-in users */}
+                          {!isGuest && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 data-[state=open]:bg-transparent">
+                                  <MoreVertical className="h-5 w-5" />
                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{isBookmarked(undefined, selectedPost?.id) ? 'Remove bookmark' : 'Add bookmark'}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 data-[state=open]:bg-transparent">
-                                <MoreVertical className="h-5 w-5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={handleLikeToggle} disabled={likingPost}>
-                                <ThumbsUp className={`mr-2 h-4 w-4 ${hasLiked ? 'fill-current' : ''}`} />
-                                <span>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setReportDialogOpen(true)}>
-                                <Flag className="mr-2 h-4 w-4" />
-                                <span>Report</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setSuggestDialogOpen(true)}>
-                                <Lightbulb className="mr-2 h-4 w-4" />
-                                <span>Suggest Changes</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleLikeToggle} disabled={likingPost}>
+                                  <ThumbsUp className={`mr-2 h-4 w-4 ${hasLiked ? 'fill-current' : ''}`} />
+                                  <span>{hasLiked ? 'Unlike' : 'Like'} ({likeCount})</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setReportDialogOpen(true)}>
+                                  <Flag className="mr-2 h-4 w-4" />
+                                  <span>Report</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSuggestDialogOpen(true)}>
+                                  <Lightbulb className="mr-2 h-4 w-4" />
+                                  <span>Suggest Changes</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       </div>
                       <Separator className="mt-2" />
