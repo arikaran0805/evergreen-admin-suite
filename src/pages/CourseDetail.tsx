@@ -428,6 +428,32 @@ const CourseDetail = () => {
     }
   }, [course?.id, user?.id]);
 
+  // Listen for NAVIGATE_TO_LESSON messages from the Notes tab
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from same origin
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data?.type === "NAVIGATE_TO_LESSON") {
+        const { lessonSlug: targetLessonSlug, courseSlug: targetCourseSlug } = event.data;
+        
+        // Navigate to the lesson if we have the slug
+        if (targetLessonSlug && targetCourseSlug) {
+          // If we're already on this course, just update the URL params
+          if (slug === targetCourseSlug) {
+            setSearchParams({ lesson: targetLessonSlug, tab: "lessons" }, { replace: true });
+          } else {
+            // Navigate to the other course's lesson
+            navigate(`/course/${targetCourseSlug}?lesson=${targetLessonSlug}&tab=lessons`);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [slug, setSearchParams, navigate]);
+
   const fetchCareers = async () => {
     if (!course?.id) return;
     try {
