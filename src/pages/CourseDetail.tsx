@@ -16,6 +16,7 @@ import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserState } from "@/hooks/useUserState";
+import { useGuestBannerVisibility } from "@/hooks/useGuestBannerVisibility";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
 import { useCourseTabRegistration } from "@/hooks/useCourseTabManager";
@@ -186,6 +187,7 @@ const CourseDetail = () => {
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
   const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, markAsInternal, isLoading: userStateLoading } = useUserState();
+  const { isBannerVisible, shouldShowProgressTeaser, dismiss: dismissGuestBanner } = useGuestBannerVisibility(isGuest);
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
@@ -1538,13 +1540,13 @@ const CourseDetail = () => {
                       />
                     )}
 
-                    {/* Guest Context Banner - dismissible, session-based */}
-                    {isGuest && (
-                      <GuestContextBanner className="mb-6" />
+                    {/* Guest Context Banner - primary source of truth, dismissible */}
+                    {isBannerVisible && (
+                      <GuestContextBanner className="mb-6" onDismiss={dismissGuestBanner} />
                     )}
 
-                    {/* Progress Teaser for Guests - where progress bar would be */}
-                    {isGuest && (
+                    {/* Progress Teaser - only shows when banner is dismissed (mutual exclusion) */}
+                    {shouldShowProgressTeaser && (
                       <ProgressTeaser className="mb-6" />
                     )}
 
