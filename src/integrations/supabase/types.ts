@@ -570,6 +570,8 @@ export type Database = {
       }
       certificates: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           certificate_id: string
           course_id: string
           course_name: string
@@ -581,6 +583,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           certificate_id: string
           course_id: string
           course_name: string
@@ -592,6 +596,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           certificate_id?: string
           course_id?: string
           course_name?: string

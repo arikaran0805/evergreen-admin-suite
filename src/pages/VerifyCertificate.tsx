@@ -24,7 +24,7 @@ interface CertificateData {
   learner_name: string;
   course_name: string;
   issued_at: string;
-  status: "valid" | "revoked";
+  status: "pending" | "verified" | "revoked";
 }
 
 const VerifyCertificate = () => {
@@ -72,6 +72,47 @@ const VerifyCertificate = () => {
     );
   }
 
+  // If certificate is pending, show a different message
+  if (certificate && certificate.status === "pending") {
+    return (
+      <>
+        <SEOHead
+          title="Certificate Pending Verification"
+          description="This certificate is awaiting moderator verification."
+        />
+        <div className="min-h-screen bg-background">
+          <div className="max-w-2xl mx-auto px-4 py-16">
+            <Card className="p-8 text-center">
+              <div className="mb-6">
+                <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto">
+                  <ShieldX className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              
+              <h1 className="text-2xl font-bold text-foreground mb-2">
+                Verification Pending
+              </h1>
+              
+              <p className="text-muted-foreground mb-2">
+                This certificate is awaiting moderator approval.
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Once verified, this page will display the learner's credentials.
+              </p>
+              
+              <Button asChild variant="outline">
+                <Link to="/" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Go to Homepage
+                </Link>
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (notFound || !certificate) {
     return (
       <>
@@ -110,7 +151,7 @@ const VerifyCertificate = () => {
     );
   }
 
-  const isValid = certificate.status === "valid";
+  const isVerified = certificate.status === "verified";
 
   return (
     <>
@@ -134,10 +175,10 @@ const VerifyCertificate = () => {
           {/* Verification Result Card */}
           <Card className="overflow-hidden">
             {/* Status Header */}
-            <div className={`p-6 ${isValid ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+            <div className={`p-6 ${isVerified ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
               <div className="flex items-center justify-center gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isValid ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}`}>
-                  {isValid ? (
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isVerified ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}`}>
+                  {isVerified ? (
                     <ShieldCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
                   ) : (
                     <ShieldX className="h-6 w-6 text-red-600 dark:text-red-400" />
@@ -145,14 +186,14 @@ const VerifyCertificate = () => {
                 </div>
                 <div className="text-left">
                   <Badge 
-                    variant={isValid ? "default" : "destructive"}
-                    className={isValid ? "bg-green-600 hover:bg-green-700" : ""}
+                    variant={isVerified ? "default" : "destructive"}
+                    className={isVerified ? "bg-green-600 hover:bg-green-700" : ""}
                   >
-                    {isValid ? "Valid Certificate" : "Revoked Certificate"}
+                    {isVerified ? "Verified Certificate" : "Revoked Certificate"}
                   </Badge>
-                  <p className={`text-sm mt-1 ${isValid ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                    {isValid 
-                      ? "This certificate is authentic and valid" 
+                  <p className={`text-sm mt-1 ${isVerified ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                    {isVerified 
+                      ? "This certificate is authentic and verified" 
                       : "This certificate has been revoked"}
                   </p>
                 </div>

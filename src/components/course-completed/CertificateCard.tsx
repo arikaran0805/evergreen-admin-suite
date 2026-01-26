@@ -9,11 +9,12 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Linkedin, ShieldCheck, Award } from "lucide-react";
+import { Download, Linkedin, ShieldCheck, Award, Clock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface CertificateCardProps {
   learnerName: string;
@@ -33,31 +34,38 @@ const CertificateCard = ({
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [certificateId, setCertificateId] = useState<string | null>(null);
+  const [certificateStatus, setCertificateStatus] = useState<"pending" | "verified" | "revoked">("pending");
+  const [isLoading, setIsLoading] = useState(true);
   const certificateRef = useRef<HTMLDivElement>(null);
 
   // Generate or fetch certificate on mount
   useEffect(() => {
     const ensureCertificate = async () => {
-      if (!user || !courseId) return;
+      if (!user || !courseId) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         // Check if certificate already exists
         const { data: existing } = await supabase
           .from("certificates")
-          .select("certificate_id")
+          .select("certificate_id, status")
           .eq("user_id", user.id)
           .eq("course_id", courseId)
           .maybeSingle();
 
         if (existing) {
           setCertificateId(existing.certificate_id);
+          setCertificateStatus(existing.status as "pending" | "verified" | "revoked");
+          setIsLoading(false);
           return;
         }
 
         // Generate new certificate ID
         const newCertId = `CERT-${courseId.slice(0, 8).toUpperCase()}-${user.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
 
-        // Insert new certificate
+        // Insert new certificate with PENDING status (not auto-verified)
         const { error } = await supabase
           .from("certificates")
           .insert({
@@ -67,22 +75,28 @@ const CertificateCard = ({
             learner_name: learnerName,
             course_name: courseName,
             issued_at: completionDate.toISOString(),
-            status: "valid",
+            status: "pending", // Always start as pending, requires moderator approval
           });
 
         if (error) {
           console.error("Error creating certificate:", error);
+          setIsLoading(false);
           return;
         }
 
         setCertificateId(newCertId);
+        setCertificateStatus("pending");
       } catch (error) {
         console.error("Error ensuring certificate:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     ensureCertificate();
   }, [user, courseId, learnerName, courseName, completionDate]);
+
+  const isVerified = certificateStatus === "verified";
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -326,24 +340,49 @@ const CertificateCard = ({
                 Share on LinkedIn
               </Button>
               
-              <div className="flex flex-col gap-1">
-                <Button 
-                  variant="ghost" 
-                  onClick={handleVerify}
-                  className="flex-1 sm:flex-none"
-                >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Verify Certificate
-                </Button>
-                <p className="text-xs text-muted-foreground text-center sm:text-left">
-                  Allows employers to verify this certificate
-                </p>
-              </div>
+              {/* Verification CTA - Different UI based on status */}
+              {isLoading ? (
+                <div className="flex items-center gap-2 px-4 py-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Loading...</span>
+                </div>
+              ) : isVerified ? (
+                // STATE 2: VERIFIED - Show Verify Certificate CTA
+                <div className="flex flex-col gap-1">
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleVerify}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Verify Certificate
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center sm:text-left">
+                    Allows employers to verify this certificate
+                  </p>
+                </div>
+              ) : (
+                // STATE 1: PENDING - Show Verification Pending status
+                <div className="flex flex-col gap-1 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Verification Pending
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Awaiting moderator approval
+                  </p>
+                </div>
+              )}
             </div>
             
-            {/* Trust reinforcement text */}
+            {/* Trust reinforcement text - Different based on status */}
             <p className="text-xs text-muted-foreground mt-3">
-              This certificate is verifiable and shareable
+              {isVerified 
+                ? "This certificate is verifiable and shareable"
+                : "This certificate will be verifiable once approved"
+              }
             </p>
           </div>
         </div>
