@@ -89,10 +89,16 @@ type TabType = 'dashboard' | 'learnings' | 'bookmarks' | 'discussions' | 'achiev
 const sidebarItems = [
   { id: 'dashboard' as TabType, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'learnings' as TabType, label: 'My Learnings', icon: BookOpen },
-  { id: 'practice' as TabType, label: 'Practice Lab', icon: FlaskConical },
   { id: 'bookmarks' as TabType, label: 'Bookmarks', icon: Bookmark },
   { id: 'discussions' as TabType, label: 'Discussions', icon: MessageSquare },
+];
+
+const exploreItems = [
+  { id: 'practice' as TabType, label: 'Practice Lab', icon: FlaskConical },
   { id: 'achievements' as TabType, label: 'Achievements', icon: Award },
+];
+
+const accountItems = [
   { id: 'notifications' as TabType, label: 'Notifications', icon: Bell },
   { id: 'settings' as TabType, label: 'Settings', icon: Settings },
 ];
@@ -2092,40 +2098,70 @@ const Profile = () => {
                   ))}
                 </nav>
 
-                {/* External Links */}
+                {/* Explore Section */}
                 <div className="border-t mt-2 pt-2">
                   <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Explore
                   </p>
                   <nav className="space-y-1">
+                    {exploreItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleTabChange(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-all duration-200 ${
+                          activeTab === item.id 
+                            ? 'bg-primary text-primary-foreground font-medium shadow-md' 
+                            : 'hover:bg-muted/70 text-foreground hover:translate-x-1'
+                        }`}
+                      >
+                        <item.icon className={`h-5 w-5 ${activeTab === item.id ? '' : 'text-muted-foreground'}`} />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
                     <button
                       onClick={() => navigate('/library')}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/70 text-foreground hover:translate-x-1"
                     >
-                      <Library className="h-5 w-5" />
-                      <span className="font-medium">Library</span>
+                      <Library className="h-5 w-5 text-muted-foreground" />
+                      <span>Library</span>
                     </button>
                     <button
                       onClick={() => navigate('/arcade')}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/70 text-foreground hover:translate-x-1"
                     >
-                      <Gamepad2 className="h-5 w-5" />
-                      <span className="font-medium">Arcade</span>
+                      <Gamepad2 className="h-5 w-5 text-muted-foreground" />
+                      <span>Arcade</span>
                     </button>
-                    <button
-                      onClick={() => setActiveTab('practice')}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
-                    >
-                      <FlaskConical className="h-5 w-5" />
-                      <span className="font-medium">Practice Lab</span>
-                    </button>
+                  </nav>
+                </div>
+
+                {/* Account Section */}
+                <div className="border-t mt-2 pt-2">
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Account
+                  </p>
+                  <nav className="space-y-1">
+                    {accountItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleTabChange(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-all duration-200 ${
+                          activeTab === item.id 
+                            ? 'bg-primary text-primary-foreground font-medium shadow-md' 
+                            : 'hover:bg-muted/70 text-foreground hover:translate-x-1'
+                        }`}
+                      >
+                        <item.icon className={`h-5 w-5 ${activeTab === item.id ? '' : 'text-muted-foreground'}`} />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
                     {(isAdmin || isModerator) && (
                       <button
                         onClick={() => navigate('/admin')}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted text-foreground"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/70 text-foreground hover:translate-x-1"
                       >
-                        <Shield className="h-5 w-5" />
-                        <span className="font-medium">Admin Panel</span>
+                        <Shield className="h-5 w-5 text-muted-foreground" />
+                        <span>Admin Panel</span>
                       </button>
                     )}
                   </nav>
