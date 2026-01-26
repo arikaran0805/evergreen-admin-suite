@@ -201,21 +201,23 @@ export const CourseSidebar = ({
                 </TooltipContent>
               </Tooltip>
 
-              {/* Home Icon */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleHomeClick}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-sidebar-primary hover:bg-sidebar-accent transition-all duration-200"
-                    aria-label="Go to course home"
-                  >
-                    <Home className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  Course home
-                </TooltipContent>
-              </Tooltip>
+              {/* Home Icon - Only for authenticated users */}
+              {isAuthenticated && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleHomeClick}
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-sidebar-primary hover:bg-sidebar-accent transition-all duration-200"
+                      aria-label="Go to course home"
+                    >
+                      <Home className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Course home
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>
