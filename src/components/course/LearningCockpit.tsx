@@ -252,46 +252,6 @@ export const LearningCockpit = ({
             </CardContent>
           </Card>
 
-          {/* Certificate Status */}
-          <Card className={cn(
-            "border-border/50 shadow-sm",
-            certificateEligible 
-              ? "bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/30"
-              : "bg-card/50 backdrop-blur-sm"
-          )}>
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Award className={cn(
-                  "h-4 w-4",
-                  certificateEligible ? "text-amber-500" : "text-muted-foreground"
-                )} />
-                Certificate
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              {certificateEligible ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="font-medium">Eligible for certificate!</span>
-                  </div>
-                  <Button size="sm" className="w-full">
-                    <Award className="h-3.5 w-3.5 mr-2" />
-                    View Certificate
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Complete all lessons to earn your certificate.
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{courseProgress.totalCount - courseProgress.completedCount} lessons remaining</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </aside>
