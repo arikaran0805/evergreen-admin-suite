@@ -197,6 +197,7 @@ export function LessonRightSidebar({
             lastSavedText={lastSavedText}
             isLoading={isLoading}
             courseId={courseId}
+            lessonId={lessonId}
           />
         )}
 

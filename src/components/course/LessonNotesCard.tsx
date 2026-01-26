@@ -29,6 +29,8 @@ interface LessonNotesCardProps {
   lastSavedText: string | null;
   isLoading: boolean;
   courseId?: string;
+  /** The current lesson ID - needed for Deep Notes context switching */
+  lessonId?: string;
 }
 
 // Create lowlight instance for syntax highlighting
@@ -70,6 +72,7 @@ export function LessonNotesCard({
   lastSavedText,
   isLoading,
   courseId,
+  lessonId,
 }: LessonNotesCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -150,10 +153,14 @@ export function LessonNotesCard({
   }, []);
 
   // Open Deep Notes in new tab (uses tab manager to prevent duplicates)
+  // Passes lessonId for context switching
   const handleOpenDeepNotes = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    openNotesTab();
-  }, [openNotesTab]);
+    openNotesTab({
+      lessonId,
+      entityType: lessonId ? 'lesson' : undefined,
+    });
+  }, [openNotesTab, lessonId]);
 
   return (
     <Card
