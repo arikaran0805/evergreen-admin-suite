@@ -33,10 +33,16 @@ import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import CourseMetadataSidebar from "@/components/course/CourseMetadataSidebar";
 import CourseNotesTab from "@/components/course/CourseNotesTab";
 import LessonFooter from "@/components/course/LessonFooter";
-import { GuestBanner } from "@/components/course/GuestBanner";
 import { ProTeaser } from "@/components/course/ProTeaser";
 import { LearningCockpit } from "@/components/course/LearningCockpit";
 import { CourseSidebarAds } from "@/components/course/CourseSidebarAds";
+import { 
+  GuestContextBanner, 
+  ProgressTeaser, 
+  CertificateTeaser, 
+  CompletionNudge,
+  LockedSidebarSection,
+} from "@/components/course/nudges";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -1505,9 +1511,27 @@ const CourseDetail = () => {
                       />
                     )}
 
-                    {/* Guest Banner - inform guests about limitations */}
+                    {/* Guest Context Banner - dismissible, session-based */}
                     {isGuest && (
-                      <GuestBanner className="mb-6" />
+                      <GuestContextBanner className="mb-6" />
+                    )}
+
+                    {/* Progress Teaser for Guests - where progress bar would be */}
+                    {isGuest && (
+                      <ProgressTeaser className="mb-6" />
+                    )}
+
+                    {/* Completion Nudge for Learners - 40-60% trigger */}
+                    {isLearner && courseStats.isEnrolled && course?.id && (
+                      <CompletionNudge
+                        courseId={course.id}
+                        progressPercentage={courseProgress.percentage}
+                        className="mb-6"
+                        onUpgrade={() => {
+                          // TODO: Navigate to pricing page
+                          console.log("Navigate to upgrade");
+                        }}
+                      />
                     )}
 
                     {/* Lesson Content */}
@@ -1516,6 +1540,22 @@ const CourseDetail = () => {
                       courseType={course?.slug?.toLowerCase()}
                       codeTheme={selectedPost.code_theme || undefined}
                     />
+
+                    {/* Certificate Teaser - after lesson content */}
+                    {(isGuest || isLearner) && (
+                      <CertificateTeaser
+                        variant={isGuest ? "guest" : "learner"}
+                        className="mt-8 mb-6"
+                        onLearnMore={() => {
+                          // Navigate to signup/pricing for guests
+                          console.log("Learn more about certificates");
+                        }}
+                        onUpgrade={() => {
+                          // Navigate to pricing for learners
+                          console.log("Navigate to upgrade");
+                        }}
+                      />
+                    )}
 
                     {/* Lesson Footer - Completion, Tags, Actions, Navigation */}
                     {/* Hide progress-related actions for guests */}
@@ -1978,8 +2018,13 @@ const CourseDetail = () => {
                       showAnnouncement={showAnnouncement}
                     />
                     
-                    {/* Pro teaser for upgrade */}
-                    <ProTeaser />
+                    {/* Locked Pro features for learners */}
+                    <LockedSidebarSection
+                      onUpgrade={() => {
+                        // TODO: Navigate to pricing page
+                        console.log("Navigate to upgrade");
+                      }}
+                    />
                   </div>
                 </div>
               </aside>
