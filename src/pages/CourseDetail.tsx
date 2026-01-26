@@ -1776,14 +1776,11 @@ const CourseDetail = () => {
                                         {lessonProgress.totalPosts > 0 && (
                                           <div className="flex items-center gap-2">
                                             <Progress value={lessonProgress.percentage} className="w-16 h-1.5" />
-                                            <span className="text-xs text-muted-foreground">
-                                              {lessonProgress.completedPosts}/{lessonProgress.totalPosts}
+                                        <span className="text-xs text-muted-foreground">
+                                              {lessonProgress.completedPosts} of {lessonProgress.totalPosts} posts completed
                                             </span>
                                           </div>
                                         )}
-                                        <span className="text-sm text-muted-foreground">
-                                          {lessonPosts.length} post{lessonPosts.length !== 1 ? 's' : ''}
-                                        </span>
                                       </div>
                                     </div>
                                     
