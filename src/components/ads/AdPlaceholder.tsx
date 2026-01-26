@@ -6,17 +6,27 @@ declare global {
   }
 }
 
-// Track if script is already being loaded/loaded
+// Global flag to prevent duplicate script injection
 let scriptLoading = false;
 let scriptLoaded = false;
+let scriptError = false;
 
-const loadAdSenseScript = (adClient: string): Promise<void> => {
+/**
+ * Load AdSense script globally (once) without client param in URL
+ * Per AdSense policy: script URL should not include client query parameter
+ */
+const loadAdSenseScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (scriptLoaded) {
       resolve();
       return;
     }
-    
+
+    if (scriptError) {
+      reject(new Error("AdSense script previously failed to load"));
+      return;
+    }
+
     if (scriptLoading) {
       // Wait for existing script to load
       const checkInterval = setInterval(() => {
@@ -24,28 +34,44 @@ const loadAdSenseScript = (adClient: string): Promise<void> => {
           clearInterval(checkInterval);
           resolve();
         }
+        if (scriptError) {
+          clearInterval(checkInterval);
+          reject(new Error("AdSense script failed to load"));
+        }
       }, 100);
       return;
     }
 
+    // Check if script already exists in DOM
+    const existingScript = document.querySelector(
+      'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]'
+    );
+    if (existingScript) {
+      scriptLoaded = true;
+      resolve();
+      return;
+    }
+
     scriptLoading = true;
-    
+
     const script = document.createElement("script");
-    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adClient}`;
+    // Do NOT append client query parameter to script URL per AdSense guidelines
+    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
     script.async = true;
     script.crossOrigin = "anonymous";
-    
+
     script.onload = () => {
       scriptLoaded = true;
       scriptLoading = false;
       resolve();
     };
-    
+
     script.onerror = () => {
       scriptLoading = false;
+      scriptError = true;
       reject(new Error("Failed to load AdSense script"));
     };
-    
+
     document.head.appendChild(script);
   });
 };
@@ -57,95 +83,102 @@ interface AdPlaceholderProps {
   className?: string;
 }
 
-const AdPlaceholder = ({ 
-  googleAdSlot, 
-  googleAdClient, 
+/**
+ * AdPlaceholder Component
+ * 
+ * Renders Google AdSense ads following all AdSense policies:
+ * - Script loads once globally without client param
+ * - Only <ins> element contains data-ad-* attributes
+ * - Test mode enabled automatically in non-production
+ * - Collapses silently on errors
+ * - Guards against remounts and double initialization
+ */
+const AdPlaceholder = ({
+  googleAdSlot,
+  googleAdClient,
   adType = "sidebar",
-  className = "" 
+  className = "",
 }: AdPlaceholderProps) => {
-  const adRef = useRef<HTMLDivElement>(null);
-  const [adLoaded, setAdLoaded] = useState(false);
-  const [scriptReady, setScriptReady] = useState(false);
+  const insRef = useRef<HTMLModElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const initializedRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  // Check if we have valid (non-placeholder) credentials
-  const hasValidCredentials = 
-    googleAdSlot && 
-    googleAdClient && 
+  // Detect non-production environment for test mode
+  const isTestMode = import.meta.env.DEV || 
+    window.location.hostname.includes("preview") ||
+    window.location.hostname.includes("localhost");
+
+  // Validate credentials - must have real values, not placeholders
+  const hasValidCredentials =
+    googleAdSlot &&
+    googleAdClient &&
     !googleAdClient.includes("XXXXXXXX") &&
-    googleAdSlot !== "1234567890";
+    googleAdSlot !== "1234567890" &&
+    googleAdSlot.trim() !== "" &&
+    googleAdClient.trim() !== "";
 
-  // Load the AdSense script when valid credentials are available
   useEffect(() => {
-    if (hasValidCredentials && googleAdClient) {
-      loadAdSenseScript(googleAdClient)
-        .then(() => setScriptReady(true))
-        .catch((error) => console.error("AdSense script error:", error));
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Load script and initialize ad
+  useEffect(() => {
+    if (!hasValidCredentials || initializedRef.current) {
+      return;
     }
-  }, [hasValidCredentials, googleAdClient]);
 
-  // Initialize the ad once script is ready
-  useEffect(() => {
-    if (scriptReady && hasValidCredentials && adRef.current && !adLoaded) {
+    const initializeAd = async () => {
       try {
+        await loadAdSenseScript();
+
+        // Guard against unmounted component
+        if (!mountedRef.current) return;
+
+        // Guard against double initialization
+        if (initializedRef.current) return;
+
+        // Ensure ins element exists and is in DOM
+        if (!insRef.current || !document.body.contains(insRef.current)) return;
+
+        // Mark as initialized before push to prevent race conditions
+        initializedRef.current = true;
+
+        // Initialize this specific ad slot
         (window.adsbygoogle = window.adsbygoogle || []).push({});
-        setAdLoaded(true);
       } catch (error) {
-        console.error("AdSense initialization error:", error);
+        // Collapse silently on error - no console errors exposed
+        if (mountedRef.current) {
+          setIsVisible(false);
+        }
       }
-    }
-  }, [scriptReady, hasValidCredentials, adLoaded]);
+    };
 
-  const getAdDimensions = () => {
-    switch (adType) {
-      case "sidebar":
-        return "min-h-[250px]";
-      case "in-content":
-        return "min-h-[90px]";
-      case "banner":
-        return "min-h-[100px]";
-      default:
-        return "min-h-[250px]";
-    }
-  };
+    initializeAd();
+  }, [hasValidCredentials]);
 
-  const getAdFormat = () => {
-    switch (adType) {
-      case "sidebar":
-        return "auto";
-      case "in-content":
-        return "fluid";
-      case "banner":
-        return "horizontal";
-      default:
-        return "auto";
-    }
-  };
-
-  // Don't render anything if no valid credentials in production
-  if (!hasValidCredentials) {
+  // Don't render if no valid credentials or if collapsed due to error
+  if (!hasValidCredentials || !isVisible) {
     return null;
   }
 
   return (
-    <div 
-      ref={adRef}
-      className={`
-        rounded-lg border border-border/50 p-2 bg-muted/30
-        flex items-center justify-center
-        ${getAdDimensions()}
-        ${className}
-      `}
-      data-ad-slot={googleAdSlot}
-      data-ad-client={googleAdClient}
-      data-ad-type={adType}
-    >
+    <div className={`overflow-hidden ${className}`}>
       <ins
+        ref={insRef}
         className="adsbygoogle"
-        style={{ display: "block", width: "100%", height: "100%" }}
+        style={{
+          display: "block",
+          width: "100%",
+        }}
         data-ad-client={googleAdClient}
         data-ad-slot={googleAdSlot}
-        data-ad-format={getAdFormat()}
+        data-ad-format="auto"
         data-full-width-responsive="true"
+        {...(isTestMode && { "data-adtest": "on" })}
       />
     </div>
   );
