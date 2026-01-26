@@ -88,7 +88,7 @@ export function useLessonFlowNavigation(
         // Strategy: Find the deepest section whose top is above the activation line
         // When scrolling up, as a section's top drops below the line, we switch to previous
         let foundActive: string | null = null;
-        const activationLine = scrollOffset + 100; // Line where content is being read
+        const activationLine = scrollOffset + 50; // Line where content is being read (closer to top)
         
         // Iterate forward to find the last section that has passed the activation line
         for (let i = 0; i < sections.length; i++) {
