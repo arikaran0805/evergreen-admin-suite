@@ -494,59 +494,61 @@ export const CourseSidebar = ({
                                     {post.title}
                                   </span>
                                   
-                                  {/* Hover Actions */}
-                                  <div 
-                                    className={cn(
-                                      "flex items-center gap-1.5 transition-opacity duration-200",
-                                      isActive || shareOpenPostId === post.id 
-                                        ? "opacity-100" 
-                                        : "opacity-0 group-hover/lesson:opacity-100"
-                                    )}
-                                  >
-                                    {/* Copy Link */}
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
-                                            setCopiedPostId(post.id);
-                                            toast.success("Link copied!");
-                                            setTimeout(() => setCopiedPostId(null), 2000);
-                                          }}
-                                          className={cn(
-                                            "p-0.5 rounded transition-colors",
-                                            isActive 
-                                              ? "text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground" 
-                                              : "text-muted-foreground hover:text-foreground"
-                                          )}
-                                        >
-                                          <Link2 className="h-3 w-3" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="text-xs">
-                                        {copiedPostId === post.id ? "Copied" : "Copy link"}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                    
-                                    {/* Share - using LessonShareMenu for consistent behavior */}
-                                    <LessonShareMenu
-                                      postId={post.id}
-                                      postTitle={post.title}
-                                      postSlug={post.slug}
-                                      sectionName={lesson.title}
-                                      alwaysVisible
-                                      side="right"
-                                      vertical
-                                      onOpenChange={(isOpen) =>
-                                        setShareOpenPostId((prev) =>
-                                          isOpen ? post.id : prev === post.id ? null : prev
-                                        )
-                                      }
-                                      sidebarVariant
-                                      isActive={isActive}
-                                    />
-                                  </div>
+                                  {/* Hover Actions - hidden for guests */}
+                                  {isAuthenticated && (
+                                    <div 
+                                      className={cn(
+                                        "flex items-center gap-1.5 transition-opacity duration-200",
+                                        isActive || shareOpenPostId === post.id 
+                                          ? "opacity-100" 
+                                          : "opacity-0 group-hover/lesson:opacity-100"
+                                      )}
+                                    >
+                                      {/* Copy Link */}
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigator.clipboard.writeText(`${window.location.origin}/courses/${post.slug}`);
+                                              setCopiedPostId(post.id);
+                                              toast.success("Link copied!");
+                                              setTimeout(() => setCopiedPostId(null), 2000);
+                                            }}
+                                            className={cn(
+                                              "p-0.5 rounded transition-colors",
+                                              isActive 
+                                                ? "text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground" 
+                                                : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                          >
+                                            <Link2 className="h-3 w-3" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">
+                                          {copiedPostId === post.id ? "Copied" : "Copy link"}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                      
+                                      {/* Share - using LessonShareMenu for consistent behavior */}
+                                      <LessonShareMenu
+                                        postId={post.id}
+                                        postTitle={post.title}
+                                        postSlug={post.slug}
+                                        sectionName={lesson.title}
+                                        alwaysVisible
+                                        side="right"
+                                        vertical
+                                        onOpenChange={(isOpen) =>
+                                          setShareOpenPostId((prev) =>
+                                            isOpen ? post.id : prev === post.id ? null : prev
+                                          )
+                                        }
+                                        sidebarVariant
+                                        isActive={isActive}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </button>
                             );
