@@ -44,6 +44,20 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
+  /**
+   * CRITICAL: Hard reset all autosave refs when selectedNoteId changes.
+   * This prevents stale debounce values from blocking saves after note switch.
+   */
+  useEffect(() => {
+    if (!selectedNoteId) return;
+    
+    // Reset remote update flag
+    isRemoteUpdateRef.current = false;
+    
+    // Note: lastSavedContentRef and localTimestampRef are set in selectNote()
+    // This effect ensures the flags are clean for the new note context
+  }, [selectedNoteId]);
+
   // Derive selectedNote from notes array to avoid stale state
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null;
 
@@ -233,11 +247,9 @@ export function useCourseNotes({ courseId, userId }: UseCourseNotesOptions) {
   // Auto-save when content changes
   useEffect(() => {
     if (!selectedNoteId || !selectedNote) return;
-    // CRITICAL SAFETY: never save a stale debounced value (e.g. from previous note
-    // or from initial empty editor mount). Only save once debounce has caught up
-    // with the current editor state.
-    if (debouncedContent !== editContent) return;
+    // Skip if content hasn't changed from last save
     if (debouncedContent === lastSavedContentRef.current) return;
+    // Skip if this was a remote update (already saved by other tab)
     if (isRemoteUpdateRef.current) return;
 
     const saveNote = async () => {

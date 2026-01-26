@@ -428,7 +428,7 @@ export function NotesFocusMode({
           ) : notes.length === 0 ? (
             <EmptyState onNewNote={handleCreateNewNote} />
           ) : selectedNote ? (
-            <div className="max-w-[740px] mx-auto px-6 md:px-10 pt-14 pb-32">
+            <div key={selectedNote.id} className="max-w-[740px] mx-auto px-6 md:px-10 pt-14 pb-32">
               {/* Metadata Strip — Readable secondary text */}
               <div className="mb-10 flex items-center gap-3 text-[12px]">
                 {/* Title - Editable for user notes, static for lesson notes */}
@@ -505,8 +505,9 @@ export function NotesFocusMode({
                 </span>
               </div>
 
-              {/* Editor */}
+              {/* Editor - keyed by note ID to force full remount on note switch */}
               <NotionStyleEditor
+                key={selectedNote.id}
                 ref={editorRef}
                 value={editContent}
                 onChange={setEditContent}
