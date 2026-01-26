@@ -6,6 +6,7 @@
  * - Selection-based floating toolbar
  * - Markdown shortcuts
  * - Clean, minimal design
+ * - Code blocks with syntax highlighting
  */
 
 import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState, useRef } from 'react';
@@ -35,7 +36,12 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 import '@/styles/tiptap.css';
+
+// Create lowlight instance with common languages
+const lowlight = createLowlight(common);
 
 export interface NotionStyleEditorProps {
   /** Content (string or JSON) */
@@ -66,7 +72,14 @@ const getNotionExtensions = (placeholder: string) => [
     heading: {
       levels: [1, 2, 3],
     },
-    codeBlock: false,
+    codeBlock: false, // We use CodeBlockLowlight instead
+  }),
+  CodeBlockLowlight.configure({
+    lowlight,
+    defaultLanguage: 'javascript',
+    HTMLAttributes: {
+      class: 'hljs rounded-lg bg-muted/50 p-4 my-2 overflow-x-auto text-sm font-mono',
+    },
   }),
   Placeholder.configure({
     placeholder,
@@ -326,14 +339,13 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
 
           <div className="w-px h-5 bg-border mx-0.5" />
 
-          {/* Inline code */}
+          {/* Code Block - inserts a syntax-highlighted code block */}
           <ToolbarButton
             onClick={() => {
-              editor.chain().focus().toggleCode().run();
-              justFormattedRef.current = true;
+              editor.chain().focus().toggleCodeBlock().run();
             }}
-            isActive={editor.isActive('code')}
-            title="Code"
+            isActive={editor.isActive('codeBlock')}
+            title="Code Block"
           >
             <Code className="h-4 w-4" />
           </ToolbarButton>
@@ -440,10 +452,10 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
             <Quote className="h-4 w-4" />
           </ToolbarButton>
 
-          {/* Clear formatting */}
+          {/* Horizontal Rule - inserts a divider line between sections */}
           <ToolbarButton
-            onClick={() => editor.chain().focus().setParagraph().run()}
-            title="Normal text"
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            title="Horizontal Rule (Divider)"
           >
             <Minus className="h-4 w-4" />
           </ToolbarButton>
