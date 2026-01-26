@@ -224,7 +224,7 @@ const CourseDetail = () => {
   } = useCourseStats(course?.id, user);
 
   // Course progress hook
-  const { progress, markLessonViewed, markLessonCompleted, isLessonCompleted } = useCourseProgress(course?.id);
+  const { progress, markLessonViewed, markLessonCompleted, isLessonCompleted, refetch: refetchProgress } = useCourseProgress(course?.id);
   const [markingComplete, setMarkingComplete] = useState(false);
 
   // Time tracking hook
@@ -1119,11 +1119,44 @@ const CourseDetail = () => {
   };
 
   // Handle restart course confirmation
-  const handleRestartCourse = () => {
-    setRestartModalOpen(false);
+  const handleRestartCourse = async () => {
+    if (!user || !course?.id) {
+      setRestartModalOpen(false);
+      return;
+    }
 
-    const firstPost = orderedPosts[0] ?? posts[0];
-    if (firstPost) handleLessonClick(firstPost);
+    try {
+      // Delete all lesson progress for this course
+      const { error } = await supabase
+        .from('lesson_progress')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('course_id', course.id);
+
+      if (error) throw error;
+
+      // Refetch progress to update UI
+      refetchProgress();
+
+      toast({
+        title: "Progress Reset",
+        description: "Your course progress has been reset. Starting from the beginning!",
+      });
+
+      setRestartModalOpen(false);
+
+      // Navigate to first lesson
+      const firstPost = orderedPosts[0] ?? posts[0];
+      if (firstPost) handleLessonClick(firstPost);
+    } catch (error: any) {
+      console.error("Error resetting progress:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reset course progress",
+        variant: "destructive",
+      });
+      setRestartModalOpen(false);
+    }
   };
 
   // Handle login redirect
