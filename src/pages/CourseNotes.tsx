@@ -101,28 +101,46 @@ const CourseNotes = () => {
   const handleNavigateToLesson = async (lessonId: string) => {
     if (!course?.slug) return;
     
-    // Fetch the lesson slug for proper navigation
-    const { data: lesson } = await supabase
-      .from("posts")
-      .select("slug")
-      .eq("id", lessonId)
-      .single();
-    
-    const lessonSlug = lesson?.slug;
-    
-    // Try to use opener window
-    if (window.opener && !window.opener.closed) {
-      // Post message to opener to navigate to lesson
-      window.opener.postMessage(
-        { type: "NAVIGATE_TO_LESSON", lessonId, lessonSlug, courseSlug: course.slug },
-        window.location.origin
-      );
-      window.opener.focus();
-    } else if (lessonSlug) {
-      // Fallback: open course with lesson slug in current tab
-      navigate(`/course/${course.slug}?lesson=${lessonSlug}&tab=lessons`);
-    } else {
-      // Ultimate fallback: just go to lessons tab
+    try {
+      // Fetch the lesson slug for proper navigation
+      const { data: lesson, error } = await supabase
+        .from("posts")
+        .select("slug")
+        .eq("id", lessonId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching lesson:", error);
+        // Navigate to lessons tab as fallback
+        navigate(`/course/${course.slug}?tab=lessons`);
+        return;
+      }
+      
+      const lessonSlug = lesson?.slug;
+      
+      console.log("Navigating to lesson:", { lessonId, lessonSlug, courseSlug: course.slug });
+      
+      // Try to use opener window
+      if (window.opener && !window.opener.closed) {
+        console.log("Sending message to opener window");
+        // Post message to opener to navigate to lesson
+        window.opener.postMessage(
+          { type: "NAVIGATE_TO_LESSON", lessonId, lessonSlug, courseSlug: course.slug },
+          window.location.origin
+        );
+        window.opener.focus();
+      } else if (lessonSlug) {
+        console.log("No opener window, navigating directly");
+        // Fallback: open course with lesson slug in current tab
+        navigate(`/course/${course.slug}?lesson=${lessonSlug}&tab=lessons`);
+      } else {
+        console.log("No lesson slug, navigating to lessons tab");
+        // Ultimate fallback: just go to lessons tab
+        navigate(`/course/${course.slug}?tab=lessons`);
+      }
+    } catch (err) {
+      console.error("Failed to navigate to lesson:", err);
+      // Navigate to course as ultimate fallback
       navigate(`/course/${course.slug}?tab=lessons`);
     }
   };
