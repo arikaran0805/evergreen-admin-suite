@@ -135,22 +135,6 @@ export const LearningCockpit = ({
     <aside className="hidden xl:block w-[300px] flex-shrink-0">
       <div className={cn("sticky transition-[top] duration-200 ease-out", stickyTopClass)}>
         <div className="space-y-4 p-1 pb-6">
-          
-          {/* Course Progress Overview */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Course Progress</span>
-                <Badge variant="secondary" className="text-xs">
-                  {courseProgress.percentage}%
-                </Badge>
-              </div>
-              <Progress value={courseProgress.percentage} className="h-2 mb-2" />
-              <p className="text-xs text-muted-foreground">
-                {courseProgress.completedCount} of {courseProgress.totalCount} lessons completed
-              </p>
-            </CardContent>
-          </Card>
 
           {/* Lesson Flow Navigation */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
@@ -211,18 +195,6 @@ export const LearningCockpit = ({
             lessonId={lessonId}
           />
 
-          {/* Deep Notes CTA */}
-          {onOpenNotes && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full text-sm"
-              onClick={onOpenNotes}
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-2" />
-              Open Deep Notes
-            </Button>
-          )}
 
           {/* Practice & Reinforce */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
