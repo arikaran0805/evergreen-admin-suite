@@ -1,6 +1,7 @@
 import { Lock, StickyNote, Sparkles, Award, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { usePricingDrawer } from "@/contexts/PricingDrawerContext";
 
 interface ProTeaserProps {
   className?: string;
@@ -38,6 +39,8 @@ const PRO_FEATURES = [
  * Displays locked premium features with upgrade CTA
  */
 export const ProTeaser = ({ className = "" }: ProTeaserProps) => {
+  const { openPricingDrawer } = usePricingDrawer();
+
   return (
     <Card className={`border-primary/20 bg-gradient-to-br from-primary/5 to-transparent ${className}`}>
       <CardHeader className="pb-3">
@@ -75,10 +78,7 @@ export const ProTeaser = ({ className = "" }: ProTeaserProps) => {
         <Button 
           className="w-full mt-4" 
           size="sm"
-          onClick={() => {
-            // TODO: Navigate to pricing/upgrade page
-            console.log("Navigate to upgrade");
-          }}
+          onClick={() => openPricingDrawer("pro_teaser")}
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Upgrade to Pro

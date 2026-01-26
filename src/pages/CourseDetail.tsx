@@ -42,6 +42,7 @@ import {
   CompletionNudge,
   LockedSidebarSection,
 } from "@/components/course/nudges";
+import { usePricingDrawer } from "@/contexts/PricingDrawerContext";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -185,6 +186,7 @@ const CourseDetail = () => {
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
   const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, markAsInternal, isLoading: userStateLoading } = useUserState();
+  const { openPricingDrawer } = usePricingDrawer();
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
@@ -1549,10 +1551,7 @@ const CourseDetail = () => {
                         courseId={course.id}
                         progressPercentage={courseProgress.percentage}
                         className="mb-6"
-                        onUpgrade={() => {
-                          // TODO: Navigate to pricing page
-                          console.log("Navigate to upgrade");
-                        }}
+                        onUpgrade={() => openPricingDrawer("completion_nudge")}
                       />
                     )}
 
@@ -1568,14 +1567,8 @@ const CourseDetail = () => {
                       <CertificateTeaser
                         variant={isGuest ? "guest" : "learner"}
                         className="mt-8 mb-6"
-                        onLearnMore={() => {
-                          // Navigate to signup/pricing for guests
-                          console.log("Learn more about certificates");
-                        }}
-                        onUpgrade={() => {
-                          // Navigate to pricing for learners
-                          console.log("Navigate to upgrade");
-                        }}
+                        onLearnMore={() => openPricingDrawer("certificate_teaser_guest")}
+                        onUpgrade={() => openPricingDrawer("certificate_teaser")}
                       />
                     )}
 
@@ -2043,10 +2036,7 @@ const CourseDetail = () => {
                     
                     {/* Locked Pro features for learners */}
                     <LockedSidebarSection
-                      onUpgrade={() => {
-                        // TODO: Navigate to pricing page
-                        console.log("Navigate to upgrade");
-                      }}
+                      onUpgrade={() => openPricingDrawer("locked_sidebar")}
                     />
                   </div>
                 </div>
