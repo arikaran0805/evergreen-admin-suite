@@ -159,22 +159,27 @@ const CourseCompleted = () => {
           ? new Date(progressData[0].viewed_at) 
           : new Date();
 
-        // Fetch skills from career_courses -> career_skills
+        // Fetch skills from career_courses skill_contributions (only skills THIS course contributes to)
         const { data: careerCoursesData } = await supabase
           .from("career_courses")
-          .select("career_id")
+          .select("career_id, skill_contributions")
           .eq("course_id", courseId)
           .is("deleted_at", null);
 
         let skills: string[] = [];
         if (careerCoursesData && careerCoursesData.length > 0) {
-          const careerIds = careerCoursesData.map(cc => cc.career_id);
-          const { data: skillsData } = await supabase
-            .from("career_skills")
-            .select("skill_name")
-            .in("career_id", careerIds);
-
-          skills = [...new Set(skillsData?.map(s => s.skill_name) || [])];
+          // Extract skill names from skill_contributions for this specific course
+          careerCoursesData.forEach(cc => {
+            if (cc.skill_contributions && Array.isArray(cc.skill_contributions)) {
+              const contributions = cc.skill_contributions as Array<{ skill_name: string; contribution: number }>;
+              contributions.forEach(sc => {
+                if (sc.skill_name && sc.contribution > 0) {
+                  skills.push(sc.skill_name);
+                }
+              });
+            }
+          });
+          skills = [...new Set(skills)]; // Remove duplicates
         }
 
         // If no skills from careers, use some defaults based on course
