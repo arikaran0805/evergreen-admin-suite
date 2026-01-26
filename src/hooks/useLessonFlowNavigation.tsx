@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 export interface LessonFlowSection {
   id: string;
@@ -8,29 +8,35 @@ export interface LessonFlowSection {
 }
 
 interface UseLessonFlowNavigationOptions {
-  /** Offset from top of viewport for scroll position (header height) */
+  /** Offset from top of viewport for scroll-to (header height) */
   scrollOffset?: number;
-  /** Debounce delay for scroll events */
-  debounceMs?: number;
+  /** Hysteresis delay before changing active section (ms) */
+  hysteresisMs?: number;
 }
 
 /**
- * Hook for Lesson Flow navigation - scroll-to and scroll-spy functionality
+ * Hook for Lesson Flow navigation - IntersectionObserver-based scroll-spy
  * 
  * Features:
- * - Detects which sections exist in the DOM
- * - Tracks active section based on scroll position
- * - Provides scroll-to function with header offset
- * - Disables non-existent sections
+ * - Uses IntersectionObserver for stable, viewport-relative detection
+ * - Reading zone: 30% from top to 60% from top of viewport
+ * - Tracks dominant section by intersection ratio
+ * - Hysteresis delay prevents flicker during fast scrolling
+ * - No dependency on header/banner heights
  */
 export function useLessonFlowNavigation(
   sections: Array<{ id: string; label: string; selector: string }>,
   options: UseLessonFlowNavigationOptions = {}
 ) {
-  const { scrollOffset = 140, debounceMs = 50 } = options;
+  const { scrollOffset = 140, hysteresisMs = 100 } = options;
   
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [sectionStates, setSectionStates] = useState<Record<string, boolean>>({});
+  
+  // Track intersection ratios for all sections
+  const intersectionRatios = useRef<Map<string, number>>(new Map());
+  const hysteresisTimeout = useRef<number | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Check which sections exist in the DOM
   const checkSectionExistence = useCallback(() => {
@@ -50,90 +56,132 @@ export function useLessonFlowNavigation(
     }));
   }, [sections, sectionStates]);
 
-  // Check section existence on mount and when sections change
+  // Determine the dominant active section from intersection ratios
+  const resolveDominantSection = useCallback(() => {
+    let maxRatio = 0;
+    let dominantId: string | null = null;
+    
+    // Find section with highest intersection ratio
+    intersectionRatios.current.forEach((ratio, id) => {
+      if (ratio > maxRatio) {
+        maxRatio = ratio;
+        dominantId = id;
+      }
+    });
+    
+    // Only update if we have a clear dominant section (ratio > 0.1)
+    // This prevents switching when nothing is really in the reading zone
+    if (dominantId && maxRatio > 0.1) {
+      return dominantId;
+    }
+    
+    // Fallback: if nothing intersects well, keep current or use first visible
+    if (!dominantId && sections.length > 0) {
+      // Check if first section is at least partially visible
+      const firstSection = sections[0];
+      const element = document.querySelector(firstSection.selector);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          return firstSection.id;
+        }
+      }
+    }
+    
+    return dominantId;
+  }, [sections]);
+
+  // Update active section with hysteresis
+  const updateActiveSection = useCallback(() => {
+    if (hysteresisTimeout.current) {
+      clearTimeout(hysteresisTimeout.current);
+    }
+    
+    hysteresisTimeout.current = window.setTimeout(() => {
+      const newActive = resolveDominantSection();
+      if (newActive !== null) {
+        setActiveSection(newActive);
+      }
+    }, hysteresisMs);
+  }, [resolveDominantSection, hysteresisMs]);
+
+  // Set up IntersectionObserver
   useEffect(() => {
-    // Initial check
+    // Initial existence check
     checkSectionExistence();
 
-    // Re-check after a short delay to catch dynamically rendered content
-    const timeoutId = setTimeout(checkSectionExistence, 500);
+    // Create observer with viewport-relative reading zone
+    // rootMargin: "-30% 0px -40% 0px" creates a reading band from 30% to 60% of viewport
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const sectionId = entry.target.getAttribute("data-section-id");
+          if (sectionId) {
+            if (entry.isIntersecting) {
+              intersectionRatios.current.set(sectionId, entry.intersectionRatio);
+            } else {
+              intersectionRatios.current.set(sectionId, 0);
+            }
+          }
+        });
+        
+        updateActiveSection();
+      },
+      {
+        root: null, // viewport
+        rootMargin: "-30% 0px -40% 0px", // Reading zone: 30% from top, 40% from bottom
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1], // Multiple thresholds for smooth tracking
+      }
+    );
+
+    // Observe all section elements
+    const observeElements = () => {
+      sections.forEach((section) => {
+        const element = document.querySelector(section.selector);
+        if (element) {
+          // Add data attribute for identification in observer callback
+          element.setAttribute("data-section-id", section.id);
+          observerRef.current?.observe(element);
+        }
+      });
+    };
+
+    // Initial observation
+    observeElements();
+    
+    // Re-observe after delays to catch dynamically rendered content
+    const timeout1 = setTimeout(() => {
+      checkSectionExistence();
+      observeElements();
+    }, 100);
+    
+    const timeout2 = setTimeout(() => {
+      checkSectionExistence();
+      observeElements();
+    }, 500);
 
     // Also observe DOM changes for dynamic content
-    const observer = new MutationObserver(() => {
+    const mutationObserver = new MutationObserver(() => {
       checkSectionExistence();
+      observeElements();
     });
 
-    observer.observe(document.body, {
+    mutationObserver.observe(document.body, {
       childList: true,
       subtree: true,
     });
 
     return () => {
-      clearTimeout(timeoutId);
-      observer.disconnect();
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+      if (hysteresisTimeout.current) {
+        clearTimeout(hysteresisTimeout.current);
+      }
+      observerRef.current?.disconnect();
+      mutationObserver.disconnect();
+      intersectionRatios.current.clear();
     };
-  }, [checkSectionExistence]);
-
-  // Scroll spy - detect active section
-  useEffect(() => {
-    let timeoutId: number | null = null;
-
-    const handleScroll = () => {
-      if (timeoutId) return;
-
-      timeoutId = window.setTimeout(() => {
-        timeoutId = null;
-
-        // Find the section that's currently in the reading zone
-        // Strategy: Find the deepest section whose top is above the activation line
-        // When scrolling up, as a section's top drops below the line, we switch to previous
-        let foundActive: string | null = null;
-        const activationLine = scrollOffset + 50; // Line where content is being read (closer to top)
-        
-        // Iterate forward to find the last section that has passed the activation line
-        for (let i = 0; i < sections.length; i++) {
-          const section = sections[i];
-          const element = document.querySelector(section.selector);
-          if (element) {
-            const rect = element.getBoundingClientRect();
-            
-            // Section is active if its top is at or above the activation line
-            if (rect.top <= activationLine) {
-              foundActive = section.id;
-              // Continue to check if deeper sections are also active
-            } else {
-              // This section hasn't reached the activation line yet
-              // If we already found an active section, stop here
-              if (foundActive) break;
-            }
-          }
-        }
-        
-        // Fallback: if nothing found and we're at the top, use first section
-        if (!foundActive && sections.length > 0) {
-          const firstElement = document.querySelector(sections[0].selector);
-          if (firstElement) {
-            const rect = firstElement.getBoundingClientRect();
-            if (rect.top <= window.innerHeight) {
-              foundActive = sections[0].id;
-            }
-          }
-        }
-
-        setActiveSection(foundActive);
-      }, debounceMs);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    
-    // Initial check
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [sections, scrollOffset, debounceMs]);
+  }, [sections, checkSectionExistence, updateActiveSection]);
 
   // Scroll to a specific section with offset
   const scrollToSection = useCallback(
