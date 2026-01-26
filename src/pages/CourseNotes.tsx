@@ -89,14 +89,29 @@ const CourseNotes = () => {
     }
   }, [authLoading, user, courseId, navigate]);
 
-  // Handle back to course - try to focus existing tab or navigate
-  const handleBackToCourse = () => {
-    if (course?.slug) {
-      // Try to close this tab and go back to opener
+  // Handle back to course - focus existing Course Detail tab via BroadcastChannel
+  const handleBackToCourse = async () => {
+    if (!course?.slug || !course?.id) return;
+    
+    console.log("[CourseNotes] Back to course - focusing Course Detail tab");
+    
+    // Use the Course Navigator to find and focus the existing Course Detail tab
+    const focused = await navigateToLesson({
+      courseId: course.id,
+      courseSlug: course.slug,
+      // No lessonId/lessonSlug = just focus the course tab without navigating to a specific lesson
+    });
+    
+    if (focused) {
+      // Successfully focused the Course Detail tab
+      // Optionally close this Notes tab
+      window.close();
+    } else {
+      // Fallback: Try legacy window.opener method
       if (closeAndFocusOpener()) {
-        return; // Successfully closed and focused opener
+        return;
       }
-      // Fallback: navigate in current tab
+      // Ultimate fallback: navigate in current tab
       navigate(`/course/${course.slug}`);
     }
   };
