@@ -121,13 +121,6 @@ const ShareDialog = ({ open, onOpenChange, title, url, postId }: ShareDialogProp
             </Button>
           </div>
 
-          {/* Note about Instagram */}
-          <div className="flex items-start gap-2 p-3 bg-muted rounded-lg text-sm">
-            <Instagram className="h-5 w-5 mt-0.5 flex-shrink-0" />
-            <p className="text-muted-foreground">
-              Instagram doesn't support direct link sharing. Copy the link and share it in your Instagram story or bio.
-            </p>
-          </div>
 
           {/* Copy Link Section */}
           <div className="space-y-2">
