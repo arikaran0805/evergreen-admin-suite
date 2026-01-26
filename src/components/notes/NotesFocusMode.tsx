@@ -461,9 +461,21 @@ export function NotesFocusMode({
                 )}
                 
                 {/* Only show "Go to lesson" for lesson-type notes */}
+                {(() => {
+                  console.log('Go to lesson button check:', {
+                    hasNavigateHandler: !!onNavigateToLesson,
+                    entityType: selectedNote.entity_type,
+                    lessonId: selectedNote.lesson_id,
+                    shouldShow: onNavigateToLesson && selectedNote.entity_type === 'lesson' && selectedNote.lesson_id
+                  });
+                  return null;
+                })()}
                 {onNavigateToLesson && selectedNote.entity_type === 'lesson' && selectedNote.lesson_id && (
                   <button
-                    onClick={() => onNavigateToLesson(selectedNote.lesson_id!)}
+                    onClick={() => {
+                      console.log('Go to lesson button clicked!', selectedNote.lesson_id);
+                      onNavigateToLesson(selectedNote.lesson_id!);
+                    }}
                     className="text-primary hover:text-primary/80 hover:underline transition-colors flex items-center gap-0.5 font-medium"
                   >
                     Go to lesson
