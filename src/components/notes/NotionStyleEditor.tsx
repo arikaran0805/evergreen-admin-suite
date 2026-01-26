@@ -340,15 +340,20 @@ export const NotionStyleEditor = forwardRef<NotionStyleEditorRef, NotionStyleEdi
           <div className="w-px h-5 bg-border mx-0.5" />
 
           {/* Code Block - inserts a syntax-highlighted code block */}
-          <ToolbarButton
-            onClick={() => {
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               editor.chain().focus().toggleCodeBlock().run();
             }}
-            isActive={editor.isActive('codeBlock')}
+            className={cn(
+              'p-1.5 rounded-md hover:bg-muted transition-colors',
+              editor.isActive('codeBlock') && 'bg-primary/10 text-primary'
+            )}
             title="Code Block"
           >
             <Code className="h-4 w-4" />
-          </ToolbarButton>
+          </button>
 
           {/* Link */}
           <Popover open={showLinkInput} onOpenChange={setShowLinkInput}>
