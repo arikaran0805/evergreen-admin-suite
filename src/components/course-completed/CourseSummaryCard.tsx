@@ -61,7 +61,9 @@ const CourseSummaryCard = ({
           </div>
           <div>
             <p className="text-2xl font-bold">{skills.length}</p>
-            <p className="text-sm text-muted-foreground">Skills Covered</p>
+            <p className="text-sm text-muted-foreground">
+              {skills.length === 1 ? 'Core Skill' : 'Skills Covered'}
+            </p>
           </div>
         </div>
       </div>

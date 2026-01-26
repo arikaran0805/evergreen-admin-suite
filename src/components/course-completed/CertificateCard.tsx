@@ -276,6 +276,11 @@ const CertificateCard = ({
                 Verify Certificate
               </Button>
             </div>
+            
+            {/* Trust reinforcement text */}
+            <p className="text-xs text-muted-foreground mt-3">
+              This certificate is verifiable and shareable
+            </p>
           </div>
         </div>
       </div>

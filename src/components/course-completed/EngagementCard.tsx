@@ -51,7 +51,12 @@ const EngagementCard = ({
 
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">How was your experience?</h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">How was your experience?</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Your feedback helps improve this course for others
+        </p>
+      </div>
       
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
         {/* Quick Star Rating Preview */}
