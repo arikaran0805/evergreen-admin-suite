@@ -16,11 +16,13 @@ import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserState } from "@/hooks/useUserState";
+import { useCareers } from "@/hooks/useCareers";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
 import { useCourseTabRegistration } from "@/hooks/useCourseTabManager";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { CareerScopedHeader } from "@/components/course/CareerScopedHeader";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import CourseStructuredData from "@/components/CourseStructuredData";
@@ -225,6 +227,14 @@ const CourseDetail = () => {
   const [defaultTabResolved, setDefaultTabResolved] = useState(false);
   const [shareOpenPostId, setShareOpenPostId] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+  const [userSelectedCareer, setUserSelectedCareer] = useState<string | null>(null);
+
+  // Career data hook for career-scoped navigation
+  const { 
+    getCareerBySlug, 
+    getCareerCourses, 
+    loading: careersLoading 
+  } = useCareers();
 
   // Course stats hook
   const {
@@ -275,6 +285,24 @@ const CourseDetail = () => {
     const isCompleted = completedCount === totalCount && totalCount > 0;
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
   }, [progress.completedLessons, posts.length]);
+
+  // Career-scoped navigation data for Pro users
+  const userCareer = useMemo(() => {
+    if (!userSelectedCareer) return null;
+    return getCareerBySlug(userSelectedCareer);
+  }, [userSelectedCareer, getCareerBySlug]);
+
+  const careerScopedCourses = useMemo(() => {
+    if (!userCareer) return [];
+    const careerCourseData = getCareerCourses(userCareer.id);
+    return careerCourseData
+      .filter(cc => cc.course)
+      .map(cc => ({
+        id: cc.course!.id,
+        name: cc.course!.name,
+        slug: cc.course!.slug,
+      }));
+  }, [userCareer, getCareerCourses]);
 
   // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
   useEffect(() => {
@@ -416,6 +444,32 @@ const CourseDetail = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch user's selected career for career-scoped header
+  useEffect(() => {
+    const fetchUserCareer = async () => {
+      if (!user?.id) {
+        setUserSelectedCareer(null);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("selected_career")
+          .eq("id", user.id)
+          .single();
+        
+        if (!error && data?.selected_career) {
+          setUserSelectedCareer(data.selected_career);
+        }
+      } catch (err) {
+        console.error("Error fetching user career:", err);
+      }
+    };
+    
+    fetchUserCareer();
+  }, [user?.id]);
 
   useEffect(() => {
     if (roleLoading || !slug) return;
@@ -1366,8 +1420,24 @@ const CourseDetail = () => {
         onVisibilityChange={handleHeaderVisibility}
       />
 
+      {/* Career-Scoped Secondary Header for Pro users - replaces generic course nav */}
+      {isPro && course && userCareer && (
+        <CareerScopedHeader
+          currentCourse={{
+            id: course.id,
+            name: course.name,
+            slug: course.slug,
+          }}
+          career={userCareer}
+          careerCourses={careerScopedCourses}
+          isHeaderVisible={isHeaderVisible}
+          announcementVisible={showAnnouncement}
+          isLoading={careersLoading}
+        />
+      )}
+
       {/* Main Layout - adjust padding based on header visibility */}
-      {/* Heights: Primary header=64px, Secondary header=40px, Announcement=36px */}
+      {/* Heights: Primary header=64px, Secondary header=40px (48px for career scoped), Announcement=36px */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         isPreviewMode && canPreview 
           ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
