@@ -1898,9 +1898,12 @@ const CourseDetail = () => {
                           </Tooltip>
                         )}
                         
-                        {/* Certificate Tab - Only visible for Pro users with 100% completion */}
-                        {isPro && courseStats.isEnrolled && courseProgress.isCompleted && (
+                        {/* Certificate Tab - Always visible for Pro enrolled users */}
+                        {isPro && courseStats.isEnrolled && (
                           <TabsTrigger value="certificate" className="gap-2">
+                            {!courseProgress.isCompleted && (
+                              <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                            )}
                             <Award className="h-4 w-4" />
                             Certificate
                           </TabsTrigger>
@@ -2148,12 +2151,47 @@ const CourseDetail = () => {
                         )}
                       </TabsContent>
 
-                      {/* Certificate Tab - Pro users with completed course only */}
-                      {isPro && courseStats.isEnrolled && courseProgress.isCompleted && (
+                      {/* Certificate Tab - Pro users only */}
+                      {isPro && courseStats.isEnrolled && (
                         <TabsContent value="certificate">
-                          <div className="space-y-6">
-                            {/* Certificate Card - reusing existing component logic inline */}
-                            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center">
+                          <div className="space-y-6 relative">
+                            {/* Locked State Overlay - shown when course is not complete */}
+                            {!courseProgress.isCompleted && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center">
+                                {/* Blurred background effect */}
+                                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-lg" />
+                                
+                                {/* Lock overlay content */}
+                                <div className="relative z-20 flex flex-col items-center gap-4 text-center p-8 max-w-sm">
+                                  {/* Lock Icon */}
+                                  <div className="w-14 h-14 rounded-full bg-muted/80 flex items-center justify-center">
+                                    <Lock className="h-7 w-7 text-muted-foreground" />
+                                  </div>
+                                  
+                                  {/* Progress Bar */}
+                                  <div className="w-48">
+                                    <Progress 
+                                      value={courseProgress.percentage} 
+                                      className="h-2 bg-muted" 
+                                    />
+                                  </div>
+                                  
+                                  {/* Supporting Text */}
+                                  <p className="text-sm text-muted-foreground">
+                                    {courseProgress.percentage === 0 
+                                      ? "Start the course to unlock your certificate"
+                                      : `You're ${courseProgress.percentage}% there — keep going`
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Certificate Card - shown blurred when locked, normal when unlocked */}
+                            <div className={cn(
+                              "flex flex-col lg:flex-row gap-6 lg:gap-8 items-center",
+                              !courseProgress.isCompleted && "pointer-events-none select-none"
+                            )}>
                               {/* Certificate Preview */}
                               <div className="w-full max-w-md aspect-[1.4/1] rounded-lg border-4 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
                                 {/* Decorative border */}
@@ -2189,7 +2227,7 @@ const CourseDetail = () => {
                                 </p>
                               </div>
 
-                              {/* Actions */}
+                              {/* Actions - only interactive when unlocked */}
                               <div className="flex flex-col gap-4 flex-1">
                                 <div>
                                   <h3 className="text-xl font-semibold mb-1">🎉 Your Certificate is Ready!</h3>
@@ -2204,6 +2242,7 @@ const CourseDetail = () => {
                                     onClick={() => navigate(`/course/${course.id}/completed`)}
                                     className="w-full sm:w-auto"
                                     size="lg"
+                                    disabled={!courseProgress.isCompleted}
                                   >
                                     <Award className="h-4 w-4 mr-2" />
                                     View & Download Certificate
@@ -2225,6 +2264,7 @@ const CourseDetail = () => {
                                     }}
                                     className="w-full sm:w-auto"
                                     size="lg"
+                                    disabled={!courseProgress.isCompleted}
                                   >
                                     <Linkedin className="h-4 w-4 mr-2" />
                                     Share on LinkedIn
@@ -2241,13 +2281,14 @@ const CourseDetail = () => {
                                     }}
                                     className="w-full sm:w-auto"
                                     size="lg"
+                                    disabled={!courseProgress.isCompleted}
                                   >
                                     <Copy className="h-4 w-4 mr-2" />
                                     Copy Link
                                   </Button>
                                   
                                   {/* Review CTA */}
-                                  {!courseStats.userReview && (
+                                  {!courseStats.userReview && courseProgress.isCompleted && (
                                     <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
                                       <p className="text-sm text-muted-foreground mb-3">
                                         💬 Your feedback helps improve this course for others
