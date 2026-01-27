@@ -1851,6 +1851,14 @@ const CourseDetail = () => {
                             )}
                           </Tooltip>
                         )}
+                        
+                        {/* Certificate Tab - Only visible for Pro users with 100% completion */}
+                        {isPro && courseStats.isEnrolled && courseProgress.isCompleted && (
+                          <TabsTrigger value="certificate" className="gap-2">
+                            <Award className="h-4 w-4" />
+                            Certificate
+                          </TabsTrigger>
+                        )}
                       </TabsList>
 
                       {/* Course Details Tab */}
@@ -2093,6 +2101,134 @@ const CourseDetail = () => {
                           </div>
                         )}
                       </TabsContent>
+
+                      {/* Certificate Tab - Pro users with completed course only */}
+                      {isPro && courseStats.isEnrolled && courseProgress.isCompleted && (
+                        <TabsContent value="certificate">
+                          <div className="space-y-6">
+                            {/* Certificate Card - reusing existing component logic inline */}
+                            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-start">
+                              {/* Certificate Preview */}
+                              <div className="w-full max-w-md aspect-[1.4/1] rounded-lg border-4 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                                {/* Decorative border */}
+                                <div className="absolute inset-3 border-2 border-primary/30 rounded pointer-events-none" />
+                                
+                                {/* Award icon */}
+                                <div className="mb-3">
+                                  <Award className="h-12 w-12 text-primary" />
+                                </div>
+                                
+                                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+                                  Certificate of Completion
+                                </p>
+                                
+                                <p className="text-sm text-muted-foreground mb-1">
+                                  This is to certify that
+                                </p>
+                                
+                                <p className="text-lg font-bold text-foreground mb-2 line-clamp-1">
+                                  {user?.user_metadata?.full_name || 'Learner'}
+                                </p>
+                                
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  has successfully completed
+                                </p>
+                                
+                                <p className="text-sm font-semibold text-primary line-clamp-2 mb-3">
+                                  {course.name}
+                                </p>
+                                
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </p>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex flex-col gap-4 flex-1">
+                                <div>
+                                  <h3 className="text-xl font-semibold mb-1">🎉 Your Certificate is Ready!</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    Congratulations on completing this course! Download your certificate or share your achievement.
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                  {/* Primary CTA - View Full Certificate */}
+                                  <Button 
+                                    onClick={() => navigate(`/course/${course.id}/completed`)}
+                                    className="w-full sm:w-auto"
+                                    size="lg"
+                                  >
+                                    <Award className="h-4 w-4 mr-2" />
+                                    View & Download Certificate
+                                  </Button>
+
+                                  {/* Secondary actions */}
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      onClick={() => {
+                                        const text = encodeURIComponent(
+                                          `I just completed "${course.name}"! 🎉\n\nExcited to share my new skills and knowledge. #Learning #Achievement`
+                                        );
+                                        const url = encodeURIComponent(window.location.href);
+                                        window.open(
+                                          `https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}`,
+                                          '_blank',
+                                          'width=600,height=400'
+                                        );
+                                      }}
+                                      className="flex-1 sm:flex-none"
+                                    >
+                                      <Linkedin className="h-4 w-4 mr-2" />
+                                      Share on LinkedIn
+                                    </Button>
+                                    
+                                    <Button 
+                                      variant="ghost" 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(window.location.href);
+                                        toast({
+                                          title: "Link copied!",
+                                          description: "Share your achievement with others.",
+                                        });
+                                      }}
+                                      className="flex-1 sm:flex-none"
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy Link
+                                    </Button>
+                                  </div>
+                                  
+                                  {/* Review CTA */}
+                                  {!courseStats.userReview && (
+                                    <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
+                                      <p className="text-sm text-muted-foreground mb-3">
+                                        💬 Your feedback helps improve this course for others
+                                      </p>
+                                      <CourseReviewDialog
+                                        reviews={courseReviews}
+                                        averageRating={courseStats.averageRating}
+                                        reviewCount={courseStats.reviewCount}
+                                        userReview={courseStats.userReview}
+                                        isEnrolled={courseStats.isEnrolled}
+                                        isAuthenticated={!!user}
+                                        onSubmitReview={submitReview}
+                                        onDeleteReview={deleteReview}
+                                      >
+                                        <Button variant="outline" size="sm">
+                                          <Star className="h-4 w-4 mr-2" />
+                                          Leave a Review
+                                        </Button>
+                                      </CourseReviewDialog>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </TabsContent>
+                      )}
 
                       {/* Notes now opens in a separate tab */}
                     </Tabs>
