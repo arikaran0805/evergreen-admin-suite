@@ -907,28 +907,29 @@ const Profile = () => {
 
             {/* Streak Badge with Animation */}
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-sm shadow-amber-500/10">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                    <Flame className="h-6 w-6 text-white drop-shadow-lg" />
-                  </div>
-                  {currentStreak > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-lg">
-                      🔥
+              <div className="flex items-center gap-4">
+                {/* Combined Streak Card */}
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-sm shadow-amber-500/10">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                      <Flame className="h-6 w-6 text-white drop-shadow-lg" />
                     </div>
-                  )}
+                    {currentStreak > 0 && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-lg">
+                        🔥
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline gap-1.5">
+                      <p className="text-xs text-muted-foreground font-medium">Streak</p>
+                      <span className="text-[10px] text-muted-foreground/70">/ max {maxStreak}</span>
+                    </div>
+                    <p className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                      {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Streak</p>
-                  <p className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                    {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center px-3 py-2 rounded-lg bg-gradient-to-br from-muted/60 to-muted/40 border border-border/50">
-                <p className="text-lg font-bold text-amber-500">{maxStreak}</p>
-                <p className="text-xs text-muted-foreground font-medium">max streak</p>
               </div>
 
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/15 to-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/10">
