@@ -31,7 +31,7 @@ export const CareerWelcomePage = ({ career, skills, onStart }: CareerWelcomePage
 
   const handleStartJourney = () => {
     onStart();
-    navigate("/career-board");
+    navigate("/arcade");
   };
 
   // Journey steps
