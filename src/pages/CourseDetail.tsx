@@ -1509,8 +1509,8 @@ const CourseDetail = () => {
             }}
           />
 
-          {/* MAIN CONTENT - max-w-4xl for readability, flex centers it between sidebars */}
-          <main className="flex-1 min-w-0 max-w-4xl">
+          {/* MAIN CONTENT - centered with mx-auto within flex-1 space */}
+          <main className="flex-1 min-w-0 max-w-4xl mx-auto px-4 lg:px-0">
             <Card className="rounded-none border-0 shadow-none">
               <CardContent className="p-6 lg:p-8">
                 {loadingPost ? (
