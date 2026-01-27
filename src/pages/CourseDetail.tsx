@@ -187,7 +187,7 @@ const CourseDetail = () => {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
-  const { userState, entrySource, entryFlow, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, isCareerFlow, markAsInternal, clearCareerFlow, isLoading: userStateLoading } = useUserState();
+  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, markAsInternal, isLoading: userStateLoading } = useUserState();
   const { openPricingDrawer } = usePricingDrawer();
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -1412,22 +1412,15 @@ const CourseDetail = () => {
         </div>
       )}
       
-      {/* Announcement Bar - always show */}
       <div className={`fixed ${isPreviewMode && canPreview ? 'top-10' : 'top-0'} left-0 right-0 z-[60]`}>
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
+      <Header 
+        announcementVisible={showAnnouncement} 
+        onVisibilityChange={handleHeaderVisibility}
+      />
 
-      {/* Global Header - HIDDEN in career flow mode for Pro users */}
-      {!(isPro && isCareerFlow && userCareer) && (
-        <Header 
-          announcementVisible={showAnnouncement} 
-          onVisibilityChange={handleHeaderVisibility}
-        />
-      )}
-
-      {/* Career-Scoped Secondary Header for Pro users in career flow
-          - ALWAYS shows when in career flow mode
-          - Position adjusts based on whether global header is hidden */}
+      {/* Career-Scoped Secondary Header for Pro users - replaces generic course nav */}
       {isPro && course && userCareer && (
         <CareerScopedHeader
           currentCourse={{
@@ -1437,23 +1430,20 @@ const CourseDetail = () => {
           }}
           career={userCareer}
           careerCourses={careerScopedCourses}
-          isHeaderVisible={isCareerFlow ? false : isHeaderVisible}
+          isHeaderVisible={isHeaderVisible}
           announcementVisible={showAnnouncement}
           isLoading={careersLoading}
         />
       )}
 
-      {/* Main Layout - adjust padding based on header visibility and career flow mode */}
-      {/* Heights: Primary header=64px, Secondary header=48px (career scoped), Announcement=36px */}
+      {/* Main Layout - adjust padding based on header visibility */}
+      {/* Heights: Primary header=64px, Secondary header=40px (48px for career scoped), Announcement=36px */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         isPreviewMode && canPreview 
           ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
-          : isPro && isCareerFlow && userCareer
-            // Career flow mode: no global header, only CareerScopedHeader
-            ? (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // 84px / 48px (36+48 / 48)
-            : isHeaderVisible
-              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
-              : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (36+40 / 40 - secondary header only)
+          : isHeaderVisible
+            ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
+            : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (36+40 / 40 - secondary header only)
       }`}>
         <div className="flex flex-col lg:flex-row gap-0 justify-center">
           

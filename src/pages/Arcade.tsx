@@ -1,32 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useCareers } from "@/hooks/useCareers";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
+import { CareerRoadmapChart } from "@/components/CareerRoadmapChart";
 import { CareerProgressChart } from "@/components/CareerProgressChart";
-import { AnnouncementBar } from "@/components/AnnouncementBar";
-import { Target, Trophy, ChevronLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// Session storage key for career flow tracking
-const ENTRY_FLOW_KEY = "lovable_entry_flow";
-
-/**
- * Mark navigation as career flow (preserves immersive mode)
- */
-const markAsCareerFlow = () => {
-  sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
-};
-
-/**
- * Clear career flow (exits immersive mode)
- */
-const clearCareerFlow = () => {
-  sessionStorage.removeItem(ENTRY_FLOW_KEY);
-};
+import * as Icons from "lucide-react";
+import { Target, Trophy, ChevronRight, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react";
 
 const Arcade = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -34,7 +20,6 @@ const Arcade = () => {
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, { completed: number; total: number }>>({});
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
   const navigate = useNavigate();
   
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, careers, allCourses } = useCareers();
@@ -158,18 +143,6 @@ const Arcade = () => {
     }
   };
 
-  // Handle course click - mark as career flow and navigate
-  const handleCourseClick = (courseSlug: string) => {
-    markAsCareerFlow();
-    navigate(`/course/${courseSlug}`);
-  };
-
-  // Handle exit from career flow
-  const handleExitCareerFlow = () => {
-    clearCareerFlow();
-    navigate('/profile');
-  };
-
   // Calculate overall career readiness
   const calculateReadiness = () => {
     if (!skills.length) return 0;
@@ -205,60 +178,30 @@ const Arcade = () => {
   const readinessPercent = calculateReadiness();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <Layout>
       <SEOHead
-        title="Career Board | Your Learning Journey"
+        title="Career Arcade | Your Learning Journey"
         description="Track your career readiness journey and see your progress toward becoming job-ready."
       />
 
-      {/* Announcement Bar */}
-      <div className="fixed top-0 left-0 right-0 z-[60]">
-        <AnnouncementBar onVisibilityChange={setShowAnnouncement} />
-      </div>
-
-      {/* Career Board Header - replaces global header in immersive mode */}
-      <div className={cn(
-        "fixed left-0 right-0 z-40 bg-muted/95 backdrop-blur-sm border-b border-border",
-        showAnnouncement ? 'top-9' : 'top-0'
-      )}>
-        <div className="container mx-auto px-6 lg:px-12">
-          <div className="flex items-center justify-between h-14 gap-8">
-            {/* LEFT SIDE - Back + Title */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                onClick={handleExitCareerFlow}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">Back to Profile</span>
-              </Button>
-              <div className="flex items-center gap-3">
-                <Trophy className="h-6 w-6 text-amber-500" />
-                <div>
-                  <h1 className="text-lg font-bold">Career Board</h1>
-                  <p className="text-xs text-muted-foreground">
-                    Your journey to becoming a {career?.name || "professional"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT SIDE - Actions */}
-            <Button variant="outline" size="sm" onClick={() => setCareerDialogOpen(true)}>
-              <Target className="h-4 w-4 mr-2" />
-              Change Career Path
-            </Button>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
+              <Trophy className="h-8 w-8 text-amber-500" />
+              Career Arcade
+            </h1>
+            <p className="text-muted-foreground">
+              Your journey to becoming a {career?.name || "professional"}
+            </p>
           </div>
+          <Button variant="outline" onClick={() => setCareerDialogOpen(true)}>
+            <Target className="h-4 w-4 mr-2" />
+            Change Career Path
+          </Button>
         </div>
-      </div>
 
-      {/* Main Content - offset for fixed header */}
-      <main className={cn(
-        "flex-1 container mx-auto px-4 py-8",
-        showAnnouncement ? 'pt-[6.5rem]' : 'pt-20'
-      )}>
         {/* Career Progress Chart - New sequential learning visualization */}
         {journeySteps.length > 0 ? (
           <CareerProgressChart
@@ -266,7 +209,6 @@ const Arcade = () => {
             readinessPercent={readinessPercent}
             careerName={career?.name || "Career"}
             totalLearningHours={120}
-            onCourseClick={handleCourseClick}
           />
         ) : (
           <Card>
@@ -290,8 +232,8 @@ const Arcade = () => {
           selectedCareerSlug={selectedCareer}
           onCareerSelect={handleCareerSelect}
         />
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

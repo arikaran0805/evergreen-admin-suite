@@ -55,8 +55,6 @@ interface CareerProgressChartProps {
   readinessPercent: number;
   careerName: string;
   totalLearningHours?: number;
-  /** Optional callback for course click - if provided, overrides default navigation */
-  onCourseClick?: (courseSlug: string) => void;
 }
 
 interface TooltipData {
@@ -82,8 +80,7 @@ export const CareerProgressChart = ({
   journeySteps, 
   readinessPercent,
   careerName,
-  totalLearningHours = 120,
-  onCourseClick: externalOnCourseClick
+  totalLearningHours = 120 
 }: CareerProgressChartProps) => {
   const navigate = useNavigate();
   const [showCelebration, setShowCelebration] = useState(false);
@@ -360,12 +357,6 @@ export const CareerProgressChart = ({
       return;
     }
 
-    // If external handler provided, use it
-    if (externalOnCourseClick) {
-      externalOnCourseClick(course.slug);
-      return;
-    }
-
     // Enrolled but not completed - navigate to next lesson
     if (course.isEnrolled && course.progress > 0) {
       navigate(`/courses/${course.slug}?continue=true`);
@@ -374,19 +365,15 @@ export const CareerProgressChart = ({
 
     // Active or not started - navigate to course
     navigate(`/courses/${course.slug}`);
-  }, [navigate, externalOnCourseClick]);
+  }, [navigate]);
 
   // Handle restart course from completion dialog
   const handleRestartCourse = useCallback(() => {
     if (completedCourseInfo) {
-      if (externalOnCourseClick) {
-        externalOnCourseClick(completedCourseInfo.slug);
-      } else {
-        navigate(`/courses/${completedCourseInfo.slug}?restart=true`);
-      }
+      navigate(`/courses/${completedCourseInfo.slug}?restart=true`);
     }
     setShowCompletionDialog(false);
-  }, [completedCourseInfo, navigate, externalOnCourseClick]);
+  }, [completedCourseInfo, navigate]);
 
   // Handle mouse movement for tooltip
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

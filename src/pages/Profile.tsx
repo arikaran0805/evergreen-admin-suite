@@ -328,14 +328,14 @@ const Profile = () => {
   const { isAdmin, isModerator } = useUserRole();
   const { navigateToCourse, handleResume } = useCourseNavigation();
 
-  // Handle skill click - navigate to course that teaches this skill (CAREER FLOW)
+  // Handle skill click - navigate to course that teaches this skill
   const handleSkillClick = async (skillName: string) => {
     if (!career) return;
     
     const courseInfo = getCourseForSkill(career.id, skillName);
     if (courseInfo) {
-      // Use role-aware navigation with career flow enabled
-      await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId, { careerFlow: true });
+      // Use role-aware navigation (not auto-resume)
+      await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId);
     }
   };
 
@@ -951,7 +951,7 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Primary CTA: Career Board - Navigate to first course in career path (CAREER FLOW) */}
+                  {/* Primary CTA: Career Board - Navigate to first course in career path */}
                   <Button 
                     variant="default" 
                     size="sm" 
@@ -961,8 +961,7 @@ const Profile = () => {
                         // getCourseForSkill falls back to first course if no specific skill match
                         const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
                         if (courseInfo) {
-                          // Mark as career flow for immersive header experience
-                          await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId, { careerFlow: true });
+                          await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId);
                         }
                       }
                     }}
@@ -1204,18 +1203,7 @@ const Profile = () => {
                       <div className="flex flex-col items-center mt-5 group/cta">
                         <Button 
                           className="gap-2 rounded-full px-5"
-                          onClick={async () => {
-                            // Navigate to first course with career flow
-                            if (career && skills.length > 0) {
-                              const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
-                              if (courseInfo) {
-                                await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId, { careerFlow: true });
-                                return;
-                              }
-                            }
-                            // Fallback to arcade if no course found
-                            navigate('/arcade');
-                          }}
+                          onClick={() => navigate('/arcade')}
                         >
                           Improve Career Readiness
                           <ChevronRight className="h-4 w-4" />

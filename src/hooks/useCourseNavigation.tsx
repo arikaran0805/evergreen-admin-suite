@@ -3,16 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 
-// Session storage key for career flow tracking (same as useUserState)
-const ENTRY_FLOW_KEY = "lovable_entry_flow";
-
 /**
  * Role- & Progress-Aware Course Navigation Hook
  * 
  * This hook provides deterministic, predictable course entry routing based on:
  * - User role (Admin, Super Moderator, Senior Moderator, Moderator → Course Info)
  * - Course progress (0% → Course Details, >0% → Lessons tab)
- * - Entry flow (career_flow vs global for header rendering)
  * 
  * Resume behavior is EXPLICIT ONLY - triggered by separate handleResume function.
  */
@@ -24,20 +20,6 @@ export const useCourseNavigation = () => {
    * Check if user has any management role
    */
   const isManagementRole = isAdmin || isSuperModerator || isSeniorModerator || isModerator;
-
-  /**
-   * Mark navigation as career flow (immersive mode - no global header)
-   */
-  const markAsCareerFlow = useCallback(() => {
-    sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
-  }, []);
-
-  /**
-   * Clear career flow (return to global mode with global header)
-   */
-  const clearCareerFlow = useCallback(() => {
-    sessionStorage.removeItem(ENTRY_FLOW_KEY);
-  }, []);
 
   /**
    * Get course progress for a specific course
@@ -81,19 +63,8 @@ export const useCourseNavigation = () => {
    * 3. Learner with >0% progress → /course/:slug?tab=lessons
    * 
    * This does NOT auto-resume to a specific lesson. Use handleResume for that.
-   * 
-   * @param options.careerFlow - If true, marks this as career flow navigation (immersive mode)
    */
-  const navigateToCourse = useCallback(async (
-    courseSlug: string, 
-    courseId?: string,
-    options?: { careerFlow?: boolean }
-  ) => {
-    // Handle career flow marking
-    if (options?.careerFlow) {
-      markAsCareerFlow();
-    }
-
+  const navigateToCourse = useCallback(async (courseSlug: string, courseId?: string) => {
     // If roles are still loading, navigate without tab param and let CourseDetail handle it
     if (roleLoading) {
       navigate(`/course/${courseSlug}`);
@@ -122,24 +93,14 @@ export const useCourseNavigation = () => {
       // Not started → Course Details/Overview (no tab param = defaults to details)
       navigate(`/course/${courseSlug}`);
     }
-  }, [navigate, roleLoading, isManagementRole, userId, getCourseProgress, markAsCareerFlow]);
+  }, [navigate, roleLoading, isManagementRole, userId, getCourseProgress]);
 
   /**
    * Navigate directly to course without any async progress checks
    * Used when you don't have courseId or want synchronous navigation
    * CourseDetail will handle the tab resolution based on role/progress
-   * 
-   * @param options.careerFlow - If true, marks this as career flow navigation (immersive mode)
    */
-  const navigateToCourseSync = useCallback((
-    courseSlug: string,
-    options?: { careerFlow?: boolean }
-  ) => {
-    // Handle career flow marking
-    if (options?.careerFlow) {
-      markAsCareerFlow();
-    }
-
+  const navigateToCourseSync = useCallback((courseSlug: string) => {
     if (roleLoading) {
       navigate(`/course/${courseSlug}`);
       return;
@@ -153,24 +114,13 @@ export const useCourseNavigation = () => {
 
     // For learners, let CourseDetail handle tab resolution
     navigate(`/course/${courseSlug}`);
-  }, [navigate, roleLoading, isManagementRole, markAsCareerFlow]);
+  }, [navigate, roleLoading, isManagementRole]);
 
   /**
    * Explicit resume action - navigates to last viewed lesson
    * Only call this when user explicitly clicks "Continue" or "Resume"
-   * 
-   * @param options.careerFlow - If true, marks this as career flow navigation (immersive mode)
    */
-  const handleResume = useCallback(async (
-    courseSlug: string, 
-    courseId: string,
-    options?: { careerFlow?: boolean }
-  ) => {
-    // Handle career flow marking
-    if (options?.careerFlow) {
-      markAsCareerFlow();
-    }
-
+  const handleResume = useCallback(async (courseSlug: string, courseId: string) => {
     if (!userId) {
       navigate(`/course/${courseSlug}?tab=lessons`);
       return;
@@ -201,7 +151,7 @@ export const useCourseNavigation = () => {
       console.error("Error fetching resume position:", error);
       navigate(`/course/${courseSlug}?tab=lessons`);
     }
-  }, [navigate, userId, markAsCareerFlow]);
+  }, [navigate, userId]);
 
   return {
     navigateToCourse,
@@ -210,7 +160,5 @@ export const useCourseNavigation = () => {
     getCourseProgress,
     isManagementRole,
     roleLoading,
-    markAsCareerFlow,
-    clearCareerFlow,
   };
 };
