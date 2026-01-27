@@ -55,6 +55,11 @@ export const CareerSelectionDialog = ({
                 <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />
               ))}
             </div>
+          ) : careers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No career paths available yet.</p>
+              <p className="text-sm mt-2">Please check back later or contact an administrator.</p>
+            </div>
           ) : (
             careers.map((career) => {
               const isSelected = tempSelection === career.slug;
