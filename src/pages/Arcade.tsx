@@ -8,11 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useCareers } from "@/hooks/useCareers";
+import { useCareerWelcome } from "@/hooks/useCareerWelcome";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { CareerRoadmapChart } from "@/components/CareerRoadmapChart";
 import { CareerProgressChart } from "@/components/CareerProgressChart";
+import { CareerWelcomePage } from "@/components/career";
 import * as Icons from "lucide-react";
-import { Target, Trophy, ChevronRight, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { Target, Trophy, ChevronRight, Lock, CheckCircle2, Circle, Sparkles, Eye } from "lucide-react";
 
 const Arcade = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -20,9 +22,16 @@ const Arcade = () => {
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, { completed: number; total: number }>>({});
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
+  const [showCareerOverview, setShowCareerOverview] = useState(false);
   const navigate = useNavigate();
   
-  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, careers, allCourses } = useCareers();
+  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, careers, allCourses, loading: careersLoading } = useCareers();
+  
+  // Get career object first to get ID for welcome check
+  const career = getCareerBySlug(selectedCareer);
+  
+  // Check if user has seen welcome page for this career
+  const { hasSeenWelcome, loading: welcomeLoading, markWelcomeSeen } = useCareerWelcome(career?.id);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -98,7 +107,6 @@ const Arcade = () => {
     fetchUserData();
   }, [navigate, allCourses]);
 
-  const career = getCareerBySlug(selectedCareer);
   const careerCourseSlugs = career ? getCareerCourseSlugs(career.id) : [];
   const skills = career ? getCareerSkills(career.id) : [];
 
@@ -177,10 +185,43 @@ const Arcade = () => {
 
   const readinessPercent = calculateReadiness();
 
+  // Show loading state while checking welcome status
+  if (careersLoading || welcomeLoading) {
+    return (
+      <Layout>
+        <SEOHead
+          title="Career Board | Your Learning Journey"
+          description="Track your career readiness journey and see your progress toward becoming job-ready."
+        />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="animate-pulse text-muted-foreground">Loading your career journey...</div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show Career Welcome Page for first-time visitors OR when manually viewing overview
+  if ((hasSeenWelcome === false || showCareerOverview) && career) {
+    return (
+      <CareerWelcomePage
+        career={career}
+        skills={skills}
+        onStart={() => {
+          if (!showCareerOverview) {
+            markWelcomeSeen();
+          }
+          setShowCareerOverview(false);
+        }}
+      />
+    );
+  }
+
   return (
     <Layout>
       <SEOHead
-        title="Career Arcade | Your Learning Journey"
+        title="Career Board | Your Learning Journey"
         description="Track your career readiness journey and see your progress toward becoming job-ready."
       />
 
@@ -189,17 +230,29 @@ const Arcade = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <Trophy className="h-8 w-8 text-amber-500" />
-              Career Arcade
+              <Trophy className="h-8 w-8 text-primary" />
+              Career Board
             </h1>
             <p className="text-muted-foreground">
               Your journey to becoming a {career?.name || "professional"}
             </p>
           </div>
-          <Button variant="outline" onClick={() => setCareerDialogOpen(true)}>
-            <Target className="h-4 w-4 mr-2" />
-            Change Career Path
-          </Button>
+          <div className="flex gap-2">
+            {/* View Career Overview - Low priority revisit option */}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowCareerOverview(true)}
+              className="text-muted-foreground"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Career Overview
+            </Button>
+            <Button variant="outline" onClick={() => setCareerDialogOpen(true)}>
+              <Target className="h-4 w-4 mr-2" />
+              Change Career Path
+            </Button>
+          </div>
         </div>
 
         {/* Career Progress Chart - New sequential learning visualization */}
