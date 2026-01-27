@@ -10,7 +10,8 @@
  * 
  * CRITICAL RULES:
  * - CareerScopedHeader renders ONLY when entryFlow === "career_flow"
- * - Page refresh, direct URL, browser back/forward clear career flow
+ * - Career flow PERSISTS across page refresh (sessionStorage survives refresh)
+ * - Career flow is cleared ONLY on explicit exit (Home, Explore) or session end
  * - Course pages NEVER set entryFlow - only Career Readiness CTAs do
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -55,7 +56,7 @@ interface UseUserStateReturn {
   markAsInternal: () => void;
   /** Set career flow - ONLY call from Career Readiness / Career Board CTAs */
   setCareerFlow: () => void;
-  /** Clear career flow - called on page unload, refresh, or explicit exit */
+  /** Clear career flow - called on explicit exit (Home, Explore) */
   clearCareerFlow: () => void;
 }
 
@@ -99,7 +100,8 @@ const detectEntrySource = (): EntrySource => {
 
 /**
  * Get entry flow from session storage
- * Returns null if not set or on page refresh (uses sessionStorage pageshow handling)
+ * PERSISTS across page refresh - sessionStorage survives F5/refresh
+ * Only cleared on explicit exit (Home, Explore) or session/tab close
  */
 const getEntryFlow = (): EntryFlow => {
   const stored = sessionStorage.getItem(ENTRY_FLOW_KEY);
@@ -113,31 +115,12 @@ export const useUserState = (): UseUserStateReturn => {
   const [entrySource, setEntrySource] = useState<EntrySource>(() => detectEntrySource());
   const [entryFlow, setEntryFlowState] = useState<EntryFlow>(() => getEntryFlow());
 
-  // Clear career flow on page refresh/unload (browser back/forward also triggers this)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Clear career flow on page unload
-      sessionStorage.removeItem(ENTRY_FLOW_KEY);
-    };
-
-    // Handle bfcache (back-forward cache) navigation
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        // Page was restored from bfcache (back/forward navigation)
-        // Clear career flow to default to global header
-        sessionStorage.removeItem(ENTRY_FLOW_KEY);
-        setEntryFlowState(null);
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("pageshow", handlePageShow);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("pageshow", handlePageShow);
-    };
-  }, []);
+  // NO beforeunload handler - career flow MUST persist across refresh
+  // sessionStorage naturally persists during the browser session
+  // Career flow is cleared ONLY on:
+  // 1. Explicit exit (clearCareerFlow called from navigation)
+  // 2. Tab/browser close (sessionStorage is cleared)
+  // 3. bfcache restoration (optional, handled below)
 
   // Fetch subscription status
   useEffect(() => {
