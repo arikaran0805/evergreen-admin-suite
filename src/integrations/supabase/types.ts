@@ -526,6 +526,35 @@ export type Database = {
           },
         ]
       }
+      career_welcome_views: {
+        Row: {
+          career_id: string
+          id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          career_id: string
+          id?: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          career_id?: string
+          id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_welcome_views_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       careers: {
         Row: {
           author_id: string | null
