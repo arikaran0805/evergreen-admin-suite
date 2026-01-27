@@ -338,10 +338,21 @@ const CourseDetail = () => {
    * 2. Course Progress (0%, 1-99%, 100%)
    * 
    * Entry source does NOT affect tab selection - only role and progress matter.
+   * 
+   * IMPORTANT: We must wait for posts to be loaded to calculate accurate progress.
+   * The courseProgress memo depends on posts.length for percentage calculation.
    */
   useEffect(() => {
-    // Skip if already resolved or still loading essential data
-    if (defaultTabResolved || loading || roleLoading || userStateLoading) return;
+    // Skip if already resolved
+    if (defaultTabResolved) return;
+    
+    // Still loading essential data - wait
+    if (loading || roleLoading || userStateLoading) return;
+    
+    // CRITICAL: Wait for posts to be loaded before making progress-based decisions
+    // courseProgress.percentage depends on posts.length being > 0
+    // Without this, percentage will be 0 and wrong tab will be selected
+    const postsLoaded = posts.length > 0;
 
     // Priority 1: If a lesson is already selected via URL, go to lessons tab
     // (Lesson reading always lives in the Lessons context)
@@ -356,6 +367,8 @@ const CourseDetail = () => {
     if (tabParam && ["details", "lessons", "notes", "certificate"].includes(tabParam)) {
       // Only honor certificate tab if it's actually available
       if (tabParam === "certificate") {
+        // Need posts loaded to check completion status
+        if (!postsLoaded) return;
         const certificateTabAvailable = isPro && courseStats.isEnrolled && courseProgress.isCompleted;
         if (!certificateTabAvailable) {
           // Fall back to lessons tab if certificate not available
@@ -371,10 +384,20 @@ const CourseDetail = () => {
 
     // Priority 3: Admin / Moderator → ALWAYS Course Details (ignore progress)
     // Admins and moderators are managing content, not learning it
+    // Can resolve immediately - no need to wait for posts
     if (isAdmin || isModerator) {
       setActiveTab("details");
       setDefaultTabResolved(true);
       return;
+    }
+
+    // For learner progress-based selection, we MUST wait for posts to be loaded
+    if (!postsLoaded) {
+      // Temporarily show details while loading, but don't mark as resolved
+      if (!activeTab) {
+        setActiveTab("details");
+      }
+      return; // Wait for posts to load before making final decision
     }
 
     // Priority 4: LEARNER progress-based tab selection
@@ -403,13 +426,6 @@ const CourseDetail = () => {
     }
 
     // 0% progress → Course Details tab (first-time visitors understand the course)
-    if (progressPercentage === 0 || !courseProgress.hasStarted) {
-      setActiveTab("details");
-      setDefaultTabResolved(true);
-      return;
-    }
-
-    // Default fallback: Course Details (safe default while data resolves)
     setActiveTab("details");
     setDefaultTabResolved(true);
   }, [
@@ -427,6 +443,8 @@ const CourseDetail = () => {
     courseProgress.percentage,
     isLearner,
     isPro,
+    posts.length, // CRITICAL: re-run when posts load
+    activeTab,
   ]);
 
   // Persist active tab to URL when it changes
