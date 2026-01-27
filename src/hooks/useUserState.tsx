@@ -3,6 +3,10 @@
  * 
  * Determines user state: guest, learner, or pro
  * Also tracks entry source for conditional UI behavior
+ * 
+ * Entry Flow Types:
+ * - "career_flow": User entered from Career Readiness/Career Board (immersive mode)
+ * - "global": User entered from Home, Library, Search, Bookmarks, etc. (exploratory mode)
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type UserState = "guest" | "learner" | "pro";
 export type EntrySource = "external" | "internal";
+export type EntryFlow = "career_flow" | "global";
 
 interface Subscription {
   id: string;
@@ -23,6 +28,8 @@ interface UseUserStateReturn {
   userState: UserState;
   /** Entry source: external (SEO, course cards) or internal (dashboard, library) */
   entrySource: EntrySource;
+  /** Entry flow: career_flow (immersive) or global (exploratory) */
+  entryFlow: EntryFlow;
   /** Raw subscription data if available */
   subscription: Subscription | null;
   /** Whether subscription data is still loading */
@@ -37,12 +44,19 @@ interface UseUserStateReturn {
   shouldShowAds: boolean;
   /** Check if pro features should be shown */
   shouldShowProFeatures: boolean;
+  /** Check if in career flow mode (hide global header) */
+  isCareerFlow: boolean;
   /** Mark the current session as internal navigation */
   markAsInternal: () => void;
+  /** Mark the current session as career flow (immersive mode) */
+  markAsCareerFlow: () => void;
+  /** Clear career flow and return to global mode */
+  clearCareerFlow: () => void;
 }
 
-// Session storage key for entry source tracking
+// Session storage keys for entry source tracking
 const ENTRY_SOURCE_KEY = "lovable_entry_source";
+const ENTRY_FLOW_KEY = "lovable_entry_flow";
 const INTERNAL_ROUTES = ["/profile", "/library", "/dashboard", "/moderator", "/admin", "/senior-moderator", "/super-moderator"];
 
 /**
@@ -78,11 +92,21 @@ const detectEntrySource = (): EntrySource => {
   return "external";
 };
 
+/**
+ * Detect entry flow from session storage
+ */
+const detectEntryFlow = (): EntryFlow => {
+  const storedFlow = sessionStorage.getItem(ENTRY_FLOW_KEY);
+  if (storedFlow === "career_flow") return "career_flow";
+  return "global";
+};
+
 export const useUserState = (): UseUserStateReturn => {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [entrySource, setEntrySource] = useState<EntrySource>(() => detectEntrySource());
+  const [entryFlow, setEntryFlow] = useState<EntryFlow>(() => detectEntryFlow());
 
   // Fetch subscription status
   useEffect(() => {
@@ -154,10 +178,25 @@ export const useUserState = (): UseUserStateReturn => {
   // Pro features for pro users only
   const shouldShowProFeatures = isPro;
 
+  // Career flow mode - hide global header, show career-scoped header
+  const isCareerFlow = entryFlow === "career_flow";
+
   // Mark current session as internal navigation
   const markAsInternal = useCallback(() => {
     sessionStorage.setItem(ENTRY_SOURCE_KEY, "internal");
     setEntrySource("internal");
+  }, []);
+
+  // Mark current session as career flow (immersive mode)
+  const markAsCareerFlow = useCallback(() => {
+    sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+    setEntryFlow("career_flow");
+  }, []);
+
+  // Clear career flow and return to global mode
+  const clearCareerFlow = useCallback(() => {
+    sessionStorage.removeItem(ENTRY_FLOW_KEY);
+    setEntryFlow("global");
   }, []);
 
   const isLoading = authLoading || subscriptionLoading;
@@ -165,6 +204,7 @@ export const useUserState = (): UseUserStateReturn => {
   return {
     userState,
     entrySource,
+    entryFlow,
     subscription,
     isLoading,
     isGuest,
@@ -172,7 +212,10 @@ export const useUserState = (): UseUserStateReturn => {
     isPro,
     shouldShowAds,
     shouldShowProFeatures,
+    isCareerFlow,
     markAsInternal,
+    markAsCareerFlow,
+    clearCareerFlow,
   };
 };
 
