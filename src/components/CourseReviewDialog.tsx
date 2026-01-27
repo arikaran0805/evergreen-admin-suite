@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,11 +7,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Star, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
+import { LightEditor, type LightEditorRef } from "@/components/tiptap";
+import { RichTextRenderer } from "@/components/tiptap";
 
 interface Review {
   id: string;
@@ -19,6 +22,7 @@ interface Review {
   review: string | null;
   created_at: string;
   user_id: string;
+  is_anonymous?: boolean;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -33,7 +37,7 @@ interface CourseReviewDialogProps {
   userReview: { rating: number; review: string | null } | null;
   isEnrolled: boolean;
   isAuthenticated: boolean;
-  onSubmitReview: (rating: number, review: string) => Promise<boolean>;
+  onSubmitReview: (rating: number, review: string, isAnonymous?: boolean) => Promise<boolean>;
   onDeleteReview: () => Promise<boolean>;
 }
 
@@ -95,16 +99,21 @@ const CourseReviewDialog = ({
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(userReview?.rating || 0);
   const [review, setReview] = useState(userReview?.review || "");
+  const [postAnonymously, setPostAnonymously] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  const editorRef = useRef<LightEditorRef>(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (rating === 0) return;
     
     setSubmitting(true);
-    const success = await onSubmitReview(rating, review);
+    const success = await onSubmitReview(rating, review, postAnonymously);
     if (success) {
       setOpen(false);
+      editorRef.current?.clear();
     }
     setSubmitting(false);
   };
@@ -115,8 +124,16 @@ const CourseReviewDialog = ({
     if (success) {
       setRating(0);
       setReview("");
+      editorRef.current?.clear();
     }
     setDeleting(false);
+  };
+
+  const getDisplayName = (r: Review) => {
+    if (r.is_anonymous) {
+      return "Anonymous";
+    }
+    return r.profiles?.full_name || "Anonymous";
   };
 
   return (
@@ -137,39 +154,50 @@ const CourseReviewDialog = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-6">
-          {/* Write Review Section */}
+          {/* Write Review Section - matches CommentDialog style */}
           {isAuthenticated && isEnrolled && (
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <h3 className="font-semibold mb-3">
-                {userReview ? "Update Your Review" : "Write a Review"}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
-                    Your Rating
-                  </label>
-                  <StarRating rating={rating} onChange={setRating} size="lg" />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
-                    Your Review (optional)
-                  </label>
-                  <Textarea
-                    placeholder="Share your experience with this course..."
-                    value={review}
-                    onChange={(e) => setReview(e.target.value)}
-                    className="min-h-[100px]"
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Star Rating */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Your Rating {!userReview && <span className="text-destructive">*</span>}
+                </label>
+                <StarRating rating={rating} onChange={setRating} size="lg" />
+              </div>
+
+              {/* Review Editor - LightEditor like CommentDialog */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Your Review (optional)
+                </label>
+                <LightEditor
+                  ref={editorRef}
+                  value={review}
+                  onChange={setReview}
+                  placeholder="Share your experience with this course..."
+                  characterLimit={2000}
+                  draftKey="course_review"
+                  minHeight="100px"
+                />
+              </div>
+
+              {/* Anonymous + Submit Row - exactly like CommentDialog */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="review-anonymous"
+                    checked={postAnonymously}
+                    onCheckedChange={(checked) => setPostAnonymously(checked as boolean)}
                   />
+                  <Label htmlFor="review-anonymous" className="text-sm text-muted-foreground cursor-pointer">
+                    Post anonymously (hide my name)
+                  </Label>
                 </div>
+                
                 <div className="flex items-center gap-2">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={rating === 0 || submitting}
-                  >
-                    {submitting ? "Submitting..." : userReview ? "Update Review" : "Submit Review"}
-                  </Button>
                   {userReview && (
                     <Button
+                      type="button"
                       variant="destructive"
                       size="icon"
                       onClick={handleDelete}
@@ -178,9 +206,16 @@ const CourseReviewDialog = ({
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
+                  <Button
+                    type="submit"
+                    disabled={rating === 0 || submitting}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {submitting ? "Submitting..." : userReview ? "Update Review" : "Submit Review"}
+                  </Button>
                 </div>
               </div>
-            </div>
+            </form>
           )}
 
           {!isAuthenticated && (
@@ -210,18 +245,20 @@ const CourseReviewDialog = ({
               <ScrollArea className="h-[300px]">
                 <div className="space-y-4 pr-4">
                   {reviews.map((r) => (
-                    <div key={r.id} className="border rounded-lg p-4">
+                    <div key={r.id} className="p-4 bg-muted/30 rounded-lg">
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={r.profiles?.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {r.profiles?.full_name?.[0]?.toUpperCase() || "U"}
+                          {!r.is_anonymous && r.profiles?.avatar_url ? (
+                            <AvatarImage src={r.profiles.avatar_url} />
+                          ) : null}
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {getDisplayName(r)[0]?.toUpperCase() || "A"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <span className="font-medium">
-                              {r.profiles?.full_name || "Anonymous"}
+                              {getDisplayName(r)}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
@@ -229,9 +266,12 @@ const CourseReviewDialog = ({
                           </div>
                           <StarRating rating={r.rating} readonly size="sm" />
                           {r.review && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {r.review}
-                            </p>
+                            <div className="text-sm text-muted-foreground mt-2">
+                              <RichTextRenderer 
+                                content={r.review} 
+                                emptyPlaceholder=""
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
