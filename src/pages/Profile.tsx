@@ -1192,7 +1192,7 @@ const Profile = () => {
         </div>
 
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
-        <div className="space-y-6">
+        <div className="flex flex-col space-y-6">
           {/* Weekly Activity - Compact Version */}
           <Card className="card-premium rounded-xl animate-stagger-2">
             <CardContent className="p-5">
@@ -1300,7 +1300,7 @@ const Profile = () => {
           </Card>
 
           {/* Recent Achievements */}
-          <Card className="card-premium rounded-xl animate-stagger-4">
+          <Card className="card-premium rounded-xl animate-stagger-4 flex-1">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
