@@ -1038,6 +1038,7 @@ export type Database = {
           course_id: string
           created_at: string
           id: string
+          is_anonymous: boolean
           rating: number
           review: string | null
           updated_at: string
@@ -1047,6 +1048,7 @@ export type Database = {
           course_id: string
           created_at?: string
           id?: string
+          is_anonymous?: boolean
           rating: number
           review?: string | null
           updated_at?: string
@@ -1056,6 +1058,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
+          is_anonymous?: boolean
           rating?: number
           review?: string | null
           updated_at?: string

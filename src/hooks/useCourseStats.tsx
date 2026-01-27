@@ -19,6 +19,7 @@ interface Review {
   review: string | null;
   created_at: string;
   user_id: string;
+  is_anonymous?: boolean;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -47,7 +48,7 @@ export const useCourseStats = (courseId: string | undefined, user: User | null) 
         .select("*", { count: "exact", head: true })
         .eq("course_id", courseId);
 
-      // Fetch reviews with average rating
+      // Fetch reviews with average rating (include is_anonymous)
       const { data: reviewsData } = await supabase
         .from("course_reviews")
         .select(`
@@ -56,6 +57,7 @@ export const useCourseStats = (courseId: string | undefined, user: User | null) 
           review,
           created_at,
           user_id,
+          is_anonymous,
           profiles:user_id (full_name, avatar_url)
         `)
         .eq("course_id", courseId)
@@ -179,7 +181,7 @@ export const useCourseStats = (courseId: string | undefined, user: User | null) 
     }
   };
 
-  const submitReview = async (rating: number, review: string) => {
+  const submitReview = async (rating: number, review: string, isAnonymous: boolean = false) => {
     if (!courseId || !user) return false;
 
     try {
@@ -187,7 +189,7 @@ export const useCourseStats = (courseId: string | undefined, user: User | null) 
         // Update existing review
         const { error } = await supabase
           .from("course_reviews")
-          .update({ rating, review })
+          .update({ rating, review, is_anonymous: isAnonymous })
           .eq("course_id", courseId)
           .eq("user_id", user.id);
 
@@ -196,7 +198,13 @@ export const useCourseStats = (courseId: string | undefined, user: User | null) 
         // Insert new review
         const { error } = await supabase
           .from("course_reviews")
-          .insert({ course_id: courseId, user_id: user.id, rating, review });
+          .insert({ 
+            course_id: courseId, 
+            user_id: user.id, 
+            rating, 
+            review,
+            is_anonymous: isAnonymous 
+          });
 
         if (error) throw error;
       }
