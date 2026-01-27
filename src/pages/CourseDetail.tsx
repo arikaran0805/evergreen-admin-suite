@@ -2150,42 +2150,42 @@ const CourseDetail = () => {
                                     View & Download Certificate
                                   </Button>
 
-                                  {/* Secondary actions */}
-                                  <div className="flex flex-wrap gap-2">
-                                    <Button 
-                                      variant="outline" 
-                                      onClick={() => {
-                                        const text = encodeURIComponent(
-                                          `I just completed "${course.name}"! 🎉\n\nExcited to share my new skills and knowledge. #Learning #Achievement`
-                                        );
-                                        const url = encodeURIComponent(window.location.href);
-                                        window.open(
-                                          `https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}`,
-                                          '_blank',
-                                          'width=600,height=400'
-                                        );
-                                      }}
-                                      className="flex-1 sm:flex-none"
-                                    >
-                                      <Linkedin className="h-4 w-4 mr-2" />
-                                      Share on LinkedIn
-                                    </Button>
-                                    
-                                    <Button 
-                                      variant="ghost" 
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(window.location.href);
-                                        toast({
-                                          title: "Link copied!",
-                                          description: "Share your achievement with others.",
-                                        });
-                                      }}
-                                      className="flex-1 sm:flex-none"
-                                    >
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Copy Link
-                                    </Button>
-                                  </div>
+                                  {/* Secondary actions - full width to match primary CTA */}
+                                  <Button 
+                                    variant="outline" 
+                                    onClick={() => {
+                                      const text = encodeURIComponent(
+                                        `I just completed "${course.name}"! 🎉\n\nExcited to share my new skills and knowledge. #Learning #Achievement`
+                                      );
+                                      const url = encodeURIComponent(window.location.href);
+                                      window.open(
+                                        `https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}`,
+                                        '_blank',
+                                        'width=600,height=400'
+                                      );
+                                    }}
+                                    className="w-full sm:w-auto"
+                                    size="lg"
+                                  >
+                                    <Linkedin className="h-4 w-4 mr-2" />
+                                    Share on LinkedIn
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="outline" 
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(window.location.href);
+                                      toast({
+                                        title: "Link copied!",
+                                        description: "Share your achievement with others.",
+                                      });
+                                    }}
+                                    className="w-full sm:w-auto"
+                                    size="lg"
+                                  >
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Link
+                                  </Button>
                                   
                                   {/* Review CTA */}
                                   {!courseStats.userReview && (
