@@ -240,6 +240,7 @@ const CourseDetail = () => {
   const {
     stats: courseStats,
     reviews: courseReviews,
+    loading: courseStatsLoading,
     enrolling,
     enroll,
     unenroll,
@@ -346,8 +347,9 @@ const CourseDetail = () => {
     // Skip if already resolved
     if (defaultTabResolved) return;
     
-    // Still loading essential data - wait
-    if (loading || roleLoading || userStateLoading) return;
+    // Still loading essential data - wait for ALL required data
+    // CRITICAL: Must wait for courseStatsLoading to know enrollment status for Pro users
+    if (loading || roleLoading || userStateLoading || courseStatsLoading) return;
     
     // CRITICAL: Wait for posts to be loaded before making progress-based decisions
     // courseProgress.percentage depends on posts.length being > 0
@@ -404,15 +406,15 @@ const CourseDetail = () => {
     // Calculate progress percentage for learners
     const progressPercentage = courseProgress.percentage;
 
-    // 100% completion → Certificate tab (if available for Pro users)
+    // 100% completion → Certificate tab (if available for Pro enrolled users)
     if (progressPercentage === 100 && courseProgress.isCompleted) {
-      const certificateTabAvailable = isPro && courseStats.isEnrolled;
-      if (certificateTabAvailable) {
+      // For Pro users who are enrolled, show Certificate tab
+      if (isPro && courseStats.isEnrolled) {
         setActiveTab("certificate");
         setDefaultTabResolved(true);
         return;
       }
-      // Non-Pro users with 100% completion → Lessons tab (fallback)
+      // Non-Pro users or not enrolled with 100% completion → Lessons tab (fallback)
       setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
@@ -433,6 +435,7 @@ const CourseDetail = () => {
     loading,
     roleLoading,
     userStateLoading,
+    courseStatsLoading,
     isAdmin,
     isModerator,
     lessonSlug,
