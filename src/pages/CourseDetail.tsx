@@ -1347,8 +1347,19 @@ const CourseDetail = () => {
         <div className="fixed top-0 left-0 right-0 z-[60]">
           <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
         </div>
-        <Header announcementVisible={showAnnouncement} />
-        <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
+        {/* LOADING STATE: Respect mutually exclusive header logic */}
+        {isCareerFlow ? (
+          <CareerScopedHeader
+            currentCourse={undefined}
+            career={null}
+            careerCourses={[]}
+            announcementVisible={showAnnouncement}
+            isLoading={true}
+          />
+        ) : (
+          <Header announcementVisible={showAnnouncement} />
+        )}
+        <div className={`container mx-auto px-4 text-center ${isCareerFlow ? 'pt-20' : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
           <div className="flex flex-col items-center gap-4">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-muted-foreground">Loading course...</p>
@@ -1364,8 +1375,19 @@ const CourseDetail = () => {
         <div className="fixed top-0 left-0 right-0 z-[60]">
           <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
         </div>
-        <Header announcementVisible={showAnnouncement} />
-        <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
+        {/* NOT FOUND STATE: Respect mutually exclusive header logic */}
+        {isCareerFlow ? (
+          <CareerScopedHeader
+            currentCourse={undefined}
+            career={null}
+            careerCourses={[]}
+            announcementVisible={showAnnouncement}
+            isLoading={true}
+          />
+        ) : (
+          <Header announcementVisible={showAnnouncement} />
+        )}
+        <div className={`container mx-auto px-4 text-center ${isCareerFlow ? 'pt-20' : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
           <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           {isPreviewMode && !canPreview && (
             <p className="text-muted-foreground mb-4">You don't have permission to preview this content.</p>
