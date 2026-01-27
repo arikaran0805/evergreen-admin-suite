@@ -25,8 +25,8 @@ interface Career {
 }
 
 interface CareerScopedHeaderProps {
-  /** Current course being viewed */
-  currentCourse: {
+  /** Current course being viewed (optional during loading) */
+  currentCourse?: {
     id: string;
     name: string;
     slug: string;
@@ -35,8 +35,8 @@ interface CareerScopedHeaderProps {
   career: Career | null;
   /** Courses mapped to the user's career */
   careerCourses: CareerCourse[];
-  /** Whether primary header is visible (for positioning) */
-  isHeaderVisible: boolean;
+  /** Whether primary header is visible (for positioning) - NOT used in career flow */
+  isHeaderVisible?: boolean;
   /** Whether announcement bar is visible (for positioning) */
   announcementVisible?: boolean;
   /** Loading state */
@@ -47,25 +47,24 @@ export const CareerScopedHeader = ({
   currentCourse,
   career,
   careerCourses,
-  isHeaderVisible,
+  isHeaderVisible = false,
   announcementVisible = false,
   isLoading = false,
 }: CareerScopedHeaderProps) => {
   const location = useLocation();
 
-  // Determine top position based on header visibility
+  // In career flow, this header IS the primary header - positioned at top
+  // No Global Header exists, so we always position at top (only announcement bar affects offset)
   const getTopPosition = () => {
-    if (isHeaderVisible) {
-      return announcementVisible ? 'top-[6.25rem]' : 'top-16';
-    }
     return announcementVisible ? 'top-9' : 'top-0';
   };
 
-  if (isLoading) {
+  // Show loading skeleton while data loads (but header structure is always present)
+  if (isLoading || !currentCourse) {
     return (
       <div 
         className={cn(
-          "hidden lg:block fixed left-0 right-0 z-40 bg-muted/95 backdrop-blur-sm border-b border-border transition-all duration-200 ease-out",
+          "hidden lg:block fixed left-0 right-0 z-50 bg-muted/95 backdrop-blur-sm border-b border-border transition-all duration-200 ease-out",
           getTopPosition()
         )}
       >
@@ -86,7 +85,7 @@ export const CareerScopedHeader = ({
   return (
     <div 
       className={cn(
-        "hidden lg:block fixed left-0 right-0 z-40 bg-muted/95 backdrop-blur-sm border-b border-border transition-all duration-200 ease-out",
+        "hidden lg:block fixed left-0 right-0 z-50 bg-muted/95 backdrop-blur-sm border-b border-border transition-all duration-200 ease-out",
         getTopPosition()
       )}
     >
