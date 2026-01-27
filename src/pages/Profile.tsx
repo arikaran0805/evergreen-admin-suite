@@ -1015,12 +1015,7 @@ const Profile = () => {
                             <div className="text-primary transition-transform duration-150 group-hover:scale-110">
                               {renderSkillIcon(skill.icon)}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{skill.skill_name}</span>
-                              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                {skill.weight}% weight
-                              </span>
-                            </div>
+                            <span className="font-medium">{skill.skill_name}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold tabular-nums">{skillProgress}%</span>
