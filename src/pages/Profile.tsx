@@ -951,31 +951,28 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Primary CTA: Career Board - Full career roadmap */}
                   <Button 
                     variant="default" 
                     size="sm" 
-                    className="gap-1.5"
-                    onClick={() => {
-                      // Navigate to first course in career path
-                      if (skills.length > 0) {
-                        handleSkillClick(skills[0].skill_name);
-                      }
-                    }}
+                    className="gap-1.5 rounded-full px-4"
+                    onClick={() => navigate('/arcade')}
                   >
                     <LayoutGrid className="h-4 w-4" />
-                    <span className="font-medium">Course Board</span>
+                    <span className="font-medium">Career Board</span>
                   </Button>
+                  {/* Readiness Level Badge with Tooltip */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-1.5 text-primary hover:bg-primary/10 border border-primary/20"
-                        onClick={() => setCareerDialogOpen(true)}
+                      <Badge 
+                        variant="outline" 
+                        className="gap-1.5 px-3 py-1.5 text-primary border-primary/30 bg-primary/5 cursor-default"
                       >
-                        <Zap className="h-4 w-4" />
-                        <span className="font-semibold">{readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}</span>
-                      </Button>
+                        <Zap className="h-3.5 w-3.5" />
+                        <span className="font-semibold text-sm">
+                          {readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}
+                        </span>
+                      </Badge>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
                       <p>Based on your overall career readiness</p>
@@ -986,7 +983,7 @@ const Profile = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Skill Progress Bars */}
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                   {skills.map((skill, index) => {
                     // Get actual skill value from our calculation
                     const skillProgress = skillValues[skill.skill_name] || 0;
@@ -997,40 +994,48 @@ const Profile = () => {
                       return <IconComp className="h-5 w-5" />;
                     };
                     
-                      return (
-                        <div 
-                          key={skill.id} 
-                          className="group cursor-pointer hover:bg-primary/5 rounded-lg p-3 -m-1 transition-all duration-150 border border-transparent hover:border-primary/20 hover:shadow-sm hover:translate-y-[-1px]"
-                          onClick={() => handleSkillClick(skill.skill_name)}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <div className="text-primary">
-                                {renderSkillIcon(skill.icon)}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{skill.skill_name}</span>
-                                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                  {skill.weight}% weight
-                                </span>
-                              </div>
+                    return (
+                      <div 
+                        key={skill.id} 
+                        className="group cursor-pointer hover:bg-primary/5 rounded-lg p-3 -m-1 transition-all duration-150 border border-transparent hover:border-primary/20 hover:shadow-md hover:translate-y-[-1px] active:translate-y-0"
+                        onClick={() => handleSkillClick(skill.skill_name)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="text-primary transition-transform duration-150 group-hover:scale-110">
+                              {renderSkillIcon(skill.icon)}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold">{skillProgress}%</span>
-                              {/* Secondary contextual CTA - visible on hover */}
-                              <span className="hidden group-hover:inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 border border-primary/30 bg-transparent px-2 py-0.5 rounded-full transition-all">
-                                View Courses
-                                <ChevronRight className="h-3 w-3" />
+                              <span className="font-medium">{skill.skill_name}</span>
+                              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                {skill.weight}% weight
                               </span>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:hidden transition-opacity duration-150" />
                             </div>
                           </div>
-                          <Progress 
-                            value={skillProgress} 
-                            className="h-2.5"
-                          />
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold tabular-nums">{skillProgress}%</span>
+                            {/* Secondary contextual CTA - visible on hover */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="hidden group-hover:inline-flex items-center gap-1 h-6 text-[11px] font-medium text-primary/80 border-primary/30 bg-transparent px-2 py-0 rounded-full transition-all duration-150 hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSkillClick(skill.skill_name);
+                              }}
+                            >
+                              View Courses
+                              <ChevronRight className="h-3 w-3" />
+                            </Button>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:hidden transition-opacity duration-150" />
+                          </div>
                         </div>
-                      );
+                        <Progress 
+                          value={skillProgress} 
+                          className="h-2.5"
+                        />
+                      </div>
+                    );
                   })}
                   
                   {skills.length === 0 && (
@@ -1050,160 +1055,160 @@ const Profile = () => {
                     (readinessPercentage >= 75 && readinessPercentage < 80);
                   
                   return (
-                <div className="flex flex-col items-center justify-center">
-                  <div className={`relative w-44 h-44 ${isCloseToNextLevel ? 'animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : ''}`}>
-                    {/* Outer glow ring */}
-                    <div 
-                      className={`absolute inset-0 rounded-full opacity-20 blur-xl ${isCloseToNextLevel ? 'opacity-40' : ''}`}
-                      style={{
-                        background: `conic-gradient(from 0deg, hsl(var(--primary)) ${readinessPercentage}%, transparent ${readinessPercentage}%)`
-                      }}
-                    />
-                    
-                    <svg className="w-44 h-44 transform -rotate-90" viewBox="0 0 208 208">
-                      {/* Background track with segments */}
-                      <circle
-                        cx="104"
-                        cy="104"
-                        r="88"
-                        stroke="hsl(var(--muted))"
-                        strokeWidth="12"
-                        fill="none"
-                        opacity="0.3"
-                      />
-                      
-                      {/* Inner background circle */}
-                      <circle
-                        cx="104"
-                        cy="104"
-                        r="76"
-                        stroke="hsl(var(--muted))"
-                        strokeWidth="4"
-                        fill="none"
-                        opacity="0.2"
-                      />
-                      
-                      {/* Progress gradient arc */}
-                      <defs>
-                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" />
-                          <stop offset="50%" stopColor="hsl(280 80% 60%)" />
-                          <stop offset="100%" stopColor="hsl(45 93% 47%)" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* Glow filter for active arc */}
-                      <filter id="arcGlow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feMerge>
-                          <feMergeNode in="blur" />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                      
-                      {/* Main progress arc with glow */}
-                      <circle
-                        cx="104"
-                        cy="104"
-                        r="88"
-                        stroke="url(#progressGradient)"
-                        strokeWidth="12"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={`${(readinessPercentage / 100) * 553.07} 553.07`}
-                        className="transition-all duration-1000 ease-out"
-                        filter="url(#arcGlow)"
-                      />
-                      
-                      {/* Current progress indicator dot */}
-                      {(() => {
-                        const progressAngle = (readinessPercentage / 100) * 360 - 90;
-                        const progressRad = (progressAngle * Math.PI) / 180;
-                        const dotX = 104 + 88 * Math.cos(progressRad);
-                        const dotY = 104 + 88 * Math.sin(progressRad);
-                        return (
+                    <div className="flex flex-col items-center justify-center">
+                      <div className={`relative w-44 h-44 ${isCloseToNextLevel ? 'animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : ''}`}>
+                        {/* Outer glow ring */}
+                        <div 
+                          className={`absolute inset-0 rounded-full opacity-20 blur-xl transition-opacity duration-500 ${isCloseToNextLevel ? 'opacity-40' : ''}`}
+                          style={{
+                            background: `conic-gradient(from 0deg, hsl(var(--primary)) ${readinessPercentage}%, transparent ${readinessPercentage}%)`
+                          }}
+                        />
+                        
+                        <svg className="w-44 h-44 transform -rotate-90" viewBox="0 0 208 208">
+                          {/* Background track with segments */}
                           <circle
-                            cx={dotX}
-                            cy={dotY}
-                            r="7"
-                            fill="hsl(var(--background))"
-                            stroke="url(#progressGradient)"
-                            strokeWidth="3"
-                            className="transition-all duration-1000 ease-out"
-                            style={{
-                              filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.6))'
-                            }}
+                            cx="104"
+                            cy="104"
+                            r="88"
+                            stroke="hsl(var(--muted))"
+                            strokeWidth="12"
+                            fill="none"
+                            opacity="0.3"
                           />
+                          
+                          {/* Inner background circle */}
+                          <circle
+                            cx="104"
+                            cy="104"
+                            r="76"
+                            stroke="hsl(var(--muted))"
+                            strokeWidth="4"
+                            fill="none"
+                            opacity="0.2"
+                          />
+                          
+                          {/* Progress gradient arc */}
+                          <defs>
+                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="hsl(var(--primary))" />
+                              <stop offset="50%" stopColor="hsl(280 80% 60%)" />
+                              <stop offset="100%" stopColor="hsl(45 93% 47%)" />
+                            </linearGradient>
+                            {/* Glow filter for active arc */}
+                            <filter id="arcGlow" x="-50%" y="-50%" width="200%" height="200%">
+                              <feGaussianBlur stdDeviation="2.5" result="blur" />
+                              <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                              </feMerge>
+                            </filter>
+                          </defs>
+                          
+                          {/* Main progress arc with glow */}
+                          <circle
+                            cx="104"
+                            cy="104"
+                            r="88"
+                            stroke="url(#progressGradient)"
+                            strokeWidth="12"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={`${(readinessPercentage / 100) * 553.07} 553.07`}
+                            className="transition-all duration-1000 ease-out"
+                            filter="url(#arcGlow)"
+                          />
+                          
+                          {/* Decorative milestone dots on the track */}
+                          {[0, 25, 50, 75, 100].map((percent, i) => {
+                            const angle = (percent / 100) * 360 - 90;
+                            const rad = (angle * Math.PI) / 180;
+                            const x = 104 + 88 * Math.cos(rad);
+                            const y = 104 + 88 * Math.sin(rad);
+                            const isAchieved = readinessPercentage >= percent;
+                            return (
+                              <circle
+                                key={i}
+                                cx={x}
+                                cy={y}
+                                r="4"
+                                fill={isAchieved ? "hsl(var(--primary))" : "hsl(var(--muted))"}
+                                className="transition-all duration-500"
+                              />
+                            );
+                          })}
+                          
+                          {/* Current progress indicator dot */}
+                          {readinessPercentage > 0 && (() => {
+                            const progressAngle = (readinessPercentage / 100) * 360 - 90;
+                            const progressRad = (progressAngle * Math.PI) / 180;
+                            const dotX = 104 + 88 * Math.cos(progressRad);
+                            const dotY = 104 + 88 * Math.sin(progressRad);
+                            return (
+                              <circle
+                                cx={dotX}
+                                cy={dotY}
+                                r="8"
+                                fill="hsl(var(--background))"
+                                stroke="url(#progressGradient)"
+                                strokeWidth="3"
+                                className="transition-all duration-1000 ease-out"
+                                style={{
+                                  filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.7))'
+                                }}
+                              />
+                            );
+                          })()}
+                        </svg>
+                        
+                        {/* Center content */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <div className="relative">
+                            <span className="text-5xl font-bold bg-gradient-to-br from-primary via-purple-500 to-amber-500 bg-clip-text text-transparent">
+                              {readinessPercentage}
+                            </span>
+                            <span className="text-2xl font-bold text-muted-foreground">%</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground mt-1">Career Ready</span>
+                        </div>
+                      </div>
+
+                      {/* Micro guidance - Silent Coach */}
+                      {readinessPercentage < 100 && skills.length > 0 && (() => {
+                        // Find the lowest skill to suggest focus
+                        const lowestSkill = skills.reduce((min, skill) => {
+                          const currentValue = skillValues[skill.skill_name] || 0;
+                          const minValue = skillValues[min.skill_name] || 0;
+                          return currentValue < minValue ? skill : min;
+                        }, skills[0]);
+                        const nextThreshold = readinessPercentage < 20 ? 20 : 
+                                             readinessPercentage < 50 ? 50 : 
+                                             readinessPercentage < 80 ? 80 : 100;
+                        return (
+                          <p className="text-xs text-primary/70 mt-3 text-center max-w-[200px] leading-relaxed">
+                            Next focus: <span className="font-medium">{lowestSkill.skill_name}</span> to reach {nextThreshold}% readiness
+                          </p>
                         );
                       })()}
-                      
-                      {/* Decorative milestone dots on the track */}
-                      {[0, 25, 50, 75, 100].map((percent, i) => {
-                        const angle = (percent / 100) * 360 - 90;
-                        const rad = (angle * Math.PI) / 180;
-                        const x = 104 + 88 * Math.cos(rad);
-                        const y = 104 + 88 * Math.sin(rad);
-                        const isAchieved = readinessPercentage >= percent;
-                        return (
-                          <circle
-                            key={i}
-                            cx={x}
-                            cy={y}
-                            r="4"
-                            fill={isAchieved ? "hsl(var(--primary))" : "hsl(var(--muted))"}
-                            className="transition-all duration-500"
-                          />
-                        );
-                      })}
-                    </svg>
-                    
-                    {/* Center content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="relative">
-                        <span className="text-5xl font-bold bg-gradient-to-br from-primary via-purple-500 to-amber-500 bg-clip-text text-transparent">
-                          {readinessPercentage}
-                        </span>
-                        <span className="text-2xl font-bold text-muted-foreground">%</span>
+
+                      {/* Bottom CTA with contextual subtext */}
+                      <div className="flex flex-col items-center mt-5 group/cta">
+                        <Button 
+                          className="gap-2 rounded-full px-5"
+                          onClick={() => navigate('/arcade')}
+                        >
+                          Improve Career Readiness
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        {/* Contextual subtext - visible on hover */}
+                        {readinessPercentage < 100 && skills.length >= 2 && (
+                          <p className="text-[11px] text-muted-foreground mt-2 h-4 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-150">
+                            Complete {skills.slice(0, 2).map(s => s.skill_name).join(' & ')} courses
+                          </p>
+                        )}
                       </div>
-                      <span className="text-sm text-muted-foreground mt-1">Career Ready</span>
+                      
                     </div>
-                  </div>
-
-                  {/* Micro guidance - Silent Coach */}
-                  {readinessPercentage < 100 && skills.length > 0 && (() => {
-                    // Find the lowest skill to suggest focus
-                    const lowestSkill = skills.reduce((min, skill) => {
-                      const currentValue = skillValues[skill.skill_name] || 0;
-                      const minValue = skillValues[min.skill_name] || 0;
-                      return currentValue < minValue ? skill : min;
-                    }, skills[0]);
-                    const nextThreshold = readinessPercentage < 20 ? 20 : 
-                                         readinessPercentage < 50 ? 50 : 
-                                         readinessPercentage < 80 ? 80 : 100;
-                    return (
-                      <p className="text-xs text-primary/70 mt-3 text-center max-w-[180px]">
-                        Next focus: {lowestSkill.skill_name} to reach {nextThreshold}% readiness
-                      </p>
-                    );
-                  })()}
-
-                  <div className="flex flex-col items-center mt-4 group/cta">
-                    <Button 
-                      className="gap-2"
-                      onClick={() => navigate('/arcade')}
-                    >
-                      Improve Career Readiness
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    {/* Contextual subtext - visible on hover */}
-                    {readinessPercentage < 100 && skills.length >= 2 && (
-                      <p className="text-[11px] text-muted-foreground mt-2 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-150">
-                        Complete {skills.slice(0, 2).map(s => s.skill_name).join(' & ')} courses
-                      </p>
-                    )}
-                  </div>
-                  
-                </div>
                   );
                 })()}
               </div>
