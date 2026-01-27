@@ -1221,9 +1221,9 @@ const Profile = () => {
                           Improve Career Readiness
                           <ChevronRight className="h-4 w-4" />
                         </Button>
-                        {/* Contextual subtext - visible on hover */}
+                        {/* Contextual subtext - always visible */}
                         {readinessPercentage < 100 && skills.length >= 2 && (
-                          <p className="text-[11px] text-muted-foreground mt-2 h-4 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-150">
+                          <p className="text-[11px] text-muted-foreground mt-2">
                             Complete {skills.slice(0, 2).map(s => s.skill_name).join(' & ')} courses
                           </p>
                         )}
