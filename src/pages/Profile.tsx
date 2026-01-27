@@ -965,15 +965,22 @@ const Profile = () => {
                     <LayoutGrid className="h-4 w-4" />
                     <span className="font-medium">Course Board</span>
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="gap-1.5 text-primary hover:bg-primary/10 border border-primary/20"
-                    onClick={() => setCareerDialogOpen(true)}
-                  >
-                    <Zap className="h-4 w-4" />
-                    <span className="font-semibold">{readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}</span>
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="gap-1.5 text-primary hover:bg-primary/10 border border-primary/20"
+                        onClick={() => setCareerDialogOpen(true)}
+                      >
+                        <Zap className="h-4 w-4" />
+                        <span className="font-semibold">{readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Based on your overall career readiness</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
 
@@ -990,40 +997,40 @@ const Profile = () => {
                       return <IconComp className="h-5 w-5" />;
                     };
                     
-                    return (
-                      <div 
-                        key={skill.id} 
-                        className="group cursor-pointer hover:bg-primary/5 rounded-lg p-3 -m-1 transition-all border border-transparent hover:border-primary/20"
-                        onClick={() => handleSkillClick(skill.skill_name)}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <div className="text-primary">
-                              {renderSkillIcon(skill.icon)}
+                      return (
+                        <div 
+                          key={skill.id} 
+                          className="group cursor-pointer hover:bg-primary/5 rounded-lg p-3 -m-1 transition-all duration-150 border border-transparent hover:border-primary/20 hover:shadow-sm hover:translate-y-[-1px]"
+                          onClick={() => handleSkillClick(skill.skill_name)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className="text-primary">
+                                {renderSkillIcon(skill.icon)}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{skill.skill_name}</span>
+                                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                  {skill.weight}% weight
+                                </span>
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{skill.skill_name}</span>
-                              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                {skill.weight}% weight
+                              <span className="font-semibold">{skillProgress}%</span>
+                              {/* Secondary contextual CTA - visible on hover */}
+                              <span className="hidden group-hover:inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 border border-primary/30 bg-transparent px-2 py-0.5 rounded-full transition-all">
+                                View Courses
+                                <ChevronRight className="h-3 w-3" />
                               </span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:hidden transition-opacity duration-150" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">{skillProgress}%</span>
-                            {/* Course Board CTA - visible on hover */}
-                            <span className="hidden group-hover:inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full transition-all">
-                              Course Board
-                              <ChevronRight className="h-3 w-3" />
-                            </span>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:hidden transition-opacity" />
-                          </div>
+                          <Progress 
+                            value={skillProgress} 
+                            className="h-2.5"
+                          />
                         </div>
-                        <Progress 
-                          value={skillProgress} 
-                          className="h-2.5"
-                        />
-                      </div>
-                    );
+                      );
                   })}
                   
                   {skills.length === 0 && (
@@ -1085,7 +1092,16 @@ const Profile = () => {
                         </linearGradient>
                       </defs>
                       
-                      {/* Main progress arc */}
+                      {/* Glow filter for active arc */}
+                      <filter id="arcGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                      
+                      {/* Main progress arc with glow */}
                       <circle
                         cx="104"
                         cy="104"
@@ -1095,13 +1111,33 @@ const Profile = () => {
                         fill="none"
                         strokeLinecap="round"
                         strokeDasharray={`${(readinessPercentage / 100) * 553.07} 553.07`}
-                        className="transition-all duration-1000 ease-out drop-shadow-lg"
-                        style={{
-                          filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))'
-                        }}
+                        className="transition-all duration-1000 ease-out"
+                        filter="url(#arcGlow)"
                       />
                       
-                      {/* Decorative dots on the track */}
+                      {/* Current progress indicator dot */}
+                      {(() => {
+                        const progressAngle = (readinessPercentage / 100) * 360 - 90;
+                        const progressRad = (progressAngle * Math.PI) / 180;
+                        const dotX = 104 + 88 * Math.cos(progressRad);
+                        const dotY = 104 + 88 * Math.sin(progressRad);
+                        return (
+                          <circle
+                            cx={dotX}
+                            cy={dotY}
+                            r="7"
+                            fill="hsl(var(--background))"
+                            stroke="url(#progressGradient)"
+                            strokeWidth="3"
+                            className="transition-all duration-1000 ease-out"
+                            style={{
+                              filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.6))'
+                            }}
+                          />
+                        );
+                      })()}
+                      
+                      {/* Decorative milestone dots on the track */}
                       {[0, 25, 50, 75, 100].map((percent, i) => {
                         const angle = (percent / 100) * 360 - 90;
                         const rad = (angle * Math.PI) / 180;
@@ -1133,13 +1169,39 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    className="mt-6 gap-2"
-                    onClick={() => navigate('/arcade')}
-                  >
-                    Improve Career Readiness
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  {/* Micro guidance - Silent Coach */}
+                  {readinessPercentage < 100 && skills.length > 0 && (() => {
+                    // Find the lowest skill to suggest focus
+                    const lowestSkill = skills.reduce((min, skill) => {
+                      const currentValue = skillValues[skill.skill_name] || 0;
+                      const minValue = skillValues[min.skill_name] || 0;
+                      return currentValue < minValue ? skill : min;
+                    }, skills[0]);
+                    const nextThreshold = readinessPercentage < 20 ? 20 : 
+                                         readinessPercentage < 50 ? 50 : 
+                                         readinessPercentage < 80 ? 80 : 100;
+                    return (
+                      <p className="text-xs text-primary/70 mt-3 text-center max-w-[180px]">
+                        Next focus: {lowestSkill.skill_name} to reach {nextThreshold}% readiness
+                      </p>
+                    );
+                  })()}
+
+                  <div className="flex flex-col items-center mt-4 group/cta">
+                    <Button 
+                      className="gap-2"
+                      onClick={() => navigate('/arcade')}
+                    >
+                      Improve Career Readiness
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    {/* Contextual subtext - visible on hover */}
+                    {readinessPercentage < 100 && skills.length >= 2 && (
+                      <p className="text-[11px] text-muted-foreground mt-2 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-150">
+                        Complete {skills.slice(0, 2).map(s => s.skill_name).join(' & ')} courses
+                      </p>
+                    )}
+                  </div>
                   
                 </div>
                   );
