@@ -2,15 +2,21 @@
  * Career-Scoped Secondary Header for Course Detail Page
  * 
  * Pro-only header that shows:
- * - LEFT: Current course name (prominent, not clickable)
+ * - LEFT: Current course name (prominent) with career path context
  * - RIGHT: Career-scoped course tabs for navigation
  * 
  * Reinforces: "You're learning THIS course as part of YOUR career path"
+ * 
+ * When in career flow mode, this is the ONLY header shown (global header hidden)
  */
-import { Link, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Target, ChevronRight } from "lucide-react";
+import { Target, ChevronLeft } from "lucide-react";
+
+// Session storage key for career flow tracking
+const ENTRY_FLOW_KEY = "lovable_entry_flow";
 
 interface CareerCourse {
   id: string;
@@ -43,6 +49,20 @@ interface CareerScopedHeaderProps {
   isLoading?: boolean;
 }
 
+/**
+ * Mark navigation as career flow (preserves immersive mode)
+ */
+const markAsCareerFlow = () => {
+  sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+};
+
+/**
+ * Clear career flow (exits immersive mode)
+ */
+const clearCareerFlow = () => {
+  sessionStorage.removeItem(ENTRY_FLOW_KEY);
+};
+
 export const CareerScopedHeader = ({
   currentCourse,
   career,
@@ -51,7 +71,7 @@ export const CareerScopedHeader = ({
   announcementVisible = false,
   isLoading = false,
 }: CareerScopedHeaderProps) => {
-  const location = useLocation();
+  const navigate = useNavigate();
 
   // Determine top position based on header visibility
   const getTopPosition = () => {
@@ -59,6 +79,19 @@ export const CareerScopedHeader = ({
       return announcementVisible ? 'top-[6.25rem]' : 'top-16';
     }
     return announcementVisible ? 'top-9' : 'top-0';
+  };
+
+  // Handle course navigation - preserves career flow
+  const handleCourseClick = (courseSlug: string) => {
+    // Mark as career flow before navigating to preserve immersive mode
+    markAsCareerFlow();
+    navigate(`/course/${courseSlug}`);
+  };
+
+  // Handle exit from career flow - return to profile
+  const handleExitCareerFlow = () => {
+    clearCareerFlow();
+    navigate('/profile');
   };
 
   if (isLoading) {
@@ -92,8 +125,19 @@ export const CareerScopedHeader = ({
     >
       <div className="container mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between h-12 gap-8">
-          {/* LEFT SIDE - Course Name (Primary Context) */}
+          {/* LEFT SIDE - Career Context + Course Name */}
           <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
+            {/* Back to Profile button - exits career flow */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-muted-foreground hover:text-foreground"
+              onClick={handleExitCareerFlow}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Exit Career Board</span>
+            </Button>
+
             {/* Current Course Name - Prominent, Not Clickable */}
             <div className="flex flex-col min-w-0">
               <h2 className="text-base font-semibold text-foreground truncate">
@@ -114,9 +158,9 @@ export const CareerScopedHeader = ({
               careerCourses.map((course) => {
                 const isActive = course.slug === currentCourse.slug;
                 return (
-                  <Link
+                  <button
                     key={course.id}
-                    to={`/course/${course.slug}`}
+                    onClick={() => handleCourseClick(course.slug)}
                     className={cn(
                       "relative px-4 py-1.5 text-xs font-medium whitespace-nowrap rounded-full transition-all duration-200 flex-shrink-0",
                       isActive
@@ -125,7 +169,7 @@ export const CareerScopedHeader = ({
                     )}
                   >
                     {course.name}
-                  </Link>
+                  </button>
                 );
               })
             ) : (
