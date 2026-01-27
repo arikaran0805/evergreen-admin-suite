@@ -53,13 +53,10 @@ export const CareerScopedHeader = ({
 }: CareerScopedHeaderProps) => {
   const location = useLocation();
 
-  // CareerScopedHeader is a SECONDARY header, positioned below the Global Header
-  // Global Header = 64px, Announcement bar = 36px
+  // In career flow, this header IS the primary header - positioned at top
+  // No Global Header exists, so we always position at top (only announcement bar affects offset)
   const getTopPosition = () => {
-    if (isHeaderVisible) {
-      return announcementVisible ? 'top-[6.25rem]' : 'top-16'; // 100px / 64px
-    }
-    return announcementVisible ? 'top-9' : 'top-0'; // 36px / 0px (when header hidden on scroll)
+    return announcementVisible ? 'top-9' : 'top-0';
   };
 
   // Show loading skeleton while data loads (but header structure is always present)
