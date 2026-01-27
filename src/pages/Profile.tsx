@@ -976,7 +976,7 @@ const Profile = () => {
                     return (
                       <div 
                         key={skill.id} 
-                        className="group cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                        className="group cursor-pointer hover:bg-primary/5 rounded-lg p-3 -m-1 transition-all border border-transparent hover:border-primary/20"
                         onClick={() => handleSkillClick(skill.skill_name)}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -991,9 +991,14 @@ const Profile = () => {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <span className="font-semibold">{skillProgress}%</span>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {/* Course Board CTA - visible on hover */}
+                            <span className="hidden group-hover:inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full transition-all">
+                              Course Board
+                              <ChevronRight className="h-3 w-3" />
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:hidden transition-opacity" />
                           </div>
                         </div>
                         <Progress 
