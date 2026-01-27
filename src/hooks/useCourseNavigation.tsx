@@ -3,12 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 
+// Session storage key for career flow (must match useUserState)
+const ENTRY_FLOW_KEY = "lovable_entry_flow";
+
 /**
  * Role- & Progress-Aware Course Navigation Hook
  * 
  * This hook provides deterministic, predictable course entry routing based on:
  * - User role (Admin, Super Moderator, Senior Moderator, Moderator → Course Info)
  * - Course progress (0% → Course Details, >0% → Lessons tab)
+ * 
+ * ENTRY FLOW SYSTEM:
+ * - navigateToCourse: Standard navigation - DOES NOT set career flow
+ * - navigateToCourseWithCareerFlow: Sets career flow for CareerScopedHeader
  * 
  * Resume behavior is EXPLICIT ONLY - triggered by separate handleResume function.
  */
@@ -55,6 +62,14 @@ export const useCourseNavigation = () => {
   }, [userId]);
 
   /**
+   * Set career flow in session storage
+   * This makes CareerScopedHeader visible on the destination page
+   */
+  const setCareerFlow = useCallback(() => {
+    sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+  }, []);
+
+  /**
    * Navigate to course with role- and progress-aware routing
    * 
    * Rules:
@@ -62,7 +77,7 @@ export const useCourseNavigation = () => {
    * 2. Learner with 0% progress → /course/:slug (Course Details/Overview)
    * 3. Learner with >0% progress → /course/:slug?tab=lessons
    * 
-   * This does NOT auto-resume to a specific lesson. Use handleResume for that.
+   * NOTE: This does NOT set career flow. Use navigateToCourseWithCareerFlow for that.
    */
   const navigateToCourse = useCallback(async (courseSlug: string, courseId?: string) => {
     // If roles are still loading, navigate without tab param and let CourseDetail handle it
@@ -96,6 +111,25 @@ export const useCourseNavigation = () => {
   }, [navigate, roleLoading, isManagementRole, userId, getCourseProgress]);
 
   /**
+   * Navigate to course WITH career flow enabled
+   * 
+   * ONLY call this from:
+   * - Career Board CTA in Career Readiness
+   * - "Improve Career Readiness" CTA
+   * - Skill row clicks inside Career Readiness
+   * - Course clicks FROM INSIDE Career Board
+   * 
+   * This sets the career flow flag which shows CareerScopedHeader on the course page.
+   */
+  const navigateToCourseWithCareerFlow = useCallback(async (courseSlug: string, courseId?: string) => {
+    // Set career flow BEFORE navigation
+    setCareerFlow();
+    
+    // Then navigate normally
+    await navigateToCourse(courseSlug, courseId);
+  }, [setCareerFlow, navigateToCourse]);
+
+  /**
    * Navigate directly to course without any async progress checks
    * Used when you don't have courseId or want synchronous navigation
    * CourseDetail will handle the tab resolution based on role/progress
@@ -115,6 +149,14 @@ export const useCourseNavigation = () => {
     // For learners, let CourseDetail handle tab resolution
     navigate(`/course/${courseSlug}`);
   }, [navigate, roleLoading, isManagementRole]);
+
+  /**
+   * Navigate directly to course WITH career flow (synchronous version)
+   */
+  const navigateToCourseSyncWithCareerFlow = useCallback((courseSlug: string) => {
+    setCareerFlow();
+    navigateToCourseSync(courseSlug);
+  }, [setCareerFlow, navigateToCourseSync]);
 
   /**
    * Explicit resume action - navigates to last viewed lesson
@@ -153,10 +195,21 @@ export const useCourseNavigation = () => {
     }
   }, [navigate, userId]);
 
+  /**
+   * Resume with career flow enabled
+   */
+  const handleResumeWithCareerFlow = useCallback(async (courseSlug: string, courseId: string) => {
+    setCareerFlow();
+    await handleResume(courseSlug, courseId);
+  }, [setCareerFlow, handleResume]);
+
   return {
     navigateToCourse,
+    navigateToCourseWithCareerFlow,
     navigateToCourseSync,
+    navigateToCourseSyncWithCareerFlow,
     handleResume,
+    handleResumeWithCareerFlow,
     getCourseProgress,
     isManagementRole,
     roleLoading,
