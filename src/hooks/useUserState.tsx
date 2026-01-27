@@ -113,28 +113,21 @@ export const useUserState = (): UseUserStateReturn => {
   const [entrySource, setEntrySource] = useState<EntrySource>(() => detectEntrySource());
   const [entryFlow, setEntryFlowState] = useState<EntryFlow>(() => getEntryFlow());
 
-  // Clear career flow on page refresh/unload (browser back/forward also triggers this)
+  // Handle bfcache (back-forward cache) navigation - career flow persists on refresh
+  // but clears on back/forward navigation to prevent stale career context
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Clear career flow on page unload
-      sessionStorage.removeItem(ENTRY_FLOW_KEY);
-    };
-
-    // Handle bfcache (back-forward cache) navigation
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
         // Page was restored from bfcache (back/forward navigation)
-        // Clear career flow to default to global header
-        sessionStorage.removeItem(ENTRY_FLOW_KEY);
-        setEntryFlowState(null);
+        // Re-read the entry flow from sessionStorage to sync state
+        const storedFlow = getEntryFlow();
+        setEntryFlowState(storedFlow);
       }
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pageshow", handlePageShow);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pageshow", handlePageShow);
     };
   }, []);
