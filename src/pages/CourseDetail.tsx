@@ -1789,20 +1789,17 @@ const CourseDetail = () => {
                         )}
                       </div>
                       
-                      {/* Completion Cheer Label - subtle progress reinforcement below CTAs */}
-                      {courseStats.isEnrolled && (
-                        <p className="text-sm text-muted-foreground font-medium text-center mt-3">
+                      {/* Cheer Label - subtle emotional reinforcement below CTAs */}
+                      {/* Only show for enrolled users, not for preview mode */}
+                      {courseStats.isEnrolled && !isPreviewMode && (
+                        <p className="text-sm text-primary/70 font-medium text-center mt-3">
                           {courseProgress.isCompleted ? (
-                            <>
-                              <span className="mr-1.5">🎉</span>
-                              Successfully completed
-                            </>
+                            "🎉 You've successfully completed this course"
                           ) : courseProgress.hasStarted && courseProgress.percentage > 0 ? (
-                            <>
-                              <span className="mr-1.5">💪</span>
-                              Making great progress
-                            </>
-                          ) : null}
+                            "💪 You're making great progress — keep going"
+                          ) : (
+                            "🚀 Ready to begin — let's start building this skill"
+                          )}
                         </p>
                       )}
                     </div>
