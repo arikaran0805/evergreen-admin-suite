@@ -1415,12 +1415,17 @@ const CourseDetail = () => {
       <div className={`fixed ${isPreviewMode && canPreview ? 'top-10' : 'top-0'} left-0 right-0 z-[60]`}>
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
-      <Header 
-        announcementVisible={showAnnouncement} 
-        onVisibilityChange={handleHeaderVisibility}
-      />
+      
+      {/* Pro users with career: Show ONLY CareerScopedHeader (no global header) */}
+      {/* Non-Pro or no career: Show global header */}
+      {!(isPro && userCareer) && (
+        <Header 
+          announcementVisible={showAnnouncement} 
+          onVisibilityChange={handleHeaderVisibility}
+        />
+      )}
 
-      {/* Career-Scoped Secondary Header for Pro users - replaces generic course nav */}
+      {/* Career-Scoped Header for Pro users - replaces global header entirely */}
       {isPro && course && userCareer && (
         <CareerScopedHeader
           currentCourse={{
@@ -1430,20 +1435,22 @@ const CourseDetail = () => {
           }}
           career={userCareer}
           careerCourses={careerScopedCourses}
-          isHeaderVisible={isHeaderVisible}
+          isHeaderVisible={true} // Always visible since it's the only header
           announcementVisible={showAnnouncement}
           isLoading={careersLoading}
         />
       )}
 
       {/* Main Layout - adjust padding based on header visibility */}
-      {/* Heights: Primary header=64px, Secondary header=40px (48px for career scoped), Announcement=36px */}
+      {/* Pro with career: CareerScopedHeader only (48px), otherwise global header (64px) + secondary (40px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         isPreviewMode && canPreview 
           ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
-          : isHeaderVisible
-            ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
-            : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (36+40 / 40 - secondary header only)
+          : isPro && userCareer
+            ? (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // Career header only: 48px + 36px announcement
+            : isHeaderVisible
+              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
+              : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (36+40 / 40 - secondary header only)
       }`}>
         <div className="flex flex-col lg:flex-row gap-0 justify-center">
           

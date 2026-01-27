@@ -53,12 +53,13 @@ export const CareerScopedHeader = ({
 }: CareerScopedHeaderProps) => {
   const location = useLocation();
 
-  // Determine top position based on header visibility
+  // When this is the primary header (no global header), always show at top
+  // Otherwise, position below the global header
   const getTopPosition = () => {
-    if (isHeaderVisible) {
-      return announcementVisible ? 'top-[6.25rem]' : 'top-16';
+    if (announcementVisible) {
+      return 'top-9'; // Below announcement bar (36px)
     }
-    return announcementVisible ? 'top-9' : 'top-0';
+    return 'top-0';
   };
 
   if (isLoading) {
