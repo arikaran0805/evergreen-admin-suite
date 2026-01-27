@@ -1347,19 +1347,19 @@ const CourseDetail = () => {
         <div className="fixed top-0 left-0 right-0 z-[60]">
           <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
         </div>
-        {/* LOADING STATE: Respect mutually exclusive header logic */}
-        {isCareerFlow ? (
+        {/* LOADING STATE: Global Header always shows, CareerScopedHeader shows additionally in career flow */}
+        <Header announcementVisible={showAnnouncement} />
+        {isCareerFlow && (
           <CareerScopedHeader
             currentCourse={undefined}
             career={null}
             careerCourses={[]}
             announcementVisible={showAnnouncement}
+            isHeaderVisible={true}
             isLoading={true}
           />
-        ) : (
-          <Header announcementVisible={showAnnouncement} />
         )}
-        <div className={`container mx-auto px-4 text-center ${isCareerFlow ? 'pt-20' : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
+        <div className={`container mx-auto px-4 text-center ${isCareerFlow ? 'pt-32' : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
           <div className="flex flex-col items-center gap-4">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-muted-foreground">Loading course...</p>
@@ -1375,19 +1375,9 @@ const CourseDetail = () => {
         <div className="fixed top-0 left-0 right-0 z-[60]">
           <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
         </div>
-        {/* NOT FOUND STATE: Respect mutually exclusive header logic */}
-        {isCareerFlow ? (
-          <CareerScopedHeader
-            currentCourse={undefined}
-            career={null}
-            careerCourses={[]}
-            announcementVisible={showAnnouncement}
-            isLoading={true}
-          />
-        ) : (
-          <Header announcementVisible={showAnnouncement} />
-        )}
-        <div className={`container mx-auto px-4 text-center ${isCareerFlow ? 'pt-20' : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
+        {/* NOT FOUND STATE: Global Header always shows */}
+        <Header announcementVisible={showAnnouncement} />
+        <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
           <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           {isPreviewMode && !canPreview && (
             <p className="text-muted-foreground mb-4">You don't have permission to preview this content.</p>
@@ -1438,15 +1428,16 @@ const CourseDetail = () => {
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
       
-      {/* HEADER RENDERING - Mutually exclusive based on entry flow
-          CRITICAL: Only ONE header renders per page load - no flicker, no swap
-          - Career Flow: CareerScopedHeader ONLY (Global Header does NOT mount)
-          - Non-Career Flow: Global Header ONLY (CareerScopedHeader does NOT mount)
-          - During loading: If career flow is set, show CareerScopedHeader (with loading state)
-            to prevent flicker when subscription status resolves */}
-      {isCareerFlow ? (
-        /* CAREER FLOW: CareerScopedHeader is the ONLY header - Global Header never mounts
-           We render this even while userStateLoading to prevent header flicker */
+      {/* HEADER RENDERING:
+          - Global Header ALWAYS renders (primary nav)
+          - CareerScopedHeader renders ADDITIONALLY as secondary header when in career flow */}
+      <Header 
+        announcementVisible={showAnnouncement} 
+        onVisibilityChange={handleHeaderVisibility}
+      />
+      
+      {/* Career Flow: Show CareerScopedHeader as SECONDARY header below Global Header */}
+      {isCareerFlow && isPro && (
         <CareerScopedHeader
           currentCourse={course ? {
             id: course.id,
@@ -1459,24 +1450,23 @@ const CourseDetail = () => {
           announcementVisible={showAnnouncement}
           isLoading={userStateLoading || careersLoading || !course || !userCareer}
         />
-      ) : (
-        /* NON-CAREER FLOW: Global Header is the ONLY header */
-        <Header 
-          announcementVisible={showAnnouncement} 
-          onVisibilityChange={handleHeaderVisibility}
-        />
       )}
 
-      {/* Main Layout - adjust padding based on header type and visibility */}
-      {/* Career Flow: CareerScopedHeader = 48px, Non-Career: Global Header = 64px + Secondary = 40px */}
+      {/* Main Layout - adjust padding based on header visibility and career flow
+          - Career Flow + Header Visible: Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
+          - Career Flow + Header Hidden: CareerScopedHeader (48px) + Announcement (36px)
+          - Non-Career + Header Visible: Global Header (64px) + Announcement (36px)
+          - Non-Career + Header Hidden: Announcement only (36px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
-        isCareerFlow
-          ? (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // Career flow: 48px header (+36px announcement)
+        isCareerFlow && isPro
+          ? isHeaderVisible
+            ? (showAnnouncement ? 'pt-[9.25rem]' : 'pt-28') // 148px / 112px (64+48+36 / 64+48)
+            : (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // 84px / 48px (48+36 / 48)
           : isPreviewMode && canPreview 
-            ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
+            ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') 
             : isHeaderVisible
-              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
-              : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (36+40 / 40 - secondary header only)
+              ? (showAnnouncement ? 'pt-[6.25rem]' : 'pt-16') // 100px / 64px
+              : (showAnnouncement ? 'pt-9' : 'pt-0') // 36px / 0px
       }`}>
         <div className="flex flex-col lg:flex-row gap-0 justify-center">
           
