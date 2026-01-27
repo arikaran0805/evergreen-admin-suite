@@ -2094,7 +2094,7 @@ const CourseDetail = () => {
                         <TabsContent value="certificate">
                           <div className="space-y-6">
                             {/* Certificate Card - reusing existing component logic inline */}
-                            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-start">
+                            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center">
                               {/* Certificate Preview */}
                               <div className="w-full max-w-md aspect-[1.4/1] rounded-lg border-4 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
                                 {/* Decorative border */}
