@@ -326,16 +326,17 @@ const Profile = () => {
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
-  const { navigateToCourse, handleResume } = useCourseNavigation();
+  const { navigateToCourse, navigateToCourseWithCareerFlow, handleResume } = useCourseNavigation();
 
-  // Handle skill click - navigate to course that teaches this skill
+  // Handle skill click - navigate to course that teaches this skill WITH CAREER FLOW
+  // This sets entryFlow = "career_flow" so CareerScopedHeader shows
   const handleSkillClick = async (skillName: string) => {
     if (!career) return;
     
     const courseInfo = getCourseForSkill(career.id, skillName);
     if (courseInfo) {
-      // Use role-aware navigation (not auto-resume)
-      await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId);
+      // Navigate with career flow enabled - shows CareerScopedHeader
+      await navigateToCourseWithCareerFlow(courseInfo.courseSlug, courseInfo.courseId);
     }
   };
 
@@ -961,7 +962,8 @@ const Profile = () => {
                         // getCourseForSkill falls back to first course if no specific skill match
                         const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
                         if (courseInfo) {
-                          await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId);
+                          // Navigate WITH career flow enabled - shows CareerScopedHeader
+                          await navigateToCourseWithCareerFlow(courseInfo.courseSlug, courseInfo.courseId);
                         }
                       }
                     }}
@@ -1203,7 +1205,18 @@ const Profile = () => {
                       <div className="flex flex-col items-center mt-5 group/cta">
                         <Button 
                           className="gap-2 rounded-full px-5"
-                          onClick={() => navigate('/arcade')}
+                          onClick={async () => {
+                            // This is a career action - navigate to first course with career flow
+                            if (career && skills.length > 0) {
+                              const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
+                              if (courseInfo) {
+                                await navigateToCourseWithCareerFlow(courseInfo.courseSlug, courseInfo.courseId);
+                                return;
+                              }
+                            }
+                            // Fallback to arcade if no career/skills
+                            navigate('/arcade');
+                          }}
                         >
                           Improve Career Readiness
                           <ChevronRight className="h-4 w-4" />

@@ -33,6 +33,9 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 
+// Session storage key for career flow (must match useUserState)
+const ENTRY_FLOW_KEY = "lovable_entry_flow";
+
 interface CourseStep {
   id: string;
   slug: string;
@@ -339,6 +342,7 @@ export const CareerProgressChart = ({
   }, [pathData.progressPath, pathData.currentX, readinessPercent, animationKey]);
 
   // Handle click on course - with proper locking and navigation logic
+  // ALWAYS sets career flow since we're navigating FROM Career Board/Arcade
   const handleCourseClick = useCallback((course: typeof pathData.courses[0], courseIndex: number) => {
     // Check if locked - show toast and prevent navigation
     if (course.isLocked) {
@@ -350,6 +354,9 @@ export const CareerProgressChart = ({
       return;
     }
 
+    // Set career flow BEFORE navigation - this shows CareerScopedHeader
+    sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+
     // Check if completed - show completion dialog
     if (course.isCompleted) {
       setCompletedCourseInfo({ name: course.name, slug: course.slug });
@@ -359,18 +366,20 @@ export const CareerProgressChart = ({
 
     // Enrolled but not completed - navigate to next lesson
     if (course.isEnrolled && course.progress > 0) {
-      navigate(`/courses/${course.slug}?continue=true`);
+      navigate(`/course/${course.slug}?continue=true`);
       return;
     }
 
     // Active or not started - navigate to course
-    navigate(`/courses/${course.slug}`);
+    navigate(`/course/${course.slug}`);
   }, [navigate]);
 
   // Handle restart course from completion dialog
   const handleRestartCourse = useCallback(() => {
     if (completedCourseInfo) {
-      navigate(`/courses/${completedCourseInfo.slug}?restart=true`);
+      // Set career flow for restart as well
+      sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+      navigate(`/course/${completedCourseInfo.slug}?restart=true`);
     }
     setShowCompletionDialog(false);
   }, [completedCourseInfo, navigate]);

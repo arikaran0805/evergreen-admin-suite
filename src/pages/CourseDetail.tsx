@@ -187,7 +187,7 @@ const CourseDetail = () => {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
-  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, markAsInternal, isLoading: userStateLoading } = useUserState();
+  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, isCareerFlow, markAsInternal, isLoading: userStateLoading } = useUserState();
   const { openPricingDrawer } = usePricingDrawer();
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -1420,8 +1420,10 @@ const CourseDetail = () => {
         onVisibilityChange={handleHeaderVisibility}
       />
 
-      {/* Career-Scoped Secondary Header for Pro users - replaces generic course nav */}
-      {isPro && course && userCareer && (
+      {/* Career-Scoped Secondary Header - ONLY when in career flow
+          CRITICAL: This header renders ONLY when entryFlow === "career_flow"
+          It does NOT depend on isPro, career mapping, URL, or course metadata */}
+      {isCareerFlow && isPro && course && userCareer && (
         <CareerScopedHeader
           currentCourse={{
             id: course.id,

@@ -3,6 +3,15 @@
  * 
  * Determines user state: guest, learner, or pro
  * Also tracks entry source for conditional UI behavior
+ * 
+ * ENTRY FLOW SYSTEM:
+ * - "career_flow": Set ONLY by Career Readiness / Career Board interactions
+ * - undefined/null: Default - always shows Global Header
+ * 
+ * CRITICAL RULES:
+ * - CareerScopedHeader renders ONLY when entryFlow === "career_flow"
+ * - Page refresh, direct URL, browser back/forward clear career flow
+ * - Course pages NEVER set entryFlow - only Career Readiness CTAs do
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type UserState = "guest" | "learner" | "pro";
 export type EntrySource = "external" | "internal";
+export type EntryFlow = "career_flow" | null;
 
 interface Subscription {
   id: string;
@@ -23,6 +33,8 @@ interface UseUserStateReturn {
   userState: UserState;
   /** Entry source: external (SEO, course cards) or internal (dashboard, library) */
   entrySource: EntrySource;
+  /** Entry flow: "career_flow" (from Career Readiness/Board) or null (default) */
+  entryFlow: EntryFlow;
   /** Raw subscription data if available */
   subscription: Subscription | null;
   /** Whether subscription data is still loading */
@@ -37,12 +49,19 @@ interface UseUserStateReturn {
   shouldShowAds: boolean;
   /** Check if pro features should be shown */
   shouldShowProFeatures: boolean;
+  /** Whether CareerScopedHeader should be shown (ONLY when in career flow) */
+  isCareerFlow: boolean;
   /** Mark the current session as internal navigation */
   markAsInternal: () => void;
+  /** Set career flow - ONLY call from Career Readiness / Career Board CTAs */
+  setCareerFlow: () => void;
+  /** Clear career flow - called on page unload, refresh, or explicit exit */
+  clearCareerFlow: () => void;
 }
 
-// Session storage key for entry source tracking
+// Session storage keys
 const ENTRY_SOURCE_KEY = "lovable_entry_source";
+const ENTRY_FLOW_KEY = "lovable_entry_flow";
 const INTERNAL_ROUTES = ["/profile", "/library", "/dashboard", "/moderator", "/admin", "/senior-moderator", "/super-moderator"];
 
 /**
@@ -78,11 +97,47 @@ const detectEntrySource = (): EntrySource => {
   return "external";
 };
 
+/**
+ * Get entry flow from session storage
+ * Returns null if not set or on page refresh (uses sessionStorage pageshow handling)
+ */
+const getEntryFlow = (): EntryFlow => {
+  const stored = sessionStorage.getItem(ENTRY_FLOW_KEY);
+  return stored === "career_flow" ? "career_flow" : null;
+};
+
 export const useUserState = (): UseUserStateReturn => {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [entrySource, setEntrySource] = useState<EntrySource>(() => detectEntrySource());
+  const [entryFlow, setEntryFlowState] = useState<EntryFlow>(() => getEntryFlow());
+
+  // Clear career flow on page refresh/unload (browser back/forward also triggers this)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear career flow on page unload
+      sessionStorage.removeItem(ENTRY_FLOW_KEY);
+    };
+
+    // Handle bfcache (back-forward cache) navigation
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // Page was restored from bfcache (back/forward navigation)
+        // Clear career flow to default to global header
+        sessionStorage.removeItem(ENTRY_FLOW_KEY);
+        setEntryFlowState(null);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
 
   // Fetch subscription status
   useEffect(() => {
@@ -154,10 +209,26 @@ export const useUserState = (): UseUserStateReturn => {
   // Pro features for pro users only
   const shouldShowProFeatures = isPro;
 
+  // Career flow is ONLY true when explicitly set by Career Readiness/Board interactions
+  // This is the SINGLE SOURCE OF TRUTH for header rendering
+  const isCareerFlow = entryFlow === "career_flow";
+
   // Mark current session as internal navigation
   const markAsInternal = useCallback(() => {
     sessionStorage.setItem(ENTRY_SOURCE_KEY, "internal");
     setEntrySource("internal");
+  }, []);
+
+  // Set career flow - ONLY called from Career Readiness / Career Board CTAs
+  const setCareerFlow = useCallback(() => {
+    sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+    setEntryFlowState("career_flow");
+  }, []);
+
+  // Clear career flow - called when exiting career mode or on refresh
+  const clearCareerFlow = useCallback(() => {
+    sessionStorage.removeItem(ENTRY_FLOW_KEY);
+    setEntryFlowState(null);
   }, []);
 
   const isLoading = authLoading || subscriptionLoading;
@@ -165,6 +236,7 @@ export const useUserState = (): UseUserStateReturn => {
   return {
     userState,
     entrySource,
+    entryFlow,
     subscription,
     isLoading,
     isGuest,
@@ -172,7 +244,10 @@ export const useUserState = (): UseUserStateReturn => {
     isPro,
     shouldShowAds,
     shouldShowProFeatures,
+    isCareerFlow,
     markAsInternal,
+    setCareerFlow,
+    clearCareerFlow,
   };
 };
 
