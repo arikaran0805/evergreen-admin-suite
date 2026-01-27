@@ -67,7 +67,6 @@ export const useCareers = () => {
       ]);
 
       if (careersRes.data) {
-        console.log("Careers loaded:", careersRes.data.length, careersRes.data);
         setCareers(careersRes.data);
       }
 
