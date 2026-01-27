@@ -187,7 +187,7 @@ const CourseDetail = () => {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
-  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, isCareerFlow, markAsInternal, clearCareerFlow, isLoading: userStateLoading } = useUserState();
+  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, isCareerFlow, markAsInternal, isLoading: userStateLoading } = useUserState();
   const { openPricingDrawer } = usePricingDrawer();
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -1423,9 +1423,8 @@ const CourseDetail = () => {
           - During loading: If career flow is set, show CareerScopedHeader (with loading state)
             to prevent flicker when subscription status resolves */}
       {isCareerFlow ? (
-        /* CAREER FLOW: CareerScopedHeader is the PRIMARY header - Global Header never mounts
-           This header PERSISTS across page refresh (sessionStorage)
-           Only cleared on explicit exit via Home button */
+        /* CAREER FLOW: CareerScopedHeader is the ONLY header - Global Header never mounts
+           We render this even while userStateLoading to prevent header flicker */
         <CareerScopedHeader
           currentCourse={course ? {
             id: course.id,
@@ -1437,7 +1436,6 @@ const CourseDetail = () => {
           isHeaderVisible={isHeaderVisible}
           announcementVisible={showAnnouncement}
           isLoading={userStateLoading || careersLoading || !course || !userCareer}
-          onExitCareerFlow={clearCareerFlow}
         />
       ) : (
         /* NON-CAREER FLOW: Global Header is the ONLY header */
@@ -1448,10 +1446,10 @@ const CourseDetail = () => {
       )}
 
       {/* Main Layout - adjust padding based on header type and visibility */}
-      {/* Career Flow: CareerScopedHeader = 56px (h-14), Non-Career: Global Header = 64px + Secondary = 40px */}
+      {/* Career Flow: CareerScopedHeader = 48px, Non-Career: Global Header = 64px + Secondary = 40px */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         isCareerFlow
-          ? (showAnnouncement ? 'pt-[5.75rem]' : 'pt-14') // Career flow: 56px header (+36px announcement = 92px)
+          ? (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // Career flow: 48px header (+36px announcement)
           : isPreviewMode && canPreview 
             ? (showAnnouncement ? 'pt-[10.5rem]' : 'pt-[8.5rem]') 
             : isHeaderVisible
