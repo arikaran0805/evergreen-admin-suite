@@ -300,9 +300,9 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link to="/career-board" className="cursor-pointer">
+                        <Link to="/arcade" className="cursor-pointer">
                           <Gamepad2 className="mr-2 h-4 w-4" />
-                          Career Board
+                          Arcade
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>

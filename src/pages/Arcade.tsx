@@ -180,7 +180,7 @@ const Arcade = () => {
   return (
     <Layout>
       <SEOHead
-        title="Career Board | Your Learning Journey"
+        title="Career Arcade | Your Learning Journey"
         description="Track your career readiness journey and see your progress toward becoming job-ready."
       />
 
@@ -190,7 +190,7 @@ const Arcade = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
               <Trophy className="h-8 w-8 text-amber-500" />
-              Career Board
+              Career Arcade
             </h1>
             <p className="text-muted-foreground">
               Your journey to becoming a {career?.name || "professional"}
