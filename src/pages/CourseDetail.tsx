@@ -1455,8 +1455,8 @@ const CourseDetail = () => {
       {/* Main Layout - adjust padding based on header visibility and career flow
           - Career Flow + Header Visible: Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
           - Career Flow + Header Hidden: CareerScopedHeader (48px) + Announcement (36px)
-          - Non-Career + Header Visible: Global Header (64px) + Announcement (36px)
-          - Non-Career + Header Hidden: Announcement only (36px) */}
+          - Non-Career + Header Visible: Global Header (64px) + Secondary Nav (40px) + Announcement (36px)
+          - Non-Career + Header Hidden: Secondary Nav (40px) + Announcement (36px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         isCareerFlow && isPro
           ? isHeaderVisible
@@ -1465,8 +1465,8 @@ const CourseDetail = () => {
           : isPreviewMode && canPreview 
             ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') 
             : isHeaderVisible
-              ? (showAnnouncement ? 'pt-[6.25rem]' : 'pt-16') // 100px / 64px
-              : (showAnnouncement ? 'pt-9' : 'pt-0') // 36px / 0px
+              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
+              : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (40+36 / 40)
       }`}>
         <div className="flex flex-col lg:flex-row gap-0 justify-center">
           
