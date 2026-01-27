@@ -1844,6 +1844,21 @@ const CourseDetail = () => {
                           {posts.length > 0 && (() => {
                             const cardContent = getActionCardContent();
                             const CardIcon = cardContent.icon;
+                            
+                            // Determine completion cheer message based on state
+                            const getCheerMessage = () => {
+                              if (!courseStats.isEnrolled) return null;
+                              if (courseProgress.isCompleted) {
+                                return { emoji: "🎉", text: "You've successfully completed this course" };
+                              }
+                              if (courseProgress.hasStarted && courseProgress.percentage > 0) {
+                                return { emoji: "💪", text: "You're making great progress — keep going" };
+                              }
+                              return null; // Just restarted or not started yet - no cheer needed
+                            };
+                            
+                            const cheerMessage = getCheerMessage();
+                            
                             return (
                               <div 
                                 id="action-reinforcement-card" 
@@ -1897,6 +1912,16 @@ const CourseDetail = () => {
                                     </span>
                                   </div>
                                 </div>
+                                
+                                {/* Completion Cheer Label - subtle progress reinforcement */}
+                                {cheerMessage && (
+                                  <div className="mt-4 pt-3 border-t border-primary/10 text-center">
+                                    <p className="text-sm text-muted-foreground font-medium">
+                                      <span className="mr-1.5">{cheerMessage.emoji}</span>
+                                      {cheerMessage.text}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
