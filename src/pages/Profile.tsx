@@ -993,7 +993,7 @@ const Profile = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Skill Progress Bars */}
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto overflow-x-visible pr-2 py-1 pl-1">
                   {skills.map((skill, index) => {
                     // Get actual skill value from our calculation
                     const skillProgress = skillValues[skill.skill_name] || 0;
