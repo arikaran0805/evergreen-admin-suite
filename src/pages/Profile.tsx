@@ -938,7 +938,7 @@ const Profile = () => {
       </Card>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Career Readiness + Recommended Labs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Career Readiness */}
@@ -1192,7 +1192,7 @@ const Profile = () => {
         </div>
 
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
-        <div className="flex flex-col space-y-6">
+        <div className="flex flex-col space-y-6 h-full">
           {/* Weekly Activity - Compact Version */}
           <Card className="card-premium rounded-xl animate-stagger-2">
             <CardContent className="p-5">
