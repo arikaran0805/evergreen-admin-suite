@@ -1021,7 +1021,7 @@ const Profile = () => {
                     (readinessPercentage >= 75 && readinessPercentage < 80);
                   
                   return (
-                <div className="flex flex-col items-center justify-center w-full h-full">
+                <div className="flex flex-col items-center justify-center">
                   <div className={`relative w-44 h-44 ${isCloseToNextLevel ? 'animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : ''}`}>
                     {/* Outer glow ring */}
                     <div 
@@ -1112,7 +1112,7 @@ const Profile = () => {
                   </div>
 
                   <Button 
-                    className="mt-6 gap-2 w-full max-w-sm mx-auto"
+                    className="mt-6 gap-2"
                     onClick={() => navigate('/arcade')}
                   >
                     Improve Career Readiness
