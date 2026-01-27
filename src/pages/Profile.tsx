@@ -55,7 +55,8 @@ import {
   Zap,
   Library,
   Gamepad2,
-  FlaskConical
+  FlaskConical,
+  LayoutGrid
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -949,15 +950,31 @@ const Profile = () => {
                   <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">Career Readiness</h3>
                   <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="gap-1.5 text-primary hover:bg-primary/10 border border-primary/20"
-                  onClick={() => setCareerDialogOpen(true)}
-                >
-                  <Zap className="h-4 w-4" />
-                  <span className="font-semibold">{readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="gap-1.5"
+                    onClick={() => {
+                      // Navigate to first course in career path
+                      if (skills.length > 0) {
+                        handleSkillClick(skills[0].skill_name);
+                      }
+                    }}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    <span className="font-medium">Course Board</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1.5 text-primary hover:bg-primary/10 border border-primary/20"
+                    onClick={() => setCareerDialogOpen(true)}
+                  >
+                    <Zap className="h-4 w-4" />
+                    <span className="font-semibold">{readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}</span>
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
