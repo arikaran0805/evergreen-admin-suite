@@ -231,7 +231,7 @@ const Arcade = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
               <Trophy className="h-8 w-8 text-primary" />
-              Career Board
+              Arcade
             </h1>
             <p className="text-muted-foreground">
               Your journey to becoming a {career?.name || "professional"}
