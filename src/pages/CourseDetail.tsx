@@ -1774,19 +1774,6 @@ const CourseDetail = () => {
                           <CtaIcon className="h-5 w-5" />
                           {ctaProps.label}
                         </Button>
-                        
-                        {/* View Certificate - Only when course is completed */}
-                        {courseStats.isEnrolled && courseProgress.isCompleted && (
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            className="gap-2 px-6"
-                            onClick={() => navigate(`/course/${course.id}/completed`)}
-                          >
-                            <Award className="h-5 w-5" />
-                            View Certificate
-                          </Button>
-                        )}
                       </div>
                       
                       {/* Cheer Label - subtle emotional reinforcement below CTAs */}
