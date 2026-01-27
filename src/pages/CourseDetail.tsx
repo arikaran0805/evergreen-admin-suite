@@ -330,10 +330,18 @@ const CourseDetail = () => {
     }
   }, [user, course, markAsInternal]);
 
-  // Resolve default tab based on URL param, user role, and progress state
+  /**
+   * ROLE-AWARE, PROGRESS-AWARE DEFAULT TAB SELECTION
+   * 
+   * This logic runs ONCE per page load and determines the initial tab based on:
+   * 1. User Role (Admin/Moderator vs Learner)
+   * 2. Course Progress (0%, 1-99%, 100%)
+   * 
+   * Entry source does NOT affect tab selection - only role and progress matter.
+   */
   useEffect(() => {
     // Skip if already resolved or still loading essential data
-    if (defaultTabResolved || loading || roleLoading) return;
+    if (defaultTabResolved || loading || roleLoading || userStateLoading) return;
 
     // Priority 1: If a lesson is already selected via URL, go to lessons tab
     // (Lesson reading always lives in the Lessons context)
@@ -343,47 +351,80 @@ const CourseDetail = () => {
       return;
     }
 
-    // Priority 2: If tab is specified in URL, use it (for persistence across refresh)
-    if (tabParam && ["details", "lessons"].includes(tabParam)) {
+    // Priority 2: If tab is specified in URL, use it (for persistence across refresh / manual selection)
+    // This ensures we don't override the user's manual tab selection
+    if (tabParam && ["details", "lessons", "notes", "certificate"].includes(tabParam)) {
+      // Only honor certificate tab if it's actually available
+      if (tabParam === "certificate") {
+        const certificateTabAvailable = isPro && courseStats.isEnrolled && courseProgress.isCompleted;
+        if (!certificateTabAvailable) {
+          // Fall back to lessons tab if certificate not available
+          setActiveTab("lessons");
+          setDefaultTabResolved(true);
+          return;
+        }
+      }
       setActiveTab(tabParam);
       setDefaultTabResolved(true);
       return;
     }
 
-    // Priority 3: Admin / Super Moderator / Senior Moderator → Course Details
+    // Priority 3: Admin / Moderator → ALWAYS Course Details (ignore progress)
+    // Admins and moderators are managing content, not learning it
     if (isAdmin || isModerator) {
       setActiveTab("details");
       setDefaultTabResolved(true);
       return;
     }
 
-    // Priority 4: Enrolled learner - in progress (1%-99%) or completed → Lessons
-    if (courseStats.isEnrolled && courseProgress.hasStarted) {
+    // Priority 4: LEARNER progress-based tab selection
+    // Calculate progress percentage for learners
+    const progressPercentage = courseProgress.percentage;
+
+    // 100% completion → Certificate tab (if available for Pro users)
+    if (progressPercentage === 100 && courseProgress.isCompleted) {
+      const certificateTabAvailable = isPro && courseStats.isEnrolled;
+      if (certificateTabAvailable) {
+        setActiveTab("certificate");
+        setDefaultTabResolved(true);
+        return;
+      }
+      // Non-Pro users with 100% completion → Lessons tab (fallback)
       setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
     }
 
-    // Priority 5: Learners see Lessons tab by default
-    if (isLearner || isPro) {
+    // 1-99% progress → Lessons tab (resume learning instantly)
+    if (progressPercentage > 0 && progressPercentage < 100) {
       setActiveTab("lessons");
       setDefaultTabResolved(true);
       return;
     }
 
-    // Default: Not started / not enrolled / unknown → Course Details (onboarding)
+    // 0% progress → Course Details tab (first-time visitors understand the course)
+    if (progressPercentage === 0 || !courseProgress.hasStarted) {
+      setActiveTab("details");
+      setDefaultTabResolved(true);
+      return;
+    }
+
+    // Default fallback: Course Details (safe default while data resolves)
     setActiveTab("details");
     setDefaultTabResolved(true);
   }, [
     defaultTabResolved,
     loading,
     roleLoading,
+    userStateLoading,
     isAdmin,
     isModerator,
     lessonSlug,
     tabParam,
     courseStats.isEnrolled,
     courseProgress.hasStarted,
+    courseProgress.isCompleted,
+    courseProgress.percentage,
     isLearner,
     isPro,
   ]);
