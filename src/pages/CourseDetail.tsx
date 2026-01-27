@@ -1898,8 +1898,8 @@ const CourseDetail = () => {
                           </Tooltip>
                         )}
                         
-                        {/* Certificate Tab - Always visible for Pro enrolled users */}
-                        {isPro && courseStats.isEnrolled && (
+                        {/* Certificate Tab - Always visible for Pro users (enrollment checked in content) */}
+                        {isPro && (
                           <TabsTrigger value="certificate" className="gap-2">
                             {!courseProgress.isCompleted && (
                               <Lock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -2152,8 +2152,20 @@ const CourseDetail = () => {
                       </TabsContent>
 
                       {/* Certificate Tab - Pro users only */}
-                      {isPro && courseStats.isEnrolled && (
+                      {isPro && (
                         <TabsContent value="certificate">
+                          {!courseStats.isEnrolled ? (
+                            /* Not enrolled state */
+                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                              <div className="w-14 h-14 rounded-full bg-muted/80 flex items-center justify-center mb-4">
+                                <Award className="h-7 w-7 text-muted-foreground" />
+                              </div>
+                              <h3 className="text-lg font-semibold mb-2">Enroll to Unlock Certificate</h3>
+                              <p className="text-sm text-muted-foreground max-w-sm">
+                                Start this course to track your progress and earn a certificate upon completion.
+                              </p>
+                            </div>
+                          ) : (
                           <div className="space-y-6 relative">
                             {/* Locked State Overlay - shown when course is not complete */}
                             {!courseProgress.isCompleted && (
@@ -2314,6 +2326,7 @@ const CourseDetail = () => {
                               </div>
                             </div>
                           </div>
+                          )}
                         </TabsContent>
                       )}
 
