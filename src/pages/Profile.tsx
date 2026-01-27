@@ -951,12 +951,20 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground">Your progress toward becoming job-ready</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Primary CTA: Career Board - Full career roadmap */}
+                  {/* Primary CTA: Career Board - Navigate to first course in career path */}
                   <Button 
                     variant="default" 
                     size="sm" 
                     className="gap-1.5 rounded-full px-4"
-                    onClick={() => navigate('/arcade')}
+                    onClick={async () => {
+                      if (career && skills.length > 0) {
+                        // getCourseForSkill falls back to first course if no specific skill match
+                        const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
+                        if (courseInfo) {
+                          await navigateToCourse(courseInfo.courseSlug, courseInfo.courseId);
+                        }
+                      }
+                    }}
                   >
                     <LayoutGrid className="h-4 w-4" />
                     <span className="font-medium">Career Board</span>
