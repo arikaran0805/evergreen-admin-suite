@@ -956,7 +956,7 @@ const Profile = () => {
                     variant="default" 
                     size="sm" 
                     className="gap-1.5 rounded-full px-4"
-                    onClick={() => navigate('/arcade')}
+                    onClick={() => navigate('/career-board')}
                   >
                     <LayoutGrid className="h-4 w-4" />
                     <span className="font-medium">Career Board</span>
@@ -1195,7 +1195,7 @@ const Profile = () => {
                       <div className="flex flex-col items-center mt-5 group/cta">
                         <Button 
                           className="gap-2 rounded-full px-5"
-                          onClick={() => navigate('/arcade')}
+                          onClick={() => navigate('/career-board')}
                         >
                           Improve Career Readiness
                           <ChevronRight className="h-4 w-4" />
@@ -2211,11 +2211,11 @@ const Profile = () => {
                       <span>Library</span>
                     </button>
                     <button
-                      onClick={() => navigate('/arcade')}
+                      onClick={() => navigate('/career-board')}
                       className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/70 text-foreground hover:translate-x-1"
                     >
                       <Gamepad2 className="h-5 w-5 text-muted-foreground" />
-                      <span>Arcade</span>
+                      <span>Career Board</span>
                     </button>
                   </nav>
                 </div>

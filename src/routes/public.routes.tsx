@@ -38,6 +38,7 @@ export const publicRoutes = [
   <Route key="verify-certificate" path="/verify/certificate/:certificateId" element={<VerifyCertificate />} />,
   <Route key="library" path="/library" element={<Library />} />,
   <Route key="arcade" path="/arcade" element={<Arcade />} />,
+  <Route key="career-board" path="/career-board" element={<Arcade />} />,
   <Route key="practice-lab" path="/practice-lab" element={<Navigate to="/profile?tab=practice" replace />} />,
   <Route key="tag-posts" path="/tag/:slug" element={<TagPosts />} />,
   <Route key="tags" path="/tags" element={<Tags />} />,
