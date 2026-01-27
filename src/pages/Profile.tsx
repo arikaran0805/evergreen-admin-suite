@@ -932,12 +932,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/15 to-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/10">
-                <Target className="h-4 w-4" />
-                <span className="text-sm font-semibold">
-                  {readinessPercentage >= 80 ? 'Job Ready' : 'Learning'}
-                </span>
-              </div>
             </div>
           </div>
         </CardContent>
