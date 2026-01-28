@@ -2022,7 +2022,7 @@ const CareerCourseDetail = () => {
 
         {/* RIGHT SIDEBAR - Learning Cockpit (Pro feature, always shown in Career Board) */}
         {selectedPost ? (
-          <aside className="hidden xl:block w-[300px] flex-shrink-0">
+          <aside className="hidden xl:block w-[300px] flex-shrink-0 mr-4">
             <div className={cn(
               "sticky transition-[top] duration-200 ease-out",
               // Career Board shell: Primary Header (64px) + CareerScopedHeader (48px) = 112px = 7rem
@@ -2052,7 +2052,7 @@ const CareerCourseDetail = () => {
         ) : (
           /* Course overview - show metadata sidebar */
           activeTab !== "notes" && (
-            <aside className="hidden xl:block w-[300px] flex-shrink-0">
+            <aside className="hidden xl:block w-[300px] flex-shrink-0 mr-4">
               <div className={cn(
                 "sticky transition-[top] duration-200 ease-out",
                 // Same offset calculation as lesson view sidebar
