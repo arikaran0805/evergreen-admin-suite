@@ -326,17 +326,17 @@ const Profile = () => {
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
-  const { navigateToCourse, navigateToCourseWithCareerFlow, handleResume } = useCourseNavigation();
+  const { navigateToCourse, navigateToCourseInCareerBoard, handleResume } = useCourseNavigation();
 
-  // Handle skill click - navigate to course that teaches this skill WITH CAREER FLOW
-  // This sets entryFlow = "career_flow" so CareerScopedHeader shows
+  // Handle skill click - navigate to course that teaches this skill INSIDE CAREER BOARD
+  // This uses the Career Board route for guaranteed CareerScopedHeader rendering
   const handleSkillClick = async (skillName: string) => {
     if (!career) return;
     
     const courseInfo = getCourseForSkill(career.id, skillName);
     if (courseInfo) {
-      // Navigate with career flow enabled - shows CareerScopedHeader
-      await navigateToCourseWithCareerFlow(courseInfo.courseSlug, courseInfo.courseId);
+      // Navigate inside Career Board shell - guaranteed CareerScopedHeader
+      navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
     }
   };
 
@@ -957,13 +957,13 @@ const Profile = () => {
                     variant="default" 
                     size="sm" 
                     className="gap-1.5 rounded-full px-4"
-                    onClick={async () => {
+                    onClick={() => {
                       if (career && skills.length > 0) {
                         // getCourseForSkill falls back to first course if no specific skill match
                         const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
                         if (courseInfo) {
-                          // Navigate WITH career flow enabled - shows CareerScopedHeader
-                          await navigateToCourseWithCareerFlow(courseInfo.courseSlug, courseInfo.courseId);
+                          // Navigate inside Career Board shell - guaranteed CareerScopedHeader
+                          navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
                         }
                       }
                     }}
@@ -1200,12 +1200,12 @@ const Profile = () => {
                       <div className="flex flex-col items-center mt-5 group/cta gap-2">
                         <Button 
                           className="gap-2 rounded-full px-5"
-                          onClick={async () => {
-                            // This is a career action - navigate to first course with career flow
+                          onClick={() => {
+                            // This is a career action - navigate to first course inside Career Board
                             if (career && skills.length > 0) {
                               const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
                               if (courseInfo) {
-                                await navigateToCourseWithCareerFlow(courseInfo.courseSlug, courseInfo.courseId);
+                                navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
                                 return;
                               }
                             }
