@@ -145,7 +145,7 @@ export const LearningCockpit = ({
         : (showAnnouncement ? 'top-[4.75rem]' : 'top-10'));      // Standard: 76px / 40px
 
   return (
-    <aside className={cn("hidden xl:block w-[300px] flex-shrink-0", isCareerBoard && "mr-4")}>
+    <aside className="hidden xl:block w-[300px] flex-shrink-0">
       <div className={cn("sticky transition-[top] duration-200 ease-out", stickyTopClass)}>
         <div className="space-y-4 p-1 pb-6">
 
