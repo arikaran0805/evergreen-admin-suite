@@ -2022,33 +2022,20 @@ const CareerCourseDetail = () => {
 
         {/* RIGHT SIDEBAR - Learning Cockpit (Pro feature, always shown in Career Board) */}
         {selectedPost ? (
-          <aside className="hidden xl:block w-[300px] flex-shrink-0 mr-4">
-            <div className={cn(
-              "sticky transition-[top] duration-200 ease-out",
-              // Career Board shell: Primary Header (64px) + CareerScopedHeader (48px) = 112px = 7rem
-              // When header visible: 7rem (+ 2.25rem announcement = 9.25rem)
-              // When header hidden: CareerScopedHeader stays at 3rem (48px) (+ 2.25rem announcement = 5.25rem)
-              isHeaderVisible
-                ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
-                : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
-            )}>
-              <div className="space-y-4 p-1 pb-6">
-                <LearningCockpit
-                  lessonId={selectedPost?.id}
-                  lessonTitle={selectedPost?.title || ""}
-                  courseId={course?.id}
-                  courseSlug={course.slug}
-                  userId={user?.id || ""}
-                  isLessonCompleted={selectedPost ? isLessonCompleted(selectedPost.id) : false}
-                  isHeaderVisible={isHeaderVisible}
-                  showAnnouncement={showAnnouncement}
-                  courseProgress={courseProgress}
-                  certificateEligible={courseProgress.isCompleted}
-                  onOpenNotes={() => openNotesTab()}
-                />
-              </div>
-            </div>
-          </aside>
+          <LearningCockpit
+            lessonId={selectedPost?.id}
+            lessonTitle={selectedPost?.title || ""}
+            courseId={course?.id}
+            courseSlug={course.slug}
+            userId={user?.id || ""}
+            isLessonCompleted={selectedPost ? isLessonCompleted(selectedPost.id) : false}
+            isHeaderVisible={isHeaderVisible}
+            showAnnouncement={showAnnouncement}
+            courseProgress={courseProgress}
+            certificateEligible={courseProgress.isCompleted}
+            onOpenNotes={() => openNotesTab()}
+            isCareerBoard={true}
+          />
         ) : (
           /* Course overview - show metadata sidebar */
           activeTab !== "notes" && (
