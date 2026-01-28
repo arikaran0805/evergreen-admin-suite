@@ -309,18 +309,26 @@ const CourseDetail = () => {
 
   // Header readiness: gate header rendering until career-course relationship is resolved
   // This prevents flicker where NormalHeader shows briefly before CareerScopedHeader
+  // CRITICAL: We must wait for ALL data before making ANY header decision
   const isHeaderDataReady = useMemo(() => {
-    // For non-Pro users, header is always ready (no career check needed)
+    // ALWAYS wait for user state to load first - we need to know if user is Pro
+    // before we can decide which header path to take
+    if (userStateLoading) return false;
+    
+    // ALWAYS wait for course data
+    if (loading || !course?.id) return false;
+    
+    // For non-Pro users, no career check needed - ready to show normal header
     if (!isPro) return true;
-    // For Pro users, we must know BOTH:
-    // - Course fetch is finished (loading=false)
+    
+    // For Pro users, we must also know:
     // - Whether the user has a selected career (userSelectedCareer resolved from profile)
     // - Career mapping data is loaded (useCareers)
-    // Otherwise the normal secondary header will flash before we can show CareerScopedHeader.
-    if (loading || careersLoading || userStateLoading) return false;
+    if (careersLoading) return false;
     if (userSelectedCareer === undefined) return false;
+    
     return true;
-  }, [isPro, loading, careersLoading, userStateLoading, userSelectedCareer]);
+  }, [userStateLoading, loading, course?.id, isPro, careersLoading, userSelectedCareer]);
 
   // Determine if this course belongs to user's active career (data-driven, not sessionStorage)
   // CareerScopedHeader shows ONLY when: Pro user + course is in their selected career
@@ -551,7 +559,7 @@ const CourseDetail = () => {
           .from("profiles")
           .select("selected_career")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
         
         if (error) {
           setUserSelectedCareer(null);
@@ -1544,20 +1552,26 @@ const CourseDetail = () => {
       )}
 
       {/* Main Layout - adjust padding based on header visibility and career flow
+          - Loading (no secondary header): Global Header (64px) + Announcement (36px)
           - Career Scoped + Header Visible: Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
           - Career Scoped + Header Hidden: CareerScopedHeader (48px) + Announcement (36px)
           - Non-Career + Header Visible: Global Header (64px) + Secondary Nav (40px) + Announcement (36px)
           - Non-Career + Header Hidden: Secondary Nav (40px) + Announcement (36px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
-        isCourseInActiveCareer
+        // During loading - no secondary header visible, only primary header
+        !isHeaderDataReady
           ? isHeaderVisible
-            ? (showAnnouncement ? 'pt-[9.25rem]' : 'pt-28') // 148px / 112px (64+48+36 / 64+48)
-            : (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // 84px / 48px (48+36 / 48)
-          : isPreviewMode && canPreview 
-            ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') 
-            : isHeaderVisible
-              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
-              : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (40+36 / 40)
+            ? (showAnnouncement ? 'pt-[6.25rem]' : 'pt-16') // 100px / 64px (64+36 / 64)
+            : (showAnnouncement ? 'pt-9' : 'pt-0') // 36px / 0px
+          : isCourseInActiveCareer
+            ? isHeaderVisible
+              ? (showAnnouncement ? 'pt-[9.25rem]' : 'pt-28') // 148px / 112px (64+48+36 / 64+48)
+              : (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // 84px / 48px (48+36 / 48)
+            : isPreviewMode && canPreview 
+              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') 
+              : isHeaderVisible
+                ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
+                : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (40+36 / 40)
       }`}>
         <div className="flex flex-col lg:flex-row gap-0 justify-center">
           
