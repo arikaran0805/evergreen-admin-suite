@@ -167,6 +167,8 @@ interface Comment {
 
 interface OutletContext {
   setCurrentCourseSlug: (slug: string | null) => void;
+  isHeaderVisible: boolean;
+  showAnnouncement: boolean;
 }
 
 const commentSchema = z.object({
@@ -186,7 +188,7 @@ const CareerCourseDetail = () => {
   const navigate = useNavigate();
   
   // Get the outlet context to update current course in parent layout
-  const { setCurrentCourseSlug } = useOutletContext<OutletContext>();
+  const { setCurrentCourseSlug, isHeaderVisible, showAnnouncement } = useOutletContext<OutletContext>();
   
   // Career Board context
   const { career, careerCourses, isLoading: careerLoading } = useCareerBoard();
@@ -234,9 +236,8 @@ const CareerCourseDetail = () => {
   const [shareOpenPostId, setShareOpenPostId] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
-  // Header visibility state (passed from layout, but we need local state for sidebar positioning)
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  // Header visibility is now consumed from CareerBoardLayout via outlet context
+  // (removed local state - isHeaderVisible and showAnnouncement come from context)
 
   // Course stats hook
   const {
@@ -2021,7 +2022,12 @@ const CareerCourseDetail = () => {
         {/* RIGHT SIDEBAR - Learning Cockpit (Pro feature, always shown in Career Board) */}
         {selectedPost ? (
           <aside className="hidden xl:block w-[280px] flex-shrink-0 border-l">
-            <div className="sticky top-28 h-[calc(100vh-7rem)] overflow-hidden p-4">
+            <div className={cn(
+              "sticky h-[calc(100vh-7rem)] overflow-hidden p-4 transition-[top] duration-200 ease-out",
+              isHeaderVisible
+                ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
+                : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
+            )}>
               <LearningCockpit
                 lessonId={selectedPost?.id}
                 lessonTitle={selectedPost?.title || ""}
@@ -2041,7 +2047,12 @@ const CareerCourseDetail = () => {
           /* Course overview - show metadata sidebar */
           activeTab !== "notes" && (
             <aside className="hidden xl:block w-[300px] flex-shrink-0">
-              <div className="sticky top-28 p-4">
+              <div className={cn(
+                "sticky p-4 transition-[top] duration-200 ease-out",
+                isHeaderVisible
+                  ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
+                  : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
+              )}>
                 <CourseMetadataSidebar
                   course={course}
                   careers={careers}
