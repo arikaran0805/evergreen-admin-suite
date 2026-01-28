@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { useUserState } from "@/hooks/useUserState";
 import { ThemeToggle } from "./ThemeToggle";
 import { SearchDialog } from "./SearchDialog";
 import NotificationDropdown from "./NotificationDropdown";
@@ -44,6 +45,11 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isPro } = useUserState();
+
+  // Hide secondary course header for Pro users on Profile/Dashboard page
+  const isProfilePage = location.pathname === "/profile";
+  const showCourseSecondaryHeader = !(isPro && isProfilePage);
 
   // Auto-detect course/lesson pages if not explicitly set
   const isCourseDetailPage = location.pathname.startsWith("/course/");
@@ -437,29 +443,31 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
         </div>
       </header>
 
-      {/* Secondary Header - Courses Navigation - Always visible */}
-      <div 
-        className={`hidden lg:block fixed left-0 right-0 z-40 bg-muted border-b border-border transition-all duration-200 ease-out ${
-          headerHidden
-            ? (announcementVisible ? 'top-9' : 'top-0')
-            : (announcementVisible ? 'top-[6.25rem]' : 'top-16')
-        }`}
-      >
-        <div className="container mx-auto px-6 lg:px-12">
-          <nav className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
-            {courses.map((course) => (
-              <Link
-                key={course.id}
-                to={`/course/${course.slug}`}
-                className="relative px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-300 whitespace-nowrap group"
-              >
-                <span className="relative z-10">{course.name}</span>
-                <span className="absolute inset-0 bg-primary/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300" />
-              </Link>
-            ))}
-          </nav>
+      {/* Secondary Header - Courses Navigation - Hidden for Pro users on Profile page */}
+      {showCourseSecondaryHeader && (
+        <div 
+          className={`hidden lg:block fixed left-0 right-0 z-40 bg-muted border-b border-border transition-all duration-200 ease-out ${
+            headerHidden
+              ? (announcementVisible ? 'top-9' : 'top-0')
+              : (announcementVisible ? 'top-[6.25rem]' : 'top-16')
+          }`}
+        >
+          <div className="container mx-auto px-6 lg:px-12">
+            <nav className="flex items-center gap-1 h-10 overflow-x-auto scrollbar-hide">
+              {courses.map((course) => (
+                <Link
+                  key={course.id}
+                  to={`/course/${course.slug}`}
+                  className="relative px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-300 whitespace-nowrap group"
+                >
+                  <span className="relative z-10">{course.name}</span>
+                  <span className="absolute inset-0 bg-primary/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300" />
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 };
