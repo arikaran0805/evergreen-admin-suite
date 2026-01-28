@@ -1,8 +1,10 @@
 import { ReactNode, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import { AnnouncementBar } from "./AnnouncementBar";
 import BackToTop from "./BackToTop";
+import { useUserState } from "@/hooks/useUserState";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,10 +13,27 @@ interface LayoutProps {
 
 const Layout = ({ children, showFooter = true }: LayoutProps) => {
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const location = useLocation();
+  const { isPro } = useUserState();
+
+  // Pro users on Profile page don't see secondary course header (40px less padding)
+  const isProfilePage = location.pathname === "/profile";
+  const hideSecondaryHeader = isPro && isProfilePage;
 
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
   }, []);
+
+  // Calculate padding-top based on header configuration
+  // Primary header: 64px (pt-16), Announcement: 32px (pt-8), Secondary header: 40px (pt-10)
+  const getPaddingTop = () => {
+    if (hideSecondaryHeader) {
+      // Pro on Profile: Only primary header (64px) + optional announcement (32px)
+      return showAnnouncement ? 'pt-24' : 'pt-16';
+    }
+    // Default: Primary (64px) + Secondary (40px) + optional announcement (32px)
+    return showAnnouncement ? 'pt-32' : 'pt-24';
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -24,7 +43,7 @@ const Layout = ({ children, showFooter = true }: LayoutProps) => {
       </div>
       <Header announcementVisible={showAnnouncement} />
       {/* Add padding-top to account for fixed header + announcement bar */}
-      <main className={`flex-1 ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
+      <main className={`flex-1 ${getPaddingTop()}`}>
         {children}
       </main>
       {showFooter && <Footer />}
