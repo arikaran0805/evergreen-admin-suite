@@ -135,12 +135,21 @@ export const useUserState = (): UseUserStateReturn => {
   // Fetch subscription status
   useEffect(() => {
     const fetchSubscription = async () => {
+      // CRITICAL: Don't set subscriptionLoading to false while auth is still loading
+      // This prevents premature "not pro" state during page refresh
+      if (authLoading) {
+        return; // Wait for auth to complete first
+      }
+
       if (!user) {
         setSubscription(null);
         setSubscriptionLoading(false);
         return;
       }
 
+      // User exists, fetch subscription
+      setSubscriptionLoading(true);
+      
       try {
         const { data, error } = await supabase
           .from("subscriptions")
@@ -163,7 +172,7 @@ export const useUserState = (): UseUserStateReturn => {
     };
 
     fetchSubscription();
-  }, [user]);
+  }, [user, authLoading]);
 
   // Determine user state
   const userState = useMemo((): UserState => {

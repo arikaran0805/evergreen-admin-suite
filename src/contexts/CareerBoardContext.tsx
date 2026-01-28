@@ -98,11 +98,15 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   }, [careerId, careersLoading, getCareerBySlug]);
 
   // Redirect non-Pro users away from Career Board
+  // IMPORTANT: We must wait for BOTH auth AND subscription to fully resolve
+  // to prevent false redirects on page refresh
   useEffect(() => {
+    // Still loading - wait
     if (userStateLoading) return;
     
+    // If user is authenticated but not Pro, redirect
+    // Note: Guests (not authenticated) will also redirect, which is correct
     if (!isPro) {
-      // Redirect to courses page with a message
       navigate("/courses", { replace: true });
     }
   }, [isPro, userStateLoading, navigate]);
