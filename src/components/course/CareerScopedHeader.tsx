@@ -10,7 +10,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Target, ChevronRight } from "lucide-react";
 
 interface CareerCourse {
   id: string;
@@ -94,32 +93,16 @@ export const CareerScopedHeader = ({
       )}
     >
       <div className="container mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-between h-12 gap-8">
-          {/* LEFT SIDE - Course Name (Primary Context) */}
-          <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
-            {/* Current Course Name - Prominent, Not Clickable */}
-            <div className="flex flex-col min-w-0">
-              <h2 className="text-base font-semibold text-foreground truncate">
-                {currentCourse.name}
-              </h2>
-              {career && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Target className="h-3 w-3" />
-                  {career.name} Path
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT SIDE - Career-Scoped Course Navigation */}
-          <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 justify-end">
+        <div className="flex items-center justify-end h-12">
+          {/* Career-Scoped Course Navigation - Only show tabs, no course name (matches CourseDetail secondary header) */}
+          <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
             {careerCourses.length > 0 ? (
               careerCourses.map((course) => {
                 const isActive = course.slug === currentCourse.slug;
                 return (
                   <Link
                     key={course.id}
-                    to={`/course/${course.slug}`}
+                    to={`/career-board/${career?.slug}/course/${course.slug}`}
                     className={cn(
                       "relative px-4 py-1.5 text-xs font-medium whitespace-nowrap rounded-full transition-all duration-200 flex-shrink-0",
                       isActive
