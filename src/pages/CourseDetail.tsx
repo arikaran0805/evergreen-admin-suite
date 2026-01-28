@@ -349,7 +349,11 @@ const CourseDetail = () => {
       return false;
     }
 
-    return isCourseInCareer(course.id, activeCareer.id);
+    // isCourseInCareer now returns undefined while loading, true/false when resolved
+    const courseInCareerResult = isCourseInCareer(course.id, activeCareer.id);
+    // If still loading career course mappings, keep decision undefined
+    if (courseInCareerResult === undefined) return undefined;
+    return courseInCareerResult;
   }, [userStateLoading, loading, course?.id, isPro, careersLoading, userSelectedCareer, getCareerBySlug, isCourseInCareer]);
 
   const isHeaderDecisionReady = careerHeaderDecision !== undefined;

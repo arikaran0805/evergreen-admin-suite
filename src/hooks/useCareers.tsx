@@ -161,8 +161,16 @@ export const useCareers = () => {
     return null;
   };
 
-  // Check if a course belongs to a specific career
-  const isCourseInCareer = (courseId: string, careerId: string): boolean => {
+  /**
+   * Check if a course belongs to a specific career.
+   * Returns:
+   * - undefined: Still loading career data (caller should NOT make decisions yet)
+   * - true: Course IS in the career
+   * - false: Course is NOT in the career (data loaded, definitively not found)
+   */
+  const isCourseInCareer = (courseId: string, careerId: string): boolean | undefined => {
+    // If still loading, return undefined to signal "unknown" state
+    if (loading) return undefined;
     const courses = careerCourses[careerId] || [];
     return courses.some(cc => cc.course_id === courseId);
   };
