@@ -64,6 +64,8 @@ interface CourseSidebarProps {
   isHeaderVisible: boolean;
   showAnnouncement: boolean;
   isAuthenticated: boolean;
+  /** Whether this sidebar is in the Career Board shell (different header heights) */
+  isCareerBoard?: boolean;
   getPostsForLesson: (lessonId: string) => Post[];
   getLessonProgress: (lessonId: string) => LessonProgress;
   isLessonCompleted: (postId: string) => boolean;
@@ -83,6 +85,7 @@ export const CourseSidebar = ({
   isHeaderVisible,
   showAnnouncement,
   isAuthenticated,
+  isCareerBoard = false,
   getPostsForLesson,
   getLessonProgress,
   isLessonCompleted,
@@ -157,12 +160,18 @@ export const CourseSidebar = ({
     );
   };
 
-  // Calculate sticky top position based on header visibility
+  // Calculate sticky top position based on header visibility and context
+  // Career Board: Primary (64px) + CareerScopedHeader (48px) + Announcement (36px)
+  // Standard: Primary (64px) + Secondary (40px) + Announcement (36px)
   const stickyTopClass = isPreviewMode && canPreview
     ? (showAnnouncement ? 'top-[10.5rem]' : 'top-[8.5rem]')
-    : isHeaderVisible
-      ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
-      : (showAnnouncement ? 'top-[4.75rem]' : 'top-10');
+    : isCareerBoard
+      ? isHeaderVisible
+        ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28') // 148px / 112px
+        : (showAnnouncement ? 'top-[5.25rem]' : 'top-12') // 84px / 48px
+      : isHeaderVisible
+        ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]') // 140px / 104px
+        : (showAnnouncement ? 'top-[4.75rem]' : 'top-10'); // 76px / 40px
 
   const noResults = searchQuery && filteredLessons.length === 0;
 
