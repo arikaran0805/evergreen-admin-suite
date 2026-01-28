@@ -1,0 +1,52 @@
+/**
+ * Career Board Routes
+ * 
+ * ARCHITECTURAL GUARANTEE:
+ * - All routes under /career-board/:careerId/* use CareerBoardLayout
+ * - CareerBoardLayout ALWAYS renders CareerScopedHeader
+ * - No conditional header logic anywhere in this route tree
+ * 
+ * ROUTE STRUCTURE:
+ * /career-board/:careerId → Career overview (redirects to first course)
+ * /career-board/:careerId/course/:courseSlug → Course detail within career context
+ */
+import { Routes, Route, Navigate } from "react-router-dom";
+import { CareerBoardProvider } from "@/contexts/CareerBoardContext";
+import CareerBoardLayout from "@/components/layouts/CareerBoardLayout";
+import CareerCourseDetail from "@/pages/CareerCourseDetail";
+
+/**
+ * Career Board Index - Redirects to Arcade (career overview)
+ * Users should always enter via a specific course or the Arcade page
+ */
+const CareerBoardIndex = () => {
+  return <Navigate to="/arcade" replace />;
+};
+
+/**
+ * Career Board Routes Component
+ * 
+ * Wraps all career board routes with:
+ * 1. CareerBoardProvider - Career context for all children
+ * 2. CareerBoardLayout - Shell with guaranteed CareerScopedHeader
+ */
+const CareerBoardRoutes = () => {
+  return (
+    <CareerBoardProvider>
+      <Routes>
+        <Route element={<CareerBoardLayout />}>
+          {/* Career index - redirect to arcade */}
+          <Route index element={<CareerBoardIndex />} />
+          
+          {/* Course detail within career context */}
+          <Route path="course/:courseSlug" element={<CareerCourseDetail />} />
+          
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to="/arcade" replace />} />
+        </Route>
+      </Routes>
+    </CareerBoardProvider>
+  );
+};
+
+export default CareerBoardRoutes;

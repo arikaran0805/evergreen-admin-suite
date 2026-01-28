@@ -16,7 +16,7 @@ import { PricingDrawer } from "@/components/pricing";
 import "@/styles/tiptap.css";
 
 // Route Compositions
-import { AdminRoutes, SuperModeratorRoutes, SeniorModeratorRoutes, ModeratorRoutes, publicRoutes } from "@/routes";
+import { AdminRoutes, SuperModeratorRoutes, SeniorModeratorRoutes, ModeratorRoutes, CareerBoardRoutes, publicRoutes } from "@/routes";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +77,9 @@ const AppContent = () => {
         <Route path="/super-moderator/*" element={<SuperModeratorRoutes />} />
         <Route path="/senior-moderator/*" element={<SeniorModeratorRoutes />} />
         <Route path="/moderator/*" element={<ModeratorRoutes />} />
+        
+        {/* Career Board - Dedicated shell for career-scoped learning */}
+        <Route path="/career-board/:careerId/*" element={<CareerBoardRoutes />} />
       </Routes>
     </>
   );
