@@ -109,8 +109,12 @@ export const CareerBoardLayout = () => {
       <main 
         className={cn(
           "flex-1 transition-[padding-top] duration-200 ease-out",
-          // Padding: Primary Header (64px) + CareerScopedHeader (48px) + optional Announcement (36px)
-          showAnnouncement ? "pt-[9.25rem]" : "pt-28"
+          // Dynamic padding based on header visibility (matches CourseDetail pattern)
+          // Header visible: Primary (64px) + CareerScoped (48px) + optional Announcement (36px)
+          // Header hidden: CareerScoped (48px) + optional Announcement (36px)
+          isHeaderVisible
+            ? (showAnnouncement ? 'pt-[9.25rem]' : 'pt-28')   // 148px / 112px
+            : (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12')   // 84px / 48px
         )}
       >
         <Outlet context={{ setCurrentCourseSlug, isHeaderVisible, showAnnouncement }} />
