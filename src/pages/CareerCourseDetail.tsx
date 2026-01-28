@@ -1287,6 +1287,7 @@ const CareerCourseDetail = () => {
           isHeaderVisible={isHeaderVisible}
           showAnnouncement={showAnnouncement}
           isAuthenticated={!!user}
+          isCareerBoard={true}
           getPostsForLesson={getPostsForLesson}
           getLessonProgress={getLessonProgress}
           isLessonCompleted={isLessonCompleted}
@@ -2021,26 +2022,28 @@ const CareerCourseDetail = () => {
 
         {/* RIGHT SIDEBAR - Learning Cockpit (Pro feature, always shown in Career Board) */}
         {selectedPost ? (
-          <aside className="hidden xl:block w-[280px] flex-shrink-0 border-l">
+          <aside className="hidden xl:block w-[280px] flex-shrink-0">
             <div className={cn(
-              "sticky h-[calc(100vh-7rem)] overflow-hidden p-4 transition-[top] duration-200 ease-out",
+              "sticky transition-[top] duration-200 ease-out",
               isHeaderVisible
                 ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
                 : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
             )}>
-              <LearningCockpit
-                lessonId={selectedPost?.id}
-                lessonTitle={selectedPost?.title || ""}
-                courseId={course?.id}
-                courseSlug={course.slug}
-                userId={user?.id || ""}
-                isLessonCompleted={selectedPost ? isLessonCompleted(selectedPost.id) : false}
-                isHeaderVisible={isHeaderVisible}
-                showAnnouncement={showAnnouncement}
-                courseProgress={courseProgress}
-                certificateEligible={courseProgress.isCompleted}
-                onOpenNotes={() => openNotesTab()}
-              />
+              <div className="h-[calc(100vh-7rem)] overflow-hidden p-4">
+                <LearningCockpit
+                  lessonId={selectedPost?.id}
+                  lessonTitle={selectedPost?.title || ""}
+                  courseId={course?.id}
+                  courseSlug={course.slug}
+                  userId={user?.id || ""}
+                  isLessonCompleted={selectedPost ? isLessonCompleted(selectedPost.id) : false}
+                  isHeaderVisible={isHeaderVisible}
+                  showAnnouncement={showAnnouncement}
+                  courseProgress={courseProgress}
+                  certificateEligible={courseProgress.isCompleted}
+                  onOpenNotes={() => openNotesTab()}
+                />
+              </div>
             </div>
           </aside>
         ) : (
@@ -2048,27 +2051,29 @@ const CareerCourseDetail = () => {
           activeTab !== "notes" && (
             <aside className="hidden xl:block w-[300px] flex-shrink-0">
               <div className={cn(
-                "sticky p-4 transition-[top] duration-200 ease-out",
+                "sticky transition-[top] duration-200 ease-out",
                 isHeaderVisible
                   ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
                   : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
               )}>
-                <CourseMetadataSidebar
-                  course={course}
-                  careers={careers}
-                  estimatedDuration={formatTotalReadingTime(posts)}
-                  lastUpdated={posts[0]?.updated_at 
-                    ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                    : undefined
-                  }
-                  isAdmin={isAdmin}
-                  isModerator={isModerator}
-                  isHeaderVisible={isHeaderVisible}
-                  showAnnouncement={showAnnouncement}
-                  linkedPrerequisites={linkedPrerequisites}
-                  creator={courseCreator}
-                  maintenanceTeam={maintenanceTeam}
-                />
+                <div className="space-y-4 p-1 pb-6">
+                  <CourseMetadataSidebar
+                    course={course}
+                    careers={careers}
+                    estimatedDuration={formatTotalReadingTime(posts)}
+                    lastUpdated={posts[0]?.updated_at 
+                      ? new Date(posts[0].updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                      : undefined
+                    }
+                    isAdmin={isAdmin}
+                    isModerator={isModerator}
+                    isHeaderVisible={isHeaderVisible}
+                    showAnnouncement={showAnnouncement}
+                    linkedPrerequisites={linkedPrerequisites}
+                    creator={courseCreator}
+                    maintenanceTeam={maintenanceTeam}
+                  />
+                </div>
               </div>
             </aside>
           )
