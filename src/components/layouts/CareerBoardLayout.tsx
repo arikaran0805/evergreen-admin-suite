@@ -88,9 +88,10 @@ export const CareerBoardLayout = () => {
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
 
-      {/* Primary Header - Standard behavior */}
+      {/* Primary Header - Auto-hides on scroll (same as CourseDetail) */}
       <Header 
         announcementVisible={showAnnouncement}
+        autoHideOnScroll={true}
         showCourseSecondaryHeader={false} // NEVER show normal secondary header
       />
 
