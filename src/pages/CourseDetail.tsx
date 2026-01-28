@@ -307,42 +307,49 @@ const CourseDetail = () => {
       }));
   }, [userCareer, getCareerCourses]);
 
-  // Header readiness: gate header rendering until career-course relationship is resolved
-  // This prevents flicker where NormalHeader shows briefly before CareerScopedHeader
-  // CRITICAL: We must wait for ALL data before making ANY header decision
-  const isHeaderDataReady = useMemo(() => {
-    // ALWAYS wait for user state to load first - we need to know if user is Pro
-    // before we can decide which header path to take
-    if (userStateLoading) return false;
-    
-    // ALWAYS wait for course data
-    if (loading || !course?.id) return false;
-    
-    // For non-Pro users, no career check needed - ready to show normal header
-    if (!isPro) return true;
-    
-    // For Pro users, we must also know:
-    // - Whether the user has a selected career (userSelectedCareer resolved from profile)
-    // - Career mapping data is loaded (useCareers)
-    if (careersLoading) return false;
-    if (userSelectedCareer === undefined) return false;
-    
-    return true;
-  }, [userStateLoading, loading, course?.id, isPro, careersLoading, userSelectedCareer]);
+  /**
+   * HEADER DECISION (NON-NEGOTIABLE):
+   * Never render the normal secondary header OR the career-scoped header
+   * until we know the course↔career relationship.
+   *
+   * We represent this as a tri-state:
+   * - undefined: unresolved (render NOTHING)
+   * - false: resolved, NOT a career course (render normal secondary header)
+   * - true: resolved, IS a career course (render CareerScopedHeader)
+   */
+  const careerHeaderDecision = useMemo<undefined | boolean>(() => {
+    // Must know user state first (Pro vs not) to decide what data is required.
+    if (userStateLoading) return undefined;
 
-  // Determine if this course belongs to user's active career (data-driven, not sessionStorage)
-  // CareerScopedHeader shows ONLY when: Pro user + course is in their selected career
-  const isCourseInActiveCareer = useMemo(() => {
-    // Must wait for header data to be ready to avoid flicker
-    if (!isHeaderDataReady) return false;
-    // Edge cases: render NormalHeader
-    if (!course?.id) return false;
+    // Must know course existence (or failure) before deciding.
+    if (loading) return undefined;
+    if (!course?.id) {
+      // If course failed to load / missing, fall back to normal header.
+      return false;
+    }
+
+    // Non-Pro users never get the career-scoped header.
     if (!isPro) return false;
-    if (!userCareer?.id) return false;
-    
-    // Check if current course is linked to user's selected career
-    return isCourseInCareer(course.id, userCareer.id);
-  }, [isHeaderDataReady, course?.id, isPro, userCareer?.id, isCourseInCareer]);
+
+    // Pro users: must have career mappings + selected career resolved.
+    if (careersLoading) return undefined;
+    if (userSelectedCareer === undefined) return undefined;
+    if (!userSelectedCareer) {
+      // Resolved to "no career".
+      return false;
+    }
+
+    const activeCareer = getCareerBySlug(userSelectedCareer);
+    if (!activeCareer?.id) {
+      // Selected career slug not found (or no longer exists) → treat as no active career.
+      return false;
+    }
+
+    return isCourseInCareer(course.id, activeCareer.id);
+  }, [userStateLoading, loading, course?.id, isPro, careersLoading, userSelectedCareer, getCareerBySlug, isCourseInCareer]);
+
+  const isHeaderDecisionReady = careerHeaderDecision !== undefined;
+  const isCourseInActiveCareer = careerHeaderDecision === true;
 
   // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
   useEffect(() => {
@@ -1532,11 +1539,11 @@ const CourseDetail = () => {
         onVisibilityChange={handleHeaderVisibility}
         // Prevent NormalHeader flash: hide the secondary courses nav until we know
         // whether the career-scoped header should be shown.
-        showCourseSecondaryHeader={isHeaderDataReady && !isCourseInActiveCareer}
+        showCourseSecondaryHeader={isHeaderDecisionReady && !isCourseInActiveCareer}
       />
       
       {/* Career-Scoped Header: Show ONLY when course is in user's active purchased career */}
-      {isCourseInActiveCareer && (
+      {isHeaderDecisionReady && isCourseInActiveCareer && (
         <CareerScopedHeader
           currentCourse={course ? {
             id: course.id,
@@ -1547,7 +1554,6 @@ const CourseDetail = () => {
           careerCourses={careerScopedCourses}
           isHeaderVisible={isHeaderVisible}
           announcementVisible={showAnnouncement}
-          isLoading={userStateLoading || careersLoading || !course || !userCareer}
         />
       )}
 
@@ -1559,7 +1565,7 @@ const CourseDetail = () => {
           - Non-Career + Header Hidden: Secondary Nav (40px) + Announcement (36px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         // During loading - no secondary header visible, only primary header
-        !isHeaderDataReady
+        !isHeaderDecisionReady
           ? isHeaderVisible
             ? (showAnnouncement ? 'pt-[6.25rem]' : 'pt-16') // 100px / 64px (64+36 / 64)
             : (showAnnouncement ? 'pt-9' : 'pt-0') // 36px / 0px
