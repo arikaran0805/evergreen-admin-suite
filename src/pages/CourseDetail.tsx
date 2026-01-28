@@ -1568,18 +1568,26 @@ const CourseDetail = () => {
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
       
-      {/* HEADER RENDERING:
+      {/* HEADER RENDERING (FLICKER-SAFE TRI-STATE):
           - Global Header ALWAYS renders (primary nav)
-          - CareerScopedHeader renders ONLY when course belongs to user's active career */}
+          - Secondary header visibility is GATED until career decision is resolved:
+            * undefined: Decision pending → Header renders NO secondary nav (prevents flash)
+            * true: Not a career course → Header renders normal secondary nav
+            * false: IS a career course → Header hides secondary nav (CareerScopedHeader takes over)
+          
+          NON-NEGOTIABLE: Never show NormalHeader before we KNOW the course-career relationship. */}
       <Header 
         announcementVisible={showAnnouncement} 
         onVisibilityChange={handleHeaderVisibility}
-        // Prevent NormalHeader flash: hide the secondary courses nav until we know
-        // whether the career-scoped header should be shown.
-        showCourseSecondaryHeader={isHeaderDecisionReady && !isCourseInActiveCareer}
+        // Tri-state gating: undefined while loading prevents any secondary header flash
+        showCourseSecondaryHeader={
+          isHeaderDecisionReady 
+            ? !isCourseInActiveCareer  // Resolved: show normal header only if NOT career course
+            : undefined                 // Unresolved: pass undefined to hide ALL secondary headers
+        }
       />
       
-      {/* Career-Scoped Header: Show ONLY when course is in user's active purchased career */}
+      {/* Career-Scoped Header: Renders ONLY when decision is resolved AND course IS in active career */}
       {isHeaderDecisionReady && isCourseInActiveCareer && (
         <CareerScopedHeader
           currentCourse={course ? {
@@ -1595,11 +1603,9 @@ const CourseDetail = () => {
       )}
 
       {/* Main Layout - adjust padding based on header visibility and career flow
-          - Loading (no secondary header): Global Header (64px) + Announcement (36px)
-          - Career Scoped + Header Visible: Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
-          - Career Scoped + Header Hidden: CareerScopedHeader (48px) + Announcement (36px)
-          - Non-Career + Header Visible: Global Header (64px) + Secondary Nav (40px) + Announcement (36px)
-          - Non-Career + Header Hidden: Secondary Nav (40px) + Announcement (36px) */}
+          - Loading (decision pending): Global Header only (64px) + Announcement (36px)
+          - Career course (resolved): Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
+          - Non-career course (resolved): Global Header (64px) + Secondary Nav (40px) + Announcement (36px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
         // During loading - no secondary header visible, only primary header
         !isHeaderDecisionReady
