@@ -33,8 +33,8 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 
-// Career flow is NOT set from Arcade - only from Profile Career Readiness card
-
+// Career courses navigate through /career-board/:careerId/course/:slug routes
+// This ensures CareerScopedHeader is rendered by LAYOUT, not conditional logic
 interface CourseStep {
   id: string;
   slug: string;
@@ -56,6 +56,7 @@ interface CareerProgressChartProps {
   journeySteps: CourseStep[];
   readinessPercent: number;
   careerName: string;
+  careerSlug: string; // Required for career-board navigation
   totalLearningHours?: number;
 }
 
@@ -82,6 +83,7 @@ export const CareerProgressChart = ({
   journeySteps, 
   readinessPercent,
   careerName,
+  careerSlug,
   totalLearningHours = 120 
 }: CareerProgressChartProps) => {
   const navigate = useNavigate();
@@ -341,7 +343,7 @@ export const CareerProgressChart = ({
   }, [pathData.progressPath, pathData.currentX, readinessPercent, animationKey]);
 
   // Handle click on course - with proper locking and navigation logic
-  // ALWAYS sets career flow since we're navigating FROM Career Board/Arcade
+  // Navigate through /career-board/:careerId/course/:slug to ensure CareerScopedHeader renders
   const handleCourseClick = useCallback((course: typeof pathData.courses[0], courseIndex: number) => {
     // Check if locked - show toast and prevent navigation
     if (course.isLocked) {
@@ -353,9 +355,6 @@ export const CareerProgressChart = ({
       return;
     }
 
-    // Note: Career flow is NOT set from Arcade - CareerScopedHeader only shows
-    // when navigating from Profile page's Career Readiness card
-
     // Check if completed - show completion dialog
     if (course.isCompleted) {
       setCompletedCourseInfo({ name: course.name, slug: course.slug });
@@ -363,24 +362,22 @@ export const CareerProgressChart = ({
       return;
     }
 
-    // Enrolled but not completed - navigate to next lesson
+    // Navigate through career-board shell for guaranteed CareerScopedHeader
     if (course.isEnrolled && course.progress > 0) {
-      navigate(`/course/${course.slug}?continue=true`);
+      navigate(`/career-board/${careerSlug}/course/${course.slug}?continue=true`);
       return;
     }
 
-    // Active or not started - navigate to course
-    navigate(`/course/${course.slug}`);
-  }, [navigate]);
+    navigate(`/career-board/${careerSlug}/course/${course.slug}`);
+  }, [navigate, careerSlug]);
 
   // Handle restart course from completion dialog
   const handleRestartCourse = useCallback(() => {
     if (completedCourseInfo) {
-      // Note: Career flow NOT set from Arcade - only Profile Career Readiness card
-      navigate(`/course/${completedCourseInfo.slug}?restart=true`);
+      navigate(`/career-board/${careerSlug}/course/${completedCourseInfo.slug}?restart=true`);
     }
     setShowCompletionDialog(false);
-  }, [completedCourseInfo, navigate]);
+  }, [completedCourseInfo, navigate, careerSlug]);
 
   // Handle mouse movement for tooltip
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

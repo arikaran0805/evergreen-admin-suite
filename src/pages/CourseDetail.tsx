@@ -16,13 +16,12 @@ import { useCourseProgress } from "@/hooks/useCourseProgress";
 import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserState } from "@/hooks/useUserState";
-import { useCareers } from "@/hooks/useCareers";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
 import { useCourseTabRegistration } from "@/hooks/useCourseTabManager";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { CareerScopedHeader } from "@/components/course/CareerScopedHeader";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import SEOHead from "@/components/SEOHead";
 import CourseStructuredData from "@/components/CourseStructuredData";
@@ -231,16 +230,8 @@ const CourseDetail = () => {
   const [defaultTabResolved, setDefaultTabResolved] = useState(false);
   const [shareOpenPostId, setShareOpenPostId] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
-  // undefined = not resolved yet (prevents header flicker), null = resolved but none selected
-  const [userSelectedCareer, setUserSelectedCareer] = useState<string | null | undefined>(undefined);
-
-  // Career data hook for career-scoped navigation
-  const { 
-    getCareerBySlug, 
-    getCareerCourses,
-    isCourseInCareer,
-    loading: careersLoading 
-  } = useCareers();
+  // NOTE: Career-scoped courses now use /career-board/:careerId/course/:slug routes
+  // CourseDetail is ONLY for non-career courses - no career header logic needed
 
   // Course stats hook
   const {
@@ -293,98 +284,19 @@ const CourseDetail = () => {
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
   }, [progress.completedLessons, posts.length]);
 
-  // Career-scoped navigation data for Pro users
-  const userCareer = useMemo(() => {
-    if (!userSelectedCareer) return null;
-    return getCareerBySlug(userSelectedCareer);
-  }, [userSelectedCareer, getCareerBySlug]);
-
-  const careerScopedCourses = useMemo(() => {
-    if (!userCareer) return [];
-    const careerCourseData = getCareerCourses(userCareer.id);
-    return careerCourseData
-      .filter(cc => cc.course)
-      .map(cc => ({
-        id: cc.course!.id,
-        name: cc.course!.name,
-        slug: cc.course!.slug,
-      }));
-  }, [userCareer, getCareerCourses]);
-
   /**
-   * HEADER DECISION (NON-NEGOTIABLE):
-   * Never render the normal secondary header OR the career-scoped header
-   * until we know the course↔career relationship.
-   *
-   * We represent this as a tri-state:
-   * - undefined: unresolved (render NOTHING)
-   * - false: resolved, NOT a career course (render normal secondary header)
-   * - true: resolved, IS a career course (render CareerScopedHeader)
+   * AD VISIBILITY LOGIC:
+   * CourseDetail is ONLY used for non-career courses (career courses use /career-board shell).
+   * Ads are shown for guests and free learners. Pro users see ads on non-career courses.
    */
-  const careerHeaderDecision = useMemo<undefined | boolean>(() => {
-    // Must know user state first (Pro vs not) to decide what data is required.
-    if (userStateLoading) return undefined;
-
-    // Must know course existence (or failure) before deciding.
-    if (loading) return undefined;
-    if (!course?.id) {
-      // If course failed to load / missing, fall back to normal header.
-      return false;
-    }
-
-    // Non-Pro users never get the career-scoped header.
-    if (!isPro) return false;
-
-    // Pro users: must have career mappings + selected career resolved.
-    if (careersLoading) return undefined;
-    if (userSelectedCareer === undefined) return undefined;
-    if (!userSelectedCareer) {
-      // Resolved to "no career".
-      return false;
-    }
-
-    const activeCareer = getCareerBySlug(userSelectedCareer);
-    if (!activeCareer?.id) {
-      // Selected career slug not found (or no longer exists) → treat as no active career.
-      return false;
-    }
-
-    // isCourseInCareer now returns undefined while loading, true/false when resolved
-    const courseInCareerResult = isCourseInCareer(course.id, activeCareer.id);
-    // If still loading career course mappings, keep decision undefined
-    if (courseInCareerResult === undefined) return undefined;
-    return courseInCareerResult;
-  }, [userStateLoading, loading, course?.id, isPro, careersLoading, userSelectedCareer, getCareerBySlug, isCourseInCareer]);
-
-  const isHeaderDecisionReady = careerHeaderDecision !== undefined;
-  const isCourseInActiveCareer = careerHeaderDecision === true;
-
-  /**
-   * AD VISIBILITY LOGIC (PRO-AWARE):
-   * - Pro learner + Paid career course → NO ads
-   * - Pro learner + Non-career course → Show ads with clarity text
-   * - Non-Pro learner → Show ads everywhere
-   * 
-   * This decision is gated until header decision is ready to prevent ad flicker.
-   */
-  const shouldShowAdsForProUser = useMemo(() => {
-    // Only applies to Pro users
-    if (!isPro) return false;
-    // Wait for decision to be ready before making ad visibility call
-    if (!isHeaderDecisionReady) return false;
-    // Pro user on non-career course → show ads
-    return !isCourseInActiveCareer;
-  }, [isPro, isHeaderDecisionReady, isCourseInActiveCareer]);
-
-  // Combined ad visibility: show for guests/learners OR for Pro users on non-career courses
   const shouldShowAdsInCourse = useMemo(() => {
-    // Wait for header decision to prevent flicker
-    if (!isHeaderDecisionReady) return false;
-    // Guests and learners always see ads
+    // Wait for user state to load
+    if (userStateLoading) return false;
+    // Guests and free learners always see ads
     if (shouldShowAds) return true;
-    // Pro users see ads only on non-career courses
-    return shouldShowAdsForProUser;
-  }, [isHeaderDecisionReady, shouldShowAds, shouldShowAdsForProUser]);
+    // Pro users on non-career courses (this page) see ads
+    return isPro;
+  }, [userStateLoading, shouldShowAds, isPro]);
 
   // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
   useEffect(() => {
@@ -590,40 +502,8 @@ const CourseDetail = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch user's selected career for career-scoped header
-  useEffect(() => {
-    const fetchUserCareer = async () => {
-      // NON-NEGOTIABLE: do not resolve header decision until auth is actually known.
-      // On initial mount `user` is null (unknown), so we must wait for `authReady`.
-      if (!authReady) return;
-      if (!user?.id) {
-        // Auth is known and there's no user → resolve to “no career”.
-        setUserSelectedCareer(null);
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("selected_career")
-          .eq("id", user.id)
-          .maybeSingle();
-        
-        if (error) {
-          setUserSelectedCareer(null);
-          return;
-        }
-
-        // Always resolve the state (null if none) so header gating can complete.
-        setUserSelectedCareer(data?.selected_career ?? null);
-      } catch (err) {
-        console.error("Error fetching user career:", err);
-        setUserSelectedCareer(null);
-      }
-    };
-    
-    fetchUserCareer();
-  }, [authReady, user?.id]);
+  // NOTE: Career course navigation now uses /career-board/:careerId/course/:slug routes.
+  // CourseDetail no longer fetches user career - it's ONLY for non-career courses.
 
   useEffect(() => {
     if (roleLoading || !slug) return;
@@ -1572,57 +1452,23 @@ const CourseDetail = () => {
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
       
-      {/* HEADER RENDERING (FLICKER-SAFE):
-          - Global Header ALWAYS renders (primary nav)
-          - Secondary header is HARD-BLOCKED until career decision resolves:
-            * Loading (isHeaderDecisionReady=false) → pass FALSE to hide secondary header
-            * Resolved + career course → pass FALSE (CareerScopedHeader renders instead)
-            * Resolved + non-career course → pass TRUE (show normal secondary header)
-          
-          NON-NEGOTIABLE: NEVER render NormalHeader before we KNOW the course-career relationship.
-          The key is passing FALSE during loading, NOT undefined (undefined falls back to default=show). */}
+      {/* HEADER RENDERING:
+          CourseDetail is ONLY for non-career courses.
+          Career courses use /career-board/:careerId/course/:slug routes.
+          Always show the normal secondary header here. */}
       <Header 
         announcementVisible={showAnnouncement} 
         onVisibilityChange={handleHeaderVisibility}
-        // CRITICAL: Pass FALSE while loading to HIDE secondary header (prevents flash)
-        // Only pass TRUE when resolved AND it's NOT a career course
-        showCourseSecondaryHeader={isHeaderDecisionReady && !isCourseInActiveCareer}
+        showCourseSecondaryHeader={true}
       />
-      
-      {/* Career-Scoped Header: Renders ONLY when decision is resolved AND course IS in active career */}
-      {isHeaderDecisionReady && isCourseInActiveCareer && (
-        <CareerScopedHeader
-          currentCourse={course ? {
-            id: course.id,
-            name: course.name,
-            slug: course.slug,
-          } : undefined}
-          career={userCareer}
-          careerCourses={careerScopedCourses}
-          isHeaderVisible={isHeaderVisible}
-          announcementVisible={showAnnouncement}
-        />
-      )}
 
-      {/* Main Layout - adjust padding based on header visibility and career flow
-          - Loading (decision pending): Global Header only (64px) + Announcement (36px)
-          - Career course (resolved): Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
-          - Non-career course (resolved): Global Header (64px) + Secondary Nav (40px) + Announcement (36px) */}
+      {/* Main Layout - standard padding for non-career course */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
-        // During loading - no secondary header visible, only primary header
-        !isHeaderDecisionReady
-          ? isHeaderVisible
-            ? (showAnnouncement ? 'pt-[6.25rem]' : 'pt-16') // 100px / 64px (64+36 / 64)
-            : (showAnnouncement ? 'pt-9' : 'pt-0') // 36px / 0px
-          : isCourseInActiveCareer
-            ? isHeaderVisible
-              ? (showAnnouncement ? 'pt-[9.25rem]' : 'pt-28') // 148px / 112px (64+48+36 / 64+48)
-              : (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // 84px / 48px (48+36 / 48)
-            : isPreviewMode && canPreview 
-              ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') 
-              : isHeaderVisible
-                ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
-                : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (40+36 / 40)
+        isPreviewMode && canPreview 
+          ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') 
+          : isHeaderVisible
+            ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
+            : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (40+36 / 40)
       }`}>
         <div className="flex flex-col lg:flex-row gap-0 justify-center">
           
@@ -2439,39 +2285,23 @@ const CourseDetail = () => {
           {selectedPost ? (
             /* Lesson view sidebars */
             isPro ? (
-              /* PRO: Learning Cockpit OR Ads (if non-career course) */
-              isCourseInActiveCareer ? (
-                /* PRO on CAREER COURSE: Learning Cockpit - full features, no ads */
-                <LearningCockpit
-                  lessonId={selectedPost.id}
-                  lessonTitle={selectedPost.title}
-                  courseId={course?.id}
-                  courseSlug={slug}
-                  userId={user?.id || ""}
-                  isLessonCompleted={isLessonCompleted(selectedPost.id)}
-                  isHeaderVisible={isHeaderVisible}
-                  showAnnouncement={showAnnouncement}
-                  courseProgress={courseProgress}
-                  certificateEligible={courseProgress.isCompleted}
-                  onOpenNotes={() => openNotesTab()}
-                />
-              ) : shouldShowAdsInCourse ? (
-                /* PRO on NON-CAREER COURSE: Show ads with clarity text + nudge */
-                <aside className="hidden xl:block w-[300px] flex-shrink-0">
-                  <div className={cn(
-                    "sticky transition-[top] duration-200 ease-out",
-                    isHeaderVisible
-                      ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
-                      : (showAnnouncement ? 'top-[4.75rem]' : 'top-10')
-                  )}>
-                    <div className="space-y-4 p-1 pb-6">
-                      {/* Non-career course nudge for Pro users */}
-                      <NonCareerCourseNudge
-                        activeCareerName={userCareer?.name}
-                        onSwitchToCareer={userCareer ? () => navigate(`/profile?tab=learnings`) : undefined}
-                      />
-                      
-                      {/* Ad slots with clarity text */}
+              /* PRO on NON-CAREER COURSE: Show ads with clarity text + nudge
+                 (Career courses use /career-board shell with Learning Cockpit) */
+              <aside className="hidden xl:block w-[300px] flex-shrink-0">
+                <div className={cn(
+                  "sticky transition-[top] duration-200 ease-out",
+                  isHeaderVisible
+                    ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
+                    : (showAnnouncement ? 'top-[4.75rem]' : 'top-10')
+                )}>
+                  <div className="space-y-4 p-1 pb-6">
+                    {/* Non-career course nudge for Pro users */}
+                    <NonCareerCourseNudge
+                      onSwitchToCareer={() => navigate(`/arcade`)}
+                    />
+                    
+                    {/* Ad slots with clarity text */}
+                    {shouldShowAdsInCourse && (
                       <CourseSidebarAds
                         adSettings={adSettings ? {
                           googleAdClient: adSettings.googleAdClient,
@@ -2483,25 +2313,10 @@ const CourseDetail = () => {
                         showAnnouncement={showAnnouncement}
                         showClarityText={true}
                       />
-                    </div>
+                    )}
                   </div>
-                </aside>
-              ) : (
-                /* PRO waiting for decision OR on career course - show Learning Cockpit */
-                <LearningCockpit
-                  lessonId={selectedPost.id}
-                  lessonTitle={selectedPost.title}
-                  courseId={course?.id}
-                  courseSlug={slug}
-                  userId={user?.id || ""}
-                  isLessonCompleted={isLessonCompleted(selectedPost.id)}
-                  isHeaderVisible={isHeaderVisible}
-                  showAnnouncement={showAnnouncement}
-                  courseProgress={courseProgress}
-                  certificateEligible={courseProgress.isCompleted}
-                  onOpenNotes={() => openNotesTab()}
-                />
-              )
+                </div>
+              </aside>
             ) : isLearner && courseStats.isEnrolled ? (
               /* LEARNER (enrolled): Show ads + Pro teaser */
               <aside className="hidden xl:block w-[300px] flex-shrink-0">
@@ -2574,10 +2389,9 @@ const CourseDetail = () => {
                     />
                     
                     {/* Non-career course nudge for Pro users on overview */}
-                    {isPro && shouldShowAdsForProUser && (
+                    {isPro && (
                       <NonCareerCourseNudge
-                        activeCareerName={userCareer?.name}
-                        onSwitchToCareer={userCareer ? () => navigate(`/profile?tab=learnings`) : undefined}
+                        onSwitchToCareer={() => navigate(`/arcade`)}
                       />
                     )}
                     
@@ -2592,7 +2406,7 @@ const CourseDetail = () => {
                         } : null}
                         isHeaderVisible={isHeaderVisible}
                         showAnnouncement={showAnnouncement}
-                        showClarityText={shouldShowAdsForProUser}
+                        showClarityText={isPro}
                       />
                     )}
                     

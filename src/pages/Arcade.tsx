@@ -261,6 +261,7 @@ const Arcade = () => {
             journeySteps={journeySteps.filter(Boolean) as any}
             readinessPercent={readinessPercent}
             careerName={career?.name || "Career"}
+            careerSlug={career?.slug || selectedCareer}
             totalLearningHours={120}
           />
         ) : (
