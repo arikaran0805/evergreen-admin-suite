@@ -980,7 +980,7 @@ const Profile = () => {
                       >
                         <Zap className="h-3.5 w-3.5" />
                         <span className="font-semibold text-sm">
-                          {readinessPercentage >= 80 ? 'Job Ready' : readinessPercentage >= 50 ? 'Intermediate' : 'Beginner'}
+                          {readinessPercentage >= 100 ? 'Career Ready' : readinessPercentage > 75 ? 'Interview Ready' : readinessPercentage > 50 ? 'Skill Builder' : 'Foundation Builder'}
                         </span>
                       </Badge>
                     </TooltipTrigger>
