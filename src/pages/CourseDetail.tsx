@@ -306,9 +306,24 @@ const CourseDetail = () => {
       }));
   }, [userCareer, getCareerCourses]);
 
+  // Header readiness: gate header rendering until career-course relationship is resolved
+  // This prevents flicker where NormalHeader shows briefly before CareerScopedHeader
+  const isHeaderDataReady = useMemo(() => {
+    // For non-Pro users, header is always ready (no career check needed)
+    if (!isPro) return true;
+    // For Pro users, wait until course data AND career data are loaded
+    if (loading || careersLoading || userStateLoading) return false;
+    if (!course?.id) return false;
+    // Career selection is optional - if no career selected, ready to show NormalHeader
+    // If career is selected, we need it to be resolved
+    return true;
+  }, [isPro, loading, careersLoading, userStateLoading, course?.id]);
+
   // Determine if this course belongs to user's active career (data-driven, not sessionStorage)
   // CareerScopedHeader shows ONLY when: Pro user + course is in their selected career
   const isCourseInActiveCareer = useMemo(() => {
+    // Must wait for header data to be ready to avoid flicker
+    if (!isHeaderDataReady) return false;
     // Edge cases: render NormalHeader
     if (!course?.id) return false;
     if (!isPro) return false;
@@ -316,7 +331,7 @@ const CourseDetail = () => {
     
     // Check if current course is linked to user's selected career
     return isCourseInCareer(course.id, userCareer.id);
-  }, [course?.id, isPro, userCareer?.id, isCourseInCareer]);
+  }, [isHeaderDataReady, course?.id, isPro, userCareer?.id, isCourseInCareer]);
 
   // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
   useEffect(() => {
