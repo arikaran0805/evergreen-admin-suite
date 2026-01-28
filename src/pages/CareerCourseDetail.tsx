@@ -2039,7 +2039,7 @@ const CareerCourseDetail = () => {
         ) : (
           /* Course overview - show metadata sidebar */
           activeTab !== "notes" && (
-            <aside className="hidden xl:block w-[300px] flex-shrink-0 mr-4">
+            <aside className="hidden xl:block w-[300px] flex-shrink-0">
               <div className={cn(
                 "sticky transition-[top] duration-200 ease-out",
                 // Same offset calculation as lesson view sidebar
