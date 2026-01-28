@@ -1273,7 +1273,7 @@ const CareerCourseDetail = () => {
       )}
 
       {/* Main Layout */}
-      <div className="flex flex-col lg:flex-row gap-0 justify-center">
+      <div className="w-full flex flex-col lg:flex-row gap-0 justify-center">
         
         {/* LEFT SIDEBAR - Progress & Navigation */}
         <CourseSidebar
@@ -2022,14 +2022,17 @@ const CareerCourseDetail = () => {
 
         {/* RIGHT SIDEBAR - Learning Cockpit (Pro feature, always shown in Career Board) */}
         {selectedPost ? (
-          <aside className="hidden xl:block w-[280px] flex-shrink-0">
+          <aside className="hidden xl:block w-[300px] flex-shrink-0">
             <div className={cn(
               "sticky transition-[top] duration-200 ease-out",
+              // Career Board shell: Primary Header (64px) + CareerScopedHeader (48px) = 112px = 7rem
+              // When header visible: 7rem (+ 2.25rem announcement = 9.25rem)
+              // When header hidden: CareerScopedHeader stays at 3rem (48px) (+ 2.25rem announcement = 5.25rem)
               isHeaderVisible
                 ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
                 : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
             )}>
-              <div className="h-[calc(100vh-7rem)] overflow-hidden p-4">
+              <div className="space-y-4 p-1 pb-6">
                 <LearningCockpit
                   lessonId={selectedPost?.id}
                   lessonTitle={selectedPost?.title || ""}
@@ -2052,6 +2055,7 @@ const CareerCourseDetail = () => {
             <aside className="hidden xl:block w-[300px] flex-shrink-0">
               <div className={cn(
                 "sticky transition-[top] duration-200 ease-out",
+                // Same offset calculation as lesson view sidebar
                 isHeaderVisible
                   ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')
                   : (showAnnouncement ? 'top-[5.25rem]' : 'top-12')
