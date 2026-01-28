@@ -113,7 +113,7 @@ export const CareerBoardLayout = () => {
           showAnnouncement ? "pt-[9.25rem]" : "pt-28"
         )}
       >
-        <Outlet context={{ setCurrentCourseSlug }} />
+        <Outlet context={{ setCurrentCourseSlug, isHeaderVisible, showAnnouncement }} />
       </main>
 
       {/* Back to top button */}
