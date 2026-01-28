@@ -1197,7 +1197,7 @@ const Profile = () => {
                       })()}
 
                       {/* Bottom CTA with contextual subtext */}
-                      <div className="flex flex-col items-center mt-5 group/cta">
+                      <div className="flex flex-col items-center mt-5 group/cta gap-2">
                         <Button 
                           className="gap-2 rounded-full px-5"
                           onClick={async () => {
@@ -1217,7 +1217,9 @@ const Profile = () => {
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                         {/* Contextual subtext - visible on hover, space always reserved */}
-                        <p className={`text-[11px] text-muted-foreground mt-2 h-4 transition-opacity duration-150 ${readinessPercentage < 100 && skills.length >= 2 ? 'opacity-0 group-hover/cta:opacity-100' : 'opacity-0'}`}>
+                        <p
+                          className={`text-[11px] leading-4 whitespace-nowrap text-muted-foreground min-h-4 transition-opacity duration-150 ${readinessPercentage < 100 && skills.length >= 2 ? 'opacity-0 group-hover/cta:opacity-100' : 'opacity-0'}`}
+                        >
                           {readinessPercentage < 100 && skills.length >= 2 
                             ? `Complete ${skills.slice(0, 2).map(s => s.skill_name).join(' & ')} courses`
                             : '\u00A0'
