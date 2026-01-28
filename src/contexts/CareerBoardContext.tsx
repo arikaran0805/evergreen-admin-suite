@@ -14,6 +14,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserState } from "@/hooks/useUserState";
 import { useCareers } from "@/hooks/useCareers";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Career {
   id: string;
@@ -70,12 +71,23 @@ interface CareerBoardProviderProps {
 export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   const { careerId } = useParams<{ careerId: string }>();
   const navigate = useNavigate();
+  const { isLoading: authLoading } = useAuth();
   const { isPro, isLoading: userStateLoading } = useUserState();
   const { getCareerBySlug, getCareerCourses, loading: careersLoading } = useCareers();
   
   const [currentCourseSlug, setCurrentCourseSlug] = useState<string | null>(null);
   const [career, setCareer] = useState<Career | null>(null);
   const [isReady, setIsReady] = useState(false);
+  
+  // Track if auth has been checked at least once (like CourseDetail's authReady)
+  // This prevents premature redirects during page refresh
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  useEffect(() => {
+    if (!authLoading) {
+      setAuthChecked(true);
+    }
+  }, [authLoading]);
 
   // Resolve career from careerId param (which is the slug)
   useEffect(() => {
@@ -98,18 +110,20 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   }, [careerId, careersLoading, getCareerBySlug]);
 
   // Redirect non-Pro users away from Career Board
-  // IMPORTANT: We must wait for BOTH auth AND subscription to fully resolve
-  // to prevent false redirects on page refresh
+  // CRITICAL: Wait for BOTH authChecked AND userStateLoading to complete
+  // This matches CourseDetail's pattern of waiting for authReady
   useEffect(() => {
-    // Still loading - wait
+    // Wait for auth to be checked first (prevents redirect during session restore)
+    if (!authChecked) return;
+    
+    // Then wait for user state (subscription check) to complete
     if (userStateLoading) return;
     
-    // If user is authenticated but not Pro, redirect
-    // Note: Guests (not authenticated) will also redirect, which is correct
+    // Only redirect if confirmed not Pro
     if (!isPro) {
       navigate("/courses", { replace: true });
     }
-  }, [isPro, userStateLoading, navigate]);
+  }, [authChecked, isPro, userStateLoading, navigate]);
 
   // Get courses for this career
   const careerCourses = useMemo((): CareerCourse[] => {
@@ -125,7 +139,7 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
       }));
   }, [career?.id, getCareerCourses]);
 
-  const isLoading = userStateLoading || careersLoading || !isReady;
+  const isLoading = !authChecked || userStateLoading || careersLoading || !isReady;
 
   const value: CareerBoardContextValue = {
     career,
