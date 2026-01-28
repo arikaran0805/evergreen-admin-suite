@@ -60,10 +60,17 @@ const Header = ({
   // Hide secondary course header for Pro users on Profile/Dashboard page
   const isProfilePage = location.pathname === "/profile";
   const showCourseSecondaryHeaderDefault = !(isPro && isProfilePage);
+  
+  // CRITICAL TRI-STATE GATING:
+  // - undefined override: Use default (normal pages)
+  // - false override: ALWAYS hide (loading OR career course) - do NOT apply default logic
+  // - true override: Show if default also allows
   const showCourseSecondaryHeader =
     showCourseSecondaryHeaderOverride === undefined
       ? showCourseSecondaryHeaderDefault
-      : showCourseSecondaryHeaderOverride && showCourseSecondaryHeaderDefault;
+      : showCourseSecondaryHeaderOverride === false
+        ? false // Hard block - never show when explicitly false
+        : showCourseSecondaryHeaderDefault; // true + default check
 
   // Auto-detect course/lesson pages if not explicitly set
   const isCourseDetailPage = location.pathname.startsWith("/course/");
