@@ -1,4 +1,5 @@
 import { SidebarAdTop, SidebarAdMiddle, SidebarAdBottom } from "@/components/ads";
+import { AdClarityText } from "@/components/course/nudges";
 import { cn } from "@/lib/utils";
 
 interface CourseSidebarAdsProps {
@@ -11,17 +12,22 @@ interface CourseSidebarAdsProps {
   isHeaderVisible: boolean;
   showAnnouncement: boolean;
   className?: string;
+  /**
+   * Pro user viewing a non-career course - show clarity text near ads
+   */
+  showClarityText?: boolean;
 }
 
 /**
- * Ad slots for course sidebar - shown to guests and free learners
- * Pro users never see this component
+ * Ad slots for course sidebar - shown to guests, free learners,
+ * and Pro users viewing non-career courses.
  */
 export const CourseSidebarAds = ({
   adSettings,
   isHeaderVisible,
   showAnnouncement,
   className = "",
+  showClarityText = false,
 }: CourseSidebarAdsProps) => {
   // Calculate sticky position
   const stickyTopClass = isHeaderVisible
@@ -49,6 +55,11 @@ export const CourseSidebarAds = ({
             googleAdSlot={adSettings?.sidebarBottomSlot}
             googleAdClient={adSettings?.googleAdClient}
           />
+
+          {/* Clarity text for Pro users on non-career courses */}
+          {showClarityText && (
+            <AdClarityText className="mt-2" />
+          )}
         </div>
       </div>
     </aside>
