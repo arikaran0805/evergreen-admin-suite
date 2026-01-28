@@ -161,6 +161,22 @@ export const useCareers = () => {
     return null;
   };
 
+  // Check if a course belongs to a specific career
+  const isCourseInCareer = (courseId: string, careerId: string): boolean => {
+    const courses = careerCourses[careerId] || [];
+    return courses.some(cc => cc.course_id === courseId);
+  };
+
+  // Check if a course belongs to any career (returns the career ID if found)
+  const getCareerForCourse = (courseId: string): string | null => {
+    for (const [careerId, courses] of Object.entries(careerCourses)) {
+      if (courses.some(cc => cc.course_id === courseId)) {
+        return careerId;
+      }
+    }
+    return null;
+  };
+
   return {
     careers,
     careerSkills,
@@ -174,6 +190,8 @@ export const useCareers = () => {
     getSkillContributionsForCourse,
     getCareerCourses,
     getCourseForSkill,
+    isCourseInCareer,
+    getCareerForCourse,
     refetch: fetchCareers,
   };
 };

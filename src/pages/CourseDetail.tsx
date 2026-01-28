@@ -187,7 +187,7 @@ const CourseDetail = () => {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [canPreview, setCanPreview] = useState(false);
   const { isAdmin, isModerator, isLoading: roleLoading } = useUserRole();
-  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, isCareerFlow, markAsInternal, isLoading: userStateLoading } = useUserState();
+  const { userState, entrySource, isGuest, isLearner, isPro, shouldShowAds, shouldShowProFeatures, markAsInternal, isLoading: userStateLoading } = useUserState();
   const { openPricingDrawer } = usePricingDrawer();
   const isMobile = useIsMobile();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -232,7 +232,8 @@ const CourseDetail = () => {
   // Career data hook for career-scoped navigation
   const { 
     getCareerBySlug, 
-    getCareerCourses, 
+    getCareerCourses,
+    isCourseInCareer,
     loading: careersLoading 
   } = useCareers();
 
@@ -304,6 +305,18 @@ const CourseDetail = () => {
         slug: cc.course!.slug,
       }));
   }, [userCareer, getCareerCourses]);
+
+  // Determine if this course belongs to user's active career (data-driven, not sessionStorage)
+  // CareerScopedHeader shows ONLY when: Pro user + course is in their selected career
+  const isCourseInActiveCareer = useMemo(() => {
+    // Edge cases: render NormalHeader
+    if (!course?.id) return false;
+    if (!isPro) return false;
+    if (!userCareer?.id) return false;
+    
+    // Check if current course is linked to user's selected career
+    return isCourseInCareer(course.id, userCareer.id);
+  }, [course?.id, isPro, userCareer?.id, isCourseInCareer]);
 
   // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
   useEffect(() => {
@@ -1409,19 +1422,9 @@ const CourseDetail = () => {
         <div className="fixed top-0 left-0 right-0 z-[60]">
           <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
         </div>
-        {/* LOADING STATE: Global Header always shows, CareerScopedHeader shows additionally in career flow */}
+        {/* LOADING STATE: Only Global Header shows (can't determine career scope without course data) */}
         <Header announcementVisible={showAnnouncement} />
-        {isCareerFlow && (
-          <CareerScopedHeader
-            currentCourse={undefined}
-            career={null}
-            careerCourses={[]}
-            announcementVisible={showAnnouncement}
-            isHeaderVisible={true}
-            isLoading={true}
-          />
-        )}
-        <div className={`container mx-auto px-4 text-center ${isCareerFlow ? 'pt-32' : (showAnnouncement ? 'pt-32' : 'pt-24')}`}>
+        <div className={`container mx-auto px-4 text-center ${showAnnouncement ? 'pt-32' : 'pt-24'}`}>
           <div className="flex flex-col items-center gap-4">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-muted-foreground">Loading course...</p>
@@ -1492,14 +1495,14 @@ const CourseDetail = () => {
       
       {/* HEADER RENDERING:
           - Global Header ALWAYS renders (primary nav)
-          - CareerScopedHeader renders ADDITIONALLY as secondary header when in career flow */}
+          - CareerScopedHeader renders ONLY when course belongs to user's active career */}
       <Header 
         announcementVisible={showAnnouncement} 
         onVisibilityChange={handleHeaderVisibility}
       />
       
-      {/* Career Flow: Show CareerScopedHeader as SECONDARY header below Global Header */}
-      {isCareerFlow && isPro && (
+      {/* Career-Scoped Header: Show ONLY when course is in user's active purchased career */}
+      {isCourseInActiveCareer && (
         <CareerScopedHeader
           currentCourse={course ? {
             id: course.id,
@@ -1515,12 +1518,12 @@ const CourseDetail = () => {
       )}
 
       {/* Main Layout - adjust padding based on header visibility and career flow
-          - Career Flow + Header Visible: Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
-          - Career Flow + Header Hidden: CareerScopedHeader (48px) + Announcement (36px)
+          - Career Scoped + Header Visible: Global Header (64px) + CareerScopedHeader (48px) + Announcement (36px)
+          - Career Scoped + Header Hidden: CareerScopedHeader (48px) + Announcement (36px)
           - Non-Career + Header Visible: Global Header (64px) + Secondary Nav (40px) + Announcement (36px)
           - Non-Career + Header Hidden: Secondary Nav (40px) + Announcement (36px) */}
       <div className={`w-full transition-[padding-top] duration-200 ease-out ${
-        isCareerFlow && isPro
+        isCourseInActiveCareer
           ? isHeaderVisible
             ? (showAnnouncement ? 'pt-[9.25rem]' : 'pt-28') // 148px / 112px (64+48+36 / 64+48)
             : (showAnnouncement ? 'pt-[5.25rem]' : 'pt-12') // 84px / 48px (48+36 / 48)
