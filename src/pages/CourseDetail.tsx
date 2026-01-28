@@ -1568,23 +1568,21 @@ const CourseDetail = () => {
         <AnnouncementBar onVisibilityChange={handleAnnouncementVisibility} />
       </div>
       
-      {/* HEADER RENDERING (FLICKER-SAFE TRI-STATE):
+      {/* HEADER RENDERING (FLICKER-SAFE):
           - Global Header ALWAYS renders (primary nav)
-          - Secondary header visibility is GATED until career decision is resolved:
-            * undefined: Decision pending → Header renders NO secondary nav (prevents flash)
-            * true: Not a career course → Header renders normal secondary nav
-            * false: IS a career course → Header hides secondary nav (CareerScopedHeader takes over)
+          - Secondary header is HARD-BLOCKED until career decision resolves:
+            * Loading (isHeaderDecisionReady=false) → pass FALSE to hide secondary header
+            * Resolved + career course → pass FALSE (CareerScopedHeader renders instead)
+            * Resolved + non-career course → pass TRUE (show normal secondary header)
           
-          NON-NEGOTIABLE: Never show NormalHeader before we KNOW the course-career relationship. */}
+          NON-NEGOTIABLE: NEVER render NormalHeader before we KNOW the course-career relationship.
+          The key is passing FALSE during loading, NOT undefined (undefined falls back to default=show). */}
       <Header 
         announcementVisible={showAnnouncement} 
         onVisibilityChange={handleHeaderVisibility}
-        // Tri-state gating: undefined while loading prevents any secondary header flash
-        showCourseSecondaryHeader={
-          isHeaderDecisionReady 
-            ? !isCourseInActiveCareer  // Resolved: show normal header only if NOT career course
-            : undefined                 // Unresolved: pass undefined to hide ALL secondary headers
-        }
+        // CRITICAL: Pass FALSE while loading to HIDE secondary header (prevents flash)
+        // Only pass TRUE when resolved AND it's NOT a career course
+        showCourseSecondaryHeader={isHeaderDecisionReady && !isCourseInActiveCareer}
       />
       
       {/* Career-Scoped Header: Renders ONLY when decision is resolved AND course IS in active career */}
