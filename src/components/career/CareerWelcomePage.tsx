@@ -4,7 +4,6 @@
  * One-time onboarding experience shown the first time a learner enters a specific career.
  * Sets expectations, builds confidence, and orients the learner to their career journey.
  */
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
@@ -27,11 +26,8 @@ interface CareerWelcomePageProps {
 }
 
 export const CareerWelcomePage = ({ career, skills, onStart }: CareerWelcomePageProps) => {
-  const navigate = useNavigate();
-
   const handleStartJourney = () => {
     onStart();
-    navigate("/arcade");
   };
 
   // Journey steps
