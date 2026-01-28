@@ -96,13 +96,13 @@ export const CareerScopedHeader = ({
         <div className="flex items-center justify-end h-12">
           {/* Career-Scoped Course Navigation - Only show tabs, no course name (matches CourseDetail secondary header) */}
           <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            {careerCourses.length > 0 ? (
+            {careerCourses.length > 0 && career ? (
               careerCourses.map((course) => {
                 const isActive = course.slug === currentCourse.slug;
                 return (
                   <Link
                     key={course.id}
-                    to={`/career-board/${career?.slug}/course/${course.slug}`}
+                    to={`/career-board/${career.slug}/course/${course.slug}`}
                     className={cn(
                       "relative px-4 py-1.5 text-xs font-medium whitespace-nowrap rounded-full transition-all duration-200 flex-shrink-0",
                       isActive
