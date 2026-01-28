@@ -43,6 +43,7 @@ import {
   CertificateTeaser, 
   CompletionNudge,
   LockedSidebarSection,
+  NonCareerCourseNudge,
 } from "@/components/course/nudges";
 import { usePricingDrawer } from "@/contexts/PricingDrawerContext";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -353,6 +354,33 @@ const CourseDetail = () => {
 
   const isHeaderDecisionReady = careerHeaderDecision !== undefined;
   const isCourseInActiveCareer = careerHeaderDecision === true;
+
+  /**
+   * AD VISIBILITY LOGIC (PRO-AWARE):
+   * - Pro learner + Paid career course → NO ads
+   * - Pro learner + Non-career course → Show ads with clarity text
+   * - Non-Pro learner → Show ads everywhere
+   * 
+   * This decision is gated until header decision is ready to prevent ad flicker.
+   */
+  const shouldShowAdsForProUser = useMemo(() => {
+    // Only applies to Pro users
+    if (!isPro) return false;
+    // Wait for decision to be ready before making ad visibility call
+    if (!isHeaderDecisionReady) return false;
+    // Pro user on non-career course → show ads
+    return !isCourseInActiveCareer;
+  }, [isPro, isHeaderDecisionReady, isCourseInActiveCareer]);
+
+  // Combined ad visibility: show for guests/learners OR for Pro users on non-career courses
+  const shouldShowAdsInCourse = useMemo(() => {
+    // Wait for header decision to prevent flicker
+    if (!isHeaderDecisionReady) return false;
+    // Guests and learners always see ads
+    if (shouldShowAds) return true;
+    // Pro users see ads only on non-career courses
+    return shouldShowAdsForProUser;
+  }, [isHeaderDecisionReady, shouldShowAds, shouldShowAdsForProUser]);
 
   // GUEST REDIRECT: If guest arrives from external source, redirect to first lesson
   useEffect(() => {
@@ -2403,20 +2431,69 @@ const CourseDetail = () => {
           {selectedPost ? (
             /* Lesson view sidebars */
             isPro ? (
-              /* PRO: Learning Cockpit - full features, no ads */
-              <LearningCockpit
-                lessonId={selectedPost.id}
-                lessonTitle={selectedPost.title}
-                courseId={course?.id}
-                courseSlug={slug}
-                userId={user?.id || ""}
-                isLessonCompleted={isLessonCompleted(selectedPost.id)}
-                isHeaderVisible={isHeaderVisible}
-                showAnnouncement={showAnnouncement}
-                courseProgress={courseProgress}
-                certificateEligible={courseProgress.isCompleted}
-                onOpenNotes={() => openNotesTab()}
-              />
+              /* PRO: Learning Cockpit OR Ads (if non-career course) */
+              isCourseInActiveCareer ? (
+                /* PRO on CAREER COURSE: Learning Cockpit - full features, no ads */
+                <LearningCockpit
+                  lessonId={selectedPost.id}
+                  lessonTitle={selectedPost.title}
+                  courseId={course?.id}
+                  courseSlug={slug}
+                  userId={user?.id || ""}
+                  isLessonCompleted={isLessonCompleted(selectedPost.id)}
+                  isHeaderVisible={isHeaderVisible}
+                  showAnnouncement={showAnnouncement}
+                  courseProgress={courseProgress}
+                  certificateEligible={courseProgress.isCompleted}
+                  onOpenNotes={() => openNotesTab()}
+                />
+              ) : shouldShowAdsInCourse ? (
+                /* PRO on NON-CAREER COURSE: Show ads with clarity text + nudge */
+                <aside className="hidden xl:block w-[300px] flex-shrink-0">
+                  <div className={cn(
+                    "sticky transition-[top] duration-200 ease-out",
+                    isHeaderVisible
+                      ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
+                      : (showAnnouncement ? 'top-[4.75rem]' : 'top-10')
+                  )}>
+                    <div className="space-y-4 p-1 pb-6">
+                      {/* Non-career course nudge for Pro users */}
+                      <NonCareerCourseNudge
+                        activeCareerName={userCareer?.name}
+                        onSwitchToCareer={userCareer ? () => navigate(`/profile?tab=learnings`) : undefined}
+                      />
+                      
+                      {/* Ad slots with clarity text */}
+                      <CourseSidebarAds
+                        adSettings={adSettings ? {
+                          googleAdClient: adSettings.googleAdClient,
+                          sidebarTopSlot: adSettings.sidebarTopSlot,
+                          sidebarMiddleSlot: adSettings.sidebarMiddleSlot,
+                          sidebarBottomSlot: adSettings.sidebarBottomSlot,
+                        } : null}
+                        isHeaderVisible={isHeaderVisible}
+                        showAnnouncement={showAnnouncement}
+                        showClarityText={true}
+                      />
+                    </div>
+                  </div>
+                </aside>
+              ) : (
+                /* PRO waiting for decision OR on career course - show Learning Cockpit */
+                <LearningCockpit
+                  lessonId={selectedPost.id}
+                  lessonTitle={selectedPost.title}
+                  courseId={course?.id}
+                  courseSlug={slug}
+                  userId={user?.id || ""}
+                  isLessonCompleted={isLessonCompleted(selectedPost.id)}
+                  isHeaderVisible={isHeaderVisible}
+                  showAnnouncement={showAnnouncement}
+                  courseProgress={courseProgress}
+                  certificateEligible={courseProgress.isCompleted}
+                  onOpenNotes={() => openNotesTab()}
+                />
+              )
             ) : isLearner && courseStats.isEnrolled ? (
               /* LEARNER (enrolled): Show ads + Pro teaser */
               <aside className="hidden xl:block w-[300px] flex-shrink-0">
@@ -2488,8 +2565,16 @@ const CourseDetail = () => {
                       maintenanceTeam={maintenanceTeam}
                     />
                     
-                    {/* Ads for non-Pro users */}
-                    {shouldShowAds && (
+                    {/* Non-career course nudge for Pro users on overview */}
+                    {isPro && shouldShowAdsForProUser && (
+                      <NonCareerCourseNudge
+                        activeCareerName={userCareer?.name}
+                        onSwitchToCareer={userCareer ? () => navigate(`/profile?tab=learnings`) : undefined}
+                      />
+                    )}
+                    
+                    {/* Ads: Show for guests/learners OR Pro users on non-career courses */}
+                    {shouldShowAdsInCourse && (
                       <CourseSidebarAds
                         adSettings={adSettings ? {
                           googleAdClient: adSettings.googleAdClient,
@@ -2499,6 +2584,7 @@ const CourseDetail = () => {
                         } : null}
                         isHeaderVisible={isHeaderVisible}
                         showAnnouncement={showAnnouncement}
+                        showClarityText={shouldShowAdsForProUser}
                       />
                     )}
                     
