@@ -29,9 +29,12 @@ export const useScrollDirection = ({
   enabled = true,
   showOnlyAtTop = false,
 }: UseScrollDirectionOptions = {}): UseScrollDirectionResult => {
+  // IMPORTANT: initialize from current scroll position to avoid a 1-frame
+  // "header visible" flash on refresh/navigation when the browser restores scroll.
+  const initialScrollY = typeof window !== "undefined" ? window.scrollY : 0;
   const [direction, setDirection] = useState<ScrollDirection>(null);
-  const [isAtTop, setIsAtTop] = useState(true);
-  const lastScrollY = useRef(0);
+  const [isAtTop, setIsAtTop] = useState(() => initialScrollY < 10);
+  const lastScrollY = useRef(initialScrollY);
   const ticking = useRef(false);
 
   const updateScrollDirection = useCallback(() => {
@@ -69,7 +72,8 @@ export const useScrollDirection = ({
       return;
     }
 
-    // Initialize
+    // Initialize/refresh in case scroll was programmatically changed before mount
+    // (keeps state consistent, but initial render already matches scroll position).
     lastScrollY.current = window.scrollY;
     setIsAtTop(window.scrollY < 10);
 
