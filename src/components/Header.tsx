@@ -32,9 +32,19 @@ interface HeaderProps {
   autoHideOnScroll?: boolean;
   /** Callback when header visibility changes (for coordinating layout) */
   onVisibilityChange?: (isVisible: boolean) => void;
+  /**
+   * Override visibility of the secondary courses navigation header (desktop only).
+   * If omitted, Header uses its default rules (e.g., Pro Profile hides it).
+   */
+  showCourseSecondaryHeader?: boolean;
 }
 
-const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityChange }: HeaderProps) => {
+const Header = ({
+  announcementVisible = false,
+  autoHideOnScroll,
+  onVisibilityChange,
+  showCourseSecondaryHeader: showCourseSecondaryHeaderOverride,
+}: HeaderProps) => {
   const location = useLocation();
   const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
@@ -49,7 +59,11 @@ const Header = ({ announcementVisible = false, autoHideOnScroll, onVisibilityCha
 
   // Hide secondary course header for Pro users on Profile/Dashboard page
   const isProfilePage = location.pathname === "/profile";
-  const showCourseSecondaryHeader = !(isPro && isProfilePage);
+  const showCourseSecondaryHeaderDefault = !(isPro && isProfilePage);
+  const showCourseSecondaryHeader =
+    showCourseSecondaryHeaderOverride === undefined
+      ? showCourseSecondaryHeaderDefault
+      : showCourseSecondaryHeaderOverride && showCourseSecondaryHeaderDefault;
 
   // Auto-detect course/lesson pages if not explicitly set
   const isCourseDetailPage = location.pathname.startsWith("/course/");
