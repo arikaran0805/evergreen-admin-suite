@@ -37,6 +37,8 @@ interface LearningCockpitProps {
   };
   certificateEligible: boolean;
   onOpenNotes?: () => void;
+  /** If true, uses Career Board header offsets (Primary + CareerScopedHeader) */
+  isCareerBoard?: boolean;
 }
 
 // Lesson Flow sections
@@ -93,11 +95,18 @@ export const LearningCockpit = ({
   courseProgress,
   certificateEligible,
   onOpenNotes,
+  isCareerBoard = false,
 }: LearningCockpitProps) => {
-  // Calculate scroll offset
-  const scrollOffset = isHeaderVisible
-    ? (showAnnouncement ? 140 : 104)
-    : (showAnnouncement ? 76 : 40);
+  // Calculate scroll offset based on context
+  // Career Board: Primary (64px) + CareerScopedHeader (48px) = 112px base
+  // Standard: Primary (64px) + Secondary (40px) = 104px base
+  const scrollOffset = isCareerBoard
+    ? (isHeaderVisible
+        ? (showAnnouncement ? 148 : 112)  // Career Board header visible
+        : (showAnnouncement ? 84 : 48))   // Career Board header hidden
+    : (isHeaderVisible
+        ? (showAnnouncement ? 140 : 104)  // Standard header visible
+        : (showAnnouncement ? 76 : 40));  // Standard header hidden
 
   // Lesson Flow navigation
   const { 
@@ -126,13 +135,17 @@ export const LearningCockpit = ({
     return `Saved ${Math.floor(diff / 3600)}h ago`;
   }, [lastSaved]);
 
-  // Sticky position classes
-  const stickyTopClass = isHeaderVisible
-    ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')
-    : (showAnnouncement ? 'top-[4.75rem]' : 'top-10');
+  // Sticky position classes - Career Board uses different header heights
+  const stickyTopClass = isCareerBoard
+    ? (isHeaderVisible
+        ? (showAnnouncement ? 'top-[9.25rem]' : 'top-28')   // Career Board: 148px / 112px
+        : (showAnnouncement ? 'top-[5.25rem]' : 'top-12'))  // Career Board: 84px / 48px
+    : (isHeaderVisible
+        ? (showAnnouncement ? 'top-[8.75rem]' : 'top-[6.5rem]')  // Standard: 140px / 104px
+        : (showAnnouncement ? 'top-[4.75rem]' : 'top-10'));      // Standard: 76px / 40px
 
   return (
-    <aside className="hidden xl:block w-[300px] flex-shrink-0">
+    <aside className={cn("hidden xl:block w-[300px] flex-shrink-0", isCareerBoard && "mr-4")}>
       <div className={cn("sticky transition-[top] duration-200 ease-out", stickyTopClass)}>
         <div className="space-y-4 p-1 pb-6">
 
