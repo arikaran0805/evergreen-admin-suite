@@ -9,12 +9,20 @@
  * 
  * This is a premium, distraction-free shell for career-mapped learning.
  * Children inherit career context and are header-agnostic.
+ * 
+ * WELCOME SCREEN:
+ * - Shows one-time Career Welcome Screen on first entry
+ * - Owned by this layout, NOT by child pages
+ * - Persisted per user per career in database
  */
 import { useState, useCallback } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useNavigate } from "react-router-dom";
 import { useCareerBoard } from "@/contexts/CareerBoardContext";
 import { useUserState } from "@/hooks/useUserState";
+import { useCareerWelcome } from "@/hooks/useCareerWelcome";
+import { useCareers } from "@/hooks/useCareers";
 import { CareerScopedHeader } from "@/components/course/CareerScopedHeader";
+import { CareerWelcomePage } from "@/components/career/CareerWelcomePage";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
 import BackToTop from "@/components/BackToTop";
@@ -45,8 +53,13 @@ const CareerBoardSkeleton = () => (
 );
 
 export const CareerBoardLayout = () => {
+  const navigate = useNavigate();
   const { career, careerCourses, isLoading, isReady, currentCourseSlug, setCurrentCourseSlug } = useCareerBoard();
   const { isPro, isLoading: userStateLoading } = useUserState();
+  const { getCareerSkills } = useCareers();
+  
+  // Welcome screen state - check if user has seen welcome for this career
+  const { hasSeenWelcome, loading: welcomeLoading, markWelcomeSeen } = useCareerWelcome(career?.id);
   
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   
@@ -61,8 +74,25 @@ export const CareerBoardLayout = () => {
     setShowAnnouncement(visible);
   }, []);
 
+  /**
+   * Handle Welcome Screen CTA click
+   * - Mark welcome as seen (persists to DB)
+   * - Navigate to first course in career
+   */
+  const handleWelcomeStart = useCallback(async () => {
+    await markWelcomeSeen();
+    
+    // Navigate to first course if available
+    if (careerCourses.length > 0 && career) {
+      navigate(`/career-board/${career.slug}/course/${careerCourses[0].slug}`);
+    } else {
+      // Fallback to arcade if no courses
+      navigate("/arcade");
+    }
+  }, [markWelcomeSeen, careerCourses, career, navigate]);
+
   // While loading, show skeleton to prevent any flicker
-  if (isLoading || userStateLoading) {
+  if (isLoading || userStateLoading || welcomeLoading) {
     return <CareerBoardSkeleton />;
   }
 
@@ -74,6 +104,26 @@ export const CareerBoardLayout = () => {
   // Career not found
   if (isReady && !career) {
     return <Navigate to="/arcade" replace />;
+  }
+
+  // Get skills for welcome page
+  const careerSkills = career ? getCareerSkills(career.id) : [];
+
+  /**
+   * WELCOME SCREEN GATE
+   * Show welcome screen if:
+   * - User is Pro (already verified above)
+   * - User has NOT seen welcome for this career
+   * - Career data is loaded
+   */
+  if (hasSeenWelcome === false && career) {
+    return (
+      <CareerWelcomePage 
+        career={career as any}
+        skills={careerSkills}
+        onStart={handleWelcomeStart}
+      />
+    );
   }
 
   // Build current course object for header highlighting
