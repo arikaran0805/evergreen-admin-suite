@@ -31,7 +31,7 @@ export const CareerRoadmapChart = ({
   careerName 
 }: CareerRoadmapChartProps) => {
   const navigate = useNavigate();
-  const { navigateToCourseWithCareerFlow } = useCourseNavigation();
+  const { navigateToCourse } = useCourseNavigation();
 
   // Calculate positions - Y goes DOWN (courses), X goes RIGHT (career readiness)
   const chartData = useMemo(() => {
@@ -337,7 +337,7 @@ export const CareerRoadmapChart = ({
             >
               {/* Node */}
               <div
-                onClick={() => navigateToCourseWithCareerFlow(course.slug, course.id)}
+                onClick={() => navigateToCourse(course.slug, course.id)}
                 className="relative flex items-center cursor-pointer transition-all hover:scale-110"
               >
                 {/* Circle indicator */}

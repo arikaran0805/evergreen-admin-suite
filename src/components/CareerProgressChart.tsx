@@ -33,8 +33,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 
-// Session storage key for career flow (must match useUserState)
-const ENTRY_FLOW_KEY = "lovable_entry_flow";
+// Career flow is NOT set from Arcade - only from Profile Career Readiness card
 
 interface CourseStep {
   id: string;
@@ -354,8 +353,8 @@ export const CareerProgressChart = ({
       return;
     }
 
-    // Set career flow BEFORE navigation - this shows CareerScopedHeader
-    sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+    // Note: Career flow is NOT set from Arcade - CareerScopedHeader only shows
+    // when navigating from Profile page's Career Readiness card
 
     // Check if completed - show completion dialog
     if (course.isCompleted) {
@@ -377,8 +376,7 @@ export const CareerProgressChart = ({
   // Handle restart course from completion dialog
   const handleRestartCourse = useCallback(() => {
     if (completedCourseInfo) {
-      // Set career flow for restart as well
-      sessionStorage.setItem(ENTRY_FLOW_KEY, "career_flow");
+      // Note: Career flow NOT set from Arcade - only Profile Career Readiness card
       navigate(`/course/${completedCourseInfo.slug}?restart=true`);
     }
     setShowCompletionDialog(false);
