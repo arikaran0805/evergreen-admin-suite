@@ -193,6 +193,9 @@ const CourseDetail = () => {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  // Distinguish “auth not yet checked” vs “no user”.
+  // This prevents us from resolving career state to null too early (causes header flicker).
+  const [authReady, setAuthReady] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentContent, setCommentContent] = useState("");
@@ -544,10 +547,12 @@ const CourseDetail = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      setAuthReady(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      setAuthReady(true);
     });
 
     return () => subscription.unsubscribe();
@@ -556,7 +561,11 @@ const CourseDetail = () => {
   // Fetch user's selected career for career-scoped header
   useEffect(() => {
     const fetchUserCareer = async () => {
+      // NON-NEGOTIABLE: do not resolve header decision until auth is actually known.
+      // On initial mount `user` is null (unknown), so we must wait for `authReady`.
+      if (!authReady) return;
       if (!user?.id) {
+        // Auth is known and there's no user → resolve to “no career”.
         setUserSelectedCareer(null);
         return;
       }
@@ -582,7 +591,7 @@ const CourseDetail = () => {
     };
     
     fetchUserCareer();
-  }, [user?.id]);
+  }, [authReady, user?.id]);
 
   useEffect(() => {
     if (roleLoading || !slug) return;
