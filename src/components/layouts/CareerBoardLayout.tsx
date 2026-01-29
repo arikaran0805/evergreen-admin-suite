@@ -60,6 +60,10 @@ export const CareerBoardLayout = () => {
   
   // Welcome screen state - check if user has seen welcome for this career
   const { hasSeenWelcome, loading: welcomeLoading, markWelcomeSeen } = useCareerWelcome(career?.id);
+
+  // If we have a career but welcome state is still unknown, treat as loading.
+  // This prevents a refresh flicker where the layout renders child content and then swaps to the welcome screen.
+  const isWelcomePending = !!career?.id && hasSeenWelcome === null;
   
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   
@@ -78,7 +82,7 @@ export const CareerBoardLayout = () => {
   }, []);
 
   // Calculate if we're currently in a loading state
-  const isCurrentlyLoading = isLoading || userStateLoading || welcomeLoading;
+  const isCurrentlyLoading = isLoading || userStateLoading || welcomeLoading || isWelcomePending;
  
   // Once all loading completes for the first time, mark layout as loaded
   // (useEffect to avoid setState during render, which can cause flicker on refresh)

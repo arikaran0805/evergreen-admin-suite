@@ -57,12 +57,18 @@ interface OutletContextType {
 }
 
 const CareerCourseCompleted = () => {
-  const { courseSlug } = useParams<{ courseSlug: string }>();
+  const params = useParams<{ careerId: string; courseSlug: string }>();
+  const careerIdParam = decodeURIComponent((params.careerId ?? "").split("?")[0]).trim();
+  const courseSlug = decodeURIComponent((params.courseSlug ?? "").split("?")[0]).trim();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const { career, careerCourses, setCurrentCourseSlug } = useCareerBoard();
   const outletContext = useOutletContext<OutletContextType>();
+
+  // Always prefer the route param for building Career Board URLs.
+  // (career can be transiently null during refresh initialization; the param is always present.)
+  const careerSlugForPath = careerIdParam || career?.slug;
 
   const [course, setCourse] = useState<CourseData | null>(null);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
@@ -150,8 +156,8 @@ const CareerCourseCompleted = () => {
             description: "Complete all lessons to view this page.",
             variant: "destructive",
           });
-          if (career) {
-            navigate(`/career-board/${career.slug}/course/${courseSlug}`);
+          if (careerSlugForPath) {
+            navigate(`/career-board/${careerSlugForPath}/course/${courseSlug}`);
           } else {
             navigate(`/course/${courseSlug}`);
           }
@@ -274,7 +280,10 @@ const CareerCourseCompleted = () => {
     if (authLoading) return;
     
     if (!user) {
-      navigate("/login", { state: { from: `/career-board/${career?.slug}/course/${courseSlug}/completed` } });
+      const from = careerIdParam && courseSlug
+        ? `/career-board/${careerIdParam}/course/${courseSlug}/completed`
+        : `/course/${courseSlug}/completed`;
+      navigate("/login", { state: { from } });
       return;
     }
     
@@ -392,16 +401,16 @@ const CareerCourseCompleted = () => {
 
   // Build back link within career board
   const backLink = career && courseSlug 
-    ? `/career-board/${career.slug}/course/${courseSlug}`
+    ? `/career-board/${careerSlugForPath || career.slug}/course/${courseSlug}`
     : course 
       ? `/course/${course.slug}`
       : "/arcade";
 
   // Build next course link within career board
   const nextCourseLink = useMemo(() => {
-    if (!nextCourse || !career) return null;
-    return `/career-board/${career.slug}/course/${nextCourse.slug}`;
-  }, [nextCourse, career]);
+    if (!nextCourse || !careerSlugForPath) return null;
+    return `/career-board/${careerSlugForPath}/course/${nextCourse.slug}`;
+  }, [nextCourse, careerSlugForPath]);
 
   if (loading || authLoading) {
     return (
