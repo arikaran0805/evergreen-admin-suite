@@ -104,7 +104,10 @@ const CareerCourseCompleted = () => {
   // Fetch course and completion data
   useEffect(() => {
     const fetchData = async () => {
-      if (!courseSlug || !user) return;
+      if (!courseSlug) {
+        setLoading(false);
+        return;
+      }
 
       try {
         // Fetch course info by slug
@@ -126,10 +129,10 @@ const CareerCourseCompleted = () => {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
-          .eq("id", user.id)
+          .eq("id", user!.id)
           .maybeSingle();
 
-        setLearnerName(profile?.full_name || user.email?.split('@')[0] || "Learner");
+        setLearnerName(profile?.full_name || user!.email?.split('@')[0] || "Learner");
 
         // Check if course is actually completed
         const { count: totalLessons } = await supabase
@@ -142,7 +145,7 @@ const CareerCourseCompleted = () => {
         const { count: completedLessons } = await supabase
           .from("lesson_progress")
           .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
+          .eq("user_id", user!.id)
           .eq("course_id", courseData.id)
           .eq("completed", true);
 
@@ -166,7 +169,7 @@ const CareerCourseCompleted = () => {
         const { data: timeData } = await supabase
           .from("lesson_time_tracking")
           .select("duration_seconds")
-          .eq("user_id", user.id)
+          .eq("user_id", user!.id)
           .eq("course_id", courseData.id);
 
         const totalSeconds = timeData?.reduce((sum, t) => sum + t.duration_seconds, 0) || 0;
@@ -176,7 +179,7 @@ const CareerCourseCompleted = () => {
         const { data: progressData } = await supabase
           .from("lesson_progress")
           .select("viewed_at")
-          .eq("user_id", user.id)
+          .eq("user_id", user!.id)
           .eq("course_id", courseData.id)
           .eq("completed", true)
           .order("viewed_at", { ascending: false })
@@ -239,7 +242,7 @@ const CareerCourseCompleted = () => {
 
         if (reviewsData) {
           setReviews(reviewsData as unknown as Review[]);
-          const userRev = reviewsData.find(r => r.user_id === user.id);
+          const userRev = reviewsData.find(r => r.user_id === user!.id);
           setUserReview(userRev as unknown as Review || null);
           
           if (reviewsData.length > 0) {
@@ -275,6 +278,7 @@ const CareerCourseCompleted = () => {
       }
     };
 
+    // Only fetch when auth and career context are ready AND user is logged in
     if (!authLoading && !careerLoading) {
       if (!user) {
         navigate("/auth", { state: { from: `/career-board/${careerSlugForPath}/course/${courseSlug}/completed` } });
