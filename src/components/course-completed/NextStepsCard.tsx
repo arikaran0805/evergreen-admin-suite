@@ -16,6 +16,8 @@ interface RecommendedCourse {
   slug: string;
   icon?: string;
   description?: string;
+  /** Override link path (for career board context) */
+  linkOverride?: string;
 }
 
 interface NextStepsCardProps {
@@ -33,7 +35,7 @@ const NextStepsCard = ({ recommendedCourse }: NextStepsCardProps) => {
       <div className="space-y-4">
         {/* Primary CTA - Next Course */}
         {recommendedCourse ? (
-          <Link to={`/course/${recommendedCourse.slug}`}>
+          <Link to={recommendedCourse.linkOverride || `/course/${recommendedCourse.slug}`}>
             <div className="group p-4 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
