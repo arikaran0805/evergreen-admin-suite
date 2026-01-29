@@ -162,7 +162,7 @@ export function CourseMetadataSidebar({
   return (
     <aside className="hidden xl:block w-[280px] flex-shrink-0">
       <div className={cn("sticky transition-[top] duration-200 ease-out", stickyTopClass)}>
-        <div className="space-y-4 p-1 pb-6">
+        <div className="space-y-4 pl-3 pr-1 pb-6">
           {/* Course Info Card */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-2 pt-4 px-4">
