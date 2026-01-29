@@ -83,6 +83,9 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   // This prevents premature redirects during page refresh
   const [authChecked, setAuthChecked] = useState(false);
   
+  // Track if we've successfully loaded once - prevents re-showing skeleton on tab focus
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  
   useEffect(() => {
     if (!authLoading) {
       setAuthChecked(true);
@@ -139,7 +142,18 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
       }));
   }, [career?.id, getCareerCourses]);
 
-  const isLoading = !authChecked || userStateLoading || careersLoading || !isReady;
+  // Calculate loading state - but once loaded, stay loaded
+  const isCurrentlyLoading = !authChecked || userStateLoading || careersLoading || !isReady;
+  
+  // Mark as loaded once all initial loading is complete
+  useEffect(() => {
+    if (!isCurrentlyLoading && !hasLoadedOnce) {
+      setHasLoadedOnce(true);
+    }
+  }, [isCurrentlyLoading, hasLoadedOnce]);
+  
+  // Only show loading if we haven't loaded successfully before
+  const isLoading = hasLoadedOnce ? false : isCurrentlyLoading;
 
   const value: CareerBoardContextValue = {
     career,
