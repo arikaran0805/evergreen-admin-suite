@@ -94,9 +94,17 @@ export const CareerScopedHeader = ({
     >
       <div className="container mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between h-12">
-          {/* Left: Search/Filter Label */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-medium">Find lessons...</span>
+          {/* Left: Course Name + Career Path Label */}
+          <div className="flex flex-col justify-center">
+            <h2 className="text-sm font-semibold text-foreground leading-tight">
+              {currentCourse?.name}
+            </h2>
+            {career && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="inline-block w-3 h-3">◎</span>
+                {career.name} Path
+              </span>
+            )}
           </div>
           
           {/* Right: Career-Scoped Course Navigation */}
