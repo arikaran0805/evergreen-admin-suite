@@ -93,8 +93,10 @@ const CareerCourseCompleted = () => {
   // Fetch course and completion data
   useEffect(() => {
     const fetchData = async () => {
-      if (!courseSlug || !user) {
-        setLoading(false);
+      // Wait for career context to be ready before fetching
+      if (!courseSlug || !user || !career) {
+        // Only stop loading if context is ready but career is missing (error case)
+        // If career is loading, keep showing loading state
         return;
       }
 
@@ -268,13 +270,22 @@ const CareerCourseCompleted = () => {
       }
     };
 
-    if (!authLoading) {
-      if (!user) {
-        navigate("/login", { state: { from: `/career-board/${career?.slug}/course/${courseSlug}/completed` } });
-      } else {
-        fetchData();
-      }
+    // Wait for auth and career context to be ready
+    if (authLoading) return;
+    
+    if (!user) {
+      navigate("/login", { state: { from: `/career-board/${career?.slug}/course/${courseSlug}/completed` } });
+      return;
     }
+    
+    // Also wait for career context - useCareerBoard provides isLoading flag via parent
+    // But career being null while isReady means context is loaded but no career found
+    if (!career) {
+      // Context is still loading, wait
+      return;
+    }
+    
+    fetchData();
   }, [courseSlug, user, authLoading, navigate, toast, career, careerCourses]);
 
   // Handle review submission
