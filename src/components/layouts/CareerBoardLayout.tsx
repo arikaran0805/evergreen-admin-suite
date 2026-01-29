@@ -63,6 +63,9 @@ export const CareerBoardLayout = () => {
   
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   
+  // Track if we've completed initial load - prevents skeleton on tab refocus
+  const [hasLayoutLoaded, setHasLayoutLoaded] = useState(false);
+  
   // Track header visibility for sticky positioning
   const { isHeaderVisible } = useScrollDirection({
     threshold: 10,
@@ -73,6 +76,18 @@ export const CareerBoardLayout = () => {
   const handleAnnouncementVisibility = useCallback((visible: boolean) => {
     setShowAnnouncement(visible);
   }, []);
+
+  // Calculate if we're currently in a loading state
+  const isCurrentlyLoading = isLoading || userStateLoading || welcomeLoading;
+  
+  // Once all loading completes for the first time, mark layout as loaded
+  // This prevents re-showing skeleton when user switches browser tabs
+  if (!isCurrentlyLoading && !hasLayoutLoaded) {
+    setHasLayoutLoaded(true);
+  }
+  
+  // Only show skeleton if we haven't successfully loaded before
+  const shouldShowSkeleton = hasLayoutLoaded ? false : isCurrentlyLoading;
 
   /**
    * Handle Welcome Screen CTA click
@@ -91,8 +106,8 @@ export const CareerBoardLayout = () => {
     }
   }, [markWelcomeSeen, careerCourses, career, navigate]);
 
-  // While loading, show skeleton to prevent any flicker
-  if (isLoading || userStateLoading || welcomeLoading) {
+  // While loading (and haven't loaded before), show skeleton to prevent any flicker
+  if (shouldShowSkeleton) {
     return <CareerBoardSkeleton />;
   }
 
