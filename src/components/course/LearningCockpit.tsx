@@ -41,20 +41,10 @@ interface LearningCockpitProps {
   isCareerBoard?: boolean;
 }
 
-// Lesson Flow sections
+// Lesson Flow sections - uses data-flow attribute
 const LESSON_FLOW_SECTIONS = [
-  { 
-    id: "chat-bubbles", 
-    label: "Chat Bubbles", 
-    icon: MessageSquareCode, 
-    selector: "#lesson-chat-bubbles, [data-section='chat-bubbles']" 
-  },
-  { 
-    id: "cause-effect", 
-    label: "Cause & Effect", 
-    icon: ArrowRightCircle, 
-    selector: "#lesson-cause-effect, [data-section='cause-effect']" 
-  },
+  { id: "chat", label: "Chat Bubbles", icon: MessageSquareCode },
+  { id: "cause", label: "Cause & Effect", icon: ArrowRightCircle },
 ];
 
 // Practice items for Pro users
@@ -114,7 +104,7 @@ export const LearningCockpit = ({
     sections: lessonFlowSections, 
     scrollToSection 
   } = useLessonFlowNavigation(
-    LESSON_FLOW_SECTIONS.map(s => ({ id: s.id, label: s.label, selector: s.selector })),
+    LESSON_FLOW_SECTIONS.map(s => ({ id: s.id, label: s.label })),
     { scrollOffset }
   );
 
@@ -173,22 +163,37 @@ export const LearningCockpit = ({
                       disabled={isDisabled}
                       aria-current={isActive ? "location" : undefined}
                       className={cn(
-                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left relative",
-                        isDisabled
-                          ? "opacity-40 cursor-not-allowed text-muted-foreground"
-                          : isActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                        isActive && !isDisabled && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
+                        // Base styles with smooth transitions
+                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left relative overflow-hidden",
+                        "transition-all duration-200 ease-out",
+                        // Left border indicator container
+                        "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:rounded-full",
+                        "before:transition-all before:duration-200 before:ease-out",
+                        // Disabled state
+                        isDisabled && "opacity-40 cursor-not-allowed text-muted-foreground",
+                        // Active state - soft highlight with left border
+                        !isDisabled && isActive && [
+                          "bg-primary/8 text-primary font-medium",
+                          "before:h-5 before:bg-primary before:opacity-100",
+                        ],
+                        // Inactive state - subtle and calm
+                        !isDisabled && !isActive && [
+                          "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                          "before:h-0 before:bg-primary before:opacity-0",
+                        ]
                       )}
                     >
-                      <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                      <Icon className={cn(
+                        "h-4 w-4 flex-shrink-0 transition-colors duration-200",
+                        isActive && !isDisabled && "text-primary"
+                      )} />
                       <span className="flex-1 truncate">
-                        {isActive && !isDisabled && (
-                          <span className="text-muted-foreground font-normal">You're in: </span>
-                        )}
                         {section.label}
                       </span>
+                      {/* Active indicator dot */}
+                      {isActive && !isDisabled && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      )}
                     </button>
                   );
                 })}
