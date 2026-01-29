@@ -1985,7 +1985,7 @@ const CareerCourseDetail = () => {
                                 
                                 {/* Review CTA */}
                                 {!courseStats.userReview && courseProgress.isCompleted && (
-                                  <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
+                                  <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border text-center">
                                     <p className="text-sm text-muted-foreground mb-3">
                                       💬 Your feedback helps improve this course for others
                                     </p>
