@@ -534,7 +534,7 @@ const ChatConversationView = ({
       {/* Chat conversation - Chat Bubbles Section */}
       <div
         id="lesson-chat-bubbles"
-        data-section="chat-bubbles"
+        data-flow="chat"
         className={cn(
           "chat-conversation-view rounded-2xl overflow-hidden",
           "bg-gradient-to-b from-background via-background to-muted/30",
@@ -724,7 +724,7 @@ const ChatConversationView = ({
       {explanation && (
         <div 
           id="lesson-cause-effect" 
-          data-section="cause-effect"
+          data-flow="cause"
           className="prose prose-sm dark:prose-invert max-w-none p-6 rounded-xl bg-muted/30 border border-border/50"
         >
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
