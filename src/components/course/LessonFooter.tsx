@@ -35,6 +35,10 @@ interface LessonFooterProps {
   isCourseComplete: boolean;
   courseId: string;
   
+  // Career Board context - if provided, navigates within career shell
+  careerSlug?: string;
+  courseSlug?: string;
+  
   // Tags
   tags: Array<{ id: string; name: string; slug: string }>;
   
@@ -70,6 +74,8 @@ const LessonFooter = ({
   courseProgressPercentage,
   isCourseComplete,
   courseId,
+  careerSlug,
+  courseSlug,
   tags,
   onCommentClick,
   onSuggestChangesClick,
@@ -303,7 +309,14 @@ const LessonFooter = ({
               "gap-2 flex-1 max-w-xs",
               "bg-primary hover:bg-primary/90 text-primary-foreground"
             )}
-            onClick={() => navigate(`/course/${courseId}/completed`)}
+            onClick={() => {
+              // Navigate to career-specific completed page if in career shell
+              if (careerSlug && courseSlug) {
+                navigate(`/career-board/${careerSlug}/course/${courseSlug}/completed`);
+              } else {
+                navigate(`/course/${courseId}/completed`);
+              }
+            }}
           >
             <div className="text-right min-w-0">
               <div className="text-xs opacity-80">Continue →</div>

@@ -1449,6 +1449,8 @@ const CareerCourseDetail = () => {
                     courseProgressPercentage={courseProgress.percentage}
                     isCourseComplete={courseProgress.isCompleted}
                     courseId={course?.id || ""}
+                    careerSlug={careerSlugForPath}
+                    courseSlug={course?.slug}
                     tags={allTags}
                     onCommentClick={() => setCommentDialogOpen(true)}
                     onSuggestChangesClick={() => setSuggestDialogOpen(true)}
