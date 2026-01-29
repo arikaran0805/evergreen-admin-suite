@@ -175,9 +175,20 @@ export const CourseSidebar = ({
 
   const noResults = searchQuery && filteredLessons.length === 0;
 
+  // Calculate matching height offset for sidebar content
+  const heightOffset = isPreviewMode && canPreview
+    ? (showAnnouncement ? '10.5rem' : '8.5rem')
+    : isCareerBoard
+      ? isHeaderVisible
+        ? (showAnnouncement ? '9.25rem' : '7rem')
+        : (showAnnouncement ? '5.25rem' : '3rem')
+      : isHeaderVisible
+        ? (showAnnouncement ? '8.75rem' : '6.5rem')
+        : (showAnnouncement ? '4.75rem' : '2.5rem');
+
   return (
     <aside className="lg:w-[280px] bg-sidebar border-r border-sidebar-border flex-shrink-0">
-      <div className={cn("sticky transition-[top] duration-200 ease-out h-[calc(100vh-6.5rem)]", stickyTopClass)}>
+      <div className={cn("sticky transition-[top] duration-200 ease-out", stickyTopClass)} style={{ height: `calc(100vh - ${heightOffset})` }}>
         
         {/* === SECTION 1: COURSE PROGRESS HEADER === */}
         <div className="px-4 pt-4 pb-1">
