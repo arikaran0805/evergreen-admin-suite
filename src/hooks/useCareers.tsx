@@ -69,6 +69,7 @@ export const useCareers = () => {
   }, [authLoading, hasFetchedOnce]);
 
   const fetchCareers = async () => {
+    setLoading(true);
     try {
       const [careersRes, skillsRes, coursesRes, allCoursesRes] = await Promise.all([
         supabase.from("careers").select("*").order("display_order"),
@@ -76,6 +77,9 @@ export const useCareers = () => {
         supabase.from("career_courses").select("*, course:course_id(id, name, slug)"),
         supabase.from("courses").select("id, name, slug, description, featured_image"),
       ]);
+
+      const firstError = careersRes.error || skillsRes.error || coursesRes.error || allCoursesRes.error;
+      if (firstError) throw firstError;
 
       if (careersRes.data) {
         setCareers(careersRes.data);
