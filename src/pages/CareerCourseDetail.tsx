@@ -1935,7 +1935,7 @@ const CareerCourseDetail = () => {
                               <div className="flex flex-col gap-3">
                                 {/* Primary CTA - View Full Certificate */}
                                 <Button 
-                                  onClick={() => navigate(`/course/${course.id}/completed`)}
+                                  onClick={() => navigate(`/career-board/${career?.slug}/course/${course.slug}/completed`)}
                                   className="w-full sm:w-auto"
                                   size="lg"
                                   disabled={!courseProgress.isCompleted}
