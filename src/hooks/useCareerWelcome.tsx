@@ -18,11 +18,23 @@ export const useCareerWelcome = (careerId: string | undefined): UseCareerWelcome
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkWelcomeSeen = async () => {
       if (!user?.id || !careerId) {
-        setLoading(false);
-        setHasSeenWelcome(null);
+        if (!cancelled) {
+          setLoading(false);
+          setHasSeenWelcome(null);
+        }
         return;
+      }
+
+      // Important: when careerId becomes available after initial mount (common on refresh
+      // while career context is resolving), we must re-enter a loading state to prevent
+      // the layout from rendering content and then swapping to the welcome screen.
+      if (!cancelled) {
+        setLoading(true);
+        setHasSeenWelcome(null);
       }
 
       try {
@@ -35,19 +47,31 @@ export const useCareerWelcome = (careerId: string | undefined): UseCareerWelcome
 
         if (error) {
           console.error("Error checking career welcome view:", error);
-          setHasSeenWelcome(true); // Default to seen on error to avoid blocking
+          if (!cancelled) {
+            setHasSeenWelcome(true); // Default to seen on error to avoid blocking
+          }
         } else {
-          setHasSeenWelcome(!!data);
+          if (!cancelled) {
+            setHasSeenWelcome(!!data);
+          }
         }
       } catch (err) {
         console.error("Error checking career welcome view:", err);
-        setHasSeenWelcome(true);
+        if (!cancelled) {
+          setHasSeenWelcome(true);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     checkWelcomeSeen();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, careerId]);
 
   const markWelcomeSeen = useCallback(async () => {
