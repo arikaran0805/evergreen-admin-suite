@@ -15,7 +15,7 @@
  * - Owned by this layout, NOT by child pages
  * - Persisted per user per career in database
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Outlet, Navigate, useNavigate } from "react-router-dom";
 import { useCareerBoard } from "@/contexts/CareerBoardContext";
 import { useUserState } from "@/hooks/useUserState";
@@ -79,12 +79,14 @@ export const CareerBoardLayout = () => {
 
   // Calculate if we're currently in a loading state
   const isCurrentlyLoading = isLoading || userStateLoading || welcomeLoading;
-  
+ 
   // Once all loading completes for the first time, mark layout as loaded
-  // This prevents re-showing skeleton when user switches browser tabs
-  if (!isCurrentlyLoading && !hasLayoutLoaded) {
-    setHasLayoutLoaded(true);
-  }
+  // (useEffect to avoid setState during render, which can cause flicker on refresh)
+  useEffect(() => {
+    if (!isCurrentlyLoading && !hasLayoutLoaded) {
+      setHasLayoutLoaded(true);
+    }
+  }, [isCurrentlyLoading, hasLayoutLoaded]);
   
   // Only show skeleton if we haven't successfully loaded before
   const shouldShowSkeleton = hasLayoutLoaded ? false : isCurrentlyLoading;

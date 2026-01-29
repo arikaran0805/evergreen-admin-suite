@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Career {
   id: string;
@@ -47,15 +48,25 @@ interface Course {
 }
 
 export const useCareers = () => {
+  const { isLoading: authLoading } = useAuth();
   const [careers, setCareers] = useState<Career[]>([]);
   const [careerSkills, setCareerSkills] = useState<Record<string, CareerSkill[]>>({});
   const [careerCourses, setCareerCourses] = useState<Record<string, CareerCourse[]>>({});
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Prevent a common refresh bug:
+  // if we fetch career data BEFORE auth finishes restoring, backend policies may deny the request,
+  // leaving careers empty and causing the Career Board shell to redirect to /arcade.
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+
   useEffect(() => {
+    if (hasFetchedOnce) return;
+    if (authLoading) return;
+
+    setHasFetchedOnce(true);
     fetchCareers();
-  }, []);
+  }, [authLoading, hasFetchedOnce]);
 
   const fetchCareers = async () => {
     try {
