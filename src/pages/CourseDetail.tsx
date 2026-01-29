@@ -1470,7 +1470,7 @@ const CourseDetail = () => {
             ? (showAnnouncement ? 'pt-[8.75rem]' : 'pt-[6.5rem]') // 140px / 104px (64+40+36 / 64+40)
             : (showAnnouncement ? 'pt-[4.75rem]' : 'pt-10') // 76px / 40px (40+36 / 40)
       }`}>
-        <div className="flex flex-col lg:flex-row gap-0 justify-center">
+        <div className="flex flex-col lg:flex-row gap-0 lg:justify-center">
           
           {/* LEFT SIDEBAR - Progress & Navigation */}
           <CourseSidebar
@@ -1511,8 +1511,8 @@ const CourseDetail = () => {
             }}
           />
 
-          {/* MAIN CONTENT - centered with mx-auto within flex-1 space */}
-          <main className="flex-1 min-w-0 max-w-4xl mx-auto px-4 lg:px-0">
+          {/* MAIN CONTENT - centered between sidebars (280px left + 300px right = 580px total, offset by 10px) */}
+          <main className="flex-1 min-w-0 max-w-4xl lg:mx-auto lg:pl-[10px] px-4 lg:px-0">
             <Card className="rounded-none border-0 shadow-none">
               <CardContent className="p-6 lg:p-8">
                 {loadingPost ? (
