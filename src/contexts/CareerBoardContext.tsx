@@ -9,7 +9,7 @@
  * - All children (CareerCourseDetail, etc.) consume it
  * - No async header decision logic anywhere in children
  */
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserState } from "@/hooks/useUserState";
@@ -73,7 +73,7 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   const navigate = useNavigate();
   const { isLoading: authLoading } = useAuth();
   const { isPro, isLoading: userStateLoading } = useUserState();
-  const { getCareerBySlug, getCareerCourses, loading: careersLoading } = useCareers();
+  const { careers, getCareerBySlug, getCareerCourses, loading: careersLoading, refetch: refetchCareers } = useCareers();
   
   const [currentCourseSlug, setCurrentCourseSlug] = useState<string | null>(null);
   const [career, setCareer] = useState<Career | null>(null);
@@ -85,6 +85,11 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   
   // Track if we've successfully loaded once - prevents re-showing skeleton on tab focus
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  // If the first careers fetch happens during an unlucky refresh window and returns empty,
+  // the layout would otherwise immediately redirect to /arcade ("career not found").
+  // We retry once before declaring the career missing.
+  const hasRetriedCareerResolveRef = useRef(false);
   
   useEffect(() => {
     if (!authLoading) {
@@ -97,7 +102,9 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
     if (careersLoading || !careerId) return;
 
     const resolved = getCareerBySlug(careerId);
+
     if (resolved) {
+      hasRetriedCareerResolveRef.current = false;
       setCareer({
         id: resolved.id,
         name: resolved.name,
@@ -106,11 +113,20 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
         icon: resolved.icon,
         color: resolved.color,
       });
-    } else {
-      setCareer(null);
+      setIsReady(true);
+      return;
     }
+
+    // If careers came back empty, retry once before marking as "not found".
+    if (careers.length === 0 && !hasRetriedCareerResolveRef.current) {
+      hasRetriedCareerResolveRef.current = true;
+      refetchCareers();
+      return;
+    }
+
+    setCareer(null);
     setIsReady(true);
-  }, [careerId, careersLoading, getCareerBySlug]);
+  }, [careerId, careersLoading, careers.length, getCareerBySlug, refetchCareers]);
 
   // Redirect non-Pro users away from Career Board
   // CRITICAL: Wait for BOTH authChecked AND userStateLoading to complete
