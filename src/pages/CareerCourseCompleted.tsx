@@ -123,12 +123,12 @@ const CareerCourseCompleted = () => {
 
         setLearnerName(profile?.full_name || user.email?.split('@')[0] || "Learner");
 
-        // Check if course is actually completed using course_lessons table
+        // Check if course is actually completed (using posts table to match sidebar)
         const { count: totalLessons } = await supabase
-          .from("course_lessons" as any)
+          .from("posts")
           .select("*", { count: "exact", head: true })
-          .eq("course_id", courseData.id)
-          .eq("is_published", true)
+          .eq("category_id", courseData.id)
+          .eq("status", "published")
           .is("deleted_at", null);
 
         const { count: completedLessons } = await supabase
