@@ -95,7 +95,7 @@ export const CareerScopedHeader = ({
       <div className="container mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between h-12">
           {/* Left: Course Name + Career Path Label */}
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center gap-0.5">
             <h2 className="text-sm font-semibold text-foreground leading-tight">
               {currentCourse?.name}
             </h2>
