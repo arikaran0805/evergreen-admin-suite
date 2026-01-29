@@ -93,8 +93,13 @@ export const CareerScopedHeader = ({
       )}
     >
       <div className="container mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-end h-12">
-          {/* Career-Scoped Course Navigation - Only show tabs, no course name (matches CourseDetail secondary header) */}
+        <div className="flex items-center justify-between h-12">
+          {/* Left: Search/Filter Label */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium">Find lessons...</span>
+          </div>
+          
+          {/* Right: Career-Scoped Course Navigation */}
           <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
             {careerCourses.length > 0 && career ? (
               careerCourses.map((course) => {
