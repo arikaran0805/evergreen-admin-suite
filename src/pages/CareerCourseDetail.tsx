@@ -179,7 +179,8 @@ const commentSchema = z.object({
 });
 
 const CareerCourseDetail = () => {
-  const params = useParams<{ courseSlug: string }>();
+  const params = useParams<{ careerId: string; courseSlug: string }>();
+  const careerIdParam = decodeURIComponent((params.careerId ?? "").split("?")[0]).trim();
   const courseSlug = decodeURIComponent((params.courseSlug ?? "").split("?")[0]).trim();
   const [searchParams, setSearchParams] = useSearchParams();
   const lessonSlug = searchParams.get("lesson");
@@ -192,6 +193,10 @@ const CareerCourseDetail = () => {
   
   // Career Board context
   const { career, careerCourses, isLoading: careerLoading } = useCareerBoard();
+
+  // Always prefer the route param for building Career Board URLs.
+  // (career can be transiently null during initialization; the param is always present.)
+  const careerSlugForPath = careerIdParam || career?.slug;
   
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<CourseLesson[]>([]);
@@ -1053,7 +1058,7 @@ const CareerCourseDetail = () => {
 
   // Copy course URL to clipboard
   const copyUrl = async () => {
-    const url = `${window.location.origin}/career-board/${career?.slug}/course/${course?.slug}`;
+    const url = `${window.location.origin}/career-board/${careerSlugForPath}/course/${course?.slug}`;
     await navigator.clipboard.writeText(url);
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
@@ -1791,7 +1796,7 @@ const CareerCourseDetail = () => {
                                                   <button
                                                     onClick={(e) => {
                                                       e.stopPropagation();
-                                                      navigator.clipboard.writeText(`${window.location.origin}/career-board/${career?.slug}/course/${course?.slug}?lesson=${post.slug}`);
+                                                      navigator.clipboard.writeText(`${window.location.origin}/career-board/${careerSlugForPath}/course/${course?.slug}?lesson=${post.slug}`);
                                                       setCopiedPostId(post.id);
                                                       toast({ title: "Link copied!" });
                                                       setTimeout(() => setCopiedPostId(null), 2000);
@@ -1935,7 +1940,18 @@ const CareerCourseDetail = () => {
                               <div className="flex flex-col gap-3">
                                 {/* Primary CTA - View Full Certificate */}
                                 <Button 
-                                  onClick={() => navigate(`/career-board/${career?.slug}/course/${course.slug}/completed`)}
+                                  onClick={() => {
+                                    if (!careerSlugForPath) {
+                                      toast({
+                                        title: "Career context not ready",
+                                        description: "Please try again in a moment.",
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+
+                                    navigate(`/career-board/${careerSlugForPath}/course/${course.slug}/completed`);
+                                  }}
                                   className="w-full sm:w-auto"
                                   size="lg"
                                   disabled={!courseProgress.isCompleted}
