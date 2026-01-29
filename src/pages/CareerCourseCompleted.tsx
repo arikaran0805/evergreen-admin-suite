@@ -93,7 +93,10 @@ const CareerCourseCompleted = () => {
   // Fetch course and completion data
   useEffect(() => {
     const fetchData = async () => {
-      if (!courseSlug || !user) return;
+      if (!courseSlug || !user) {
+        setLoading(false);
+        return;
+      }
 
       try {
         // Fetch course info by slug
