@@ -178,12 +178,12 @@ export function LessonRightSidebar({
                       isActive && !isDisabled && "text-primary"
                     )} />
                     <span className="flex-1 truncate">
-                      {section.label}
+                      {isActive && !isDisabled ? (
+                        <span><span className="text-muted-foreground font-normal">You are in:</span> {section.label}</span>
+                      ) : (
+                        section.label
+                      )}
                     </span>
-                    {/* Active indicator dot */}
-                    {isActive && !isDisabled && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    )}
                   </button>
                 );
               })}
