@@ -65,24 +65,20 @@ export const ProfileDashboardHeader = ({
 
           {/* Right Section — Focus + Streak grouped */}
           <div className="flex items-center gap-3 md:ml-auto">
-            {/* Today's Focus Card */}
-            <div className="relative flex flex-col items-center text-center px-5 py-3 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10 shadow-lg shadow-primary/8 max-w-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 hover:-translate-y-0.5">
-              {/* Subtle glow behind */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                    Today's Focus
-                  </span>
-                </div>
-                <p className="text-base md:text-lg font-semibold text-foreground leading-snug">
-                  {focusMessage}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {focusSubtext}
-                </p>
+            {/* Today's Focus Card - clean style matching Weekly Activity */}
+            <div className="flex flex-col items-center text-center px-5 py-3 rounded-xl bg-card border border-border shadow-sm max-w-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                  Today's Focus
+                </span>
               </div>
+              <p className="text-base md:text-lg font-semibold text-foreground leading-snug">
+                {focusMessage}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {focusSubtext}
+              </p>
             </div>
 
             {/* Streak Display */}
