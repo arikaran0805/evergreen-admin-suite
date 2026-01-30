@@ -74,7 +74,7 @@ export const useCareers = () => {
       const [careersRes, skillsRes, coursesRes, allCoursesRes] = await Promise.all([
         supabase.from("careers").select("*").order("display_order"),
         supabase.from("career_skills").select("*").order("display_order"),
-        supabase.from("career_courses").select("*, course:course_id(id, name, slug)"),
+        supabase.from("career_courses").select("*, course:course_id(id, name, slug)").is("deleted_at", null),
         supabase.from("courses").select("id, name, slug, description, featured_image"),
       ]);
 
