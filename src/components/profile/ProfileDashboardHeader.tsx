@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, BookOpen, Flame } from "lucide-react";
+import { Target, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -87,16 +87,39 @@ export const ProfileDashboardHeader = ({
 
           {/* Right Section — Streak Display */}
           <div className="flex justify-center md:justify-end">
-            <div className="flex flex-col items-center gap-1">
-              {/* Flame + Count Row */}
-              <div className="flex items-center gap-1">
-                <Flame className="h-8 w-8 text-amber-500 fill-amber-500/80" />
-                <span className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+            <div className="flex flex-col items-center gap-1.5 px-6 py-4 rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900">
+              {/* Flame + Count - Flame behind */}
+              <div className="relative flex items-center justify-center">
+                {/* Flame SVG behind */}
+                <svg
+                  viewBox="0 0 64 80"
+                  className="absolute w-16 h-20 -top-2 opacity-90"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Outer flame - dark orange */}
+                  <path
+                    d="M32 4C32 4 12 24 12 44C12 60 20 76 32 76C44 76 52 60 52 44C52 24 32 4 32 4Z"
+                    fill="#D97706"
+                  />
+                  {/* Middle flame - orange */}
+                  <path
+                    d="M32 18C32 18 18 34 18 48C18 60 24 68 32 68C40 68 46 60 46 48C46 34 32 18 32 18Z"
+                    fill="#F59E0B"
+                  />
+                  {/* Inner flame - yellow */}
+                  <path
+                    d="M32 34C32 34 24 44 24 52C24 58 27 62 32 62C37 62 40 58 40 52C40 44 32 34 32 34Z"
+                    fill="#FCD34D"
+                  />
+                </svg>
+                {/* Count */}
+                <span className="relative z-10 text-4xl font-bold text-white drop-shadow-lg">
                   {currentStreak}
                 </span>
               </div>
               {/* Label */}
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-amber-400">
                 day streak!
               </span>
             </div>
