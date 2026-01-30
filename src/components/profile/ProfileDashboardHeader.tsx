@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Flame, Target, BookOpen } from "lucide-react";
+import { Target, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -85,20 +85,43 @@ export const ProfileDashboardHeader = ({
             </div>
           </div>
 
-          {/* Right Section — Streak Summary (De-emphasized) */}
+          {/* Right Section — Streak Display */}
           <div className="flex justify-center md:justify-end">
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-amber-500/5 border border-amber-500/10">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400/80 to-orange-500/80 flex items-center justify-center shadow-sm">
-                <Flame className="h-4 w-4 text-white" />
+            <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-2xl bg-slate-900/90 dark:bg-slate-900">
+              {/* Flame Icon */}
+              <div className="relative">
+                <svg
+                  viewBox="0 0 48 56"
+                  className="w-10 h-12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Outer flame */}
+                  <path
+                    d="M24 2C24 2 8 18 8 32C8 44 15 54 24 54C33 54 40 44 40 32C40 18 24 2 24 2Z"
+                    fill="url(#flameGradient)"
+                  />
+                  {/* Inner flame (white) */}
+                  <path
+                    d="M24 22C24 22 18 30 18 38C18 44 20 48 24 48C28 48 30 44 30 38C30 30 24 22 24 22Z"
+                    fill="white"
+                  />
+                  <defs>
+                    <linearGradient id="flameGradient" x1="24" y1="2" x2="24" y2="54" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#F59E0B" />
+                      <stop offset="1" stopColor="#EA580C" />
+                    </linearGradient>
+                  </defs>
+                </svg>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-muted-foreground leading-tight">
-                  Streak · max {maxStreak}
-                </span>
-                <p className="text-lg font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent leading-tight">
-                  {currentStreak} Day{currentStreak !== 1 ? "s" : ""}
-                </p>
-              </div>
+              {/* Day Count */}
+              <span className="text-2xl font-bold text-white leading-none">
+                {currentStreak}
+              </span>
+              {/* Label */}
+              <span className="text-xs font-medium text-amber-400 leading-tight">
+                day streak!
+              </span>
             </div>
           </div>
         </div>
