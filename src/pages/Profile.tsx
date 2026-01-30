@@ -24,6 +24,7 @@ import { CareerReadinessCard } from "@/components/CareerReadinessCard";
 import { SkillMilestones } from "@/components/SkillMilestones";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
 import { ProfileWeeklyActivityCard } from "@/components/profile/ProfileWeeklyActivityCard";
+import { ProfileDashboardHeader } from "@/components/profile/ProfileDashboardHeader";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -860,65 +861,64 @@ const Profile = () => {
   
   const readinessPercentage = calculateWeightedReadiness();
 
+  // Determine focus message based on progress
+  const getFocusContent = () => {
+    // Find first incomplete course in career path
+    const incompleteCourse = careerEnrolledCourses.find(e => {
+      const progress = courseProgressMap[e.courses?.slug];
+      return progress && progress.completed < progress.total;
+    });
+    
+    if (incompleteCourse) {
+      const progress = courseProgressMap[incompleteCourse.courses?.slug];
+      const remaining = progress ? progress.total - progress.completed : 0;
+      const estimatedMins = remaining * 15;
+      return {
+        message: `Complete ${incompleteCourse.courses?.name}`,
+        subtext: estimatedMins > 0 ? `~${Math.ceil(estimatedMins / 60)}h remaining` : "Almost there!",
+        currentCourse: incompleteCourse.courses?.name,
+      };
+    }
+    
+    if (readinessPercentage < 30) {
+      return {
+        message: "Build your foundation",
+        subtext: `Reach ${30}% career readiness`,
+        currentCourse: undefined,
+      };
+    }
+    
+    if (readinessPercentage < 75) {
+      return {
+        message: "Strengthen your skills",
+        subtext: `Reach interview-ready status`,
+        currentCourse: undefined,
+      };
+    }
+    
+    return {
+      message: "Keep the momentum",
+      subtext: "You're doing great!",
+      currentCourse: undefined,
+    };
+  };
+  
+  const focusContent = getFocusContent();
+
   const renderDashboard = () => (
     <div className="space-y-6">
-      {/* Top Header Card - Welcome + Career + Streak + Stats */}
-      <Card className="card-premium rounded-xl animate-stagger-1">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
-            {/* Welcome Section */}
-            <div className="flex items-center gap-4 flex-1">
-              <div className="avatar-premium">
-                <Avatar className="h-16 w-16 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
-                  <AvatarImage src={avatarUrl} alt={fullName} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xl font-bold">
-                    {fullName?.charAt(0)?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground font-medium">Welcome back!</p>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">{fullName || 'Learner'}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Aspiring <span className="text-primary font-medium">{career?.name || 'Data Analyst'}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <Separator orientation="vertical" className="h-16 hidden lg:block" />
-
-            {/* Streak Badge with Animation */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4">
-                {/* Combined Streak Card */}
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-sm shadow-amber-500/10">
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                      <Flame className="h-6 w-6 text-white drop-shadow-lg" />
-                    </div>
-                    {currentStreak > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-lg">
-                        🔥
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-baseline gap-1.5">
-                      <p className="text-xs text-muted-foreground font-medium">Streak</p>
-                      <span className="text-[10px] text-muted-foreground/70">/ max {maxStreak}</span>
-                    </div>
-                    <p className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                      {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Premium Dashboard Header */}
+      <ProfileDashboardHeader
+        className="animate-stagger-1"
+        fullName={fullName}
+        avatarUrl={avatarUrl}
+        careerName={career?.name || "Data Analyst"}
+        currentStreak={currentStreak}
+        maxStreak={maxStreak}
+        currentCourse={focusContent.currentCourse}
+        focusMessage={focusContent.message}
+        focusSubtext={focusContent.subtext}
+      />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
