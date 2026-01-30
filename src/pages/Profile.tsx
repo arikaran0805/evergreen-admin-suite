@@ -2059,7 +2059,7 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-12rem)] -mx-4 px-4 py-6 rounded-2xl dashboard-bg overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-8rem)] -mx-4 px-4 py-6 rounded-2xl dashboard-bg overflow-hidden">
           {/* Sidebar - hidden for Practice Lab */}
           {activeTab !== 'practice' && (
           <aside className="lg:w-64 flex-shrink-0 animate-sidebar overflow-y-auto">
