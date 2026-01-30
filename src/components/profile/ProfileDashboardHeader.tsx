@@ -90,28 +90,67 @@ export const ProfileDashboardHeader = ({
             <div className="flex flex-col items-center gap-1.5 px-6 py-4 rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900">
               {/* Flame + Count - Flame behind */}
               <div className="relative flex items-center justify-center">
-                {/* Flame SVG behind */}
+                {/* Emoji-style Flame SVG behind */}
                 <svg
-                  viewBox="0 0 64 80"
-                  className="absolute w-16 h-20 -top-2 opacity-90"
+                  viewBox="0 0 100 120"
+                  className="absolute w-20 h-24 -top-3 opacity-95"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  {/* Outer flame - dark orange */}
+                  {/* Left small flame tip - red */}
                   <path
-                    d="M32 4C32 4 12 24 12 44C12 60 20 76 32 76C44 76 52 60 52 44C52 24 32 4 32 4Z"
-                    fill="#D97706"
+                    d="M25 70C20 55 22 40 30 30C28 45 32 55 35 65C30 68 26 70 25 70Z"
+                    fill="#EF4444"
                   />
-                  {/* Middle flame - orange */}
+                  {/* Right small flame tip - red-orange */}
                   <path
-                    d="M32 18C32 18 18 34 18 48C18 60 24 68 32 68C40 68 46 60 46 48C46 34 32 18 32 18Z"
-                    fill="#F59E0B"
+                    d="M75 70C80 55 78 40 70 30C72 45 68 55 65 65C70 68 74 70 75 70Z"
+                    fill="#F97316"
+                  />
+                  {/* Main outer flame - red to orange gradient */}
+                  <path
+                    d="M50 8C50 8 20 45 20 75C20 98 33 112 50 112C67 112 80 98 80 75C80 45 50 8 50 8Z"
+                    fill="url(#outerGradient)"
+                  />
+                  {/* Middle flame - orange to yellow */}
+                  <path
+                    d="M50 28C50 28 28 55 28 78C28 94 37 104 50 104C63 104 72 94 72 78C72 55 50 28 50 28Z"
+                    fill="url(#middleGradient)"
                   />
                   {/* Inner flame - yellow */}
                   <path
-                    d="M32 34C32 34 24 44 24 52C24 58 27 62 32 62C37 62 40 58 40 52C40 44 32 34 32 34Z"
-                    fill="#FCD34D"
+                    d="M50 50C50 50 36 68 36 82C36 92 42 98 50 98C58 98 64 92 64 82C64 68 50 50 50 50Z"
+                    fill="url(#innerGradient)"
                   />
+                  {/* Core glow - white/cream */}
+                  <ellipse
+                    cx="50"
+                    cy="88"
+                    rx="10"
+                    ry="12"
+                    fill="url(#coreGradient)"
+                  />
+                  {/* Gradients */}
+                  <defs>
+                    <linearGradient id="outerGradient" x1="50" y1="8" x2="50" y2="112" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#DC2626" />
+                      <stop offset="50%" stopColor="#F97316" />
+                      <stop offset="100%" stopColor="#FB923C" />
+                    </linearGradient>
+                    <linearGradient id="middleGradient" x1="50" y1="28" x2="50" y2="104" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#F97316" />
+                      <stop offset="60%" stopColor="#FBBF24" />
+                      <stop offset="100%" stopColor="#FDE047" />
+                    </linearGradient>
+                    <linearGradient id="innerGradient" x1="50" y1="50" x2="50" y2="98" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#FBBF24" />
+                      <stop offset="100%" stopColor="#FEF3C7" />
+                    </linearGradient>
+                    <radialGradient id="coreGradient" cx="50" cy="88" r="12" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#FFFBEB" />
+                      <stop offset="100%" stopColor="#FEF3C7" stopOpacity="0.6" />
+                    </radialGradient>
+                  </defs>
                 </svg>
                 {/* Count */}
                 <span className="relative z-10 text-4xl font-bold text-white drop-shadow-lg">
