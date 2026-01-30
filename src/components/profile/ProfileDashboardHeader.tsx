@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import fireEmoji from "@/assets/fire-emoji.png";
 type Props = {
   className?: string;
   fullName: string;
@@ -12,59 +12,6 @@ type Props = {
   focusMessage?: string;
   focusSubtext?: string;
 };
-
-// Premium SVG Flame Component with gradients
-const FlameIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 32"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
-    <defs>
-      <linearGradient id="flameGradientOuter" x1="12" y1="0" x2="12" y2="32" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F97316" />
-        <stop offset="50%" stopColor="#EA580C" />
-        <stop offset="100%" stopColor="#DC2626" />
-      </linearGradient>
-      <linearGradient id="flameGradientInner" x1="12" y1="8" x2="12" y2="28" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FCD34D" />
-        <stop offset="60%" stopColor="#FBBF24" />
-        <stop offset="100%" stopColor="#F59E0B" />
-      </linearGradient>
-      <linearGradient id="flameGradientCore" x1="12" y1="16" x2="12" y2="26" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FEF3C7" />
-        <stop offset="100%" stopColor="#FDE68A" />
-      </linearGradient>
-      <filter id="flameGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="1.5" result="blur" />
-        <feMerge>
-          <feMergeNode in="blur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
-    {/* Outer flame */}
-    <path
-      d="M12 0C12 0 4 10 4 18C4 25.5 7.5 30 12 30C16.5 30 20 25.5 20 18C20 10 12 0 12 0Z"
-      fill="url(#flameGradientOuter)"
-      filter="url(#flameGlow)"
-    />
-    {/* Inner flame */}
-    <path
-      d="M12 8C12 8 7 14 7 20C7 24.5 9 27 12 27C15 27 17 24.5 17 20C17 14 12 8 12 8Z"
-      fill="url(#flameGradientInner)"
-    />
-    {/* Core glow */}
-    <ellipse
-      cx="12"
-      cy="22"
-      rx="3"
-      ry="4"
-      fill="url(#flameGradientCore)"
-    />
-  </svg>
-);
 
 export const ProfileDashboardHeader = ({
   className,
@@ -138,33 +85,20 @@ export const ProfileDashboardHeader = ({
             </div>
           </div>
 
-          {/* Right Section — Premium Streak Display */}
+          {/* Right Section — Streak Display */}
           <div className="flex justify-center md:justify-end">
-            <div className="relative group">
-              {/* Ambient glow behind the streak card */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              {/* Premium streak card */}
-              <div className="relative flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 border border-white/10 shadow-xl">
-                {/* Inner glow effect */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-orange-500/10 via-transparent to-transparent" />
-                
-                {/* Flame icon with glow */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-orange-500/30 rounded-full blur-md" />
-                  <FlameIcon className="relative w-8 h-10" />
-                </div>
-                
-                {/* Count and label */}
-                <div className="relative flex flex-col">
-                  <span className="text-3xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent leading-none">
-                    {currentStreak}
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
-                    Day Streak
-                  </span>
-                </div>
+            <div className="flex flex-col items-center">
+              {/* Fire emoji + Count row */}
+              <div className="flex items-center gap-1">
+                <img src={fireEmoji} alt="Fire" className="w-10 h-10 object-contain" />
+                <span className="text-3xl font-bold text-foreground">
+                  {currentStreak}
+                </span>
               </div>
+              {/* Label */}
+              <span className="text-xs font-medium text-muted-foreground">
+                day streak!
+              </span>
             </div>
           </div>
         </div>
