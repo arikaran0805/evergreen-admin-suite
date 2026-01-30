@@ -217,7 +217,7 @@ const OngoingCourseCard = ({
 
   return (
     <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[130px]"
       onClick={onClick}
     >
       <div className="flex h-full">
@@ -316,7 +316,7 @@ const CompletedCourseCard = ({
 }) => {
   return (
     <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[130px]"
       onClick={onClick}
     >
       <div className="flex h-full">
