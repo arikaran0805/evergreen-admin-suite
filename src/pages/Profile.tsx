@@ -23,11 +23,12 @@ import { useCareers } from "@/hooks/useCareers";
 import { CareerReadinessCard } from "@/components/CareerReadinessCard";
 import { SkillMilestones } from "@/components/SkillMilestones";
 import { CareerSelectionDialog } from "@/components/CareerSelectionDialog";
-import { WeeklyActivityTracker } from "@/components/WeeklyActivityTracker";
+import { ProfileWeeklyActivityCard } from "@/components/profile/ProfileWeeklyActivityCard";
 import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { useUserRole } from "@/hooks/useUserRole";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
+import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
 import { z } from "zod";
 import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { 
@@ -316,7 +317,6 @@ const Profile = () => {
   const [maxStreak, setMaxStreak] = useState(0);
   const [streakFreezesAvailable, setStreakFreezesAvailable] = useState(2);
   const [isFreezingStreak, setIsFreezingStreak] = useState(false);
-  const [weeklyActivityData, setWeeklyActivityData] = useState<{ totalSeconds: number; activeDays: number; dailySeconds: Record<string, number> }>({ totalSeconds: 0, activeDays: 0, dailySeconds: {} });
   const [achievements, setAchievements] = useState<any[]>([]);
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const [resendingVerification, setResendingVerification] = useState(false);
@@ -327,6 +327,11 @@ const Profile = () => {
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
   const { navigateToCourse, navigateToCourseInCareerBoard, handleResume } = useCourseNavigation();
+
+  const { data: weeklyActivityQueryData, isLoading: weeklyActivityLoading } = useWeeklyActivity(userId);
+  const weeklyActivityData =
+    weeklyActivityQueryData ??
+    ({ totalSeconds: 0, activeDays: 0, dailySeconds: {}, lastWeekSeconds: 0 } as const);
 
   // Handle skill click - navigate to course that teaches this skill INSIDE CAREER BOARD
   // This uses the Career Board route for guaranteed CareerScopedHeader rendering
@@ -366,37 +371,13 @@ const Profile = () => {
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  // Fetch weekly activity data (seconds-based so short sessions still show)
+  // Refresh streak from activity + stored max streak
   useEffect(() => {
-    const fetchWeeklyActivity = async () => {
+    const refreshStreak = async () => {
       if (!userId) return;
 
       const today = new Date();
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - today.getDay());
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
 
-      const { data: timeData, error } = await supabase
-        .from('lesson_time_tracking')
-        .select('tracked_date, duration_seconds')
-        .eq('user_id', userId)
-        .gte('tracked_date', toDayKey(weekStart))
-        .lte('tracked_date', toDayKey(weekEnd));
-
-      if (error) return;
-
-      const dailySeconds: Record<string, number> = {};
-      (timeData || []).forEach((record: any) => {
-        dailySeconds[record.tracked_date] = (dailySeconds[record.tracked_date] || 0) + (record.duration_seconds || 0);
-      });
-
-      const totalSeconds = Object.values(dailySeconds).reduce((sum, s) => sum + s, 0);
-      const activeDays = Object.values(dailySeconds).filter((s) => s > 0).length;
-
-      setWeeklyActivityData({ totalSeconds, activeDays, dailySeconds });
-
-      // Refresh streak from activity + stored max streak
       const { data: allTimeData } = await supabase
         .from('lesson_time_tracking')
         .select('tracked_date, duration_seconds')
@@ -454,7 +435,7 @@ const Profile = () => {
         .eq('id', userId);
     };
 
-    fetchWeeklyActivity();
+    refreshStreak();
   }, [userId]);
 
   const checkUser = async () => {
@@ -1292,86 +1273,11 @@ const Profile = () => {
 
         {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
         <div className="flex flex-col space-y-6 h-full">
-          {/* Weekly Activity - Compact Version */}
-          <Card className="card-premium rounded-xl animate-stagger-2">
-            <CardContent className="p-5">
-              <h3 className="text-lg font-bold mb-4">Weekly Activity</h3>
-              
-              <TooltipProvider>
-                <div className="flex items-end justify-between gap-1.5 h-24 mb-4">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => {
-                    const today = new Date();
-                    const weekStart = new Date(today);
-                    weekStart.setDate(today.getDate() - today.getDay());
-
-                    const targetDate = new Date(weekStart);
-                    targetDate.setDate(weekStart.getDate() + index);
-
-                    const dateStr = toDayKey(targetDate);
-                    const daySeconds = weeklyActivityData.dailySeconds[dateStr] || 0;
-                    const isToday = index === today.getDay();
-                    const hasActivity = daySeconds > 0;
-
-                    // Safely calculate max with fallback
-                    const allValues = Object.values(weeklyActivityData.dailySeconds);
-                    const maxSeconds = allValues.length > 0 
-                      ? Math.max(...allValues, 60 * 5)
-                      : 60 * 5;
-
-                    const heightPercent = maxSeconds > 0 ? (daySeconds / maxSeconds) * 100 : 0;
-
-                    return (
-                      <Tooltip key={dayLabel + index}>
-                        <TooltipTrigger asChild>
-                          <div className="flex-1 flex flex-col items-center gap-1.5 cursor-pointer">
-                            <div 
-                              className="w-full flex items-end justify-center"
-                              style={{ height: '60px' }}
-                            >
-                              <div
-                                className={`w-full max-w-6 rounded-lg transition-all duration-300 hover:opacity-80 ${
-                                  isToday
-                                    ? 'bg-primary shadow-lg shadow-primary/30'
-                                    : hasActivity
-                                      ? 'bg-primary/60'
-                                      : 'bg-muted/50'
-                                }`}
-                                style={{ 
-                                  height: hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
-                                  minHeight: hasActivity ? '8px' : '6px'
-                                }}
-                              />
-                            </div>
-                            <span className={`text-[10px] font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-                              {dayLabel}
-                            </span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-center">
-                          <p className="font-semibold">{targetDate.toLocaleDateString(undefined, { weekday: 'long' })}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {hasActivity ? formatDurationFromSeconds(daySeconds) : 'No activity'}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
-
-              {/* Stats */}
-              <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Time</span>
-                  <span className="font-bold">{formatDurationFromSeconds(weeklyActivityData.totalSeconds)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Active Days</span>
-                  <span className="font-bold">{weeklyActivityData.activeDays} / 7</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ProfileWeeklyActivityCard
+            className="animate-stagger-2"
+            loading={weeklyActivityLoading}
+            weeklyActivityData={weeklyActivityData}
+          />
 
           {/* AI Mentor Card */}
           <Card className="card-premium rounded-xl animate-stagger-3">
