@@ -1268,12 +1268,12 @@ const Profile = () => {
         {/* Right Column - Today's Focus + Weekly Activity + AI Mentor + Achievements */}
         <div className="flex flex-col space-y-6 h-full">
           {/* Today's Focus + Streak Card */}
-          <Card className="rounded-xl bg-card border shadow-sm animate-stagger-1">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+          <Card className="card-premium rounded-xl animate-stagger-1">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between h-full min-h-[72px]">
                 {/* Today's Focus */}
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <Target className="h-4 w-4 text-primary" />
                     <span className="text-xs font-semibold text-primary uppercase tracking-wider">
                       Today's Focus
@@ -1282,7 +1282,7 @@ const Profile = () => {
                   <p className="text-base font-semibold text-foreground leading-snug">
                     {focusContent.message}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {focusContent.subtext}
                   </p>
                 </div>
