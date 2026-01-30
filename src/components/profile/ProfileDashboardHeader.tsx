@@ -39,7 +39,7 @@ export const ProfileDashboardHeader = ({
       <div className="absolute bottom-0 right-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
 
       <CardContent className="relative p-3 md:p-4">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] gap-3 md:gap-4 items-center">
+        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
           {/* Left Section — Identity Block */}
           <div className="flex flex-col gap-1">
             <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight tracking-tight">
@@ -63,9 +63,10 @@ export const ProfileDashboardHeader = ({
             </p>
           </div>
 
-          {/* Center Section — Contextual Focus (Primary Action) */}
-          <div className="flex justify-center">
-            <div className="relative flex flex-col items-center text-center px-5 py-3 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10 shadow-lg shadow-primary/8 w-full max-w-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 hover:-translate-y-0.5">
+          {/* Right Section — Focus + Streak grouped */}
+          <div className="flex items-center gap-3 md:ml-auto">
+            {/* Today's Focus Card */}
+            <div className="relative flex flex-col items-center text-center px-5 py-3 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10 shadow-lg shadow-primary/8 max-w-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 hover:-translate-y-0.5">
               {/* Subtle glow behind */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl" />
               <div className="relative z-10">
@@ -83,11 +84,9 @@ export const ProfileDashboardHeader = ({
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* Right Section — Streak Display (matching reference design) */}
-          <div className="flex justify-center md:justify-end">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10">
+            {/* Streak Display */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10 h-full">
               {/* Orange gradient circle with flame */}
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
                 <Flame className="w-6 h-6 text-white" />
