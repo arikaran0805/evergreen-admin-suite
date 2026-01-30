@@ -44,39 +44,33 @@ export const ProfileDashboardHeader = ({
       <div className="absolute bottom-0 right-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
 
       <CardContent className="relative p-6 md:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] gap-5 md:gap-6 items-center">
           {/* Left Section — User Identity */}
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Avatar className="h-16 w-16 md:h-18 md:w-18 ring-[3px] ring-primary/30 ring-offset-2 ring-offset-background shadow-lg">
+              <Avatar className="h-14 w-14 md:h-16 md:w-16 ring-2 ring-primary/20 ring-offset-2 ring-offset-background shadow-md">
                 <AvatarImage src={avatarUrl} alt={fullName} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xl font-bold">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-lg font-bold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground font-medium tracking-wide uppercase">
-                Welcome back!
+              <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
+                Welcome back
               </span>
-              <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight">
+              <h2 className="text-lg md:text-xl font-bold text-foreground leading-tight">
                 {fullName || "Learner"}
               </h2>
               <p className="text-sm text-muted-foreground">
                 Aspiring <span className="text-primary font-medium">{careerName}</span>
               </p>
               {/* State indicator */}
-              <p className="text-xs text-muted-foreground/80 mt-1 flex items-center gap-1.5">
+              <p className="text-xs text-muted-foreground/80 mt-0.5 flex items-center gap-1.5">
                 {isOnTrack ? (
                   <>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span>Status: On track</span>
-                    {currentCourse && (
-                      <>
-                        <span className="text-muted-foreground/50">·</span>
-                        <span>{currentCourse} in progress</span>
-                      </>
-                    )}
                   </>
                 ) : (
                   <>
@@ -88,36 +82,39 @@ export const ProfileDashboardHeader = ({
             </div>
           </div>
 
-          {/* Center Section — Contextual Focus */}
+          {/* Center Section — Contextual Focus (Primary Action) */}
           <div className="flex justify-center">
-            <div className="flex flex-col items-center text-center px-6 py-4 rounded-xl bg-background/70 backdrop-blur-sm border border-border/50 shadow-md shadow-primary/5 max-w-xs transition-shadow hover:shadow-lg hover:shadow-primary/8">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Target className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Today's Focus
-                </span>
+            <div className="relative flex flex-col items-center text-center px-8 py-5 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10 shadow-lg shadow-primary/8 w-full max-w-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 hover:-translate-y-0.5">
+              {/* Subtle glow behind */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    Today's Focus
+                  </span>
+                </div>
+                <p className="text-base md:text-lg font-semibold text-foreground leading-snug">
+                  {focusMessage}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {focusSubtext}
+                </p>
               </div>
-              <p className="text-base font-semibold text-foreground leading-snug">
-                {focusMessage}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {focusSubtext}
-              </p>
             </div>
           </div>
 
-          {/* Right Section — Streak Summary */}
+          {/* Right Section — Streak Summary (De-emphasized) */}
           <div className="flex justify-center md:justify-end">
-            <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-md shadow-amber-500/5">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                <Flame className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400/80 to-orange-500/80 flex items-center justify-center shadow-sm">
+                <Flame className="h-4 w-4 text-white" />
               </div>
               <div className="flex flex-col">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-xs font-medium text-foreground/70">Learning Streak</span>
-                  <span className="text-[10px] text-muted-foreground">· max {maxStreak}</span>
-                </div>
-                <p className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                <span className="text-[10px] font-medium text-muted-foreground leading-tight">
+                  Streak · max {maxStreak}
+                </span>
+                <p className="text-lg font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent leading-tight">
                   {currentStreak} Day{currentStreak !== 1 ? "s" : ""}
                 </p>
               </div>
