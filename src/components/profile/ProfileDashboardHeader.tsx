@@ -7,6 +7,7 @@ type Props = {
   fullName: string;
   careerName: string;
   currentStreak: number;
+  readinessPercentage?: number;
 };
 
 export const ProfileDashboardHeader = ({
@@ -14,6 +15,7 @@ export const ProfileDashboardHeader = ({
   fullName,
   careerName,
   currentStreak,
+  readinessPercentage = 0,
 }: Props) => {
   const isOnTrack = currentStreak > 0;
 
@@ -32,27 +34,36 @@ export const ProfileDashboardHeader = ({
       <div className="absolute bottom-0 right-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
 
       <CardContent className="relative p-4 md:p-5 h-[100px] flex items-center">
-        {/* Identity Block */}
-        <div className="flex flex-col gap-1">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight tracking-tight">
-            {fullName || "Learner"}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Aspiring <span className="text-primary font-medium">{careerName}</span>
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-1 flex items-center gap-1.5">
-            {isOnTrack ? (
-              <>
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>On track</span>
-              </>
-            ) : (
-              <>
-                <BookOpen className="h-3 w-3" />
-                <span>Ready to learn</span>
-              </>
-            )}
-          </p>
+        <div className="flex items-center justify-between w-full">
+          {/* Left - Identity */}
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight tracking-tight">
+              {fullName || "Learner"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Aspiring <span className="text-primary font-medium">{careerName}</span>
+            </p>
+          </div>
+
+          {/* Right - Status */}
+          <div className="flex flex-col items-end gap-0.5">
+            <p className="text-lg font-bold text-foreground">
+              {readinessPercentage}% <span className="font-medium text-muted-foreground">Career Ready</span>
+            </p>
+            <p className="text-sm flex items-center gap-1.5">
+              {isOnTrack ? (
+                <>
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-muted-foreground">On Track</span>
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Ready to learn</span>
+                </>
+              )}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

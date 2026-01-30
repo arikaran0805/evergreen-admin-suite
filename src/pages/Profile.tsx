@@ -917,6 +917,7 @@ const Profile = () => {
             fullName={fullName}
             careerName={career?.name || "Data Analyst"}
             currentStreak={currentStreak}
+            readinessPercentage={readinessPercentage}
           />
           {/* Career Readiness */}
           <Card className="card-premium rounded-xl animate-stagger-2">
