@@ -911,11 +911,9 @@ const Profile = () => {
       <ProfileDashboardHeader
         className="animate-stagger-1"
         fullName={fullName}
-        avatarUrl={avatarUrl}
         careerName={career?.name || "Data Analyst"}
         currentStreak={currentStreak}
         maxStreak={maxStreak}
-        currentCourse={focusContent.currentCourse}
         focusMessage={focusContent.message}
         focusSubtext={focusContent.subtext}
       />
