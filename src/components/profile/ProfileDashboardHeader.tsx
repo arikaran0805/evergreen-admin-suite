@@ -118,7 +118,7 @@ export const ProfileDashboardHeader = ({
                   <span className="text-[10px] text-muted-foreground">· max {maxStreak}</span>
                 </div>
                 <p className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                  {currentStreak} Day{currentStreak !== 1 ? "s" : ""} 🔥
+                  {currentStreak} Day{currentStreak !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>
