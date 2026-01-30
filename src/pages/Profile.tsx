@@ -1294,11 +1294,11 @@ const Profile = () => {
                     <Flame className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-xs text-muted-foreground">
-                      Streak · max {maxStreak}
-                    </span>
                     <span className="text-lg font-bold text-primary">
                       {currentStreak} Days
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Streak · max {maxStreak}
                     </span>
                   </div>
                 </div>
