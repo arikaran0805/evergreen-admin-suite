@@ -444,6 +444,8 @@ const Profile = () => {
   const [achievements, setAchievements] = useState<any[]>([]);
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [userComments, setUserComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -479,6 +481,51 @@ const Profile = () => {
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Fetch user's comments for Discussions tab
+  useEffect(() => {
+    const fetchUserComments = async () => {
+      if (!userId) return;
+      
+      setCommentsLoading(true);
+      try {
+        // Fetch comments with post info
+        const { data: comments, error } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            is_anonymous,
+            display_name,
+            parent_id,
+            status,
+            post_id,
+            posts!inner (
+              id,
+              title,
+              slug,
+              category_id,
+              courses:category_id (
+                name,
+                slug
+              )
+            )
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        setUserComments(comments || []);
+      } catch (error) {
+        console.error('Error fetching user comments:', error);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+
+    fetchUserComments();
+  }, [userId]);
 
   const toDayKey = (d: Date) => {
     const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
@@ -1847,18 +1894,118 @@ const Profile = () => {
     );
   };
 
-  const renderDiscussions = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">My Discussions</h2>
-      <Card>
-        <CardContent className="text-center py-12">
-          <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No discussions yet</h3>
-          <p className="text-muted-foreground">Join the conversation by commenting on lessons.</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const renderDiscussions = () => {
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    };
+
+    const extractTextFromContent = (content: string) => {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed?.content) {
+          const extractText = (node: any): string => {
+            if (node.text) return node.text;
+            if (node.content) return node.content.map(extractText).join('');
+            return '';
+          };
+          return extractText(parsed);
+        }
+        return content;
+      } catch {
+        return content.replace(/<[^>]*>/g, '');
+      }
+    };
+
+    if (commentsLoading) {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">My Discussions</h2>
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+                <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">My Discussions</h2>
+        
+        {userComments.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No discussions yet</h3>
+              <p className="text-muted-foreground">Join the conversation by commenting on lessons.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {userComments.map((comment) => {
+              const post = comment.posts as any;
+              const course = post?.courses;
+              const commentText = extractTextFromContent(comment.content);
+              
+              return (
+                <Card 
+                  key={comment.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => {
+                    if (course?.slug && post?.slug) {
+                      navigate(`/courses/${course.slug}/${post.slug}`);
+                    }
+                  }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            <MessageSquare className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-primary">
+                            {course?.name || 'Unknown Course'}
+                          </span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(comment.created_at)}
+                          </span>
+                          {comment.parent_id && (
+                            <Badge variant="secondary" className="text-xs">Reply</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 truncate">
+                          {post?.title || 'Unknown Lesson'}
+                        </p>
+                        <p className="text-foreground line-clamp-2">
+                          {commentText}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderAchievements = () => {
     const readinessPercentage = careerRelatedSlugs.length > 0 
