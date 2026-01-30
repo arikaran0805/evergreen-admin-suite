@@ -106,7 +106,7 @@ const accountItems = [
   { id: 'settings' as TabType, label: 'Settings', icon: Settings },
 ];
 
-// OngoingCourseCard component for the learnings section
+// OngoingCourseCard component for the learnings section (Library-style)
 const OngoingCourseCard = ({ 
   course, 
   userId, 
@@ -119,6 +119,7 @@ const OngoingCourseCard = ({
   onResetProgress?: () => void;
 }) => {
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
+  const [nextLesson, setNextLesson] = useState<{ title: string; order: number } | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
 
@@ -126,30 +127,52 @@ const OngoingCourseCard = ({
     const fetchProgress = async () => {
       if (!course?.id || !userId) return;
 
-      // Count all lessons regardless of status on public pages
-      const { count: totalLessons } = await supabase
-        .from('posts')
-        .select('*', { count: 'exact', head: true })
-        .eq('category_id', course.id);
-
-      const { count: completedLessons } = await supabase
-        .from('lesson_progress')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('course_id', course.id)
-        .eq('completed', true);
+      // Fetch lessons and progress
+      const [{ count: totalLessons }, { count: completedLessons }, lessonsData, progressData] = await Promise.all([
+        supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('category_id', course.id),
+        supabase
+          .from('lesson_progress')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('course_id', course.id)
+          .eq('completed', true),
+        (supabase
+          .from('course_lessons' as any)
+          .select('id, title, lesson_rank')
+          .eq('course_id', course.id)
+          .eq('is_published', true)
+          .is('deleted_at', null)
+          .order('lesson_rank', { ascending: true }) as unknown as Promise<{ data: { id: string; title: string; lesson_rank: string | null }[] | null }>),
+        supabase
+          .from('lesson_progress')
+          .select('lesson_id')
+          .eq('course_id', course.id)
+          .eq('user_id', userId)
+          .eq('completed', true),
+      ]);
 
       setProgress({
         completed: completedLessons || 0,
         total: totalLessons || 0,
       });
+
+      // Find next incomplete lesson
+      const completedIds = new Set(progressData.data?.map(l => l.lesson_id) || []);
+      const allLessons = lessonsData.data || [];
+      const nextLessonData = allLessons.find(lesson => !completedIds.has(lesson.id));
+      if (nextLessonData) {
+        setNextLesson({ title: nextLessonData.title, order: allLessons.indexOf(nextLessonData) + 1 });
+      }
     };
 
     fetchProgress();
   }, [course?.id, userId]);
 
   const progressPercent = progress.total > 0 
-    ? (progress.completed / progress.total) * 100 
+    ? Math.round((progress.completed / progress.total) * 100)
     : 0;
 
   const handleResetProgress = async (e: React.MouseEvent) => {
@@ -158,7 +181,6 @@ const OngoingCourseCard = ({
     
     setIsResetting(true);
     try {
-      // Delete all lesson progress for this course
       const { error } = await supabase
         .from('lesson_progress')
         .delete()
@@ -168,6 +190,7 @@ const OngoingCourseCard = ({
       if (error) throw error;
 
       setProgress({ completed: 0, total: progress.total });
+      setNextLesson(null);
       toast({
         title: "Progress Reset",
         description: `Your progress for ${course.name} has been reset.`,
@@ -184,57 +207,106 @@ const OngoingCourseCard = ({
     }
   };
 
+  // Strip HTML tags from description
+  const stripHtml = (html: string | null) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, '').trim();
+  };
+
+  const cleanDescription = stripHtml(course?.description);
+
   return (
-    <Card 
-      className="card-premium hover:scale-[1.02] cursor-pointer relative group"
+    <Card
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
       onClick={onClick}
     >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        onClick={handleResetProgress}
-        disabled={isResetting}
-        title="Reset Progress"
-      >
-        <RotateCcw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
-      </Button>
-      
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
-            {(() => {
-              const IconComponent = getIcon(course?.icon, BookOpen);
-              return <IconComponent className="h-8 w-8 text-primary" />;
-            })()}
+      <div className="flex h-full">
+        {/* Left Section - Dark */}
+        <div className="w-1/3 p-4 flex flex-col justify-between bg-emerald-900">
+          <div>
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+              Course
+            </span>
+            <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+              {course?.name}
+            </h3>
           </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-foreground truncate">{course?.name}</h4>
-            {/* Display learning hours - use course value or estimate from lessons */}
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+          <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs mt-2">
+            <span>View all</span>
+            <ChevronRight className="h-3 w-3" />
+          </div>
+        </div>
+
+        {/* Right Section - Light */}
+        <div className="w-2/3 bg-card p-4 flex flex-col justify-between relative">
+          {/* Reset button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            onClick={handleResetProgress}
+            disabled={isResetting}
+            title="Reset Progress"
+          >
+            <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
+          </Button>
+
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                {course?.level || "Beginner"} • {progress.total} Lessons
+              </span>
+              <span className="text-[10px] text-muted-foreground">{progressPercent}%</span>
+            </div>
+            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full rounded-full transition-all bg-emerald-900"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            {/* Next Lesson */}
+            {nextLesson && (
+              <div className="flex items-center gap-1.5 mb-2">
+                <Play className="h-3 w-3 text-primary fill-primary" />
+                <span className="text-[10px] text-muted-foreground">Next:</span>
+                <span className="text-[10px] font-medium text-foreground truncate">
+                  {nextLesson.title}
+                </span>
+              </div>
+            )}
+            <p className="text-xs text-foreground line-clamp-2">
+              {cleanDescription || "Continue your learning journey"}
+            </p>
+          </div>
+          
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-1 text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>
+              <span className="text-xs">
                 {course?.learning_hours > 0 
                   ? `${course.learning_hours}h` 
                   : `${Math.max(1, Math.round((progress.total * 15) / 60))}h`}
               </span>
             </div>
-            <Progress value={progressPercent} className="h-2 mt-2" />
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xs text-muted-foreground">Total Progress</span>
-              <span className="text-sm font-medium">
-                <span className="text-foreground">{progress.completed}</span>
-                <span className="text-muted-foreground"> / {progress.total}</span>
-              </span>
-            </div>
+            <Button 
+              variant="default" 
+              size="sm"
+              className="text-white rounded-full px-4 h-7 text-xs hover:opacity-90 bg-emerald-900 hover:bg-emerald-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+            >
+              Continue
+            </Button>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
 
-// CompletedCourseCard component for the learnings section
+// CompletedCourseCard component for the learnings section (Library-style)
 const CompletedCourseCard = ({ 
   course, 
   onClick 
@@ -242,39 +314,79 @@ const CompletedCourseCard = ({
   course: any;
   onClick: () => void;
 }) => {
+  // Strip HTML tags from description
+  const stripHtml = (html: string | null) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, '').trim();
+  };
+
+  const cleanDescription = stripHtml(course?.description);
+
   return (
-    <Card 
-      className="card-premium hover:scale-[1.02] cursor-pointer relative"
+    <Card
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center shrink-0 relative">
-            {(() => {
-              const IconComponent = getIcon(course?.icon, BookOpen);
-              return <IconComponent className="h-8 w-8 text-emerald-600" />;
-            })()}
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4 text-white" />
-            </div>
+      <div className="flex h-full">
+        {/* Left Section - Emerald/Green for completed */}
+        <div className="w-1/3 p-4 flex flex-col justify-between bg-emerald-700">
+          <div>
+            <span className="text-[10px] font-medium tracking-wider text-emerald-200 uppercase">
+              Completed
+            </span>
+            <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+              {course?.name}
+            </h3>
           </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-foreground truncate">{course?.name}</h4>
-            <div className="flex items-center gap-1 text-xs text-emerald-600 mt-1">
-              <CheckCircle2 className="h-3 w-3" />
-              <span>Completed</span>
+          <div className="flex items-center gap-1 text-emerald-200 hover:text-white transition-colors text-xs mt-2">
+            <CheckCircle2 className="h-3 w-3" />
+            <span>100%</span>
+          </div>
+        </div>
+
+        {/* Right Section - Light */}
+        <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-medium tracking-wider text-emerald-600 uppercase flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Course Completed
+              </span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full rounded-full transition-all bg-emerald-500"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <p className="text-xs text-foreground line-clamp-2">
+              {cleanDescription || "You've completed this course!"}
+            </p>
+          </div>
+          
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-1 text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>
+              <span className="text-xs">
                 {course?.learning_hours > 0 
                   ? `${course.learning_hours}h` 
                   : '—'}
               </span>
             </div>
+            <Button 
+              variant="default" 
+              size="sm"
+              className="text-white rounded-full px-4 h-7 text-xs hover:opacity-90 bg-emerald-600 hover:bg-emerald-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+            >
+              Review
+            </Button>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
