@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -7,13 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, MessageSquare, Search, User, UserX, Reply, ThumbsUp, ThumbsDown, 
-  ExternalLink, Send, Shield, XCircle, X, Bold, Italic, Code, Link, Check,
+  ExternalLink, Send, Shield, XCircle, X, Check,
   ChevronDown, ChevronUp, BookOpen
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -21,6 +20,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { LightEditor, type LightEditorRef, RichTextRenderer } from "@/components/tiptap";
+import { serializeContent } from "@/lib/tiptapMigration";
 
 interface Comment {
   id: string;
@@ -443,7 +444,11 @@ const AdminComments = () => {
           
           <CardContent className="space-y-4">
             <div className="bg-muted/30 p-4 rounded-lg">
-              <p className="whitespace-pre-wrap text-sm">{comment.content}</p>
+              <RichTextRenderer 
+                content={comment.content} 
+                className="text-sm"
+                emptyPlaceholder=""
+              />
             </div>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -506,56 +511,14 @@ const AdminComments = () => {
                   <Shield className="h-4 w-4" />
                   <span className="font-medium">Reply as Admin</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1 border-b border-border/50 pb-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setReplyContent(prev => prev + "**bold text**")}
-                      title="Bold"
-                    >
-                      <Bold className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setReplyContent(prev => prev + "*italic text*")}
-                      title="Italic"
-                    >
-                      <Italic className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setReplyContent(prev => prev + "`code`")}
-                      title="Code"
-                    >
-                      <Code className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setReplyContent(prev => prev + "[link text](url)")}
-                      title="Link"
-                    >
-                      <Link className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Textarea
-                    placeholder="Write your reply..."
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    className="min-h-[100px] resize-none"
-                  />
-                </div>
+                <LightEditor
+                  value={replyContent}
+                  onChange={setReplyContent}
+                  placeholder="Write your reply..."
+                  characterLimit={2000}
+                  minHeight="100px"
+                  autoFocus
+                />
                 <div className="flex gap-2 justify-end">
                   <Button
                     size="sm"
