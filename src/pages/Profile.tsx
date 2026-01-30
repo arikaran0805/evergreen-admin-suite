@@ -314,14 +314,6 @@ const CompletedCourseCard = ({
   course: any;
   onClick: () => void;
 }) => {
-  // Strip HTML tags from description
-  const stripHtml = (html: string | null) => {
-    if (!html) return "";
-    return html.replace(/<[^>]*>/g, '').trim();
-  };
-
-  const cleanDescription = stripHtml(course?.description);
-
   return (
     <Card
       className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
@@ -353,15 +345,12 @@ const CompletedCourseCard = ({
                 Course Completed
               </span>
             </div>
-            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
+            <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all bg-emerald-500"
                 style={{ width: '100%' }}
               />
             </div>
-            <p className="text-xs text-foreground line-clamp-2">
-              {cleanDescription || "You've completed this course!"}
-            </p>
           </div>
           
           <div className="flex items-center justify-between mt-3">
