@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, BookOpen } from "lucide-react";
+import { Target, BookOpen, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
-import fireEmoji from "@/assets/fire-emoji.png";
+
 type Props = {
   className?: string;
   fullName: string;
@@ -85,20 +85,22 @@ export const ProfileDashboardHeader = ({
             </div>
           </div>
 
-          {/* Right Section — Streak Display */}
+          {/* Right Section — Streak Display (matching reference design) */}
           <div className="flex justify-center md:justify-end">
-            <div className="flex flex-col items-center">
-              {/* Fire emoji + Count row */}
-              <div className="flex items-center gap-1">
-                <img src={fireEmoji} alt="Fire" className="w-10 h-10 object-contain" />
-                <span className="text-3xl font-bold text-foreground">
-                  {currentStreak}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-background/80 backdrop-blur-sm border border-primary/10">
+              {/* Orange gradient circle with flame */}
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                <Flame className="w-6 h-6 text-white" />
+              </div>
+              {/* Text section */}
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">
+                  Streak · max {maxStreak}
+                </span>
+                <span className="text-xl font-bold text-primary">
+                  {currentStreak} Days
                 </span>
               </div>
-              {/* Label */}
-              <span className="text-xs font-medium text-muted-foreground">
-                day streak!
-              </span>
             </div>
           </div>
         </div>
