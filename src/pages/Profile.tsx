@@ -94,6 +94,7 @@ const sidebarItems = [
   { id: 'learnings' as TabType, label: 'My Learnings', icon: BookOpen },
   { id: 'bookmarks' as TabType, label: 'Bookmarks', icon: Bookmark },
   { id: 'discussions' as TabType, label: 'Discussions', icon: MessageSquare },
+  { id: 'notifications' as TabType, label: 'Notifications', icon: Bell },
 ];
 
 const exploreItems = [
@@ -102,7 +103,6 @@ const exploreItems = [
 ];
 
 const accountItems = [
-  { id: 'notifications' as TabType, label: 'Notifications', icon: Bell },
   { id: 'settings' as TabType, label: 'Settings', icon: Settings },
 ];
 
