@@ -8,7 +8,7 @@
  * LEARNERS: Can ONLY create comments - no editing after submission
  */
 
-import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState } from 'react';
+import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useEditor, EditorContent, type JSONContent, type Editor } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -98,6 +98,9 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     return parsedValue;
   }, []);
 
+  // Track if change originated from editor to prevent feedback loop
+  const isInternalUpdate = useRef(false);
+
   // Editor instance
   const editor = useEditor({
     extensions,
@@ -105,11 +108,16 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     editable: !disabled,
     autofocus: autoFocus,
     onUpdate: ({ editor }) => {
+      isInternalUpdate.current = true;
       const json = editor.getJSON();
       onChange(serializeContent(json));
       if (draftKey) {
         autosave.debouncedSave(json);
       }
+      // Reset flag after a tick to allow the state update to propagate
+      setTimeout(() => {
+        isInternalUpdate.current = false;
+      }, 0);
     },
   });
 
@@ -118,9 +126,9 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     editor?.setEditable(!disabled);
   }, [editor, disabled]);
 
-  // Sync external value - when parent resets value to empty, clear editor and draft
+  // Sync external value - only when change is from parent (not from typing)
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || isInternalUpdate.current) return;
     
     const newContent = parseContent(value);
     const current = JSON.stringify(editor.getJSON());
