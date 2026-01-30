@@ -482,7 +482,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
-  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
+  const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill, loading: careersLoading } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
   const { navigateToCourse, navigateToCourseInCareerBoard, handleResume } = useCourseNavigation();
 
@@ -1654,6 +1654,11 @@ const Profile = () => {
           <Button 
             variant="ghost" 
             onClick={() => {
+              // Guard: if careers data is still loading, don't navigate yet
+              if (careersLoading) {
+                toast({ description: "Loading career data...", duration: 1500 });
+                return;
+              }
               // Get career ID and first course to navigate to proper shell
               const career = getCareerBySlug(selectedCareer);
               if (career) {
@@ -1666,7 +1671,7 @@ const Profile = () => {
               } else {
                 navigate('/arcade');
               }
-            }} 
+            }}
             className="gap-1"
           >
             My Study Plan <ChevronRight className="h-4 w-4" />
