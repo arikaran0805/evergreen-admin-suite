@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame, Target, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -6,7 +5,6 @@ import { cn } from "@/lib/utils";
 type Props = {
   className?: string;
   fullName: string;
-  avatarUrl: string;
   careerName: string;
   currentStreak: number;
   maxStreak: number;
@@ -18,15 +16,12 @@ type Props = {
 export const ProfileDashboardHeader = ({
   className,
   fullName,
-  avatarUrl,
   careerName,
   currentStreak,
   maxStreak,
-  currentCourse,
   focusMessage = "Continue your learning",
   focusSubtext = "Pick up where you left off",
 }: Props) => {
-  const initials = fullName?.charAt(0)?.toUpperCase() || "U";
   const isOnTrack = currentStreak > 0;
 
   return (
@@ -45,41 +40,31 @@ export const ProfileDashboardHeader = ({
 
       <CardContent className="relative p-6 md:p-8">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] gap-5 md:gap-6 items-center">
-          {/* Left Section — User Identity */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-14 w-14 md:h-16 md:w-16 ring-2 ring-primary/20 ring-offset-2 ring-offset-background shadow-md">
-                <AvatarImage src={avatarUrl} alt={fullName} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-lg font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
-                Welcome back
-              </span>
-              <h2 className="text-lg md:text-xl font-bold text-foreground leading-tight">
-                {fullName || "Learner"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Aspiring <span className="text-primary font-medium">{careerName}</span>
-              </p>
-              {/* State indicator */}
-              <p className="text-xs text-muted-foreground/80 mt-0.5 flex items-center gap-1.5">
-                {isOnTrack ? (
-                  <>
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Status: On track</span>
-                  </>
-                ) : (
-                  <>
-                    <BookOpen className="h-3 w-3" />
-                    <span>Status: Ready to learn</span>
-                  </>
-                )}
-              </p>
-            </div>
+          {/* Left Section — Text-Based Identity */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
+              Welcome back
+            </span>
+            <h2 className="text-lg md:text-xl font-bold text-foreground leading-tight">
+              {fullName || "Learner"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Aspiring <span className="text-primary font-medium">{careerName}</span>
+            </p>
+            {/* State indicator */}
+            <p className="text-xs text-muted-foreground/80 mt-0.5 flex items-center gap-1.5">
+              {isOnTrack ? (
+                <>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Status: On track</span>
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-3 w-3" />
+                  <span>Status: Ready to learn</span>
+                </>
+              )}
+            </p>
           </div>
 
           {/* Center Section — Contextual Focus (Primary Action) */}
