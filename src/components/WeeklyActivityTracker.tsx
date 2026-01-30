@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfWeek, endOfWeek, eachDayOfInterval, subDays, subWeeks } from "date-fns";
 import {
@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const toDayKey = (d: Date) => {
   const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
@@ -52,153 +53,155 @@ const formatDurationLong = (minutes: number): string => {
   return `${hours} hour${hours !== 1 ? 's' : ''} of activity`;
 };
 
+const fetchActivityData = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return null;
+  }
+
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+
+  // Get time tracking data for this week
+  const { data: timeData } = await supabase
+    .from('lesson_time_tracking')
+    .select('tracked_date, duration_seconds')
+    .eq('user_id', user.id)
+    .gte('tracked_date', toDayKey(weekStart))
+    .lte('tracked_date', toDayKey(weekEnd));
+
+  // Get last week's data for comparison
+  const lastWeekStart = startOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
+  const lastWeekEnd = endOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
+  
+  const { data: lastWeekData } = await supabase
+    .from('lesson_time_tracking')
+    .select('duration_seconds')
+    .eq('user_id', user.id)
+    .gte('tracked_date', toDayKey(lastWeekStart))
+    .lte('tracked_date', toDayKey(lastWeekEnd));
+
+  const lastWeekTotal = lastWeekData?.reduce((sum, t) => sum + t.duration_seconds, 0) || 0;
+  const lastWeekMinutes = Math.floor(lastWeekTotal / 60);
+
+  // Create week days with activity data
+  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  let weekTotal = 0;
+  let maxDayMinutes = 60;
+  let bestDayIndex = -1;
+  let bestDayMinutes = 0;
+
+  const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
+    const dateStr = toDayKey(date);
+    const dayTimeRecords = timeData?.filter(t => t.tracked_date === dateStr) || [];
+    const totalSeconds = dayTimeRecords.reduce((sum, t) => sum + t.duration_seconds, 0);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    weekTotal += totalMinutes;
+    if (totalMinutes > maxDayMinutes) maxDayMinutes = totalMinutes;
+    
+    if (totalMinutes > bestDayMinutes) {
+      bestDayMinutes = totalMinutes;
+      bestDayIndex = index;
+    }
+
+    return {
+      day: dayNames[index],
+      shortDay: shortDayNames[index],
+      date,
+      hasActivity: totalSeconds > 0,
+      totalMinutes,
+      isBestDay: false,
+    };
+  });
+
+  // Mark best day
+  if (bestDayIndex >= 0 && bestDayMinutes > 0) {
+    activityDays[bestDayIndex].isBestDay = true;
+  }
+
+  // Calculate streak for profile update
+  const { data: allTimeData } = await supabase
+    .from('lesson_time_tracking')
+    .select('tracked_date, duration_seconds')
+    .eq('user_id', user.id)
+    .order('tracked_date', { ascending: false });
+
+  const dailyTotals = new Map<string, number>();
+  allTimeData?.forEach(record => {
+    const existing = dailyTotals.get(record.tracked_date) || 0;
+    dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
+  });
+
+  const todayStr = toDayKey(today);
+  const todaySeconds = dailyTotals.get(todayStr) || 0;
+  const hasActivityToday = todaySeconds > 0;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('max_streak, current_streak, last_activity_date, last_freeze_date')
+    .eq('id', user.id)
+    .single();
+
+  const storedMaxStreak = (profile as any)?.max_streak || 0;
+  const lastFreezeDate = (profile as any)?.last_freeze_date;
+
+  let recalculatedStreak = 0;
+  let checkDate = today;
+  
+  const todayFrozen = lastFreezeDate === todayStr;
+  if (!hasActivityToday && !todayFrozen) {
+    checkDate = subDays(today, 1);
+  }
+
+  for (let i = 0; i < 365; i++) {
+    const dateStr = toDayKey(checkDate);
+    const daySeconds = dailyTotals.get(dateStr) || 0;
+    const wasFrozen = lastFreezeDate === dateStr;
+
+    if (daySeconds > 0 || wasFrozen) {
+      recalculatedStreak++;
+      checkDate = subDays(checkDate, 1);
+    } else {
+      break;
+    }
+  }
+
+  const newMaxStreak = Math.max(recalculatedStreak, storedMaxStreak);
+
+  await supabase
+    .from('profiles')
+    .update({ 
+      max_streak: newMaxStreak,
+      current_streak: recalculatedStreak,
+      last_activity_date: hasActivityToday ? todayStr : (profile as any)?.last_activity_date
+    } as any)
+    .eq('id', user.id);
+
+  return {
+    weekDays: activityDays,
+    totalWeekMinutes: weekTotal,
+    lastWeekMinutes,
+    maxMinutes: Math.max(maxDayMinutes, 60),
+  };
+};
+
 export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps) => {
-  const [weekDays, setWeekDays] = useState<DayActivity[]>([]);
-  const [totalWeekMinutes, setTotalWeekMinutes] = useState(0);
-  const [lastWeekMinutes, setLastWeekMinutes] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [maxMinutes, setMaxMinutes] = useState(60);
   const [activeTouchDay, setActiveTouchDay] = useState<number | null>(null);
 
-  useEffect(() => {
-    const fetchActivityData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+  const { data, isLoading } = useQuery({
+    queryKey: ['weekly-activity'],
+    queryFn: fetchActivityData,
+    staleTime: 30000,
+  });
 
-      const today = new Date();
-      const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-      const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-
-      // Get time tracking data for this week
-      const { data: timeData } = await supabase
-        .from('lesson_time_tracking')
-        .select('tracked_date, duration_seconds')
-        .eq('user_id', user.id)
-        .gte('tracked_date', toDayKey(weekStart))
-        .lte('tracked_date', toDayKey(weekEnd));
-
-      // Get last week's data for comparison
-      const lastWeekStart = startOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
-      const lastWeekEnd = endOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
-      
-      const { data: lastWeekData } = await supabase
-        .from('lesson_time_tracking')
-        .select('duration_seconds')
-        .eq('user_id', user.id)
-        .gte('tracked_date', toDayKey(lastWeekStart))
-        .lte('tracked_date', toDayKey(lastWeekEnd));
-
-      const lastWeekTotal = lastWeekData?.reduce((sum, t) => sum + t.duration_seconds, 0) || 0;
-      setLastWeekMinutes(Math.floor(lastWeekTotal / 60));
-
-      // Create week days with activity data
-      const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-      let weekTotal = 0;
-      let maxDayMinutes = 60;
-      let bestDayIndex = -1;
-      let bestDayMinutes = 0;
-
-      const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
-        const dateStr = toDayKey(date);
-        const dayTimeRecords = timeData?.filter(t => t.tracked_date === dateStr) || [];
-        const totalSeconds = dayTimeRecords.reduce((sum, t) => sum + t.duration_seconds, 0);
-        const totalMinutes = Math.floor(totalSeconds / 60);
-        weekTotal += totalMinutes;
-        if (totalMinutes > maxDayMinutes) maxDayMinutes = totalMinutes;
-        
-        if (totalMinutes > bestDayMinutes) {
-          bestDayMinutes = totalMinutes;
-          bestDayIndex = index;
-        }
-
-        return {
-          day: dayNames[index],
-          shortDay: shortDayNames[index],
-          date,
-          hasActivity: totalSeconds > 0,
-          totalMinutes,
-          isBestDay: false,
-        };
-      });
-
-      // Mark best day
-      if (bestDayIndex >= 0 && bestDayMinutes > 0) {
-        activityDays[bestDayIndex].isBestDay = true;
-      }
-
-      setWeekDays(activityDays);
-      setTotalWeekMinutes(weekTotal);
-      setMaxMinutes(Math.max(maxDayMinutes, 60));
-
-      // Calculate streak for profile update
-      const { data: allTimeData } = await supabase
-        .from('lesson_time_tracking')
-        .select('tracked_date, duration_seconds')
-        .eq('user_id', user.id)
-        .order('tracked_date', { ascending: false });
-
-      const dailyTotals = new Map<string, number>();
-      allTimeData?.forEach(record => {
-        const existing = dailyTotals.get(record.tracked_date) || 0;
-        dailyTotals.set(record.tracked_date, existing + record.duration_seconds);
-      });
-
-      const todayStr = toDayKey(today);
-      const todaySeconds = dailyTotals.get(todayStr) || 0;
-      const hasActivityToday = todaySeconds > 0;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('max_streak, current_streak, last_activity_date, last_freeze_date')
-        .eq('id', user.id)
-        .single();
-
-      const storedMaxStreak = (profile as any)?.max_streak || 0;
-      const lastFreezeDate = (profile as any)?.last_freeze_date;
-
-      let recalculatedStreak = 0;
-      let checkDate = today;
-      
-      const todayFrozen = lastFreezeDate === todayStr;
-      if (!hasActivityToday && !todayFrozen) {
-        checkDate = subDays(today, 1);
-      }
-
-      for (let i = 0; i < 365; i++) {
-        const dateStr = toDayKey(checkDate);
-        const daySeconds = dailyTotals.get(dateStr) || 0;
-        const wasFrozen = lastFreezeDate === dateStr;
-
-        if (daySeconds > 0 || wasFrozen) {
-          recalculatedStreak++;
-          checkDate = subDays(checkDate, 1);
-        } else {
-          break;
-        }
-      }
-
-      const newMaxStreak = Math.max(recalculatedStreak, storedMaxStreak);
-
-      await supabase
-        .from('profiles')
-        .update({ 
-          max_streak: newMaxStreak,
-          current_streak: recalculatedStreak,
-          last_activity_date: hasActivityToday ? todayStr : (profile as any)?.last_activity_date
-        } as any)
-        .eq('id', user.id);
-
-      setLoading(false);
-    };
-
-    fetchActivityData();
-  }, []);
+  const weekDays = data?.weekDays || [];
+  const totalWeekMinutes = data?.totalWeekMinutes || 0;
+  const lastWeekMinutes = data?.lastWeekMinutes ?? null;
+  const maxMinutes = data?.maxMinutes || 60;
 
   // Handle touch outside to dismiss tooltip
   const handleTouchOutside = useCallback(() => {
@@ -224,7 +227,7 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
     ? Math.round(((totalWeekMinutes - lastWeekMinutes) / lastWeekMinutes) * 100)
     : null;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className={cn("border-primary/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]", className)}>
         <CardHeader className="pb-2">

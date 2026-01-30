@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UseLessonTimeTrackingProps {
   lessonId: string | undefined;
@@ -13,6 +14,7 @@ const toDayKey = (d: Date) => {
 };
 
 export const useLessonTimeTracking = ({ lessonId, courseId }: UseLessonTimeTrackingProps) => {
+  const queryClient = useQueryClient();
   const startTimeRef = useRef<number>(Date.now());
   const lastSaveRef = useRef<number>(Date.now());
   const accumulatedTimeRef = useRef<number>(0);
@@ -79,7 +81,10 @@ export const useLessonTimeTracking = ({ lessonId, courseId }: UseLessonTimeTrack
         last_activity_date: today,
       } as any)
       .eq('id', user.id);
-  }, [lessonId, courseId]);
+
+    // Invalidate the weekly activity cache so the UI updates
+    queryClient.invalidateQueries({ queryKey: ['weekly-activity'] });
+  }, [lessonId, courseId, queryClient]);
 
   useEffect(() => {
     if (!lessonId || !courseId) return;
