@@ -119,7 +119,9 @@ const CareerCourseCompleted = () => {
 
         if (courseError || !courseData) {
           console.error("Course not found:", courseError);
-          navigate(`/career-board/${careerSlugForPath}`, { replace: true });
+          // Stay within the Career Board shell; don't bounce to the /career-board index
+          // (which redirects to /arcade).
+          navigate(`/career-board/${careerSlugForPath}/course/${courseSlug}`, { replace: true });
           return;
         }
 
@@ -135,12 +137,18 @@ const CareerCourseCompleted = () => {
         setLearnerName(profile?.full_name || user!.email?.split('@')[0] || "Learner");
 
         // Check if course is actually completed
-        const { count: totalLessons } = await supabase
-          .from("posts")
+        // IMPORTANT: Progress is tracked against course_lessons (published lessons), not posts.
+        // Using posts here can incorrectly report 0 lessons and force redirects.
+        const { count: totalLessons, error: totalLessonsError } = await supabase
+          .from("course_lessons")
           .select("*", { count: "exact", head: true })
-          .eq("category_id", courseData.id)
-          .eq("status", "published")
+          .eq("course_id", courseData.id)
+          .eq("is_published", true)
           .is("deleted_at", null);
+
+        if (totalLessonsError) {
+          console.error("Error counting course lessons:", totalLessonsError);
+        }
 
         const { count: completedLessons } = await supabase
           .from("lesson_progress")
@@ -152,6 +160,7 @@ const CareerCourseCompleted = () => {
         const total = totalLessons || 0;
         const completed = completedLessons || 0;
 
+        // Only allow the completion page when the course is fully completed.
         if (total === 0 || completed < total) {
           // Not completed - redirect to course page
           toast({
