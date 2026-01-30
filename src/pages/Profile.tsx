@@ -1269,8 +1269,8 @@ const Profile = () => {
         <div className="flex flex-col space-y-6 h-full">
           {/* Today's Focus + Streak Card */}
           <Card className="card-premium rounded-xl animate-stagger-1">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between h-full min-h-[72px]">
+            <CardContent className="p-5 h-[100px] flex items-center">
+              <div className="flex items-center justify-between w-full">
                 {/* Today's Focus */}
                 <div className="flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-1.5">
