@@ -230,19 +230,7 @@ const OngoingCourseCard = ({
         </div>
 
         {/* Right Section - Light */}
-        <div className="w-2/3 bg-card p-4 flex flex-col justify-between relative">
-          {/* Reset button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            onClick={handleResetProgress}
-            disabled={isResetting}
-            title="Reset Progress"
-          >
-            <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
-          </Button>
-
+        <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
