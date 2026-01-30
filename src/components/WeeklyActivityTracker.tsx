@@ -1,15 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfWeek, endOfWeek, eachDayOfInterval, subDays } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, subDays, subWeeks } from "date-fns";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Star } from "lucide-react";
 
 const toDayKey = (d: Date) => {
   const safe = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
@@ -22,6 +22,7 @@ interface DayActivity {
   date: Date;
   hasActivity: boolean;
   totalMinutes: number;
+  isBestDay: boolean;
 }
 
 interface WeeklyActivityTrackerProps {
@@ -29,6 +30,7 @@ interface WeeklyActivityTrackerProps {
 }
 
 const formatDuration = (minutes: number): string => {
+  if (minutes === 0) return "0m";
   if (minutes < 60) {
     return `${minutes}m`;
   }
@@ -37,11 +39,26 @@ const formatDuration = (minutes: number): string => {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 };
 
+const formatDurationLong = (minutes: number): string => {
+  if (minutes === 0) return "No activity";
+  if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} of activity`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins > 0) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ${mins} minute${mins !== 1 ? 's' : ''} of activity`;
+  }
+  return `${hours} hour${hours !== 1 ? 's' : ''} of activity`;
+};
+
 export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps) => {
   const [weekDays, setWeekDays] = useState<DayActivity[]>([]);
   const [totalWeekMinutes, setTotalWeekMinutes] = useState(0);
+  const [lastWeekMinutes, setLastWeekMinutes] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [maxMinutes, setMaxMinutes] = useState(30); // Default max for scaling
+  const [maxMinutes, setMaxMinutes] = useState(60);
+  const [activeTouchDay, setActiveTouchDay] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -63,13 +80,29 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         .gte('tracked_date', toDayKey(weekStart))
         .lte('tracked_date', toDayKey(weekEnd));
 
+      // Get last week's data for comparison
+      const lastWeekStart = startOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
+      const lastWeekEnd = endOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
+      
+      const { data: lastWeekData } = await supabase
+        .from('lesson_time_tracking')
+        .select('duration_seconds')
+        .eq('user_id', user.id)
+        .gte('tracked_date', toDayKey(lastWeekStart))
+        .lte('tracked_date', toDayKey(lastWeekEnd));
+
+      const lastWeekTotal = lastWeekData?.reduce((sum, t) => sum + t.duration_seconds, 0) || 0;
+      setLastWeekMinutes(Math.floor(lastWeekTotal / 60));
+
       // Create week days with activity data
       const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const shortDayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       let weekTotal = 0;
-      let maxDayMinutes = 30; // Lower minimum scale for better visibility
+      let maxDayMinutes = 60;
+      let bestDayIndex = -1;
+      let bestDayMinutes = 0;
 
       const activityDays: DayActivity[] = daysOfWeek.map((date, index) => {
         const dateStr = toDayKey(date);
@@ -78,19 +111,30 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         const totalMinutes = Math.floor(totalSeconds / 60);
         weekTotal += totalMinutes;
         if (totalMinutes > maxDayMinutes) maxDayMinutes = totalMinutes;
+        
+        if (totalMinutes > bestDayMinutes) {
+          bestDayMinutes = totalMinutes;
+          bestDayIndex = index;
+        }
 
         return {
           day: dayNames[index],
           shortDay: shortDayNames[index],
           date,
-          hasActivity: totalSeconds > 0, // Show activity even for < 1 minute
+          hasActivity: totalSeconds > 0,
           totalMinutes,
+          isBestDay: false,
         };
       });
 
+      // Mark best day
+      if (bestDayIndex >= 0 && bestDayMinutes > 0) {
+        activityDays[bestDayIndex].isBestDay = true;
+      }
+
       setWeekDays(activityDays);
       setTotalWeekMinutes(weekTotal);
-      setMaxMinutes(Math.max(maxDayMinutes, 30)); // At least 30 min scale
+      setMaxMinutes(Math.max(maxDayMinutes, 60));
 
       // Calculate streak for profile update
       const { data: allTimeData } = await supabase
@@ -99,7 +143,6 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         .eq('user_id', user.id)
         .order('tracked_date', { ascending: false });
 
-      // Group by date and sum durations
       const dailyTotals = new Map<string, number>();
       allTimeData?.forEach(record => {
         const existing = dailyTotals.get(record.tracked_date) || 0;
@@ -110,7 +153,6 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       const todaySeconds = dailyTotals.get(todayStr) || 0;
       const hasActivityToday = todaySeconds > 0;
 
-      // Get and update max streak from profile (including freeze info)
       const { data: profile } = await supabase
         .from('profiles')
         .select('max_streak, current_streak, last_activity_date, last_freeze_date')
@@ -120,17 +162,14 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
       const storedMaxStreak = (profile as any)?.max_streak || 0;
       const lastFreezeDate = (profile as any)?.last_freeze_date;
 
-      // Recalculate streak - count consecutive days with activity (including today)
       let recalculatedStreak = 0;
       let checkDate = today;
       
-      // If no activity today and not frozen, start checking from yesterday
       const todayFrozen = lastFreezeDate === todayStr;
       if (!hasActivityToday && !todayFrozen) {
         checkDate = subDays(today, 1);
       }
 
-      // Count consecutive days with activity going backwards
       for (let i = 0; i < 365; i++) {
         const dateStr = toDayKey(checkDate);
         const daySeconds = dailyTotals.get(dateStr) || 0;
@@ -146,7 +185,6 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
 
       const newMaxStreak = Math.max(recalculatedStreak, storedMaxStreak);
 
-      // Always update profile with current streak
       await supabase
         .from('profiles')
         .update({ 
@@ -162,22 +200,39 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
     fetchActivityData();
   }, []);
 
+  // Handle touch outside to dismiss tooltip
+  const handleTouchOutside = useCallback(() => {
+    if (activeTouchDay !== null) {
+      setTimeout(() => setActiveTouchDay(null), 150);
+    }
+  }, [activeTouchDay]);
+
+  useEffect(() => {
+    if (activeTouchDay !== null) {
+      const handler = () => handleTouchOutside();
+      document.addEventListener('touchstart', handler);
+      return () => document.removeEventListener('touchstart', handler);
+    }
+  }, [activeTouchDay, handleTouchOutside]);
+
   const today = new Date();
   const currentDayIndex = today.getDay();
   const activeDays = weekDays.filter(d => d.hasActivity).length;
-  const avgMinutes = activeDays > 0 ? Math.round(totalWeekMinutes / activeDays) : 0;
+
+  // Calculate percentage change vs last week
+  const percentChange = lastWeekMinutes !== null && lastWeekMinutes > 0 
+    ? Math.round(((totalWeekMinutes - lastWeekMinutes) / lastWeekMinutes) * 100)
+    : null;
 
   if (loading) {
     return (
-      <Card className={cn("", className)}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Weekly Activity</CardTitle>
-          </div>
+      <Card className={cn("border-primary/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]", className)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">Weekly Activity</CardTitle>
+          <p className="text-xs text-muted-foreground">Time spent per day (hrs)</p>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+          <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
             Loading activity...
           </div>
         </CardContent>
@@ -186,55 +241,105 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
   }
 
   return (
-    <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-lg font-bold">Weekly Activity</CardTitle>
-        </div>
+    <Card className={cn(
+      "border-primary/20 shadow-[0_0_15px_rgba(34,197,94,0.1)] transition-shadow hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]",
+      className
+    )}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-semibold">Weekly Activity</CardTitle>
+        <p className="text-xs text-muted-foreground">Time spent per day (hrs)</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Bar Chart */}
-        <TooltipProvider>
-          <div className="flex items-end justify-between gap-3 h-36 px-2">
+        <TooltipProvider delayDuration={100}>
+          <div className="flex items-end justify-between gap-2 h-40 px-1">
             {weekDays.map((day, index) => {
               const isToday = index === currentDayIndex;
               const heightPercent = maxMinutes > 0 ? (day.totalMinutes / maxMinutes) * 100 : 0;
+              const ariaLabel = `${day.day}, ${formatDurationLong(day.totalMinutes)}`;
               
               return (
-                <Tooltip key={day.day + index}>
+                <Tooltip 
+                  key={day.day + index}
+                  open={activeTouchDay === index ? true : undefined}
+                >
                   <TooltipTrigger asChild>
-                    <div className="flex-1 flex flex-col items-center gap-2 cursor-pointer">
+                    <div 
+                      className="flex-1 flex flex-col items-center gap-1.5 cursor-pointer select-none"
+                      role="button"
+                      aria-label={ariaLabel}
+                      tabIndex={0}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setTimeout(() => setActiveTouchDay(index), 150);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setActiveTouchDay(activeTouchDay === index ? null : index);
+                        }
+                      }}
+                    >
+                      {/* Best day indicator */}
+                      <div className="h-5 flex items-center justify-center">
+                        {day.isBestDay && (
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        )}
+                      </div>
+                      
+                      {/* Bar container */}
                       <div 
                         className="w-full relative flex items-end justify-center"
-                        style={{ height: '90px' }}
+                        style={{ height: '100px' }}
                       >
                         <div
                           className={cn(
-                            "w-full max-w-8 rounded-lg transition-all duration-500 hover:opacity-80",
-                            isToday 
-                              ? "bg-primary shadow-lg shadow-primary/30" 
-                              : day.hasActivity 
-                                ? "bg-primary/70" 
-                                : "bg-muted/50"
+                            "w-full max-w-7 rounded-full transition-all duration-300",
+                            day.isBestDay
+                              ? "bg-primary shadow-md"
+                              : isToday 
+                                ? "bg-primary/80" 
+                                : day.hasActivity 
+                                  ? "bg-primary/50" 
+                                  : "bg-muted/40"
                           )}
                           style={{ 
-                            height: day.hasActivity ? `${Math.max(heightPercent, 15)}%` : '6px',
-                            minHeight: day.hasActivity ? '12px' : '6px'
+                            height: day.hasActivity ? `${Math.max(heightPercent, 12)}%` : '8px',
+                            minHeight: day.hasActivity ? '12px' : '8px'
                           }}
                         />
                       </div>
+                      
+                      {/* Day label */}
                       <span className={cn(
-                        "text-xs font-semibold",
-                        isToday ? "text-primary" : "text-muted-foreground"
+                        "text-[11px] font-medium transition-colors",
+                        isToday 
+                          ? "text-primary" 
+                          : day.hasActivity 
+                            ? "text-foreground/80" 
+                            : "text-muted-foreground/70"
                       )}>
                         {day.shortDay}
                       </span>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="text-center">
-                    <p className="font-semibold">{day.day}</p>
+                  <TooltipContent 
+                    side="top" 
+                    className="text-center px-3 py-2"
+                    sideOffset={8}
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      {day.day}
+                      {day.isBestDay && <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      {day.hasActivity ? formatDuration(day.totalMinutes) : 'No activity'}
+                      {day.hasActivity ? (
+                        <>
+                          {formatDuration(day.totalMinutes)}
+                          {day.isBestDay && <span className="ml-1">· Best day</span>}
+                        </>
+                      ) : (
+                        'No activity'
+                      )}
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -244,14 +349,26 @@ export const WeeklyActivityTracker = ({ className }: WeeklyActivityTrackerProps)
         </TooltipProvider>
 
         {/* Stats Row */}
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="flex flex-col">
-            <span className="text-muted-foreground text-xs">Total Time</span>
-            <span className="font-bold text-lg">{totalWeekMinutes > 0 ? formatDuration(totalWeekMinutes) : '0 min'}</span>
+        <div className="flex justify-between items-start pt-4 border-t border-border/50">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-muted-foreground text-xs font-medium">Total Time</span>
+            <span className="font-bold text-xl tracking-tight">
+              {totalWeekMinutes > 0 ? formatDuration(totalWeekMinutes) : '0m'}
+            </span>
+            {percentChange !== null && totalWeekMinutes > 0 && (
+              <span className={cn(
+                "text-[10px] font-medium",
+                percentChange >= 0 ? "text-primary" : "text-muted-foreground"
+              )}>
+                {percentChange >= 0 ? '+' : ''}{percentChange}% vs last week
+              </span>
+            )}
           </div>
-          <div className="flex flex-col text-right">
-            <span className="text-muted-foreground text-xs">Active Days</span>
-            <span className="font-bold text-lg">{activeDays} / 7</span>
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-muted-foreground text-xs font-medium">Active Days</span>
+            <span className="font-bold text-xl tracking-tight">
+              {activeDays} / 7 {activeDays >= 5 && '🔥'}
+            </span>
           </div>
         </div>
       </CardContent>
