@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDelayedSticky } from "@/hooks/useDelayedSticky";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCourseNavigation } from "@/hooks/useCourseNavigation";
 import { Button } from "@/components/ui/button";
@@ -328,6 +329,9 @@ const Profile = () => {
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
   const { navigateToCourse, navigateToCourseInCareerBoard, handleResume } = useCourseNavigation();
+  
+  // Delayed sticky sidebar - scrolls naturally first 100px, then sticks
+  const { isSticky, progress } = useDelayedSticky({ threshold: 100, stickyTopOffset: 112 });
 
   const { data: weeklyActivityQueryData, isLoading: weeklyActivityLoading } = useWeeklyActivity(userId);
   const weeklyActivityData =
@@ -2063,19 +2067,29 @@ const Profile = () => {
           {/* Sidebar - hidden for Practice Lab */}
           {activeTab !== 'practice' && (
           <aside className="lg:w-64 flex-shrink-0 animate-sidebar">
-            <Card className="sticky top-28 rounded-xl bg-card/80 backdrop-blur-sm border shadow-lg">
-              <CardContent className="p-4">
+            <Card 
+              className={`rounded-xl bg-card/80 backdrop-blur-sm border shadow-lg transition-all duration-300 ease-out ${
+                isSticky 
+                  ? 'sticky top-28' 
+                  : ''
+              }`}
+              style={{
+                // Smooth padding reduction when sticky for lighter feel
+                padding: isSticky ? '0' : undefined,
+              }}
+            >
+              <CardContent className={`transition-all duration-300 ease-out ${isSticky ? 'p-3' : 'p-4'}`}>
                 {/* Profile Summary */}
-                <div className="text-center pb-4 mb-4 border-b border-border/50">
+                <div className={`text-center border-b border-border/50 transition-all duration-300 ${isSticky ? 'pb-3 mb-3' : 'pb-4 mb-4'}`}>
                   <div className="mx-auto w-fit">
-                    <Avatar className="h-20 w-20 ring-4 ring-primary/20 ring-offset-2 ring-offset-background shadow-lg">
+                    <Avatar className={`ring-4 ring-primary/20 ring-offset-2 ring-offset-background shadow-lg transition-all duration-300 ${isSticky ? 'h-16 w-16' : 'h-20 w-20'}`}>
                       <AvatarImage src={avatarUrl} alt={fullName} />
-                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
+                      <AvatarFallback className={`font-bold bg-gradient-to-br from-primary to-primary/70 text-primary-foreground transition-all duration-300 ${isSticky ? 'text-xl' : 'text-2xl'}`}>
                         {fullName?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  <h3 className="font-semibold text-lg truncate mt-3 text-foreground">{fullName || 'User'}</h3>
+                  <h3 className={`font-semibold truncate mt-3 text-foreground transition-all duration-300 ${isSticky ? 'text-base' : 'text-lg'}`}>{fullName || 'User'}</h3>
                   <p className="text-sm text-muted-foreground truncate">{email}</p>
                 </div>
                 
