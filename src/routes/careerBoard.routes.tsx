@@ -12,7 +12,7 @@
  * /career-board/:careerId/course/:courseSlug/completed → Course completion within career context
  */
 import { Routes, Route, Navigate } from "react-router-dom";
-import { CareerBoardProvider } from "@/contexts/CareerBoardContext";
+import { CareerBoardProvider, useCareerBoard } from "@/contexts/CareerBoardContext";
 import CareerBoardLayout from "@/components/layouts/CareerBoardLayout";
 import CareerCourseDetail from "@/pages/CareerCourseDetail";
 import CareerCourseCompleted from "@/pages/CareerCourseCompleted";
@@ -22,6 +22,18 @@ import CareerCourseCompleted from "@/pages/CareerCourseCompleted";
  * Users should always enter via a specific course or the Arcade page
  */
 const CareerBoardIndex = () => {
+  const { career, careerCourses, isLoading, isReady } = useCareerBoard();
+
+  // While the shell/context is still resolving, render nothing.
+  // CareerBoardLayout will show the skeleton.
+  if (isLoading || !isReady) return null;
+
+  // Redirect to the first course in the career (stays inside the shell)
+  if (career && careerCourses.length > 0) {
+    return <Navigate to={`course/${careerCourses[0].slug}`} replace />;
+  }
+
+  // If the career has no courses or can't be resolved, fall back to Arcade.
   return <Navigate to="/arcade" replace />;
 };
 
