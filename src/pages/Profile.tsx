@@ -1298,7 +1298,10 @@ const Profile = () => {
                       {currentStreak} Days
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      Streak · max {maxStreak}
+                      Streak
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      max {maxStreak}
                     </span>
                   </div>
                 </div>
