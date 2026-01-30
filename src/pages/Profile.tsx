@@ -913,9 +913,6 @@ const Profile = () => {
         fullName={fullName}
         careerName={career?.name || "Data Analyst"}
         currentStreak={currentStreak}
-        maxStreak={maxStreak}
-        focusMessage={focusContent.message}
-        focusSubtext={focusContent.subtext}
       />
 
       {/* Main Content Grid */}
@@ -1269,8 +1266,46 @@ const Profile = () => {
           </Card>
         </div>
 
-        {/* Right Column - Weekly Activity + AI Mentor + Achievements */}
+        {/* Right Column - Today's Focus + Weekly Activity + AI Mentor + Achievements */}
         <div className="flex flex-col space-y-6 h-full">
+          {/* Today's Focus + Streak Card */}
+          <Card className="rounded-xl bg-card border shadow-sm animate-stagger-1">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                {/* Today's Focus */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                      Today's Focus
+                    </span>
+                  </div>
+                  <p className="text-base font-semibold text-foreground leading-snug">
+                    {focusContent.message}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {focusContent.subtext}
+                  </p>
+                </div>
+                
+                {/* Streak Display */}
+                <div className="flex items-center gap-3 pl-4 border-l border-border">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                    <Flame className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs text-muted-foreground">
+                      Streak · max {maxStreak}
+                    </span>
+                    <span className="text-lg font-bold text-primary">
+                      {currentStreak} Days
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <ProfileWeeklyActivityCard
             className="animate-stagger-2"
             loading={weeklyActivityLoading}
