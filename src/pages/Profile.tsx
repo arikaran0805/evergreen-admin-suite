@@ -207,14 +207,6 @@ const OngoingCourseCard = ({
     }
   };
 
-  // Strip HTML tags from description
-  const stripHtml = (html: string | null) => {
-    if (!html) return "";
-    return html.replace(/<[^>]*>/g, '').trim();
-  };
-
-  const cleanDescription = stripHtml(course?.description);
-
   return (
     <Card
       className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[130px]"
@@ -274,9 +266,6 @@ const OngoingCourseCard = ({
                 </span>
               </div>
             )}
-            <p className="text-xs text-foreground line-clamp-2">
-              {cleanDescription || "Continue your learning journey"}
-            </p>
           </div>
           
           <div className="flex items-center justify-between mt-3">
