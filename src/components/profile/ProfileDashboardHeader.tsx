@@ -69,8 +69,8 @@ export const ProfileDashboardHeader = ({
               <p className="text-xs text-muted-foreground/80 mt-1 flex items-center gap-1.5">
                 {isOnTrack ? (
                   <>
-                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>On track</span>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>Status: On track</span>
                     {currentCourse && (
                       <>
                         <span className="text-muted-foreground/50">·</span>
@@ -81,7 +81,7 @@ export const ProfileDashboardHeader = ({
                 ) : (
                   <>
                     <BookOpen className="h-3 w-3" />
-                    <span>Ready to learn</span>
+                    <span>Status: Ready to learn</span>
                   </>
                 )}
               </p>
@@ -90,7 +90,7 @@ export const ProfileDashboardHeader = ({
 
           {/* Center Section — Contextual Focus */}
           <div className="flex justify-center">
-            <div className="flex flex-col items-center text-center px-6 py-4 rounded-xl bg-background/60 backdrop-blur-sm border border-border/50 shadow-sm max-w-xs">
+            <div className="flex flex-col items-center text-center px-6 py-4 rounded-xl bg-background/70 backdrop-blur-sm border border-border/50 shadow-md shadow-primary/5 max-w-xs transition-shadow hover:shadow-lg hover:shadow-primary/8">
               <div className="flex items-center gap-2 mb-1.5">
                 <Target className="h-4 w-4 text-primary" />
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -108,16 +108,9 @@ export const ProfileDashboardHeader = ({
 
           {/* Right Section — Streak Summary */}
           <div className="flex justify-center md:justify-end">
-            <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 border border-amber-500/25 shadow-md shadow-amber-500/10">
-              <div className="relative">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/40">
-                  <Flame className="h-7 w-7 text-white drop-shadow-md" />
-                </div>
-                {currentStreak > 0 && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center text-[10px] shadow-sm">
-                    🔥
-                  </div>
-                )}
+            <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-md shadow-amber-500/5">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <Flame className="h-6 w-6 text-white" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-baseline gap-1.5">
@@ -125,8 +118,7 @@ export const ProfileDashboardHeader = ({
                   <span className="text-[10px] text-muted-foreground">· max {maxStreak}</span>
                 </div>
                 <p className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                  {currentStreak} Day{currentStreak !== 1 ? "s" : ""}{" "}
-                  {currentStreak > 0 && <span className="text-amber-500">🔥</span>}
+                  {currentStreak} Day{currentStreak !== 1 ? "s" : ""} 🔥
                 </p>
               </div>
             </div>
