@@ -244,7 +244,7 @@ const OngoingCourseCard = ({
           </Button>
 
           <div>
-            <div className="flex items-center justify-between gap-2 mb-1 pr-8">
+            <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                 {course?.level || "Beginner"} • {progress.total} Lessons
               </span>
