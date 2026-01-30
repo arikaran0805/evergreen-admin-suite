@@ -234,6 +234,51 @@ const OngoingCourseCard = ({
   );
 };
 
+// CompletedCourseCard component for the learnings section
+const CompletedCourseCard = ({ 
+  course, 
+  onClick 
+}: { 
+  course: any;
+  onClick: () => void;
+}) => {
+  return (
+    <Card 
+      className="card-premium hover:scale-[1.02] cursor-pointer relative"
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center shrink-0 relative">
+            {(() => {
+              const IconComponent = getIcon(course?.icon, BookOpen);
+              return <IconComponent className="h-8 w-8 text-emerald-600" />;
+            })()}
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+              <CheckCircle2 className="h-4 w-4 text-white" />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground truncate">{course?.name}</h4>
+            <div className="flex items-center gap-1 text-xs text-emerald-600 mt-1">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>Completed</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <Clock className="h-3 w-3" />
+              <span>
+                {course?.learning_hours > 0 
+                  ? `${course.learning_hours}h` 
+                  : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 // FeaturedCourseCard component for the learnings section
 const FeaturedCourseCard = ({ 
   course, 
@@ -1476,6 +1521,19 @@ const Profile = () => {
       'from-cyan-600 to-cyan-800',
     ];
 
+    // Split enrolled courses into ongoing and completed
+    const ongoingCourses = enrolledCourses.filter(enrollment => {
+      const progress = courseProgressMap[enrollment.courses?.slug];
+      // Not completed: either no progress data or completed < total or total is 0
+      return !progress || progress.total === 0 || progress.completed < progress.total;
+    });
+
+    const completedCourses = enrolledCourses.filter(enrollment => {
+      const progress = courseProgressMap[enrollment.courses?.slug];
+      // Completed: has progress data, total > 0, and completed >= total
+      return progress && progress.total > 0 && progress.completed >= progress.total;
+    });
+
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -1492,9 +1550,9 @@ const Profile = () => {
             <Flame className="h-5 w-5 text-orange-500" />
             Ongoing
           </h3>
-          {enrolledCourses.length > 0 ? (
+          {ongoingCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {enrolledCourses.map((enrollment) => (
+              {ongoingCourses.map((enrollment) => (
                 <OngoingCourseCard 
                   key={enrollment.id}
                   course={enrollment.courses}
@@ -1515,6 +1573,25 @@ const Profile = () => {
             </Card>
           )}
         </div>
+
+        {/* Completed Section */}
+        {completedCourses.length > 0 && (
+          <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.15s' }}>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Completed
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {completedCourses.map((enrollment) => (
+                <CompletedCourseCard 
+                  key={enrollment.id}
+                  course={enrollment.courses}
+                  onClick={() => navigateToCourse(enrollment.courses?.slug, enrollment.courses?.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Featured Section */}
         {featuredCourses.length > 0 && (
