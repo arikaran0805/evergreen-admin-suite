@@ -1539,7 +1539,7 @@ const Profile = () => {
         {/* Header */}
         <div className="flex items-center justify-between animate-fade-in">
           <h2 className="text-2xl font-bold">Study Plan</h2>
-          <Button variant="ghost" onClick={() => navigate('/courses')} className="gap-1">
+          <Button variant="ghost" onClick={() => navigate(`/career-board/${selectedCareer}`)} className="gap-1">
             My Study Plan <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
