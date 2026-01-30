@@ -915,13 +915,56 @@ const Profile = () => {
         currentStreak={currentStreak}
       />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Career Readiness + Recommended Labs */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Career Readiness */}
-          <Card className="card-premium rounded-xl animate-stagger-2">
-            <CardContent className="p-6">
+      {/* Top Row - Today's Focus + Weekly Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Today's Focus + Streak Card */}
+        <Card className="rounded-xl bg-card border shadow-sm animate-stagger-1">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              {/* Today's Focus */}
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-1">
+                  <Target className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    Today's Focus
+                  </span>
+                </div>
+                <p className="text-base font-semibold text-foreground leading-snug">
+                  {focusContent.message}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {focusContent.subtext}
+                </p>
+              </div>
+              
+              {/* Streak Display */}
+              <div className="flex items-center gap-3 pl-4 border-l border-border">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                  <Flame className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-muted-foreground">
+                    Streak · max {maxStreak}
+                  </span>
+                  <span className="text-lg font-bold text-primary">
+                    {currentStreak} Days
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <ProfileWeeklyActivityCard
+          className="animate-stagger-2"
+          loading={weeklyActivityLoading}
+          weeklyActivityData={weeklyActivityData}
+        />
+      </div>
+
+      {/* Career Readiness - Full Width */}
+      <Card className="card-premium rounded-xl animate-stagger-2">
+        <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">Career Readiness</h3>
@@ -1264,166 +1307,6 @@ const Profile = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Right Column - Today's Focus + Weekly Activity + AI Mentor + Achievements */}
-        <div className="flex flex-col space-y-6 h-full">
-          {/* Today's Focus + Streak Card */}
-          <Card className="rounded-xl bg-card border shadow-sm animate-stagger-1">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                {/* Today's Focus */}
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Target className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                      Today's Focus
-                    </span>
-                  </div>
-                  <p className="text-base font-semibold text-foreground leading-snug">
-                    {focusContent.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {focusContent.subtext}
-                  </p>
-                </div>
-                
-                {/* Streak Display */}
-                <div className="flex items-center gap-3 pl-4 border-l border-border">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
-                    <Flame className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs text-muted-foreground">
-                      Streak · max {maxStreak}
-                    </span>
-                    <span className="text-lg font-bold text-primary">
-                      {currentStreak} Days
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <ProfileWeeklyActivityCard
-            className="animate-stagger-2"
-            loading={weeklyActivityLoading}
-            weeklyActivityData={weeklyActivityData}
-          />
-
-          {/* AI Mentor Card */}
-          <Card className="card-premium rounded-xl animate-stagger-3">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-bold">AI Mentor</h3>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-4">
-                Your personal AI guide to becoming job-ready.
-              </p>
-              
-              <div className="p-3 rounded-lg bg-muted/50 border">
-                <p className="text-xs text-muted-foreground mb-1">Recommended:</p>
-                <p className="text-sm font-medium">
-                  {completedInCareer < careerRelatedSlugs.length 
-                    ? `Complete your ${career?.name || 'career'} courses to improve readiness`
-                    : 'Great job! Explore advanced topics next'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Achievements */}
-          <Card className="card-premium rounded-xl animate-stagger-4 flex-1">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-bold">Recent Achievements</h3>
-              </div>
-              
-              <div className="space-y-3">
-                {achievements.length > 0 ? (
-                  achievements.slice(0, 3).map((achievement) => {
-                    const IconComponent = getIcon(achievement.icon || 'Award', Award);
-                    const colorMap: Record<string, string> = {
-                      amber: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
-                      green: 'bg-green-500/10 border-green-500/20 text-green-500',
-                      blue: 'bg-blue-500/10 border-blue-500/20 text-blue-500',
-                      purple: 'bg-purple-500/10 border-purple-500/20 text-purple-500',
-                      primary: 'bg-primary/10 border-primary/20 text-primary',
-                    };
-                    const colors = colorMap[achievement.color] || colorMap.amber;
-                    const [bgColor, borderColor, textColor] = colors.split(' ');
-                    
-                    return (
-                      <div 
-                        key={achievement.id} 
-                        className={`flex items-center gap-3 p-3 rounded-lg ${bgColor} border ${borderColor}`}
-                      >
-                        <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center`}>
-                          <IconComponent className={`h-4 w-4 ${textColor}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{achievement.achievement_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <>
-                    {currentStreak >= 7 && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                          <Flame className="h-4 w-4 text-amber-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Week Warrior</p>
-                          <p className="text-xs text-muted-foreground">7-day learning streak</p>
-                        </div>
-                      </div>
-                    )}
-                    {completedInCareer > 0 && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Course Completed</p>
-                          <p className="text-xs text-muted-foreground">{completedInCareer} course{completedInCareer !== 1 ? 's' : ''} finished</p>
-                        </div>
-                      </div>
-                    )}
-                    {readinessPercentage >= 25 && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <Target className="h-4 w-4 text-green-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Making Progress</p>
-                          <p className="text-xs text-muted-foreground">{readinessPercentage}% career ready</p>
-                        </div>
-                      </div>
-                    )}
-                    {currentStreak < 7 && completedInCareer === 0 && readinessPercentage < 25 && (
-                      <div className="text-center py-4 text-muted-foreground">
-                        <Award className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                        <p className="text-sm">Start learning to earn achievements!</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* Arcade Section */}
       <Card className="card-premium rounded-xl animate-stagger-5">
