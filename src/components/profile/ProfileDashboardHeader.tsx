@@ -40,28 +40,24 @@ export const ProfileDashboardHeader = ({
 
       <CardContent className="relative p-4 md:p-6">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] gap-4 md:gap-5 items-center">
-          {/* Left Section — Text-Based Identity */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground/70 font-medium tracking-wide uppercase">
-              Welcome back
-            </span>
-            <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight">
+          {/* Left Section — Identity Block */}
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight tracking-tight">
               {fullName || "Learner"}
             </h2>
             <p className="text-sm text-muted-foreground">
               Aspiring <span className="text-primary font-medium">{careerName}</span>
             </p>
-            {/* State indicator */}
-            <p className="text-xs text-muted-foreground/80 mt-0.5 flex items-center gap-1.5">
+            <p className="text-xs text-muted-foreground/70 mt-1 flex items-center gap-1.5">
               {isOnTrack ? (
                 <>
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Status: On track</span>
+                  <span>On track</span>
                 </>
               ) : (
                 <>
                   <BookOpen className="h-3 w-3" />
-                  <span>Status: Ready to learn</span>
+                  <span>Ready to learn</span>
                 </>
               )}
             </p>
