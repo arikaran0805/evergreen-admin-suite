@@ -145,7 +145,12 @@ export const ProfileWeeklyActivityCard = ({
                       }}
                     >
                       <div className="h-5 flex items-center justify-center">
-                        {isBestDay && <Star className="h-4 w-4 text-primary fill-primary" />}
+                        {isBestDay && (
+                          <Star 
+                            className="h-3.5 w-3.5 text-amber-500 fill-amber-500 drop-shadow-[0_0_3px_rgba(245,179,1,0.3)]" 
+                            aria-label="Best activity day"
+                          />
+                        )}
                       </div>
 
                       <div className="w-full relative flex items-end justify-center" style={{ height: "100px" }}>
@@ -185,7 +190,7 @@ export const ProfileWeeklyActivityCard = ({
                   <TooltipContent side="top" className="text-center px-3 py-2" sideOffset={8}>
                     <div className="flex items-center gap-1.5 font-semibold">
                       {longDay}
-                      {isBestDay && <Star className="h-3 w-3 text-primary fill-primary" />}
+                      {isBestDay && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" aria-label="Best activity day" />}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {hasActivity ? (
