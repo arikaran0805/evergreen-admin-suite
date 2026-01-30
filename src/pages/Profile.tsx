@@ -446,6 +446,10 @@ const Profile = () => {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [userComments, setUserComments] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [expandedComment, setExpandedComment] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [commentReplies, setCommentReplies] = useState<Record<string, any[]>>({});
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -489,7 +493,7 @@ const Profile = () => {
       
       setCommentsLoading(true);
       try {
-        // Fetch comments with post info
+        // Fetch user's comments (excluding replies they made)
         const { data: comments, error } = await supabase
           .from('comments')
           .select(`
@@ -513,9 +517,46 @@ const Profile = () => {
             )
           `)
           .eq('user_id', userId)
+          .is('parent_id', null)
           .order('created_at', { ascending: false });
         
         if (error) throw error;
+        
+        // Fetch replies to user's comments
+        if (comments && comments.length > 0) {
+          const commentIds = comments.map(c => c.id);
+          const { data: replies } = await supabase
+            .from('comments')
+            .select(`
+              id,
+              content,
+              created_at,
+              is_anonymous,
+              display_name,
+              parent_id,
+              user_id,
+              profiles:user_id (
+                full_name,
+                avatar_url
+              )
+            `)
+            .in('parent_id', commentIds)
+            .eq('status', 'approved')
+            .order('created_at', { ascending: true });
+          
+          // Group replies by parent_id
+          const repliesMap: Record<string, any[]> = {};
+          replies?.forEach(reply => {
+            if (reply.parent_id) {
+              if (!repliesMap[reply.parent_id]) {
+                repliesMap[reply.parent_id] = [];
+              }
+              repliesMap[reply.parent_id].push(reply);
+            }
+          });
+          setCommentReplies(repliesMap);
+        }
+        
         setUserComments(comments || []);
       } catch (error) {
         console.error('Error fetching user comments:', error);
@@ -1921,6 +1962,71 @@ const Profile = () => {
       }
     };
 
+    const handleSubmitReply = async (parentId: string, postId: string) => {
+      if (!replyContent.trim() || !userId) return;
+      
+      setSubmittingReply(true);
+      try {
+        const contentJson = JSON.stringify({
+          type: "doc",
+          content: [{ type: "paragraph", content: [{ type: "text", text: replyContent.trim() }] }]
+        });
+        
+        const { data, error } = await supabase
+          .from('comments')
+          .insert({
+            content: contentJson,
+            post_id: postId,
+            user_id: userId,
+            parent_id: parentId,
+            is_anonymous: false,
+            status: 'approved'
+          })
+          .select(`
+            id,
+            content,
+            created_at,
+            is_anonymous,
+            display_name,
+            parent_id,
+            user_id,
+            profiles:user_id (
+              full_name,
+              avatar_url
+            )
+          `)
+          .single();
+        
+        if (error) throw error;
+        
+        // Add the new reply to the replies map
+        setCommentReplies(prev => ({
+          ...prev,
+          [parentId]: [...(prev[parentId] || []), data]
+        }));
+        
+        setReplyContent("");
+        toast({
+          title: "Reply posted",
+          description: "Your reply has been added to the discussion."
+        });
+      } catch (error) {
+        console.error('Error posting reply:', error);
+        toast({
+          title: "Error",
+          description: "Failed to post reply. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setSubmittingReply(false);
+      }
+    };
+
+    const getDisplayName = (reply: any) => {
+      if (reply.is_anonymous) return reply.display_name || 'Anonymous';
+      return reply.profiles?.full_name || 'Unknown User';
+    };
+
     if (commentsLoading) {
       return (
         <div className="space-y-6">
@@ -1955,19 +2061,17 @@ const Profile = () => {
               const post = comment.posts as any;
               const course = post?.courses;
               const commentText = extractTextFromContent(comment.content);
+              const replies = commentReplies[comment.id] || [];
+              const isExpanded = expandedComment === comment.id;
               
               return (
-                <Card 
-                  key={comment.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => {
-                    if (course?.slug && post?.slug) {
-                      navigate(`/courses/${course.slug}/${post.slug}`);
-                    }
-                  }}
-                >
+                <Card key={comment.id}>
                   <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
+                    {/* Main comment header */}
+                    <div 
+                      className="flex items-start gap-4 cursor-pointer"
+                      onClick={() => setExpandedComment(isExpanded ? null : comment.id)}
+                    >
                       <div className="shrink-0">
                         <Avatar className="h-10 w-10">
                           <AvatarFallback className="bg-primary/10 text-primary">
@@ -1976,7 +2080,7 @@ const Profile = () => {
                         </Avatar>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-sm font-medium text-primary">
                             {course?.name || 'Unknown Course'}
                           </span>
@@ -1984,19 +2088,100 @@ const Profile = () => {
                           <span className="text-sm text-muted-foreground">
                             {formatDate(comment.created_at)}
                           </span>
-                          {comment.parent_id && (
-                            <Badge variant="secondary" className="text-xs">Reply</Badge>
+                          {replies.length > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+                            </Badge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2 truncate">
                           {post?.title || 'Unknown Lesson'}
                         </p>
-                        <p className="text-foreground line-clamp-2">
+                        <p className="text-foreground">
                           {commentText}
                         </p>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <ChevronRight className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                     </div>
+                    
+                    {/* Expanded section with replies and reply form */}
+                    {isExpanded && (
+                      <div className="mt-4 ml-14 space-y-4">
+                        {/* Replies */}
+                        {replies.length > 0 && (
+                          <div className="space-y-3 border-l-2 border-muted pl-4">
+                            {replies.map((reply) => (
+                              <div key={reply.id} className="flex items-start gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={reply.profiles?.avatar_url || undefined} />
+                                  <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                                    {getDisplayName(reply).charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-medium">
+                                      {getDisplayName(reply)}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatDate(reply.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-foreground">
+                                    {extractTextFromContent(reply.content)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Reply form */}
+                        <div className="flex gap-3 items-start pt-2 border-t border-muted">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={avatarUrl || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                              {fullName?.charAt(0)?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              placeholder="Write a reply..."
+                              value={replyContent}
+                              onChange={(e) => setReplyContent(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSubmitReply(comment.id, comment.post_id);
+                                }
+                              }}
+                            />
+                            <div className="flex justify-between items-center">
+                              <Button 
+                                variant="link" 
+                                size="sm" 
+                                className="text-xs p-0 h-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (course?.slug && post?.slug) {
+                                    navigate(`/courses/${course.slug}/${post.slug}`);
+                                  }
+                                }}
+                              >
+                                View in lesson →
+                              </Button>
+                              <Button 
+                                size="sm"
+                                disabled={!replyContent.trim() || submittingReply}
+                                onClick={() => handleSubmitReply(comment.id, comment.post_id)}
+                              >
+                                {submittingReply ? "Posting..." : "Reply"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
