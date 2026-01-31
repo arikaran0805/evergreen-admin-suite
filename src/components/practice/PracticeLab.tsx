@@ -21,7 +21,11 @@ import {
   TrendingUp,
   Rocket,
   BookOpen,
+  Cpu,
+  Globe,
+  Terminal,
 } from "lucide-react";
+import { usePublishedPracticeSkills } from "@/hooks/usePracticeSkills";
 
 interface PracticeLabProps {
   enrolledCourses: any[];
@@ -44,24 +48,19 @@ const getTodaysPractice = (enrolledCourses: any[]) => {
   };
 };
 
-// Practice by skill data
-const skillPractices = [
-  { id: "algorithms", name: "Algorithms", icon: Brain },
-  { id: "data-structures", name: "Data Structures", icon: Database },
-  { id: "mathematics", name: "Mathematics", icon: BarChart3 },
-  { id: "ai", name: "Artificial Intelligence", icon: Lightbulb },
-  { id: "c", name: "C", icon: Code2 },
-  { id: "cpp", name: "C++", icon: Code2 },
-  { id: "java", name: "Java", icon: Code2 },
-  { id: "python", name: "Python", icon: Code2 },
-  { id: "ruby", name: "Ruby", icon: Code2 },
-  { id: "sql", name: "SQL", icon: Database },
-  { id: "databases", name: "Databases", icon: Database },
-  { id: "linux", name: "Linux Shell", icon: Bug },
-  { id: "functional", name: "Functional Programming", icon: Code2 },
-  { id: "regex", name: "Regex", icon: Target },
-  { id: "react", name: "React", icon: Code2 },
-];
+// Icon mapping for dynamic icons
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Brain,
+  Database,
+  BarChart3,
+  Lightbulb,
+  Code2,
+  Bug,
+  Target,
+  Cpu,
+  Globe,
+  Terminal,
+};
 
 // Mini projects data
 const miniProjects = [
@@ -90,12 +89,13 @@ const miniProjects = [
 
 export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
   const navigate = useNavigate();
+  const { data: skills, isLoading: skillsLoading } = usePublishedPracticeSkills();
   
   const todaysPractice = getTodaysPractice(enrolledCourses);
   const hasActivity = enrolledCourses.length > 0;
 
-  const handleSkillClick = (skillId: string) => {
-    navigate(`/practice/${skillId}`);
+  const handleSkillClick = (skillSlug: string) => {
+    navigate(`/practice/${skillSlug}`);
   };
 
   // Empty state for new users
@@ -263,27 +263,49 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
       {/* Practice by Skill */}
       <section>
         <h2 className="text-xl font-bold mb-6">Practice Skills</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {skillPractices.map((skill) => {
-            const Icon = skill.icon;
-            return (
-              <Card 
-                key={skill.id} 
-                className="bg-muted/50 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
-                onClick={() => handleSkillClick(skill.id)}
-              >
+        {skillsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i} className="bg-muted/50 border border-border/50">
                 <CardContent className="p-5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="font-medium text-foreground group-hover:text-primary transition-colors">
-                    {skill.name}
-                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
+                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : skills && skills.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {skills.map((skill) => {
+              const Icon = iconMap[skill.icon] || Code2;
+              return (
+                <Card 
+                  key={skill.id} 
+                  className="bg-muted/50 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                  onClick={() => handleSkillClick(skill.slug)}
+                >
+                  <CardContent className="p-5 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                      {skill.name}
+                    </span>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="bg-muted/30">
+            <CardContent className="text-center py-8">
+              <Code2 className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground">
+                No practice skills available yet.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       {/* Build Something Real - Mini Projects */}

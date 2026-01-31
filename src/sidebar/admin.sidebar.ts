@@ -29,6 +29,7 @@ import {
   Shield,
   UserCog,
   Users2,
+  Dumbbell,
 } from "lucide-react";
 import type { SidebarConfig, SidebarSection } from "./types";
 
@@ -56,6 +57,7 @@ const contentSection: SidebarSection = {
   items: [
     { icon: BookOpen, label: "Posts", path: "/admin/posts" },
     { icon: GraduationCap, label: "Courses", path: "/admin/courses" },
+    { icon: Dumbbell, label: "Practice Lab", path: "/admin/practice/skills" },
     { icon: Briefcase, label: "Careers", path: "/admin/careers" },
     { icon: Tags, label: "Tags", path: "/admin/tags" },
     { icon: Files, label: "Pages", path: "/admin/pages" },

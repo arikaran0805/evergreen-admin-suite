@@ -1,3 +1,4 @@
+// Display types for UI components (can be from DB or mock data)
 export interface Problem {
   id: string;
   title: string;
@@ -6,6 +7,7 @@ export interface Problem {
   locked: boolean;
   subTopic: string;
   hasSolution: boolean;
+  slug?: string;
 }
 
 export interface SkillData {

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, List, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, List, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -10,7 +11,7 @@ import {
 import { ProblemDescription } from "@/components/practice/ProblemDescription";
 import { CodeEditor } from "@/components/practice/CodeEditor";
 import { TestCasePanel, TestResult } from "@/components/practice/TestCasePanel";
-import { getProblemDetail, getDefaultProblemDetail } from "@/components/practice/problemDetailData";
+import { usePublishedPracticeProblem } from "@/hooks/usePracticeProblems";
 import { toast } from "sonner";
 
 export default function ProblemDetail() {
@@ -21,14 +22,34 @@ export default function ProblemDetail() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
 
-  // Get problem data
-  const problem = getProblemDetail(problemId || '') || getDefaultProblemDetail(
-    problemId || 'unknown',
-    'Problem',
-    'Easy'
-  );
+  // Fetch problem from database
+  const { data: dbProblem, isLoading } = usePublishedPracticeProblem(skillId, problemId);
+
+  // Convert database problem to display format
+  const problem = dbProblem ? {
+    id: dbProblem.id,
+    title: dbProblem.title,
+    difficulty: dbProblem.difficulty,
+    description: dbProblem.description || "",
+    examples: (dbProblem.examples || []).map((ex: any, i: number) => ({
+      id: i + 1,
+      input: ex.input || "",
+      output: ex.output || "",
+      explanation: ex.explanation,
+    })),
+    constraints: dbProblem.constraints || [],
+    hints: dbProblem.hints || [],
+    starterCode: dbProblem.starter_code || {},
+    testCases: (dbProblem.examples || []).map((ex: any, i: number) => ({
+      id: i + 1,
+      input: ex.input || "",
+      expected: ex.output || "",
+    })),
+  } : null;
 
   const handleRun = async (code: string, language: string) => {
+    if (!problem) return;
+    
     setIsRunning(true);
     setResults([]);
     setOutput("");
@@ -37,7 +58,7 @@ export default function ProblemDetail() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Mock results
-    const mockResults: TestResult[] = problem.testCases.map((tc, i) => ({
+    const mockResults: TestResult[] = problem.testCases.map((tc: any, i: number) => ({
       id: i,
       input: tc.input,
       expected: tc.expected,
@@ -77,6 +98,38 @@ export default function ProblemDetail() {
     
     setIsRunning(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex flex-col bg-background">
+        <div className="h-12 flex items-center px-4 border-b border-border/50 bg-card">
+          <Skeleton className="h-8 w-8" />
+          <Skeleton className="h-6 w-32 ml-4" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!problem) {
+    return (
+      <div className="h-screen flex flex-col bg-background">
+        <div className="h-12 flex items-center px-4 border-b border-border/50 bg-card">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/practice/${skillId}`)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+          <p>Problem not found</p>
+          <Button variant="link" onClick={() => navigate(`/practice/${skillId}`)}>
+            Back to problem list
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background">
