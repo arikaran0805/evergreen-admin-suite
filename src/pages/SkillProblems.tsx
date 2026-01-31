@@ -46,10 +46,7 @@ export default function SkillProblems() {
       });
       return;
     }
-    // Navigate to problem detail (placeholder)
-    toast.info(`Opening: ${problem.title}`, {
-      description: "Problem detail page coming soon!",
-    });
+    navigate(`/practice/${skillId}/problem/${problem.id}`);
   };
 
   const handleSolutionClick = (problem: Problem) => {
