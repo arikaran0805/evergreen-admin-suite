@@ -12,6 +12,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -21,7 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { SubTopic, useCreateSubTopic, useDeleteSubTopic } from "@/hooks/useSubTopics";
+import { SubTopic, useCreateSubTopic, useDeleteSubTopic, useUpdateSubTopic } from "@/hooks/useSubTopics";
 import { PracticeProblem } from "@/hooks/usePracticeProblems";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +51,12 @@ export function LessonProblemsSection({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newSubTopicTitle, setNewSubTopicTitle] = useState("");
   const [deleteSubTopicId, setDeleteSubTopicId] = useState<string | null>(null);
+  const [renameSubTopic, setRenameSubTopic] = useState<SubTopic | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
 
   const createSubTopic = useCreateSubTopic();
   const deleteSubTopic = useDeleteSubTopic();
+  const updateSubTopic = useUpdateSubTopic();
 
   const totalProblems = subTopics.reduce((sum, st) => sum + (problemsBySubTopic[st.id]?.length || 0), 0);
 
@@ -77,6 +81,23 @@ export function LessonProblemsSection({
       skillId,
     });
     setDeleteSubTopicId(null);
+  };
+
+  const handleRenameSubTopic = async () => {
+    if (!renameSubTopic || !renameTitle.trim()) return;
+    
+    await updateSubTopic.mutateAsync({
+      id: renameSubTopic.id,
+      title: renameTitle.trim(),
+    });
+    
+    setRenameSubTopic(null);
+    setRenameTitle("");
+  };
+
+  const openRenameDialog = (subTopic: SubTopic) => {
+    setRenameSubTopic(subTopic);
+    setRenameTitle(subTopic.title);
   };
 
   const getDifficultyBadge = (difficulty: string) => {
@@ -147,6 +168,7 @@ export function LessonProblemsSection({
                     problems={problemsBySubTopic[subTopic.id] || []}
                     onProblemClick={onProblemClick}
                     onAddProblem={() => onAddProblem(subTopic.id)}
+                    onRename={() => openRenameDialog(subTopic)}
                     onDelete={() => setDeleteSubTopicId(subTopic.id)}
                     getDifficultyBadge={getDifficultyBadge}
                   />
@@ -204,6 +226,31 @@ export function LessonProblemsSection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rename Sub-Topic Dialog */}
+      <Dialog open={!!renameSubTopic} onOpenChange={() => setRenameSubTopic(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Sub-Topic</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Sub-topic title..."
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRenameSubTopic()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameSubTopic(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameSubTopic} disabled={!renameTitle.trim()}>
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -213,6 +260,7 @@ interface SubTopicSectionProps {
   problems: PracticeProblem[];
   onProblemClick: (problemId: string) => void;
   onAddProblem: () => void;
+  onRename: () => void;
   onDelete: () => void;
   getDifficultyBadge: (difficulty: string) => React.ReactNode;
 }
@@ -222,6 +270,7 @@ function SubTopicSection({
   problems,
   onProblemClick,
   onAddProblem,
+  onRename,
   onDelete,
   getDifficultyBadge,
 }: SubTopicSectionProps) {
@@ -268,7 +317,12 @@ function SubTopicSection({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onDelete} className="text-destructive">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Sub-Topic
               </DropdownMenuItem>
