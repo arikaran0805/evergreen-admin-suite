@@ -155,46 +155,40 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
 
       if (error) throw error;
 
-      // Get problems mapped to sub-topics that belong to this skill
-      const { data: mappedBySkill } = await supabase
-        .from("problem_mappings")
-        .select(`
-          problem_id,
-          practice_problems!inner(*)
-        `)
-        .eq("practice_problems.status", "published");
-
-      // Filter mapped problems by checking if sub_topic belongs to this skill
+      // Get sub-topics that belong to this skill
       const { data: skillSubTopics } = await supabase
         .from("sub_topics")
         .select("id")
         .eq("skill_id", skill.id);
 
-      const subTopicIds = new Set((skillSubTopics || []).map(st => st.id));
+      const subTopicIds = (skillSubTopics || []).map(st => st.id);
 
-      // Get mappings for these sub-topics
-      const { data: relevantMappings } = await supabase
-        .from("problem_mappings")
-        .select(`
-          problem_id,
-          sub_topic_id,
-          practice_problems!inner(*)
-        `)
-        .eq("practice_problems.status", "published");
+      // Get problems mapped to these sub-topics
+      let mappedProblems: any[] = [];
+      if (subTopicIds.length > 0) {
+        const { data: mappings } = await supabase
+          .from("problem_mappings")
+          .select(`
+            problem_id,
+            sub_topic_id,
+            practice_problems!inner(*)
+          `)
+          .in("sub_topic_id", subTopicIds)
+          .eq("practice_problems.status", "published");
+        
+        if (mappings) {
+          mappedProblems = mappings.map(m => m.practice_problems);
+        }
+      }
 
       // Merge and deduplicate
       const allProblems = [...(directProblems || [])];
       const existingIds = new Set(allProblems.map(p => p.id));
       
-      if (relevantMappings) {
-        for (const mapping of relevantMappings) {
-          if (subTopicIds.has(mapping.sub_topic_id)) {
-            const problem = mapping.practice_problems;
-            if (!existingIds.has(problem.id)) {
-              allProblems.push(problem);
-              existingIds.add(problem.id);
-            }
-          }
+      for (const problem of mappedProblems) {
+        if (!existingIds.has(problem.id)) {
+          allProblems.push(problem);
+          existingIds.add(problem.id);
         }
       }
 
