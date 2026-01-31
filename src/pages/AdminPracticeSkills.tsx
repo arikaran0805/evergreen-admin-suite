@@ -114,7 +114,7 @@ export default function AdminPracticeSkills() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {getStatusBadge(skill.status)}
-                    <span className="text-xs text-muted-foreground">Order: {skill.display_order}</span>
+                    <span className="text-xs text-muted-foreground">{skill.problem_count || 0} problems</span>
                   </div>
                   <Button
                     variant="outline"
