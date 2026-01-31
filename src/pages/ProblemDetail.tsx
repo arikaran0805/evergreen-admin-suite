@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ProblemDescription } from "@/components/practice/ProblemDescription";
 import { CodeEditor } from "@/components/practice/CodeEditor";
 import { TestCasePanel, TestResult } from "@/components/practice/TestCasePanel";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
+  const testPanelRef = useRef<ImperativePanelHandle>(null);
   
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
@@ -64,6 +66,9 @@ export default function ProblemDetail() {
   const handleRun = async (code: string, language: string) => {
     if (!problem) return;
     
+    // Expand the test panel when running
+    testPanelRef.current?.resize(35);
+    
     setIsRunning(true);
     setResults([]);
     setOutput("");
@@ -95,6 +100,9 @@ export default function ProblemDetail() {
   // SUBMIT: Executes ALL test cases (visible + hidden)
   const handleSubmit = async (code: string, language: string) => {
     if (!problem) return;
+    
+    // Expand the test panel when submitting
+    testPanelRef.current?.resize(35);
     
     setIsRunning(true);
     setResults([]);
@@ -195,7 +203,7 @@ export default function ProblemDetail() {
           <ResizablePanel defaultSize={60} minSize={35} className="min-h-0">
             <ResizablePanelGroup direction="vertical">
               {/* Code Editor */}
-              <ResizablePanel defaultSize={65} minSize={20} className="min-h-0">
+              <ResizablePanel defaultSize={95} minSize={20} className="min-h-0">
                 <CodeEditor
                   problem={problem}
                   supportedLanguages={problem.supportedLanguages}
@@ -206,8 +214,8 @@ export default function ProblemDetail() {
 
               <ResizableHandle withHandle />
 
-              {/* Test Case Panel */}
-              <ResizablePanel defaultSize={35} minSize={5} className="min-h-0">
+              {/* Test Case Panel - collapsed by default, expands on Run/Submit */}
+              <ResizablePanel ref={testPanelRef} defaultSize={5} minSize={5} className="min-h-0">
                 <TestCasePanel
                   testCases={problem.testCases}
                   results={results}
