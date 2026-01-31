@@ -40,6 +40,7 @@ import {
   FunctionSignatureSection,
   ProblemTagsSection,
   ProblemPreviewDialog,
+  ProblemLessonMappings,
   type TestCase,
   type SupportedLanguage,
   type FunctionSignature,
@@ -688,6 +689,12 @@ export default function AdminProblemEditor() {
               />
             </CardContent>
           </Card>
+
+          {/* Lesson Mappings - shows which lessons this problem is attached to */}
+          <ProblemLessonMappings 
+            problemId={isEditing ? problemId : undefined} 
+            disabled={isViewOnly}
+          />
 
           <div className="flex items-center justify-between border-t pt-6">
             <div className="text-sm text-muted-foreground">
