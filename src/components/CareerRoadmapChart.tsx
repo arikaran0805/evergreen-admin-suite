@@ -193,7 +193,7 @@ export const CareerRoadmapChart = ({
               </linearGradient>
             </defs>
 
-            {/* Full path (background/remaining) - animated draw */}
+            {/* Full path (background/remaining) */}
             {chartData.courses.length > 0 && (
               <polyline
                 points={[
@@ -206,17 +206,12 @@ export const CareerRoadmapChart = ({
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeDasharray="6,4"
-                className="text-border animate-[drawPath_1.5s_ease-out_forwards]"
-                style={{
-                  strokeDasharray: '1000',
-                  strokeDashoffset: '1000',
-                  animation: 'drawPath 1.5s ease-out forwards',
-                }}
+                className="text-border"
                 vectorEffect="non-scaling-stroke"
               />
             )}
 
-            {/* Progress path (completed portion) - animated draw */}
+            {/* Progress path (completed portion) */}
             {chartData.courses.length > 0 && chartData.courses.some(c => c.isCompleted || c.isStarted) && (
               <polyline
                 points={[
@@ -232,11 +227,6 @@ export const CareerRoadmapChart = ({
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{
-                  strokeDasharray: '1000',
-                  strokeDashoffset: '1000',
-                  animation: 'drawProgressPath 2s ease-out 0.5s forwards',
-                }}
                 vectorEffect="non-scaling-stroke"
               />
             )}
