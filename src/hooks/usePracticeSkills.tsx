@@ -22,11 +22,16 @@ export function usePracticeSkills() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("practice_skills")
-        .select("*")
+        .select("*, practice_problems(count)")
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as PracticeSkill[];
+      
+      // Transform to include problem_count
+      return (data || []).map((skill: any) => ({
+        ...skill,
+        problem_count: skill.practice_problems?.[0]?.count || 0,
+      })) as PracticeSkill[];
     },
   });
 }
