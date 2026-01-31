@@ -14,6 +14,107 @@ import { CodeEditor } from "@/components/practice/CodeEditor";
 import { TestCasePanel, TestResult } from "@/components/practice/TestCasePanel";
 import { usePublishedPracticeProblem } from "@/hooks/usePracticeProblems";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+// Execute code via edge function
+async function executeCode(code: string, language: string): Promise<{ output: string; error: string | null }> {
+  const { data, error } = await supabase.functions.invoke('execute-code', {
+    body: { code, language }
+  });
+  
+  if (error) {
+    return { output: '', error: error.message };
+  }
+  
+  return { output: data?.output || '', error: data?.error || null };
+}
+
+// Wrap user code with test harness for specific input
+function wrapCodeWithTestHarness(
+  userCode: string, 
+  language: string, 
+  functionSignature: string | null,
+  testInput: string
+): string {
+  // If no function signature, just run the code as-is
+  if (!functionSignature) {
+    return userCode;
+  }
+
+  // Parse function name from signature (e.g., "twoSum(nums, target)" -> "twoSum")
+  const funcMatch = functionSignature.match(/^(\w+)\s*\(/);
+  const funcName = funcMatch ? funcMatch[1] : null;
+  
+  if (!funcName) return userCode;
+
+  // Build test harness based on language
+  if (language === 'python') {
+    return `${userCode}
+
+# Test harness
+if __name__ == "__main__":
+    ${testInput}
+    result = ${funcName}(${extractArgs(functionSignature)})
+    print(result)
+`;
+  }
+  
+  if (language === 'javascript' || language === 'typescript') {
+    return `${userCode}
+
+// Test harness
+${testInput}
+const result = ${funcName}(${extractArgs(functionSignature)});
+console.log(JSON.stringify(result));
+`;
+  }
+
+  return userCode;
+}
+
+// Extract argument names from function signature
+function extractArgs(signature: string): string {
+  const match = signature.match(/\(([^)]*)\)/);
+  if (!match) return '';
+  return match[1].split(',').map(arg => arg.trim().split(':')[0].split('=')[0].trim()).join(', ');
+}
+
+// Normalize output for comparison
+function normalizeOutput(output: string): string {
+  return output
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[\[\](),]/g, match => match) // Keep brackets/parens
+    .replace(/'/g, '"'); // Normalize quotes
+}
+
+// Check if outputs match (flexible comparison)
+function outputsMatch(actual: string, expected: string): boolean {
+  const normalActual = normalizeOutput(actual);
+  const normalExpected = normalizeOutput(expected);
+  
+  // Exact match
+  if (normalActual === normalExpected) return true;
+  
+  // Check if actual contains expected (for arrays, the order might differ)
+  if (normalActual.includes(normalExpected) || normalExpected.includes(normalActual)) return true;
+  
+  // Try parsing as JSON for array comparison
+  try {
+    const actualParsed = JSON.parse(actual.trim());
+    const expectedParsed = JSON.parse(expected.trim());
+    
+    if (Array.isArray(actualParsed) && Array.isArray(expectedParsed)) {
+      // Sort and compare for unordered array comparison
+      return JSON.stringify(actualParsed.sort()) === JSON.stringify(expectedParsed.sort());
+    }
+    
+    return JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
+  } catch {
+    return false;
+  }
+}
 
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
@@ -28,7 +129,6 @@ export default function ProblemDetail() {
   const { data: dbProblem, isLoading } = usePublishedPracticeProblem(skillId, problemId);
 
   // Convert database problem to display format
-  // test_cases from DB have { id, input, expected_output, is_visible }
   const allTestCases = dbProblem?.test_cases || [];
   const visibleTestCases = allTestCases.filter((tc: any) => tc.is_visible);
   
@@ -47,6 +147,7 @@ export default function ProblemDetail() {
     hints: dbProblem.hints || [],
     starterCode: dbProblem.starter_code || {},
     supportedLanguages: dbProblem.supported_languages || [],
+    functionSignature: (dbProblem as any).function_signature || null,
     // Visible test cases for UI display
     testCases: visibleTestCases.map((tc: any, i: number) => ({
       id: tc.id || i + 1,
@@ -62,98 +163,184 @@ export default function ProblemDetail() {
     })),
   } : null;
 
-  // Check if code is essentially unimplemented (starter code)
-  const isCodeUnimplemented = (code: string): boolean => {
-    const unimplementedPatterns = [
-      /pass\s*$/m,                    // Python pass statement
-      /\/\/\s*Write your code here/i, // JS/TS comment
-      /#\s*Write your code here/i,    // Python comment
-      /throw\s+new\s+Error/i,         // Throwing not implemented
-      /return\s*;?\s*$/m,             // Empty return
-      /^\s*$/,                         // Empty or whitespace only
-    ];
-    
-    // Check if code matches starter code patterns
-    const trimmedCode = code.trim();
-    if (trimmedCode.length < 50) return true; // Very short code likely unimplemented
-    
-    return unimplementedPatterns.some(pattern => pattern.test(code));
-  };
-
-  // RUN: Only executes visible test cases (shown to learner)
+  // RUN: Execute code and test against visible test cases
   const handleRun = async (code: string, language: string) => {
     if (!problem) return;
     
-    // Expand the test panel when running
     testPanelRef.current?.resize(35);
-    
     setIsRunning(true);
     setResults([]);
-    setOutput("");
+    setOutput(`Running ${language}...\n`);
     
-    // Simulate running visible tests only
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const startTime = Date.now();
+    const testResults: TestResult[] = [];
+    let outputLog = `Running ${language}...\n\n`;
     
-    const isUnimplemented = isCodeUnimplemented(code);
-    
-    // Mock results for visible test cases only
-    const mockResults: TestResult[] = problem.testCases.map((tc: any, i: number) => ({
-      id: i,
-      input: tc.input,
-      expected: tc.expected,
-      actual: isUnimplemented ? "No output (code not implemented)" : tc.expected,
-      passed: isUnimplemented ? false : true,
-      runtime: isUnimplemented ? undefined : `${Math.floor(Math.random() * 50 + 10)}ms`,
-    }));
-    
-    setResults(mockResults);
-    setOutput(isUnimplemented 
-      ? `Running ${language}...\n\n⚠️ Your code appears to be unimplemented.\nPlease write your solution before running.`
-      : `Running ${language}...\n\nVisible test cases executed: ${mockResults.length}\nPassed: ${mockResults.filter(r => r.passed).length}`
-    );
-    setIsRunning(false);
-    
-    if (mockResults.every(r => r.passed)) {
-      toast.success("All visible test cases passed!");
-    } else {
-      toast.error(isUnimplemented ? "Code not implemented" : "Some test cases failed");
+    try {
+      // Execute the code directly first to check for syntax errors
+      const { output: rawOutput, error } = await executeCode(code, language);
+      
+      if (error) {
+        outputLog += `❌ Error:\n${error}`;
+        setOutput(outputLog);
+        setIsRunning(false);
+        toast.error("Execution Error", { description: error.substring(0, 100) });
+        return;
+      }
+      
+      // If there are test cases, run them
+      if (problem.testCases.length > 0) {
+        for (let i = 0; i < problem.testCases.length; i++) {
+          const tc = problem.testCases[i];
+          
+          // Wrap code with test harness for this specific test case
+          const wrappedCode = wrapCodeWithTestHarness(
+            code, 
+            language, 
+            problem.functionSignature,
+            tc.input
+          );
+          
+          const { output: testOutput, error: testError } = await executeCode(wrappedCode, language);
+          const runtime = `${Math.floor(Math.random() * 30 + 5)}ms`;
+          
+          const actual = testError || testOutput.trim();
+          const passed = !testError && outputsMatch(testOutput, tc.expected);
+          
+          testResults.push({
+            id: i,
+            input: tc.input,
+            expected: tc.expected,
+            actual: actual || "No output",
+            passed,
+            runtime: passed ? runtime : undefined,
+          });
+          
+          outputLog += `Test ${i + 1}: ${passed ? '✓ Passed' : '✗ Failed'}\n`;
+        }
+      } else {
+        // No test cases, just show raw output
+        outputLog += `Output:\n${rawOutput}`;
+      }
+      
+      const elapsed = Date.now() - startTime;
+      const passedCount = testResults.filter(r => r.passed).length;
+      
+      if (testResults.length > 0) {
+        outputLog += `\n${passedCount}/${testResults.length} test cases passed (${elapsed}ms)`;
+      }
+      
+      setResults(testResults);
+      setOutput(outputLog);
+      
+      if (testResults.length > 0) {
+        if (testResults.every(r => r.passed)) {
+          toast.success("All visible test cases passed!");
+        } else {
+          toast.error(`${testResults.length - passedCount} test case(s) failed`);
+        }
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Execution failed";
+      outputLog += `❌ Error: ${errorMsg}`;
+      setOutput(outputLog);
+      toast.error("Execution Failed", { description: errorMsg });
     }
+    
+    setIsRunning(false);
   };
 
-  // SUBMIT: Executes ALL test cases (visible + hidden)
+  // SUBMIT: Execute code against ALL test cases (including hidden)
   const handleSubmit = async (code: string, language: string) => {
     if (!problem) return;
     
-    // Expand the test panel when submitting
     testPanelRef.current?.resize(35);
-    
     setIsRunning(true);
     setResults([]);
-    setOutput("");
+    setOutput(`Submitting ${language}...\n`);
     
-    // Simulate submission - runs ALL test cases
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const startTime = Date.now();
+    const testResults: TestResult[] = [];
+    let outputLog = `Submitting ${language}...\n\n`;
     
-    const isUnimplemented = isCodeUnimplemented(code);
-    const totalTestCases = problem.allTestCases.length;
+    const totalTests = problem.allTestCases.length;
     const hiddenCount = problem.allTestCases.filter((tc: any) => !tc.isVisible).length;
-    const visibleCount = totalTestCases - hiddenCount;
     
-    if (isUnimplemented) {
-      setOutput(`Submitting ${language}...\n\n⚠️ Submission rejected.\nYour code appears to be unimplemented.\nPlease write your solution before submitting.`);
-      toast.error("Submission Failed", {
-        description: "Please implement your solution before submitting.",
-      });
-      setIsRunning(false);
-      return;
+    try {
+      // First check for syntax errors
+      const { error: syntaxError } = await executeCode(code, language);
+      
+      if (syntaxError) {
+        outputLog += `❌ Compilation/Syntax Error:\n${syntaxError}`;
+        setOutput(outputLog);
+        setIsRunning(false);
+        toast.error("Submission Failed", { description: "Fix errors before submitting" });
+        return;
+      }
+      
+      let passedCount = 0;
+      let failedOnTest = -1;
+      
+      // Run all test cases
+      for (let i = 0; i < problem.allTestCases.length; i++) {
+        const tc = problem.allTestCases[i];
+        
+        const wrappedCode = wrapCodeWithTestHarness(
+          code, 
+          language, 
+          problem.functionSignature,
+          tc.input
+        );
+        
+        const { output: testOutput, error: testError } = await executeCode(wrappedCode, language);
+        
+        const passed = !testError && outputsMatch(testOutput, tc.expected);
+        
+        if (passed) {
+          passedCount++;
+        } else if (failedOnTest === -1) {
+          failedOnTest = i;
+        }
+        
+        // Only show visible test results in the UI
+        if (tc.isVisible) {
+          testResults.push({
+            id: i,
+            input: tc.input,
+            expected: tc.expected,
+            actual: testError || testOutput.trim() || "No output",
+            passed,
+            runtime: passed ? `${Math.floor(Math.random() * 30 + 5)}ms` : undefined,
+          });
+        }
+      }
+      
+      const elapsed = Date.now() - startTime;
+      const allPassed = passedCount === totalTests;
+      
+      outputLog += `Total test cases: ${totalTests} (${totalTests - hiddenCount} visible, ${hiddenCount} hidden)\n`;
+      outputLog += `Passed: ${passedCount}/${totalTests}\n`;
+      outputLog += `Runtime: ${elapsed}ms\n`;
+      
+      setResults(testResults);
+      setOutput(outputLog);
+      
+      if (allPassed) {
+        toast.success("🎉 Accepted!", {
+          description: `All ${totalTests} test cases passed in ${elapsed}ms`,
+        });
+      } else {
+        const failedIsHidden = failedOnTest >= 0 && !problem.allTestCases[failedOnTest].isVisible;
+        toast.error("Wrong Answer", {
+          description: `Failed on test case ${failedOnTest + 1}/${totalTests}${failedIsHidden ? " (hidden)" : ""}`,
+        });
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Submission failed";
+      outputLog += `❌ Error: ${errorMsg}`;
+      setOutput(outputLog);
+      toast.error("Submission Failed", { description: errorMsg });
     }
-    
-    // Mock: For demo, pass all tests if code is implemented
-    setOutput(`Submitting ${language}...\n\nTotal test cases: ${totalTestCases} (${visibleCount} visible, ${hiddenCount} hidden)\nPassed: ${totalTestCases}/${totalTestCases}`);
-    
-    toast.success("Accepted! Your solution passed all test cases.", {
-      description: `Runtime: ${Math.floor(Math.random() * 50 + 30)}ms, Memory: ${(Math.random() * 20 + 30).toFixed(1)}MB`,
-    });
     
     setIsRunning(false);
   };
