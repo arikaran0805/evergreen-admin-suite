@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Save, Loader2, Plus, X } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, X, Check, AlertCircle, Settings, FileText, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -46,6 +48,8 @@ import {
   type FunctionSignature,
 } from "@/components/admin/problem-editor";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 const problemSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -61,10 +65,13 @@ const problemSchema = z.object({
 
 type ProblemFormData = z.infer<typeof problemSchema>;
 
+type TabId = "setup" | "content" | "evaluation";
+
 export default function AdminProblemEditor() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
   const isEditing = !!problemId && problemId !== "new";
+  const isMobile = useIsMobile();
   const { isAdmin, isSuperModerator, isSeniorModerator, isModerator } = useUserRole();
 
   const { data: skill } = usePracticeSkill(skillId);
@@ -72,6 +79,7 @@ export default function AdminProblemEditor() {
   const createMutation = useCreatePracticeProblem();
   const updateMutation = useUpdatePracticeProblem();
 
+  const [activeTab, setActiveTab] = useState<TabId>("setup");
   const [examples, setExamples] = useState<{ input: string; output: string; explanation?: string }[]>([]);
   const [constraints, setConstraints] = useState<string[]>([]);
   const [hints, setHints] = useState<string[]>([]);
@@ -83,7 +91,7 @@ export default function AdminProblemEditor() {
     cpp: "",
   });
 
-  // New LeetCode-critical fields
+  // LeetCode-critical fields
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [inputFormat, setInputFormat] = useState("");
   const [outputFormat, setOutputFormat] = useState("");
@@ -138,7 +146,6 @@ export default function AdminProblemEditor() {
       setConstraints(problem.constraints || []);
       setHints(problem.hints || []);
       setStarterCode(problem.starter_code || { python: "", javascript: "", sql: "", java: "", cpp: "" });
-      // Load LeetCode-critical fields
       setTestCases(problem.test_cases || []);
       setInputFormat(problem.input_format || "");
       setOutputFormat(problem.output_format || "");
@@ -165,7 +172,6 @@ export default function AdminProblemEditor() {
       constraints,
       hints,
       starter_code: starterCode,
-      // LeetCode-critical fields
       test_cases: testCases,
       input_format: inputFormat,
       output_format: outputFormat,
@@ -225,6 +231,37 @@ export default function AdminProblemEditor() {
     setHints(updated);
   };
 
+  // Tab validation logic
+  const hiddenTestCasesCount = testCases.filter((tc) => !tc.is_visible).length;
+  const canPublish = hiddenTestCasesCount >= 1 && selectedLanguagesSafe.length >= 1 && examples.length >= 1;
+
+  const tabValidation = useMemo(() => {
+    const formValues = form.getValues();
+    const formErrors = form.formState.errors;
+    
+    // Setup tab validation
+    const setupComplete = 
+      !!formValues.title?.trim() && 
+      !!formValues.slug?.trim() && 
+      !!formValues.sub_topic?.trim() &&
+      selectedLanguagesSafe.length >= 1;
+    const setupHasErrors = !!(formErrors.title || formErrors.slug || formErrors.sub_topic);
+
+    // Content tab validation
+    const contentComplete = examples.length >= 1;
+    const contentHasErrors = false; // No required form fields in content tab
+
+    // Evaluation tab validation
+    const evaluationComplete = hiddenTestCasesCount >= 1;
+    const evaluationHasErrors = false;
+
+    return {
+      setup: { complete: setupComplete && !setupHasErrors, hasErrors: setupHasErrors || !setupComplete },
+      content: { complete: contentComplete, hasErrors: !contentComplete },
+      evaluation: { complete: evaluationComplete, hasErrors: !evaluationComplete },
+    };
+  }, [form.watch(), selectedLanguagesSafe, examples, hiddenTestCasesCount]);
+
   if (isEditing && isLoading) {
     return (
       <div className="space-y-6">
@@ -240,11 +277,63 @@ export default function AdminProblemEditor() {
     );
   }
 
-  const hiddenTestCasesCount = testCases.filter((tc) => !tc.is_visible).length;
-  const canPublish = hiddenTestCasesCount >= 1 && selectedLanguagesSafe.length >= 1;
+  const tabs: { id: TabId; label: string; icon: React.ReactNode; mobileLabel: string }[] = [
+    { id: "setup", label: "Problem Setup", icon: <Settings className="h-4 w-4" />, mobileLabel: "Setup" },
+    { id: "content", label: "Problem Content", icon: <FileText className="h-4 w-4" />, mobileLabel: "Content" },
+    { id: "evaluation", label: "Evaluation & Solution", icon: <FlaskConical className="h-4 w-4" />, mobileLabel: "Evaluation" },
+  ];
+
+  const TabIndicator = ({ tabId }: { tabId: TabId }) => {
+    const validation = tabValidation[tabId];
+    if (validation.complete) {
+      return <Check className="h-3 w-3 text-primary" />;
+    }
+    if (validation.hasErrors) {
+      return <span className="h-2 w-2 rounded-full bg-destructive" />;
+    }
+    return null;
+  };
+
+  // Mobile Stepper Component
+  const MobileStepper = () => {
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    return (
+      <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "flex flex-col items-center gap-1 px-2 py-1 rounded-md transition-colors flex-1",
+              activeTab === tab.id ? "bg-background shadow-sm" : "hover:bg-background/50"
+            )}
+          >
+            <div className={cn(
+              "flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium",
+              activeTab === tab.id 
+                ? "bg-primary text-primary-foreground" 
+                : index < currentIndex 
+                  ? "bg-primary/80 text-primary-foreground"
+                  : "bg-muted-foreground/20 text-muted-foreground"
+            )}>
+              {tabValidation[tab.id].complete ? <Check className="h-4 w-4" /> : index + 1}
+            </div>
+            <span className={cn(
+              "text-xs font-medium",
+              activeTab === tab.id ? "text-foreground" : "text-muted-foreground"
+            )}>
+              {tab.mobileLabel}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/practice/skills/${skillId}/problems`)}>
@@ -279,429 +368,538 @@ export default function AdminProblemEditor() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Basic Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        onChange={(e) => handleTitleChange(e.target.value)}
-                        placeholder="e.g., Two Sum"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Mobile Stepper */}
+          {isMobile && <MobileStepper />}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., two-sum" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="sub_topic"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sub-Topic</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Arrays, Sorting" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="difficulty"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Difficulty</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select difficulty" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Easy">Easy</SelectItem>
-                          <SelectItem value="Medium">Medium</SelectItem>
-                          <SelectItem value="Hard">Hard</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="display_order"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Order</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="published">Published</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="is_premium"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <FormLabel>Premium Problem</FormLabel>
-                      <FormDescription>Only accessible to premium users</FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Description */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Problem Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Markdown supported)</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} placeholder="Describe the problem..." rows={8} className="font-mono" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Input/Output Format - NEW */}
-          <IOFormatSection
-            inputFormat={inputFormat}
-            outputFormat={outputFormat}
-            onInputFormatChange={setInputFormat}
-            onOutputFormatChange={setOutputFormat}
-            disabled={isViewOnly}
-          />
-
-          {/* Examples */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Examples</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={addExample}>
-                <Plus className="h-4 w-4 mr-1" /> Add Example
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {examples.map((example, index) => (
-                <div key={index} className="border rounded-lg p-4 space-y-3 relative">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={() => removeExample(index)}
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)} className="w-full">
+            {/* Desktop Tab List */}
+            {!isMobile && (
+              <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mb-6">
+                {tabs.map((tab) => (
+                  <TabsTrigger 
+                    key={tab.id} 
+                    value={tab.id}
+                    className="flex items-center gap-2"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-sm font-medium">Input</label>
-                      <Textarea
-                        value={example.input}
-                        onChange={(e) => updateExample(index, "input", e.target.value)}
-                        rows={2}
-                        className="mt-1 font-mono text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Output</label>
-                      <Textarea
-                        value={example.output}
-                        onChange={(e) => updateExample(index, "output", e.target.value)}
-                        rows={2}
-                        className="mt-1 font-mono text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Explanation (optional)</label>
-                    <Input
-                      value={example.explanation || ""}
-                      onChange={(e) => updateExample(index, "explanation", e.target.value)}
-                      className="mt-1"
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.mobileLabel}</span>
+                    <TabIndicator tabId={tab.id} />
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )}
+
+            {/* TAB 1: Problem Setup */}
+            <TabsContent value="setup" className="space-y-6 mt-0">
+              {/* Basic Information Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Basic Information</CardTitle>
+                  <CardDescription>Define the problem identity and access level</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            onChange={(e) => handleTitleChange(e.target.value)}
+                            placeholder="e.g., Two Sum"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="slug"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Slug</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., two-sum" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="difficulty"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Difficulty</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select difficulty" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Easy">Easy</SelectItem>
+                              <SelectItem value="Medium">Medium</SelectItem>
+                              <SelectItem value="Hard">Hard</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                </div>
-              ))}
-              {examples.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No examples yet. Add one above.</p>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Constraints */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Constraints</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={addConstraint}>
-                <Plus className="h-4 w-4 mr-1" /> Add Constraint
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {constraints.map((constraint, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={constraint}
-                    onChange={(e) => updateConstraint(index, e.target.value)}
-                    placeholder="e.g., 1 <= nums.length <= 10^4"
-                    className="font-mono text-sm"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="published" disabled={!canPublish}>
+                                Published {!canPublish && "(incomplete)"}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="display_order"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Display Order</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="is_premium"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                        <div>
+                          <FormLabel>Premium Problem</FormLabel>
+                          <FormDescription>Only accessible to premium users</FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
                   />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeConstraint(index)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {constraints.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No constraints yet.</p>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Hints */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Hints</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={addHint}>
-                <Plus className="h-4 w-4 mr-1" /> Add Hint
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {hints.map((hint, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={hint}
-                    onChange={(e) => updateHint(index, e.target.value)}
-                    placeholder="Add a helpful hint..."
+              {/* Classification Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Classification</CardTitle>
+                  <CardDescription>Categorize the problem for organization</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Practice Skill (read-only) */}
+                  <div>
+                    <label className="text-sm font-medium">Practice Skill</label>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-sm">
+                        {skill?.name || "Loading..."}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">(auto-linked)</span>
+                    </div>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="sub_topic"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sub-Topic</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Arrays, Sorting" />
+                        </FormControl>
+                        <FormDescription>
+                          Group similar problems under a common sub-topic
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeHint(index)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {hints.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No hints yet.</p>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Supported Languages - NEW */}
-          <SupportedLanguagesSection
-            selectedLanguages={selectedLanguages}
-            onChange={setSelectedLanguages}
-            disabled={isViewOnly}
-          />
-
-          {/* Time & Memory Limits - NEW */}
-          <LimitsSection
-            timeLimit={timeLimit}
-            memoryLimit={memoryLimit}
-            onTimeLimitChange={setTimeLimit}
-            onMemoryLimitChange={setMemoryLimit}
-            disabled={!canEditLimits}
-          />
-
-          {/* Function Signature - NEW */}
-          <FunctionSignatureSection
-            signature={functionSignature}
-            onChange={setFunctionSignature}
-            disabled={isViewOnly}
-          />
-
-          {/* Problem Tags - NEW */}
-          <ProblemTagsSection
-            tags={tags}
-            onChange={setTags}
-            disabled={isViewOnly}
-          />
-
-          {/* Test Cases - NEW */}
-          <TestCasesSection
-            testCases={testCases}
-            onChange={setTestCases}
-            disabled={!canEditTestCases}
-          />
-
-          {/* Starter Code - Updated to show only selected languages */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Starter Code</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Only showing languages selected above.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedLanguagesSafe.includes("python") && (
-                <div>
-                  <label className="text-sm font-medium">Python</label>
-                  <Textarea
-                    value={starterCode.python || ""}
-                    onChange={(e) => setStarterCode({ ...starterCode, python: e.target.value })}
-                    rows={4}
-                    className="mt-1 font-mono text-sm"
-                    placeholder="def solution():\n    pass"
+                  {/* Problem Tags */}
+                  <ProblemTagsSection
+                    tags={tags}
+                    onChange={setTags}
                     disabled={isViewOnly}
                   />
-                </div>
-              )}
-              {selectedLanguagesSafe.includes("javascript") && (
-                <div>
-                  <label className="text-sm font-medium">JavaScript</label>
-                  <Textarea
-                    value={starterCode.javascript || ""}
-                    onChange={(e) => setStarterCode({ ...starterCode, javascript: e.target.value })}
-                    rows={4}
-                    className="mt-1 font-mono text-sm"
-                    placeholder="function solution() {\n    \n}"
-                    disabled={isViewOnly}
-                  />
-                </div>
-              )}
-              {selectedLanguagesSafe.includes("java") && (
-                <div>
-                  <label className="text-sm font-medium">Java</label>
-                  <Textarea
-                    value={starterCode.java || ""}
-                    onChange={(e) => setStarterCode({ ...starterCode, java: e.target.value })}
-                    rows={4}
-                    className="mt-1 font-mono text-sm"
-                    placeholder="class Solution {\n    public void solution() {\n    }\n}"
-                    disabled={isViewOnly}
-                  />
-                </div>
-              )}
-              {selectedLanguagesSafe.includes("cpp") && (
-                <div>
-                  <label className="text-sm font-medium">C++</label>
-                  <Textarea
-                    value={starterCode.cpp || ""}
-                    onChange={(e) => setStarterCode({ ...starterCode, cpp: e.target.value })}
-                    rows={4}
-                    className="mt-1 font-mono text-sm"
-                    placeholder="class Solution {\npublic:\n    void solution() {\n    }\n};"
-                    disabled={isViewOnly}
-                  />
-                </div>
-              )}
-              {selectedLanguagesSafe.includes("sql") && (
-                <div>
-                  <label className="text-sm font-medium">SQL</label>
-                  <Textarea
-                    value={starterCode.sql || ""}
-                    onChange={(e) => setStarterCode({ ...starterCode, sql: e.target.value })}
-                    rows={4}
-                    className="mt-1 font-mono text-sm"
-                    placeholder="SELECT * FROM table;"
-                    disabled={isViewOnly}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Solution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Solution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="solution"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Solution Code/Explanation</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={8} className="font-mono text-sm" placeholder="Provide the solution..." />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              {/* Limits & Languages Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Limits & Languages</CardTitle>
+                  <CardDescription>Configure execution constraints and supported languages</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <LimitsSection
+                    timeLimit={timeLimit}
+                    memoryLimit={memoryLimit}
+                    onTimeLimitChange={setTimeLimit}
+                    onMemoryLimitChange={setMemoryLimit}
+                    disabled={!canEditLimits}
+                  />
+
+                  <SupportedLanguagesSection
+                    selectedLanguages={selectedLanguages}
+                    onChange={setSelectedLanguages}
+                    disabled={isViewOnly}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Lesson Mappings */}
+              <ProblemLessonMappings 
+                problemId={isEditing ? problemId : undefined} 
+                disabled={isViewOnly}
               />
-            </CardContent>
-          </Card>
+            </TabsContent>
 
-          {/* Lesson Mappings - shows which lessons this problem is attached to */}
-          <ProblemLessonMappings 
-            problemId={isEditing ? problemId : undefined} 
-            disabled={isViewOnly}
-          />
+            {/* TAB 2: Problem Content */}
+            <TabsContent value="content" className="space-y-6 mt-0">
+              {/* Problem Description */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Problem Description</CardTitle>
+                  <CardDescription>Describe the problem for learners</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Markdown supported)</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Describe the problem..." rows={10} className="font-mono" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
 
-          <div className="flex items-center justify-between border-t pt-6">
+              {/* Input/Output Format */}
+              <IOFormatSection
+                inputFormat={inputFormat}
+                outputFormat={outputFormat}
+                onInputFormatChange={setInputFormat}
+                onOutputFormatChange={setOutputFormat}
+                disabled={isViewOnly}
+              />
+
+              {/* Examples */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      Examples
+                      {examples.length === 0 && (
+                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>Add at least one example for learners</CardDescription>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addExample}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Example
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {examples.map((example, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-3 relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline">Example {index + 1}</Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => removeExample(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-sm font-medium">Input</label>
+                          <Textarea
+                            value={example.input}
+                            onChange={(e) => updateExample(index, "input", e.target.value)}
+                            rows={2}
+                            className="mt-1 font-mono text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output</label>
+                          <Textarea
+                            value={example.output}
+                            onChange={(e) => updateExample(index, "output", e.target.value)}
+                            rows={2}
+                            className="mt-1 font-mono text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Explanation (optional)</label>
+                        <Input
+                          value={example.explanation || ""}
+                          onChange={(e) => updateExample(index, "explanation", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {examples.length === 0 && (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">No examples yet. Add at least one example.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Constraints */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Constraints</CardTitle>
+                    <CardDescription>Define input/output boundaries</CardDescription>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addConstraint}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Constraint
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {constraints.map((constraint, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground w-6">{index + 1}.</span>
+                      <Input
+                        value={constraint}
+                        onChange={(e) => updateConstraint(index, e.target.value)}
+                        placeholder="e.g., 1 <= nums.length <= 10^4"
+                        className="font-mono text-sm"
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeConstraint(index)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {constraints.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No constraints yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Hints */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Hints</CardTitle>
+                    <CardDescription>Progressive hints to help stuck learners</CardDescription>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addHint}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Hint
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {hints.map((hint, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Badge variant="outline" className="shrink-0">Hint {index + 1}</Badge>
+                      <Input
+                        value={hint}
+                        onChange={(e) => updateHint(index, e.target.value)}
+                        placeholder="Add a helpful hint..."
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeHint(index)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {hints.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No hints yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* TAB 3: Evaluation & Solution */}
+            <TabsContent value="evaluation" className="space-y-6 mt-0">
+              {/* Function Signature */}
+              <FunctionSignatureSection
+                signature={functionSignature}
+                onChange={setFunctionSignature}
+                disabled={isViewOnly}
+              />
+
+              {/* Starter Code */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Starter Code</CardTitle>
+                  <CardDescription>
+                    Provide initial code templates for each selected language
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {selectedLanguagesSafe.length === 0 ? (
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Select languages in the Setup tab first.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {selectedLanguagesSafe.includes("python") && (
+                        <div>
+                          <label className="text-sm font-medium">Python</label>
+                          <Textarea
+                            value={starterCode.python || ""}
+                            onChange={(e) => setStarterCode({ ...starterCode, python: e.target.value })}
+                            rows={4}
+                            className="mt-1 font-mono text-sm"
+                            placeholder="def solution():\n    pass"
+                            disabled={isViewOnly}
+                          />
+                        </div>
+                      )}
+                      {selectedLanguagesSafe.includes("javascript") && (
+                        <div>
+                          <label className="text-sm font-medium">JavaScript</label>
+                          <Textarea
+                            value={starterCode.javascript || ""}
+                            onChange={(e) => setStarterCode({ ...starterCode, javascript: e.target.value })}
+                            rows={4}
+                            className="mt-1 font-mono text-sm"
+                            placeholder="function solution() {\n    \n}"
+                            disabled={isViewOnly}
+                          />
+                        </div>
+                      )}
+                      {selectedLanguagesSafe.includes("java") && (
+                        <div>
+                          <label className="text-sm font-medium">Java</label>
+                          <Textarea
+                            value={starterCode.java || ""}
+                            onChange={(e) => setStarterCode({ ...starterCode, java: e.target.value })}
+                            rows={4}
+                            className="mt-1 font-mono text-sm"
+                            placeholder="class Solution {\n    public void solution() {\n    }\n}"
+                            disabled={isViewOnly}
+                          />
+                        </div>
+                      )}
+                      {selectedLanguagesSafe.includes("cpp") && (
+                        <div>
+                          <label className="text-sm font-medium">C++</label>
+                          <Textarea
+                            value={starterCode.cpp || ""}
+                            onChange={(e) => setStarterCode({ ...starterCode, cpp: e.target.value })}
+                            rows={4}
+                            className="mt-1 font-mono text-sm"
+                            placeholder="class Solution {\npublic:\n    void solution() {\n    }\n};"
+                            disabled={isViewOnly}
+                          />
+                        </div>
+                      )}
+                      {selectedLanguagesSafe.includes("sql") && (
+                        <div>
+                          <label className="text-sm font-medium">SQL</label>
+                          <Textarea
+                            value={starterCode.sql || ""}
+                            onChange={(e) => setStarterCode({ ...starterCode, sql: e.target.value })}
+                            rows={4}
+                            className="mt-1 font-mono text-sm"
+                            placeholder="SELECT * FROM table;"
+                            disabled={isViewOnly}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Test Cases */}
+              <div className="relative">
+                {hiddenTestCasesCount === 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 right-4 z-10">
+                    Required: Add hidden test cases
+                  </Badge>
+                )}
+                <TestCasesSection
+                  testCases={testCases}
+                  onChange={setTestCases}
+                  disabled={!canEditTestCases}
+                />
+              </div>
+
+              {/* Solution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Solution</CardTitle>
+                  <CardDescription>Provide the solution code or explanation (Markdown supported)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="solution"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea {...field} rows={10} className="font-mono text-sm" placeholder="Provide the solution..." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Footer Actions */}
+          <div className="flex items-center justify-between border-t pt-6 sticky bottom-0 bg-background pb-4">
             <div className="text-sm text-muted-foreground">
               {!canPublish && form.watch("status") === "published" && (
-                <span className="text-destructive">
-                  Cannot publish: requires at least 1 hidden test case and 1 language.
-                </span>
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Cannot publish: requires language, example, and hidden test case.</span>
+                </div>
               )}
             </div>
             <div className="flex gap-3">
