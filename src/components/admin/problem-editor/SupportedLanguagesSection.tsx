@@ -1,6 +1,6 @@
-import type { Dispatch, KeyboardEvent, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CheckCircle2, Circle } from "lucide-react";
 
 export const AVAILABLE_LANGUAGES = [
   { id: "python", label: "Python", icon: "🐍" },
@@ -51,14 +51,6 @@ export function SupportedLanguagesSection({
   const isLastSelected = (langId: SupportedLanguage) =>
     selectedLanguagesSafe.length === 1 && selectedLanguagesSafe.includes(langId);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>, langId: SupportedLanguage, isDisabled: boolean) => {
-    if (isDisabled) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggleLanguage(langId);
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -75,31 +67,32 @@ export function SupportedLanguagesSection({
             const isDisabled = disabled || cannotDeselect;
             
             return (
-              // NOTE: Radix Checkbox renders a <button>. Do NOT wrap it in another <button>
-              // (invalid nested interactive elements can cause weird click behavior / crashes).
-              <div
+              <button
                 key={lang.id}
-                role="button"
-                tabIndex={isDisabled ? -1 : 0}
-                aria-disabled={isDisabled}
+                type="button"
+                aria-pressed={isSelected}
+                disabled={isDisabled}
+                onClick={(e) => {
+                  // Defensive: ensure we never accidentally submit the parent form
+                  e.preventDefault();
+                  if (!isDisabled) toggleLanguage(lang.id);
+                }}
                 className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left select-none ${
                   isSelected
                     ? "bg-primary/10 border-primary"
                     : "hover:bg-muted/50 border-input"
                 } ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                onClick={() => !isDisabled && toggleLanguage(lang.id)}
-                onKeyDown={(e) => handleKeyDown(e, lang.id, isDisabled)}
               >
-                <Checkbox
-                  checked={isSelected}
-                  disabled={isDisabled}
-                  className="pointer-events-none"
-                />
+                {isSelected ? (
+                  <CheckCircle2 className="h-5 w-5 text-primary" aria-hidden="true" />
+                ) : (
+                  <Circle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                )}
                 <span className="flex items-center gap-2">
-                  <span>{lang.icon}</span>
+                  <span aria-hidden="true">{lang.icon}</span>
                   <span className="text-sm font-medium">{lang.label}</span>
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
