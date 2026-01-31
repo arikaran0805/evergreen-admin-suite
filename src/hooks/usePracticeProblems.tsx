@@ -129,6 +129,13 @@ export function usePracticeProblem(id: string | undefined) {
   });
 }
 
+export interface ProblemWithMapping extends PracticeProblem {
+  lesson_id?: string;
+  lesson_title?: string;
+  sub_topic_id?: string;
+  sub_topic_title?: string;
+}
+
 export function usePublishedPracticeProblems(skillSlug: string | undefined) {
   return useQuery({
     queryKey: ["published-practice-problems", skillSlug],
@@ -138,61 +145,88 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
       // First get the skill by slug
       const { data: skill, error: skillError } = await supabase
         .from("practice_skills")
-        .select("id")
+        .select("id, course_id")
         .eq("slug", skillSlug)
         .eq("status", "published")
         .single();
 
       if (skillError || !skill) return [];
 
-      // Get problems directly linked via skill_id
-      const { data: directProblems, error } = await supabase
-        .from("practice_problems")
-        .select("*")
+      // Get sub-topics for this skill with lesson info
+      const { data: subTopics } = await supabase
+        .from("sub_topics")
+        .select(`
+          id,
+          title,
+          lesson_id,
+          display_order,
+          course_lessons!inner(id, title, lesson_rank)
+        `)
         .eq("skill_id", skill.id)
-        .eq("status", "published")
         .order("display_order", { ascending: true });
 
-      if (error) throw error;
-
-      // Get sub-topics that belong to this skill
-      const { data: skillSubTopics } = await supabase
-        .from("sub_topics")
-        .select("id")
-        .eq("skill_id", skill.id);
-
-      const subTopicIds = (skillSubTopics || []).map(st => st.id);
-
-      // Get problems mapped to these sub-topics
-      let mappedProblems: any[] = [];
+      // Get problem mappings for these sub-topics
+      const subTopicIds = (subTopics || []).map(st => st.id);
+      
+      let problemsWithMappings: ProblemWithMapping[] = [];
+      
       if (subTopicIds.length > 0) {
         const { data: mappings } = await supabase
           .from("problem_mappings")
           .select(`
             problem_id,
             sub_topic_id,
+            display_order,
             practice_problems!inner(*)
           `)
           .in("sub_topic_id", subTopicIds)
-          .eq("practice_problems.status", "published");
+          .eq("practice_problems.status", "published")
+          .order("display_order", { ascending: true });
         
-        if (mappings) {
-          mappedProblems = mappings.map(m => m.practice_problems);
+        if (mappings && subTopics) {
+          // Create a map of sub-topic info
+          const subTopicMap = new Map(subTopics.map(st => [st.id, st]));
+          
+          for (const mapping of mappings) {
+            const subTopic = subTopicMap.get(mapping.sub_topic_id);
+            if (subTopic) {
+              const lesson = subTopic.course_lessons as any;
+              problemsWithMappings.push({
+                ...transformProblem(mapping.practice_problems),
+                lesson_id: subTopic.lesson_id,
+                lesson_title: lesson?.title || "General",
+                sub_topic_id: subTopic.id,
+                sub_topic_title: subTopic.title,
+              });
+            }
+          }
         }
       }
 
-      // Merge and deduplicate
-      const allProblems = [...(directProblems || [])];
-      const existingIds = new Set(allProblems.map(p => p.id));
+      // Also get problems directly linked via skill_id (fallback for unmapped problems)
+      const { data: directProblems } = await supabase
+        .from("practice_problems")
+        .select("*")
+        .eq("skill_id", skill.id)
+        .eq("status", "published")
+        .order("display_order", { ascending: true });
+
+      // Add direct problems that aren't already mapped
+      const mappedProblemIds = new Set(problemsWithMappings.map(p => p.id));
       
-      for (const problem of mappedProblems) {
-        if (!existingIds.has(problem.id)) {
-          allProblems.push(problem);
-          existingIds.add(problem.id);
+      if (directProblems) {
+        for (const problem of directProblems) {
+          if (!mappedProblemIds.has(problem.id)) {
+            problemsWithMappings.push({
+              ...transformProblem(problem),
+              lesson_title: "General",
+              sub_topic_title: problem.sub_topic || "Uncategorized",
+            });
+          }
         }
       }
 
-      return allProblems.map(transformProblem);
+      return problemsWithMappings;
     },
     enabled: !!skillSlug,
   });
