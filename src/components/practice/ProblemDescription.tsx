@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { ProblemDetail } from "./problemDetailData";
@@ -46,7 +47,8 @@ export function ProblemDescription({ problem }: ProblemDescriptionProps) {
           </TabsList>
         </div>
 
-        <TabsContent value="description" className="flex-1 overflow-auto m-0 p-0">
+        <TabsContent value="description" className="flex-1 overflow-hidden m-0 p-0">
+          <ScrollArea className="h-full">
           <div className="p-6 space-y-6">
             {/* Title and Difficulty */}
             <div>
@@ -158,6 +160,7 @@ export function ProblemDescription({ problem }: ProblemDescriptionProps) {
               </div>
             )}
           </div>
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="solutions" className="flex-1 overflow-auto m-0 p-6">
