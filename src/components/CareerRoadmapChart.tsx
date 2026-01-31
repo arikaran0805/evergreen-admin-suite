@@ -188,8 +188,8 @@ export const CareerRoadmapChart = ({
           >
             <defs>
               <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="currentColor" className="text-primary" />
-                <stop offset="100%" stopColor="currentColor" className="text-green-500" />
+                <stop offset="0%" stopColor="hsl(var(--primary))" />
+                <stop offset="100%" stopColor="hsl(142, 71%, 45%)" />
               </linearGradient>
             </defs>
 
@@ -228,8 +228,8 @@ export const CareerRoadmapChart = ({
                     )
                 ].join(' ')}
                 fill="none"
-                stroke="url(#pathGradient)"
-                strokeWidth="3"
+                stroke="hsl(142, 71%, 45%)"
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 style={{
