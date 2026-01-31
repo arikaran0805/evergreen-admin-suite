@@ -88,14 +88,13 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-type TabType = 'dashboard' | 'learnings' | 'bookmarks' | 'discussions' | 'achievements' | 'notifications' | 'settings' | 'practice';
+type TabType = 'dashboard' | 'learnings' | 'bookmarks' | 'discussions' | 'achievements' | 'settings' | 'practice';
 
 const sidebarItems = [
   { id: 'dashboard' as TabType, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'learnings' as TabType, label: 'My Learnings', icon: BookOpen },
   { id: 'bookmarks' as TabType, label: 'Bookmarks', icon: Bookmark },
   { id: 'discussions' as TabType, label: 'Discussions', icon: MessageSquare },
-  { id: 'notifications' as TabType, label: 'Notifications', icon: Bell },
 ];
 
 const exploreItems = [
@@ -2196,18 +2195,6 @@ const Profile = () => {
     );
   };
 
-  const renderNotifications = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Notifications</h2>
-      <Card>
-        <CardContent className="text-center py-12">
-          <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No notifications</h3>
-          <p className="text-muted-foreground">You're all caught up!</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
 
   const renderSettings = () => (
     <div className="space-y-6">
@@ -2546,7 +2533,6 @@ const Profile = () => {
       case 'bookmarks': return renderBookmarks();
       case 'discussions': return renderDiscussions();
       case 'achievements': return renderAchievements();
-      case 'notifications': return renderNotifications();
       case 'settings': return renderSettings();
       default: return renderDashboard();
     }
