@@ -1535,33 +1535,31 @@ const Profile = () => {
             weeklyActivityData={weeklyActivityData}
           />
 
-          {/* AI Mentor Card - Expand to match Practice Labs height */}
-          <Card className="card-premium rounded-xl animate-stagger-3 flex-1 flex flex-col">
-            <CardContent className="p-5 flex-1 flex flex-col">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/30">
-                  <Sparkles className="h-6 w-6 text-white" />
+          {/* AI Mentor Card */}
+          <Card className="card-premium rounded-xl animate-stagger-3">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/30">
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold">AI Mentor</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="text-base font-bold">AI Mentor</h3>
+                  <p className="text-xs text-muted-foreground">
                     Your personal learning assistant
                   </p>
                 </div>
               </div>
               
-              <div className="flex-1 flex flex-col justify-between">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {completedInCareer < careerRelatedSlugs.length 
-                    ? `Continue your ${career?.name || 'career'} journey. Get personalized guidance on what to learn next and improve your skills.`
-                    : 'Great progress! Ask me about advanced topics, career advice, or explore new learning paths.'}
-                </p>
-                
-                <Button variant="default" className="w-full mt-4 gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
-                  <Sparkles className="h-4 w-4" />
-                  Ask AI Mentor
-                </Button>
-              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                {completedInCareer < careerRelatedSlugs.length 
+                  ? `Continue your ${career?.name || 'career'} journey. Get personalized guidance on what to learn next and improve your skills.`
+                  : 'Great progress! Ask me about advanced topics, career advice, or explore new learning paths.'}
+              </p>
+              
+              <Button variant="default" className="w-full gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
+                <Sparkles className="h-4 w-4" />
+                Ask AI Mentor
+              </Button>
             </CardContent>
           </Card>
         </div>
