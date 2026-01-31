@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, List, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -40,6 +40,7 @@ export default function ProblemDetail() {
     constraints: dbProblem.constraints || [],
     hints: dbProblem.hints || [],
     starterCode: dbProblem.starter_code || {},
+    supportedLanguages: dbProblem.supported_languages || [],
     testCases: (dbProblem.examples || []).map((ex: any, i: number) => ({
       id: i + 1,
       input: ex.input || "",
@@ -134,7 +135,7 @@ export default function ProblemDetail() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top Navigation Bar */}
-      <div className="h-12 flex items-center justify-between px-4 border-b border-border/50 bg-card shrink-0">
+      <div className="h-12 flex items-center px-4 border-b border-border/50 bg-card shrink-0">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -144,23 +145,14 @@ export default function ProblemDetail() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-            <List className="h-4 w-4" />
-            Problem List
-          </Button>
-        </div>
-        
-        <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground px-2">{problem.title}</span>
+          <span className="text-sm font-medium px-2">{problem.title}</span>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        
-        <div className="w-[100px]" /> {/* Spacer for centering */}
       </div>
 
       {/* Main Content */}
@@ -180,6 +172,7 @@ export default function ProblemDetail() {
               <ResizablePanel defaultSize={65} minSize={30}>
                 <CodeEditor
                   problem={problem}
+                  supportedLanguages={problem.supportedLanguages}
                   onRun={handleRun}
                   onSubmit={handleSubmit}
                 />

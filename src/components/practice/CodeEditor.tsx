@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 interface CodeEditorProps {
   problem: ProblemDetail;
+  supportedLanguages?: string[];
   onRun: (code: string, language: string) => void;
   onSubmit: (code: string, language: string) => void;
 }
@@ -27,10 +28,13 @@ const languageLabels: Record<string, string> = {
   mysql: "MySQL",
 };
 
-export function CodeEditor({ problem, onRun, onSubmit }: CodeEditorProps) {
-  const availableLanguages = Object.keys(problem.starterCode);
-  const [language, setLanguage] = useState(availableLanguages[0]);
-  const [code, setCode] = useState(problem.starterCode[availableLanguages[0]]);
+export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: CodeEditorProps) {
+  // Use supportedLanguages from DB if provided, otherwise fall back to starterCode keys
+  const availableLanguages = supportedLanguages && supportedLanguages.length > 0 
+    ? supportedLanguages 
+    : Object.keys(problem.starterCode);
+  const [language, setLanguage] = useState(availableLanguages[0] || "python");
+  const [code, setCode] = useState(problem.starterCode[availableLanguages[0]] || "");
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
