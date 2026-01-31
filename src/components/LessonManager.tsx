@@ -28,6 +28,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   DndContext,
   closestCenter,
   KeyboardSensor,
@@ -55,8 +62,11 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Dumbbell,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { SubTopicManager } from "@/components/admin/practice/SubTopicManager";
+import { ProblemMappingManager } from "@/components/admin/practice/ProblemMappingManager";
 
 interface Lesson {
   id: string;
@@ -142,6 +152,7 @@ interface SortableItemProps {
   onCreatePost: (lessonId: string) => void;
   onEditPost: (postId: string) => void;
   onReorderPosts: (lessonId: string, posts: Post[], movedPostId: string, newIndex: number) => void;
+  onOpenPractice: (lesson: Lesson) => void;
   basePath: string;
 }
 
@@ -155,6 +166,7 @@ const SortableItem = ({
   onCreatePost,
   onEditPost,
   onReorderPosts,
+  onOpenPractice,
   basePath,
 }: SortableItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -250,6 +262,15 @@ const SortableItem = ({
               variant="ghost"
               size="icon"
               className="h-7 w-7"
+              onClick={() => onOpenPractice(lesson)}
+              title="Manage Practice"
+            >
+              <Dumbbell className="h-3.5 w-3.5 text-primary" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
               onClick={() => onTogglePublish(lesson)}
               title={lesson.is_published ? "Unpublish" : "Publish"}
             >
@@ -335,6 +356,12 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Practice skill state
+  const [practiceSkillId, setPracticeSkillId] = useState<string | null>(null);
+  const [practiceLesson, setPracticeLesson] = useState<Lesson | null>(null);
+  const [practiceSubTopicId, setPracticeSubTopicId] = useState<string | null>(null);
+  const [practiceSubTopicTitle, setPracticeSubTopicTitle] = useState<string>("");
+
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -348,6 +375,22 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Fetch practice skill for this course
+  useEffect(() => {
+    const fetchPracticeSkill = async () => {
+      if (!courseId) return;
+      const { data } = await supabase
+        .from("practice_skills")
+        .select("id")
+        .eq("course_id", courseId)
+        .maybeSingle();
+      if (data) {
+        setPracticeSkillId(data.id);
+      }
+    };
+    fetchPracticeSkill();
+  }, [courseId]);
 
   useEffect(() => {
     if (courseId) {
@@ -712,6 +755,7 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
                         onCreatePost={handleCreatePost}
                         onEditPost={handleEditPost}
                         onReorderPosts={handleReorderPosts}
+                        onOpenPractice={(lesson) => setPracticeLesson(lesson)}
                         basePath={basePath}
                       />
                     ))}
@@ -835,6 +879,50 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Practice Sub-Topics Sheet */}
+      <Sheet open={!!practiceLesson} onOpenChange={(open) => !open && setPracticeLesson(null)}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Practice Management</SheetTitle>
+            <SheetDescription>
+              Manage practice sub-topics and problems for "{practiceLesson?.title}"
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-6">
+            {practiceLesson && practiceSkillId ? (
+              <>
+                <SubTopicManager
+                  lessonId={practiceLesson.id}
+                  skillId={practiceSkillId}
+                  lessonTitle={practiceLesson.title}
+                  onManageProblems={(subTopicId, subTopicTitle) => {
+                    setPracticeSubTopicId(subTopicId);
+                    setPracticeSubTopicTitle(subTopicTitle);
+                  }}
+                />
+                {practiceSubTopicId && (
+                  <div className="pt-4 border-t">
+                    <ProblemMappingManager
+                      subTopicId={practiceSubTopicId}
+                      subTopicTitle={practiceSubTopicTitle}
+                      onClose={() => {
+                        setPracticeSubTopicId(null);
+                        setPracticeSubTopicTitle("");
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No practice skill found for this course.</p>
+                <p className="text-sm mt-1">Practice skills are auto-created when courses are created.</p>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
