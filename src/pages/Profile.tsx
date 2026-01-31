@@ -1535,7 +1535,7 @@ const Profile = () => {
             weeklyActivityData={weeklyActivityData}
           />
 
-          {/* AI Mentor Card - Match Recommended Labs structure */}
+          {/* AI Mentor Card - Match Recommended Labs height */}
           <Card className="card-premium rounded-xl animate-stagger-3">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
@@ -1555,7 +1555,7 @@ const Profile = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <Card className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -1563,14 +1563,10 @@ const Profile = () => {
                         <BookOpen className="h-4 w-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">Get Learning Guidance</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {completedInCareer < careerRelatedSlugs.length 
-                            ? `Continue your ${career?.name || 'career'} journey`
-                            : 'Explore advanced topics'}
-                        </p>
+                        <p className="font-semibold text-sm truncate">Learning Guidance</p>
+                        <p className="text-xs text-muted-foreground mt-1">Personalized tips</p>
+                        <Badge variant="secondary" className="mt-2 text-xs">Guide</Badge>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1581,10 +1577,10 @@ const Profile = () => {
                         <HelpCircle className="h-4 w-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">Ask Questions</p>
-                        <p className="text-xs text-muted-foreground mt-1">Get answers about any topic</p>
+                        <p className="font-semibold text-sm truncate">Ask Questions</p>
+                        <p className="text-xs text-muted-foreground mt-1">Get instant answers</p>
+                        <Badge variant="secondary" className="mt-2 text-xs">Q&A</Badge>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
                     </div>
                   </CardContent>
                 </Card>
