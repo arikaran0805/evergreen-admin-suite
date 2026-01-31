@@ -373,22 +373,24 @@ export default function AdminProblemEditor() {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)} className="w-full">
-            {/* Desktop Tab List */}
+            {/* Desktop Tab List - Pill Style */}
             {!isMobile && (
-              <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mb-6">
-                {tabs.map((tab) => (
-                  <TabsTrigger 
-                    key={tab.id} 
-                    value={tab.id}
-                    className="flex items-center gap-2"
-                  >
-                    {tab.icon}
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">{tab.mobileLabel}</span>
-                    <TabIndicator tabId={tab.id} />
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-6">
+                <TabsList className="inline-flex h-12 items-center justify-center rounded-full bg-muted/60 p-1.5 text-muted-foreground">
+                  {tabs.map((tab) => (
+                    <TabsTrigger 
+                      key={tab.id} 
+                      value={tab.id}
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                    >
+                      {tab.icon}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.mobileLabel}</span>
+                      <TabIndicator tabId={tab.id} />
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
             )}
 
             {/* TAB 1: Problem Setup */}
