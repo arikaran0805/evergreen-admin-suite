@@ -248,7 +248,8 @@ export function usePublishedPracticeProblem(skillSlug: string | undefined, probl
 
       if (skillError || !skill) return null;
 
-      const { data, error } = await supabase
+      // Try direct skill_id match first
+      const { data: directProblem } = await supabase
         .from("practice_problems")
         .select("*")
         .eq("skill_id", skill.id)
@@ -256,8 +257,26 @@ export function usePublishedPracticeProblem(skillSlug: string | undefined, probl
         .eq("status", "published")
         .single();
 
-      if (error) return null;
-      return transformProblem(data);
+      if (directProblem) {
+        return transformProblem(directProblem);
+      }
+
+      // If not found directly, check via problem_mappings (problem linked from another skill)
+      const { data: mappedProblem } = await supabase
+        .from("problem_mappings")
+        .select(`
+          practice_problems!inner(*)
+        `)
+        .eq("practice_problems.slug", problemSlug)
+        .eq("practice_problems.status", "published")
+        .limit(1)
+        .single();
+
+      if (mappedProblem?.practice_problems) {
+        return transformProblem(mappedProblem.practice_problems);
+      }
+
+      return null;
     },
     enabled: !!skillSlug && !!problemSlug,
   });
