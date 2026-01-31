@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -47,48 +46,21 @@ const getTodaysPractice = (enrolledCourses: any[]) => {
 
 // Practice by skill data
 const skillPractices = [
-  {
-    id: "problem-solving",
-    name: "Problem Solving",
-    icon: Lightbulb,
-    color: "from-amber-500 to-orange-500",
-    bgColor: "bg-amber-50 dark:bg-amber-950/30",
-  },
-  {
-    id: "logic",
-    name: "Logic & Thinking",
-    icon: Brain,
-    color: "from-purple-500 to-indigo-500",
-    bgColor: "bg-purple-50 dark:bg-purple-950/30",
-  },
-  {
-    id: "data-analysis",
-    name: "Data Analysis",
-    icon: BarChart3,
-    color: "from-blue-500 to-cyan-500",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
-  },
-  {
-    id: "sql",
-    name: "SQL Queries",
-    icon: Database,
-    color: "from-emerald-500 to-teal-500",
-    bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
-  },
-  {
-    id: "debugging",
-    name: "Debugging",
-    icon: Bug,
-    color: "from-red-500 to-pink-500",
-    bgColor: "bg-red-50 dark:bg-red-950/30",
-  },
-  {
-    id: "coding",
-    name: "Coding Basics",
-    icon: Code2,
-    color: "from-slate-600 to-slate-800",
-    bgColor: "bg-slate-50 dark:bg-slate-900/50",
-  },
+  { id: "algorithms", name: "Algorithms", icon: Brain },
+  { id: "data-structures", name: "Data Structures", icon: Database },
+  { id: "mathematics", name: "Mathematics", icon: BarChart3 },
+  { id: "ai", name: "Artificial Intelligence", icon: Lightbulb },
+  { id: "c", name: "C", icon: Code2 },
+  { id: "cpp", name: "C++", icon: Code2 },
+  { id: "java", name: "Java", icon: Code2 },
+  { id: "python", name: "Python", icon: Code2 },
+  { id: "ruby", name: "Ruby", icon: Code2 },
+  { id: "sql", name: "SQL", icon: Database },
+  { id: "databases", name: "Databases", icon: Database },
+  { id: "linux", name: "Linux Shell", icon: Bug },
+  { id: "functional", name: "Functional Programming", icon: Code2 },
+  { id: "regex", name: "Regex", icon: Target },
+  { id: "react", name: "React", icon: Code2 },
 ];
 
 // Mini projects data
@@ -117,7 +89,6 @@ const miniProjects = [
 ];
 
 export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Record<string, string>>({});
   
   const todaysPractice = getTodaysPractice(enrolledCourses);
   const hasActivity = enrolledCourses.length > 0;
@@ -286,51 +257,22 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
 
       {/* Practice by Skill */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Brain className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Practice by Skill</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-xl font-bold mb-6">Practice Skills</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {skillPractices.map((skill) => {
             const Icon = skill.icon;
-            const difficulty = selectedDifficulty[skill.id] || "Easy";
-            const timeEstimate = difficulty === "Easy" ? "5 mins" : difficulty === "Medium" ? "10 mins" : "15 mins";
-            
             return (
-              <Card key={skill.id} className={`${skill.bgColor} border-0 hover:shadow-md transition-all`}>
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${skill.color} flex items-center justify-center`}>
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5" />
-                      {timeEstimate}
-                    </div>
+              <Card 
+                key={skill.id} 
+                className="bg-muted/50 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+              >
+                <CardContent className="p-5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="h-4 w-4 text-primary" />
                   </div>
-                  
-                  <h3 className="font-semibold mb-3">{skill.name}</h3>
-                  
-                  <div className="flex gap-1 mb-4">
-                    {["Easy", "Medium", "Hard"].map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setSelectedDifficulty(prev => ({ ...prev, [skill.id]: level }))}
-                        className={`px-2.5 py-1 text-xs rounded-full transition-all ${
-                          difficulty === level
-                            ? "bg-foreground text-background font-medium"
-                            : "bg-background/60 text-muted-foreground hover:bg-background"
-                        }`}
-                      >
-                        {level}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <Button size="sm" className="w-full gap-1.5">
-                    <Zap className="h-4 w-4" />
-                    Start Quick Practice
-                  </Button>
+                  <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                    {skill.name}
+                  </span>
                 </CardContent>
               </Card>
             );
