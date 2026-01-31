@@ -112,6 +112,7 @@ export function useCreateProblemMapping() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["problem-mappings", "sub-topic", data.sub_topic_id] });
       queryClient.invalidateQueries({ queryKey: ["problem-mappings", "problem", data.problem_id] });
+      queryClient.invalidateQueries({ queryKey: ["problem-mappings-by-skill"] });
       queryClient.invalidateQueries({ queryKey: ["sub-topics"] });
       toast.success("Problem attached successfully");
     },
@@ -166,6 +167,7 @@ export function useDeleteProblemMapping() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["problem-mappings", "sub-topic", data.subTopicId] });
       queryClient.invalidateQueries({ queryKey: ["problem-mappings", "problem", data.problemId] });
+      queryClient.invalidateQueries({ queryKey: ["problem-mappings-by-skill"] });
       queryClient.invalidateQueries({ queryKey: ["sub-topics"] });
       toast.success("Problem detached successfully");
     },

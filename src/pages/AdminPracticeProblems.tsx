@@ -1,80 +1,133 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, Pencil, Trash2, ArrowLeft, MoreHorizontal, Lock, Unlock } from "lucide-react";
+import { Plus, ArrowLeft, BookOpen, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePracticeSkill } from "@/hooks/usePracticeSkills";
-import { usePracticeProblems, useDeletePracticeProblem } from "@/hooks/usePracticeProblems";
+import { usePracticeProblems } from "@/hooks/usePracticeProblems";
+import { useSubTopicsBySkill, SubTopic } from "@/hooks/useSubTopics";
+import { useCreateProblemMapping } from "@/hooks/useProblemMappings";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { LessonProblemsSection } from "@/components/admin/practice/LessonProblemsSection";
+import { AddProblemDialog } from "@/components/admin/practice/AddProblemDialog";
+
+interface CourseLesson {
+  id: string;
+  title: string;
+  course_id: string;
+  lesson_order: number;
+}
 
 export default function AdminPracticeProblems() {
   const { skillId } = useParams<{ skillId: string }>();
   const navigate = useNavigate();
   const { data: skill, isLoading: skillLoading } = usePracticeSkill(skillId);
-  const { data: problems, isLoading: problemsLoading } = usePracticeProblems(skillId);
-  const deleteMutation = useDeletePracticeProblem();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { data: allProblems, isLoading: problemsLoading } = usePracticeProblems(skillId);
+  const { data: subTopics, isLoading: subTopicsLoading } = useSubTopicsBySkill(skillId);
+  
+  const [addProblemSubTopicId, setAddProblemSubTopicId] = useState<string | null>(null);
+  
+  const createMapping = useCreateProblemMapping();
 
-  const handleDelete = async () => {
-    if (deleteId && skillId) {
-      await deleteMutation.mutateAsync({ id: deleteId, skillId });
-      setDeleteId(null);
-    }
+  // Fetch lessons for the linked course
+  const { data: lessons, isLoading: lessonsLoading } = useQuery({
+    queryKey: ["course-lessons", skill?.course_id],
+    queryFn: async () => {
+      if (!skill?.course_id) return [];
+      const { data, error } = await supabase
+        .from("course_lessons")
+        .select("id, title, course_id, lesson_order")
+        .eq("course_id", skill.course_id)
+        .is("deleted_at", null)
+        .order("lesson_rank", { ascending: true });
+      
+      if (error) throw error;
+      return data as CourseLesson[];
+    },
+    enabled: !!skill?.course_id,
+  });
+
+  // Fetch all problem mappings for this skill's sub-topics
+  const { data: mappings } = useQuery({
+    queryKey: ["problem-mappings-by-skill", skillId],
+    queryFn: async () => {
+      if (!skillId || !subTopics) return [];
+      const subTopicIds = subTopics.map(st => st.id);
+      if (subTopicIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("problem_mappings")
+        .select("*, practice_problems(*)")
+        .in("sub_topic_id", subTopicIds);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!skillId && !!subTopics && subTopics.length > 0,
+  });
+
+  // Group sub-topics by lesson
+  const subTopicsByLesson = useMemo(() => {
+    if (!subTopics) return {};
+    return subTopics.reduce((acc, st) => {
+      if (!acc[st.lesson_id]) acc[st.lesson_id] = [];
+      acc[st.lesson_id].push(st);
+      return acc;
+    }, {} as Record<string, SubTopic[]>);
+  }, [subTopics]);
+
+  // Group problems by sub-topic (from mappings)
+  const problemsBySubTopic = useMemo(() => {
+    if (!mappings) return {};
+    return mappings.reduce((acc, m) => {
+      if (!acc[m.sub_topic_id]) acc[m.sub_topic_id] = [];
+      if (m.practice_problems) {
+        acc[m.sub_topic_id].push(m.practice_problems);
+      }
+      return acc;
+    }, {} as Record<string, any[]>);
+  }, [mappings]);
+
+  // Get mapped problem IDs for the add dialog
+  const mappedProblemIds = useMemo(() => {
+    if (!mappings || !addProblemSubTopicId) return new Set<string>();
+    return new Set(
+      mappings
+        .filter(m => m.sub_topic_id === addProblemSubTopicId)
+        .map(m => m.problem_id)
+    );
+  }, [mappings, addProblemSubTopicId]);
+
+  const handleProblemClick = (problemId: string) => {
+    navigate(`/admin/practice/skills/${skillId}/problems/${problemId}`);
   };
 
-  const getDifficultyBadge = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Easy</Badge>;
-      case "Medium":
-        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Medium</Badge>;
-      case "Hard":
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Hard</Badge>;
-      default:
-        return <Badge variant="outline">{difficulty}</Badge>;
+  const handleAddProblems = async (problemIds: string[]) => {
+    if (!addProblemSubTopicId) return;
+    
+    for (const problemId of problemIds) {
+      await createMapping.mutateAsync({
+        problem_id: problemId,
+        sub_topic_id: addProblemSubTopicId,
+      });
     }
+    setAddProblemSubTopicId(null);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "published":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Published</Badge>;
-      case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  const handleCreateNewProblem = () => {
+    navigate(`/admin/practice/skills/${skillId}/problems/new`);
   };
 
-  const isLoading = skillLoading || problemsLoading;
+  const isLoading = skillLoading || problemsLoading || lessonsLoading || subTopicsLoading;
+
+  const hasLinkedCourse = !!skill?.course_id;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/admin/practice/skills")}>
           <ArrowLeft className="h-5 w-5" />
@@ -84,111 +137,74 @@ export default function AdminPracticeProblems() {
             {skill?.name || "Loading..."} Problems
           </h1>
           <p className="text-muted-foreground">
-            Manage problems for this skill
+            Manage problems organized by lessons and sub-topics
           </p>
         </div>
         <Button onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)} className="gap-2">
           <Plus className="h-4 w-4" />
-          Add Problem
+          New Problem
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Problems</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : problems && problems.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Sub-Topic</TableHead>
-                  <TableHead>Difficulty</TableHead>
-                  <TableHead>Premium</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {problems.map((problem) => (
-                  <TableRow key={problem.id}>
-                    <TableCell className="font-medium">{problem.title}</TableCell>
-                    <TableCell className="text-muted-foreground">{problem.sub_topic}</TableCell>
-                    <TableCell>{getDifficultyBadge(problem.difficulty)}</TableCell>
-                    <TableCell>
-                      {problem.is_premium ? (
-                        <Lock className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Unlock className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(problem.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/${problem.id}`)}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeleteId(problem.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No problems yet for this skill.</p>
-              <Button
-                variant="link"
-                onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
-                className="mt-2"
-              >
-                Create your first problem
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Main Content */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+      ) : !hasLinkedCourse ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            This skill is not linked to a course. Problems can still be created but won't be organized by lessons.
+            <Button
+              variant="link"
+              className="ml-2 p-0 h-auto"
+              onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
+            >
+              Create a standalone problem
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : lessons && lessons.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Lessons Yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Create lessons in the course editor to organize problems.
+            </p>
+            <Button variant="outline" onClick={() => navigate(`/admin/courses`)}>
+              Go to Courses
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {lessons?.map((lesson) => (
+            <LessonProblemsSection
+              key={lesson.id}
+              lesson={lesson}
+              skillId={skillId!}
+              subTopics={subTopicsByLesson[lesson.id] || []}
+              problemsBySubTopic={problemsBySubTopic}
+              onProblemClick={handleProblemClick}
+              onAddProblem={(subTopicId) => setAddProblemSubTopicId(subTopicId)}
+            />
+          ))}
+        </div>
+      )}
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Problem</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this problem. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Add Problem Dialog */}
+      <AddProblemDialog
+        open={!!addProblemSubTopicId}
+        onOpenChange={(open) => !open && setAddProblemSubTopicId(null)}
+        allProblems={allProblems || []}
+        mappedProblemIds={mappedProblemIds}
+        onAddProblems={handleAddProblems}
+        onCreateNew={handleCreateNewProblem}
+      />
     </div>
   );
 }
