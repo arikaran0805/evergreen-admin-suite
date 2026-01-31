@@ -9,10 +9,10 @@ const SUGGESTED_TAGS = [
   "Python",
   "SQL",
   "Java",
-  "JavaScript",
+  "Java Script",
   "R",
   "Pandas",
-  "NumPy",
+  "Lumpy",
 ];
 
 interface ProblemTagsSectionProps {

@@ -89,6 +89,9 @@ export default function AdminProblemEditor() {
   const [timeLimit, setTimeLimit] = useState(1000);
   const [memoryLimit, setMemoryLimit] = useState(256);
   const [selectedLanguages, setSelectedLanguages] = useState<SupportedLanguage[]>(["python", "javascript"]);
+  const selectedLanguagesSafe: SupportedLanguage[] = Array.isArray(selectedLanguages)
+    ? selectedLanguages
+    : [];
   const [functionSignature, setFunctionSignature] = useState<FunctionSignature>({
     name: "solution",
     parameters: [],
@@ -227,7 +230,7 @@ export default function AdminProblemEditor() {
   }
 
   const hiddenTestCasesCount = testCases.filter((tc) => !tc.is_visible).length;
-  const canPublish = hiddenTestCasesCount >= 1 && selectedLanguages.length >= 1;
+  const canPublish = hiddenTestCasesCount >= 1 && selectedLanguagesSafe.length >= 1;
 
   return (
     <div className="space-y-6">
@@ -586,7 +589,7 @@ export default function AdminProblemEditor() {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {selectedLanguages.includes("python") && (
+              {selectedLanguagesSafe.includes("python") && (
                 <div>
                   <label className="text-sm font-medium">Python</label>
                   <Textarea
@@ -599,7 +602,7 @@ export default function AdminProblemEditor() {
                   />
                 </div>
               )}
-              {selectedLanguages.includes("javascript") && (
+              {selectedLanguagesSafe.includes("javascript") && (
                 <div>
                   <label className="text-sm font-medium">JavaScript</label>
                   <Textarea
@@ -612,7 +615,7 @@ export default function AdminProblemEditor() {
                   />
                 </div>
               )}
-              {selectedLanguages.includes("java") && (
+              {selectedLanguagesSafe.includes("java") && (
                 <div>
                   <label className="text-sm font-medium">Java</label>
                   <Textarea
@@ -625,7 +628,7 @@ export default function AdminProblemEditor() {
                   />
                 </div>
               )}
-              {selectedLanguages.includes("cpp") && (
+              {selectedLanguagesSafe.includes("cpp") && (
                 <div>
                   <label className="text-sm font-medium">C++</label>
                   <Textarea
@@ -638,7 +641,7 @@ export default function AdminProblemEditor() {
                   />
                 </div>
               )}
-              {selectedLanguages.includes("sql") && (
+              {selectedLanguagesSafe.includes("sql") && (
                 <div>
                   <label className="text-sm font-medium">SQL</label>
                   <Textarea
