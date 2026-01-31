@@ -6,26 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const SUGGESTED_TAGS = [
-  "Arrays",
-  "Hash Map",
-  "Two Pointers",
-  "Sliding Window",
-  "Binary Search",
-  "Linked List",
-  "Stack",
-  "Queue",
-  "Tree",
-  "Graph",
-  "Dynamic Programming",
-  "Greedy",
-  "Recursion",
-  "Sorting",
-  "String",
-  "Math",
-  "Bit Manipulation",
-  "SQL Joins",
-  "SQL Aggregation",
-  "SQL Subqueries",
+  "Python",
+  "SQL",
+  "Java",
+  "JavaScript",
+  "R",
+  "Pandas",
+  "NumPy",
 ];
 
 interface ProblemTagsSectionProps {
