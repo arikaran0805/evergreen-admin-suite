@@ -81,42 +81,27 @@ export function usePracticeProblems(skillId: string | undefined) {
 
       if (directError) throw directError;
 
-      // Get the skill to check if it has a linked course
-      const { data: skill } = await supabase
-        .from("practice_skills")
-        .select("course_id")
-        .eq("id", skillId)
-        .single();
-
-      let mappedProblems: any[] = [];
-
-      // If skill is linked to a course, also get problems via mappings
-      if (skill?.course_id) {
-        const { data: mappedData } = await supabase
-          .from("problem_mappings")
-          .select(`
-            problem_id,
-            practice_problems!inner(*),
-            sub_topics!inner(
-              lesson_id,
-              course_lessons!inner(course_id)
-            )
-          `)
-          .eq("sub_topics.course_lessons.course_id", skill.course_id);
-
-        if (mappedData) {
-          mappedProblems = mappedData.map((m: any) => m.practice_problems);
-        }
-      }
+      // Get problems mapped to sub-topics that belong to this skill
+      const { data: mappedBySkill } = await supabase
+        .from("problem_mappings")
+        .select(`
+          problem_id,
+          practice_problems!inner(*),
+          sub_topics!inner(skill_id)
+        `)
+        .eq("sub_topics.skill_id", skillId);
 
       // Merge and deduplicate
       const allProblems = [...(directProblems || [])];
       const existingIds = new Set(allProblems.map(p => p.id));
       
-      for (const problem of mappedProblems) {
-        if (!existingIds.has(problem.id)) {
-          allProblems.push(problem);
-          existingIds.add(problem.id);
+      if (mappedBySkill) {
+        for (const mapping of mappedBySkill) {
+          const problem = mapping.practice_problems;
+          if (!existingIds.has(problem.id)) {
+            allProblems.push(problem);
+            existingIds.add(problem.id);
+          }
         }
       }
 
