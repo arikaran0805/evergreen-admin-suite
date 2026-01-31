@@ -473,6 +473,9 @@ const Profile = () => {
     if (courseInfo) {
       // Navigate inside Career Board shell - guaranteed CareerScopedHeader
       navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
+    } else {
+      // Fallback: navigate to career board shell which auto-redirects to first course
+      navigate(`/career-board/${career.slug}`);
     }
   };
 
@@ -1146,13 +1149,17 @@ const Profile = () => {
                     size="sm" 
                     className="gap-1.5 rounded-full px-4"
                     onClick={() => {
-                      if (career && skills.length > 0) {
-                        // getCourseForSkill falls back to first course if no specific skill match
-                        const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
-                        if (courseInfo) {
-                          // Navigate inside Career Board shell - guaranteed CareerScopedHeader
-                          navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
+                      if (career) {
+                        // Try to get specific course, otherwise navigate to career board index
+                        if (skills.length > 0) {
+                          const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
+                          if (courseInfo) {
+                            navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
+                            return;
+                          }
                         }
+                        // Fallback: navigate to career board shell which auto-redirects to first course
+                        navigate(`/career-board/${career.slug}`);
                       }
                     }}
                   >
@@ -1390,14 +1397,19 @@ const Profile = () => {
                           className="gap-2 rounded-full px-5"
                           onClick={() => {
                             // This is a career action - navigate to first course inside Career Board
-                            if (career && skills.length > 0) {
-                              const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
-                              if (courseInfo) {
-                                navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
-                                return;
+                            if (career) {
+                              if (skills.length > 0) {
+                                const courseInfo = getCourseForSkill(career.id, skills[0].skill_name);
+                                if (courseInfo) {
+                                  navigateToCourseInCareerBoard(career.slug, courseInfo.courseSlug);
+                                  return;
+                                }
                               }
+                              // Fallback: navigate to career board shell which auto-redirects
+                              navigate(`/career-board/${career.slug}`);
+                              return;
                             }
-                            // Fallback to arcade if no career/skills
+                            // No career selected - go to arcade to pick one
                             navigate('/arcade');
                           }}
                         >
