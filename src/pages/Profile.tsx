@@ -1118,10 +1118,10 @@ const Profile = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      {/* Main Content Grid - Row-based for alignment */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Row 1: Dashboard Header + Today's Focus */}
-        <div className="lg:col-span-2">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Dashboard Header + Career Readiness + Practice Labs */}
+        <div className="lg:col-span-2 space-y-6">
           {/* Premium Dashboard Header */}
           <ProfileDashboardHeader
             className="animate-stagger-1"
@@ -1130,60 +1130,6 @@ const Profile = () => {
             currentStreak={currentStreak}
             maxStreak={maxStreak}
           />
-        </div>
-
-        {/* Row 1 Right: Today's Focus Card */}
-        <Card className="card-premium rounded-xl animate-stagger-1">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-primary uppercase tracking-wider">
-                Today's Focus
-              </span>
-            </div>
-            
-            <div className="space-y-3">
-              {/* Lesson Suggestion */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors cursor-pointer">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Continue Learning</p>
-                  <p className="text-xs text-muted-foreground truncate">{focusContent.message}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </div>
-
-              {/* MCQ Suggestion */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-colors cursor-pointer">
-                <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                  <HelpCircle className="h-4 w-4 text-amber-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Daily Quiz</p>
-                  <p className="text-xs text-muted-foreground">Test your knowledge with MCQs</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </div>
-
-              {/* Debug & Practice Suggestion */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-violet-500/5 border border-violet-500/10 hover:bg-violet-500/10 transition-colors cursor-pointer">
-                <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
-                  <Code className="h-4 w-4 text-violet-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Debug & Practice</p>
-                  <p className="text-xs text-muted-foreground">Hands-on coding challenges</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Row 2 Left: Career Readiness */}
-        <div className="lg:col-span-2">
           {/* Career Readiness */}
           <Card className="card-premium rounded-xl animate-stagger-2">
             <CardContent className="p-6">
@@ -1465,18 +1411,8 @@ const Profile = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Row 2 Right: Weekly Activity */}
-        <ProfileWeeklyActivityCard
-          className="animate-stagger-2"
-          loading={weeklyActivityLoading}
-          weeklyActivityData={weeklyActivityData}
-        />
-
-        {/* Row 3 Left: Recommended Labs */}
-        <div className="lg:col-span-2">
-          {/* Recommended Labs Section */}
+          {/* Recommended Labs Section - Directly below Career Readiness */}
           <Card className="card-premium rounded-xl animate-stagger-3">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
@@ -1541,33 +1477,94 @@ const Profile = () => {
           </Card>
         </div>
 
-        {/* Row 3 Right: AI Mentor Card */}
-        <Card className="card-premium rounded-xl animate-stagger-3">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/30">
-                <Sparkles className="h-5 w-5 text-white" />
+        {/* Right Column - Today's Focus + Weekly Activity + AI Mentor */}
+        <div className="flex flex-col space-y-6 h-full min-h-full">
+          {/* Today's Focus Card */}
+          <Card className="card-premium rounded-xl animate-stagger-1">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold text-primary uppercase tracking-wider">
+                  Today's Focus
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold">AI Mentor</h3>
-                <p className="text-xs text-muted-foreground">
-                  Your personal learning assistant
+              
+              <div className="space-y-3">
+                {/* Lesson Suggestion */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Continue Learning</p>
+                    <p className="text-xs text-muted-foreground truncate">{focusContent.message}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
+
+                {/* MCQ Suggestion */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <HelpCircle className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Daily Quiz</p>
+                    <p className="text-xs text-muted-foreground">Test your knowledge with MCQs</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
+
+                {/* Debug & Practice Suggestion */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-violet-500/5 border border-violet-500/10 hover:bg-violet-500/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
+                    <Code className="h-4 w-4 text-violet-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Debug & Practice</p>
+                    <p className="text-xs text-muted-foreground">Hands-on coding challenges</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <ProfileWeeklyActivityCard
+            className="animate-stagger-2"
+            loading={weeklyActivityLoading}
+            weeklyActivityData={weeklyActivityData}
+          />
+
+          {/* AI Mentor Card - Expand to match Practice Labs height */}
+          <Card className="card-premium rounded-xl animate-stagger-3 flex-1 flex flex-col">
+            <CardContent className="p-5 flex-1 flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/30">
+                  <Sparkles className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold">AI Mentor</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your personal learning assistant
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-between">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {completedInCareer < careerRelatedSlugs.length 
+                    ? `Continue your ${career?.name || 'career'} journey. Get personalized guidance on what to learn next and improve your skills.`
+                    : 'Great progress! Ask me about advanced topics, career advice, or explore new learning paths.'}
                 </p>
+                
+                <Button variant="default" className="w-full mt-4 gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
+                  <Sparkles className="h-4 w-4" />
+                  Ask AI Mentor
+                </Button>
               </div>
-            </div>
-            
-            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-              {completedInCareer < careerRelatedSlugs.length 
-                ? `Continue your ${career?.name || 'career'} journey. Get personalized guidance on what to learn next and improve your skills.`
-                : 'Great progress! Ask me about advanced topics, career advice, or explore new learning paths.'}
-            </p>
-            
-            <Button variant="default" className="w-full gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
-              <Sparkles className="h-4 w-4" />
-              Ask AI Mentor
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Arcade Section */}
