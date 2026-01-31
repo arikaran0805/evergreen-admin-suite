@@ -2085,6 +2085,116 @@ export type Database = {
           },
         ]
       }
+      practice_problems: {
+        Row: {
+          constraints: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: string
+          display_order: number | null
+          examples: Json | null
+          hints: Json | null
+          id: string
+          is_premium: boolean | null
+          skill_id: string
+          slug: string
+          solution: string | null
+          starter_code: Json | null
+          status: string
+          sub_topic: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          constraints?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string
+          display_order?: number | null
+          examples?: Json | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean | null
+          skill_id: string
+          slug: string
+          solution?: string | null
+          starter_code?: Json | null
+          status?: string
+          sub_topic: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          constraints?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string
+          display_order?: number | null
+          examples?: Json | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean | null
+          skill_id?: string
+          slug?: string
+          solution?: string | null
+          starter_code?: Json | null
+          status?: string
+          sub_topic?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_problems_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "practice_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_skills: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_role: Database["public"]["Enums"]["app_role"] | null

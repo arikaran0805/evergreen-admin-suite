@@ -30,6 +30,10 @@ import AdminPostVersions from "@/pages/AdminPostVersions";
 import AdminAnnotations from "@/pages/AdminAnnotations";
 import AdminAssignmentLogs from "@/pages/AdminAssignmentLogs";
 import AdminTeamOwnership from "@/pages/AdminTeamOwnership";
+import AdminPracticeSkills from "@/pages/AdminPracticeSkills";
+import AdminPracticeSkillEditor from "@/pages/AdminPracticeSkillEditor";
+import AdminPracticeProblems from "@/pages/AdminPracticeProblems";
+import AdminProblemEditor from "@/pages/AdminProblemEditor";
 import NotFound from "@/pages/NotFound";
 
 /**
@@ -58,6 +62,12 @@ const AdminRoutes = () => {
           <Route path="careers" element={<AdminCareers />} />
           <Route path="careers/new" element={<AdminCareerEditor />} />
           <Route path="careers/:id" element={<AdminCareerEditor />} />
+          <Route path="practice/skills" element={<AdminPracticeSkills />} />
+          <Route path="practice/skills/new" element={<AdminPracticeSkillEditor />} />
+          <Route path="practice/skills/:id" element={<AdminPracticeSkillEditor />} />
+          <Route path="practice/skills/:skillId/problems" element={<AdminPracticeProblems />} />
+          <Route path="practice/skills/:skillId/problems/new" element={<AdminProblemEditor />} />
+          <Route path="practice/skills/:skillId/problems/:problemId" element={<AdminProblemEditor />} />
           <Route path="comments" element={<AdminComments />} />
           <Route path="annotations" element={<AdminAnnotations />} />
           <Route path="users" element={<AdminUsers />} />
