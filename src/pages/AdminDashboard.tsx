@@ -382,217 +382,196 @@ const AdminDashboard = () => {
   const totalCriticalAlerts = criticalAlerts.pendingPosts + criticalAlerts.deleteRequests + criticalAlerts.reportedComments;
 
   return (
-    <div className="dashboard-bg min-h-screen -m-8 p-8">
-      <div className="space-y-6">
-        {/* Premium Header */}
-        <div className="animate-stagger-1">
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <Badge className="bg-primary/10 text-primary border-primary/20 badge-premium">
+    <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Platform overview & system control</p>
+            </div>
+            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0">
               <Shield className="h-3 w-3 mr-1" />
               Admin
             </Badge>
           </div>
-          <p className="text-muted-foreground">Platform overview & system control</p>
         </div>
 
-        {/* KPI Cards - Premium Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-stagger-2">
-          <Card className="card-premium">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Users</span>
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Users className="h-4 w-4 text-primary" />
-                </div>
-              </div>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background border-emerald-100 dark:border-emerald-900/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                Total Users
+                <Users className="h-4 w-4 text-emerald-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.totalUsers.current.toLocaleString()}</div>
               <KpiTrendIndicator data={stats.totalUsers} type="users" />
             </CardContent>
           </Card>
 
-          <Card className="card-premium">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active (7d)</span>
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Activity className="h-4 w-4 text-primary" />
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background border-emerald-100 dark:border-emerald-900/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                Active Users (7d)
+                <Activity className="h-4 w-4 text-emerald-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.activeUsers.current.toLocaleString()}</div>
               <KpiTrendIndicator data={stats.activeUsers} type="active" />
             </CardContent>
           </Card>
 
-          <Card className="card-premium">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Posts</span>
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-primary" />
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background border-emerald-100 dark:border-emerald-900/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                Total Posts
+                <FileText className="h-4 w-4 text-emerald-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.totalPosts.current.toLocaleString()}</div>
               <KpiTrendIndicator data={stats.totalPosts} type="posts" />
             </CardContent>
           </Card>
 
-          <Card className="card-premium border-amber-200/50 dark:border-amber-900/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending</span>
-                <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-amber-600" />
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-background border-amber-100 dark:border-amber-900/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                Pending Approvals
+                <Clock className="h-4 w-4 text-amber-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.pendingApprovals.current}</div>
               <KpiTrendIndicator data={stats.pendingApprovals} type="pending" invertColors />
             </CardContent>
           </Card>
 
-          <Card className="card-premium border-destructive/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reported</span>
-                <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-background border-red-100 dark:border-red-900/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                Reported Content
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold text-foreground">{stats.reportedContent.current}</div>
               <KpiTrendIndicator data={stats.reportedContent} type="reported" invertColors />
             </CardContent>
           </Card>
 
-          <Card className="card-premium">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenue</span>
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background border-emerald-100 dark:border-emerald-900/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                Revenue
+                <DollarSign className="h-4 w-4 text-emerald-600" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold text-foreground">${stats.revenue.current.toLocaleString()}</div>
               <KpiTrendIndicator data={stats.revenue} type="revenue" />
             </CardContent>
           </Card>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-stagger-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Needs Attention Panel */}
-          <Card className="card-premium border-amber-200/50 dark:border-amber-800/30">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                  </div>
-                  Needs Attention
-                </CardTitle>
+          <Card className="lg:col-span-1 border-amber-200 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/50 to-white dark:from-amber-950/10 dark:to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <AlertCircle className="h-5 w-5" />
+                Needs Attention
                 {totalCriticalAlerts > 0 && (
-                  <Badge variant="destructive" className="badge-premium">{totalCriticalAlerts}</Badge>
+                  <Badge variant="destructive" className="ml-auto">{totalCriticalAlerts}</Badge>
                 )}
-              </div>
+              </CardTitle>
               <CardDescription>Critical items requiring review</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
               <Link to="/admin/approvals">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-muted/50 transition-all border border-border/50 hover:border-primary/20 hover:shadow-sm group">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors border">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                       <Clock className="h-4 w-4 text-amber-600" />
                     </div>
                     <span className="text-sm font-medium">Pending Posts</span>
                   </div>
-                  <Badge variant="secondary" className="rounded-full">{criticalAlerts.pendingPosts}</Badge>
+                  <Badge variant="secondary">{criticalAlerts.pendingPosts}</Badge>
                 </div>
               </Link>
 
               <Link to="/admin/delete-requests">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-muted/50 transition-all border border-border/50 hover:border-primary/20 hover:shadow-sm group">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors border">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                    <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <Trash2 className="h-4 w-4 text-red-600" />
                     </div>
                     <span className="text-sm font-medium">Delete Requests</span>
                   </div>
-                  <Badge variant="secondary" className="rounded-full">{criticalAlerts.deleteRequests}</Badge>
+                  <Badge variant="secondary">{criticalAlerts.deleteRequests}</Badge>
                 </div>
               </Link>
 
               <Link to="/admin/reports">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-muted/50 transition-all border border-border/50 hover:border-primary/20 hover:shadow-sm group">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors border">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                       <AlertTriangle className="h-4 w-4 text-orange-600" />
                     </div>
                     <span className="text-sm font-medium">Reported Comments</span>
                   </div>
-                  <Badge variant="secondary" className="rounded-full">{criticalAlerts.reportedComments}</Badge>
+                  <Badge variant="secondary">{criticalAlerts.reportedComments}</Badge>
                 </div>
               </Link>
             </CardContent>
           </Card>
 
-          {/* Quick Actions - Premium Grid */}
-          <Card className="lg:col-span-2 card-premium card-shine">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Settings className="h-4 w-4 text-primary" />
-                </div>
-                Quick Actions
-              </CardTitle>
+          {/* Quick Actions */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
               <CardDescription>Admin-only platform controls</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <Link to="/admin/users">
-                  <Button variant="outline" className="w-full h-auto py-5 flex flex-col items-center gap-2 rounded-xl border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium">Manage Users</span>
+                  <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/20">
+                    <Users className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm">Manage Users</span>
                   </Button>
                 </Link>
                 <Link to="/admin/authors">
-                  <Button variant="outline" className="w-full h-auto py-5 flex flex-col items-center gap-2 rounded-xl border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <UserCog className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium">Roles & Permissions</span>
+                  <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/20">
+                    <UserCog className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm">Roles & Permissions</span>
                   </Button>
                 </Link>
                 <Link to="/admin/monetization">
-                  <Button variant="outline" className="w-full h-auto py-5 flex flex-col items-center gap-2 rounded-xl border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium">Monetization</span>
+                  <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/20">
+                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm">Monetization</span>
                   </Button>
                 </Link>
                 <Link to="/admin/delete-requests">
-                  <Button variant="outline" className="w-full h-auto py-5 flex flex-col items-center gap-2 rounded-xl border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group">
-                    <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Trash2 className="h-5 w-5 text-destructive" />
-                    </div>
-                    <span className="text-sm font-medium">Delete Requests</span>
+                  <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/20">
+                    <Trash2 className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm">Delete Requests</span>
                   </Button>
                 </Link>
                 <Link to="/admin/settings">
-                  <Button variant="outline" className="w-full h-auto py-5 flex flex-col items-center gap-2 rounded-xl border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Settings className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium">Platform Settings</span>
+                  <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/20">
+                    <Settings className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm">Platform Settings</span>
                   </Button>
                 </Link>
                 <Link to="/admin/analytics">
-                  <Button variant="outline" className="w-full h-auto py-5 flex flex-col items-center gap-2 rounded-xl border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Eye className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium">View Analytics</span>
+                  <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-950/20">
+                    <Eye className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm">View Analytics</span>
                   </Button>
                 </Link>
               </div>
@@ -600,35 +579,29 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-stagger-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Analytics Snapshot */}
-          <Card className="card-premium">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                </div>
-                Analytics Snapshot
-              </CardTitle>
+          <Card>
+            <CardHeader>
+              <CardTitle>Analytics Snapshot</CardTitle>
               <CardDescription>Key metrics at a glance</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center p-4 rounded-xl bg-primary/5 border border-primary/10">
-                  <div className="text-2xl font-bold text-primary">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20">
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                     {analyticsSnapshot.newUsersThisWeek}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">New Users (7d)</div>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-primary/5 border border-primary/10">
-                  <div className="text-2xl font-bold text-primary">
+                <div className="text-center p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20">
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                     {analyticsSnapshot.postsPerDay}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Posts/Day</div>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-primary/5 border border-primary/10">
-                  <div className="text-2xl font-bold text-primary">
+                <div className="text-center p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20">
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                     {analyticsSnapshot.avgApprovalTime}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Avg Approval</div>
@@ -638,36 +611,28 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Activity Log */}
-          <Card className="card-premium">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Activity className="h-4 w-4 text-primary" />
-                </div>
-                Activity Log
-              </CardTitle>
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Log</CardTitle>
               <CardDescription>Recent admin & moderator actions</CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[180px]">
-                <div className="space-y-2">
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-3">
                   {activityLogs.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                      <Activity className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">No recent activity</p>
-                    </div>
+                    <div className="text-center text-muted-foreground py-8">No recent activity</div>
                   ) : (
                     activityLogs.map((log) => (
-                      <div key={log.id} className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-muted/50 transition-colors">
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          log.action === "approved" ? "bg-primary/10" :
-                          log.action === "rejected" ? "bg-destructive/10" :
+                      <div key={log.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+                          log.action === "approved" ? "bg-emerald-100 dark:bg-emerald-900/30" :
+                          log.action === "rejected" ? "bg-red-100 dark:bg-red-900/30" :
                           "bg-muted"
                         }`}>
                           {log.action === "approved" ? (
-                            <CheckCircle className="h-4 w-4 text-primary" />
+                            <CheckCircle className="h-4 w-4 text-emerald-600" />
                           ) : log.action === "rejected" ? (
-                            <XCircle className="h-4 w-4 text-destructive" />
+                            <XCircle className="h-4 w-4 text-red-600" />
                           ) : (
                             <Activity className="h-4 w-4 text-muted-foreground" />
                           )}
@@ -691,7 +656,6 @@ const AdminDashboard = () => {
           </Card>
         </div>
       </div>
-    </div>
   );
 };
 
