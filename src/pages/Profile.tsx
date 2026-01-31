@@ -1119,7 +1119,7 @@ const Profile = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Main Content Grid - Row-based for alignment */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Row 1: Dashboard Header + Today's Focus */}
         <div className="lg:col-span-2">
           {/* Premium Dashboard Header */}
