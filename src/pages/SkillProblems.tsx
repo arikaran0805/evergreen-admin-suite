@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProblemFilters } from "@/components/practice/ProblemFilters";
 import { ProblemSection } from "@/components/practice/ProblemSection";
-import { usePublishedPracticeProblems, PracticeProblem } from "@/hooks/usePracticeProblems";
+import { usePublishedPracticeProblems, ProblemWithMapping } from "@/hooks/usePracticeProblems";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,6 +23,10 @@ interface DisplayProblem {
   subTopic: string;
   hasSolution: boolean;
   slug: string;
+  lessonId?: string;
+  lessonTitle?: string;
+  subTopicId?: string;
+  subTopicTitle?: string;
 }
 
 export default function SkillProblems() {
@@ -50,13 +54,13 @@ export default function SkillProblems() {
     enabled: !!skillId,
   });
 
-  // Fetch problems
+  // Fetch problems with lesson/sub-topic info
   const { data: problems, isLoading: problemsLoading } = usePublishedPracticeProblems(skillId);
 
   // Convert to display format
   const displayProblems: DisplayProblem[] = useMemo(() => {
     if (!problems) return [];
-    return problems.map((p: PracticeProblem) => ({
+    return problems.map((p: ProblemWithMapping) => ({
       id: p.id,
       title: p.title,
       difficulty: p.difficulty,
@@ -65,6 +69,10 @@ export default function SkillProblems() {
       subTopic: p.sub_topic,
       hasSolution: !!p.solution,
       slug: p.slug,
+      lessonId: p.lesson_id,
+      lessonTitle: p.lesson_title,
+      subTopicId: p.sub_topic_id,
+      subTopicTitle: p.sub_topic_title,
     }));
   }, [problems]);
 
@@ -79,14 +87,34 @@ export default function SkillProblems() {
     });
   }, [displayProblems, difficulty, status, search]);
 
-  // Group problems by subTopic
-  const groupedProblems = useMemo(() => {
-    const groups: Record<string, DisplayProblem[]> = {};
+  // Group problems by lesson > sub-topic hierarchy
+  const groupedByLesson = useMemo(() => {
+    const lessons: Record<string, {
+      lessonId?: string;
+      lessonTitle: string;
+      subTopics: Record<string, DisplayProblem[]>;
+    }> = {};
+    
     filteredProblems.forEach((p) => {
-      if (!groups[p.subTopic]) groups[p.subTopic] = [];
-      groups[p.subTopic].push(p);
+      const lessonKey = p.lessonId || p.lessonTitle || "General";
+      const subTopicKey = p.subTopicTitle || p.subTopic || "Uncategorized";
+      
+      if (!lessons[lessonKey]) {
+        lessons[lessonKey] = {
+          lessonId: p.lessonId,
+          lessonTitle: p.lessonTitle || "General",
+          subTopics: {},
+        };
+      }
+      
+      if (!lessons[lessonKey].subTopics[subTopicKey]) {
+        lessons[lessonKey].subTopics[subTopicKey] = [];
+      }
+      
+      lessons[lessonKey].subTopics[subTopicKey].push(p);
     });
-    return groups;
+    
+    return lessons;
   }, [filteredProblems]);
 
   const handleProblemClick = (problem: DisplayProblem) => {
@@ -154,23 +182,30 @@ export default function SkillProblems() {
           onSearchChange={setSearch}
         />
 
-        {/* Problem Sections */}
-        <div className="mt-6 space-y-6">
+        {/* Problem Sections - Grouped by Lesson > Sub-Topic */}
+        <div className="mt-6 space-y-8">
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-32 w-full" />
               ))}
             </div>
-          ) : Object.entries(groupedProblems).length > 0 ? (
-            Object.entries(groupedProblems).map(([subTopic, probs]) => (
-              <ProblemSection
-                key={subTopic}
-                title={subTopic}
-                problems={probs}
-                onProblemClick={handleProblemClick}
-                onSolutionClick={handleSolutionClick}
-              />
+          ) : Object.keys(groupedByLesson).length > 0 ? (
+            Object.entries(groupedByLesson).map(([lessonKey, lessonData]) => (
+              <div key={lessonKey} className="space-y-4">
+                {/* Render each sub-topic within the lesson */}
+                {Object.entries(lessonData.subTopics).map(([subTopicTitle, problems]) => (
+                  <ProblemSection
+                    key={`${lessonKey}-${subTopicTitle}`}
+                    title={lessonData.lessonTitle !== "General" 
+                      ? `${lessonData.lessonTitle}` 
+                      : subTopicTitle}
+                    problems={problems}
+                    onProblemClick={handleProblemClick}
+                    onSolutionClick={handleSolutionClick}
+                  />
+                ))}
+              </div>
             ))
           ) : filteredProblems.length === 0 && displayProblems.length > 0 ? (
             <div className="text-center py-12 text-muted-foreground">
