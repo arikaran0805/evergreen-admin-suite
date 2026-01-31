@@ -1,17 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, MoreHorizontal, Code2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, MoreHorizontal, Code2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,83 +60,91 @@ export default function AdminPracticeSkills() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Code2 className="h-5 w-5" />
-            All Skills
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : skills && skills.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {skills.map((skill) => (
-                  <TableRow key={skill.id}>
-                    <TableCell className="font-medium">{skill.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{skill.slug}</TableCell>
-                    <TableCell>{getStatusBadge(skill.status)}</TableCell>
-                    <TableCell>{skill.display_order}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/admin/practice/skills/${skill.id}`)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/admin/practice/skills/${skill.id}/problems`)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Problems
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeleteId(skill.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <Code2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No practice skills yet.</p>
-              <Button
-                variant="link"
-                onClick={() => navigate("/admin/practice/skills/new")}
-                className="mt-2"
-              >
-                Create your first skill
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : skills && skills.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {skills.map((skill) => (
+            <Card key={skill.id} className="group hover:shadow-md transition-all hover:border-primary/30">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Code2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{skill.name}</CardTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">{skill.slug}</p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => navigate(`/admin/practice/skills/${skill.id}`)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/admin/practice/skills/${skill.id}/problems`)}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Manage Problems
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setDeleteId(skill.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {skill.description && (
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{skill.description}</p>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(skill.status)}
+                    <span className="text-xs text-muted-foreground">Order: {skill.display_order}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/admin/practice/skills/${skill.id}/problems`)}
+                    className="gap-1.5 text-xs"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Problems
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="bg-muted/30">
+          <CardContent className="text-center py-12">
+            <Code2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-muted-foreground">No practice skills yet.</p>
+            <Button
+              variant="link"
+              onClick={() => navigate("/admin/practice/skills/new")}
+              className="mt-2"
+            >
+              Create your first skill
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
