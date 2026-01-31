@@ -184,15 +184,8 @@ export const CareerRoadmapChart = ({
           {/* SVG for the progress path */}
           <svg 
             className="absolute inset-0 w-full h-full overflow-visible"
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', height: '100%', filter: 'none' }}
           >
-            <defs>
-              <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" />
-                <stop offset="100%" stopColor="hsl(142, 71%, 45%)" />
-              </linearGradient>
-            </defs>
-
             {/* Full path (background/remaining) */}
             {chartData.courses.length > 0 && (
               <polyline
@@ -208,6 +201,7 @@ export const CareerRoadmapChart = ({
                 strokeDasharray="6,4"
                 className="text-border"
                 vectorEffect="non-scaling-stroke"
+                style={{ filter: 'none' }}
               />
             )}
 
@@ -223,11 +217,12 @@ export const CareerRoadmapChart = ({
                     )
                 ].join(' ')}
                 fill="none"
-                stroke="hsl(142, 71%, 45%)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                stroke="#22c55e"
+                strokeWidth="2"
+                strokeLinecap="butt"
+                strokeLinejoin="miter"
                 vectorEffect="non-scaling-stroke"
+                style={{ filter: 'none' }}
               />
             )}
 
