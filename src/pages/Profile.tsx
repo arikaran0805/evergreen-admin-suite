@@ -1128,7 +1128,7 @@ const Profile = () => {
             fullName={fullName}
             careerName={career?.name || "Data Analyst"}
             currentStreak={currentStreak}
-            readinessPercentage={readinessPercentage}
+            maxStreak={maxStreak}
           />
           {/* Career Readiness */}
           <Card className="card-premium rounded-xl animate-stagger-2">
@@ -1479,43 +1479,22 @@ const Profile = () => {
 
         {/* Right Column - Today's Focus + Weekly Activity + AI Mentor + Achievements */}
         <div className="flex flex-col space-y-6 h-full">
-          {/* Today's Focus + Streak Card */}
+          {/* Today's Focus Card */}
           <Card className="card-premium rounded-xl animate-stagger-1">
             <CardContent className="p-5 h-[100px] flex items-center">
-              <div className="flex items-center justify-between w-full">
-                {/* Today's Focus */}
-                <div className="flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Target className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                      Today's Focus
-                    </span>
-                  </div>
-                  <p className="text-base font-semibold text-foreground leading-snug">
-                    {focusContent.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {focusContent.subtext}
-                  </p>
+              <div className="flex flex-col justify-center w-full">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Target className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    Today's Focus
+                  </span>
                 </div>
-                
-                {/* Streak Display */}
-                <div className="flex items-center gap-3 pl-4 border-l border-border">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
-                    <Flame className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-lg font-bold text-primary">
-                      {currentStreak} Days
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Streak
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      max {maxStreak}
-                    </span>
-                  </div>
-                </div>
+                <p className="text-base font-semibold text-foreground leading-snug">
+                  {focusContent.message}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {focusContent.subtext}
+                </p>
               </div>
             </CardContent>
           </Card>
