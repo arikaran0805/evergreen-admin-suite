@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
+import { Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -7,7 +7,7 @@ type Props = {
   fullName: string;
   careerName: string;
   currentStreak: number;
-  readinessPercentage?: number;
+  maxStreak: number;
 };
 
 export const ProfileDashboardHeader = ({
@@ -15,10 +15,8 @@ export const ProfileDashboardHeader = ({
   fullName,
   careerName,
   currentStreak,
-  readinessPercentage = 0,
+  maxStreak,
 }: Props) => {
-  const isOnTrack = currentStreak > 0;
-
   return (
     <Card
       className={cn(
@@ -45,24 +43,22 @@ export const ProfileDashboardHeader = ({
             </p>
           </div>
 
-          {/* Right - Status */}
-          <div className="flex flex-col items-end gap-0.5">
-            <p className="text-lg font-bold text-foreground">
-              {readinessPercentage}% <span className="font-medium text-muted-foreground">Career Ready</span>
-            </p>
-            <p className="text-sm flex items-center gap-1.5">
-              {isOnTrack ? (
-                <>
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-muted-foreground">On Track</span>
-                </>
-              ) : (
-                <>
-                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">Ready to learn</span>
-                </>
-              )}
-            </p>
+          {/* Right - Streak Display */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+              <Flame className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-lg font-bold text-primary">
+                {currentStreak} Days
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Streak
+              </span>
+              <span className="text-xs text-muted-foreground">
+                max {maxStreak}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>
