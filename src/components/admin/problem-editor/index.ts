@@ -5,3 +5,4 @@ export { SupportedLanguagesSection, AVAILABLE_LANGUAGES, type SupportedLanguage 
 export { FunctionSignatureSection, type FunctionSignature, type FunctionParameter } from "./FunctionSignatureSection";
 export { ProblemTagsSection } from "./ProblemTagsSection";
 export { ProblemPreviewDialog } from "./ProblemPreviewDialog";
+export { ProblemLessonMappings } from "./ProblemLessonMappings";
