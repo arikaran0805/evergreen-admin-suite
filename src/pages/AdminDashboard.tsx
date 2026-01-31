@@ -3,14 +3,14 @@ import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 import { 
   Users, FileText, AlertTriangle, TrendingUp, TrendingDown, 
-  DollarSign, Shield, Settings, Trash2, UserCog, Search,
+  DollarSign, Shield, Settings, Trash2, UserCog,
   Activity, Clock, Eye, CheckCircle, XCircle, AlertCircle
 } from "lucide-react";
 import { format, subDays } from "date-fns";
@@ -43,7 +43,7 @@ interface KpiTrendStats {
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  
   const [stats, setStats] = useState<KpiTrendStats>({
     totalUsers: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
     activeUsers: { current: 0, previous: 0, change: 0, trend: "neutral", percentage: 0 },
@@ -394,17 +394,6 @@ const AdminDashboard = () => {
               <Shield className="h-3 w-3 mr-1" />
               Admin
             </Badge>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-background border-border"
-              />
-            </div>
           </div>
         </div>
 
