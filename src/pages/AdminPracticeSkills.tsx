@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, MoreHorizontal, Code2, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, MoreHorizontal, Code2, FileText, Link2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -110,6 +110,21 @@ export default function AdminPracticeSkills() {
               <CardContent className="pt-0">
                 {skill.description && (
                   <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{skill.description}</p>
+                )}
+                {skill.course_name && (
+                  <div className="flex items-center gap-1.5 mb-3 text-xs">
+                    <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Linked to:</span>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium"
+                      onClick={() => navigate(`/admin/courses/${skill.course_id}`)}
+                    >
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      {skill.course_name}
+                    </Button>
+                  </div>
                 )}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

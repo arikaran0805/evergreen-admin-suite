@@ -1325,6 +1325,53 @@ export type Database = {
         }
         Relationships: []
       }
+      learner_problem_progress: {
+        Row: {
+          attempts: number
+          best_memory_mb: number | null
+          best_runtime_ms: number | null
+          created_at: string
+          id: string
+          problem_id: string
+          solved_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          best_memory_mb?: number | null
+          best_runtime_ms?: number | null
+          created_at?: string
+          id?: string
+          problem_id: string
+          solved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          best_memory_mb?: number | null
+          best_runtime_ms?: number | null
+          created_at?: string
+          id?: string
+          problem_id?: string
+          solved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learner_problem_progress_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_notes: {
         Row: {
           content: string
@@ -2158,6 +2205,7 @@ export type Database = {
       }
       practice_skills: {
         Row: {
+          course_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -2170,6 +2218,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2182,6 +2231,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2193,7 +2243,60 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "practice_skills_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_mappings: {
+        Row: {
+          context_note: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          problem_id: string
+          sub_topic_id: string
+        }
+        Insert: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          problem_id: string
+          sub_topic_id: string
+        }
+        Update: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          problem_id?: string
+          sub_topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_mappings_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "problem_mappings_sub_topic_id_fkey"
+            columns: ["sub_topic_id"]
+            isOneToOne: false
+            referencedRelation: "sub_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -2485,6 +2588,60 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      sub_topics: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          id: string
+          is_default: boolean
+          lesson_id: string
+          skill_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_default?: boolean
+          lesson_id: string
+          skill_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_default?: boolean
+          lesson_id?: string
+          skill_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_topics_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_topics_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "practice_skills"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

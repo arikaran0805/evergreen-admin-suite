@@ -13,7 +13,11 @@ export interface PracticeSkill {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  course_id: string | null;
   problem_count?: number;
+  // Joined fields
+  course_name?: string;
+  course_slug?: string;
 }
 
 export function usePracticeSkills() {
@@ -22,15 +26,17 @@ export function usePracticeSkills() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("practice_skills")
-        .select("*, practice_problems(count)")
+        .select("*, practice_problems(count), courses!course_id(name, slug)")
         .order("display_order", { ascending: true });
 
       if (error) throw error;
       
-      // Transform to include problem_count
+      // Transform to include problem_count and course info
       return (data || []).map((skill: any) => ({
         ...skill,
         problem_count: skill.practice_problems?.[0]?.count || 0,
+        course_name: skill.courses?.name,
+        course_slug: skill.courses?.slug,
       })) as PracticeSkill[];
     },
   });
