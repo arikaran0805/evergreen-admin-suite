@@ -23,26 +23,33 @@ export function SupportedLanguagesSection({
   onChange,
   disabled = false,
 }: SupportedLanguagesSectionProps) {
+  // Defensive: if a malformed value ever gets into state (e.g. from persistence),
+  // avoid crashing the whole page on `.includes`/`.length`.
+  const selectedLanguagesSafe: SupportedLanguage[] = Array.isArray(selectedLanguages)
+    ? selectedLanguages
+    : [];
+
   const toggleLanguage = (langId: SupportedLanguage) => {
     if (disabled) return;
 
-    try {
-      onChange((prev) => {
-        if (prev.includes(langId)) {
-          // Don't allow removing if it's the last one
-          if (prev.length <= 1) return prev;
-          return prev.filter((l) => l !== langId);
-        }
-        return [...prev, langId];
-      });
-    } catch (err) {
-      // Prevent full-page crash if parent state/update throws for any reason.
-      console.error("Failed to toggle supported language", { langId, err });
-    }
+    // NOTE: React state updaters run asynchronously; errors thrown inside them
+    // won't be caught by try/catch here. So we must make the updater itself
+    // throw-proof.
+    onChange((prev) => {
+      const prevSafe: SupportedLanguage[] = Array.isArray(prev) ? prev : [];
+
+      if (prevSafe.includes(langId)) {
+        // Don't allow removing if it's the last one
+        if (prevSafe.length <= 1) return prevSafe;
+        return prevSafe.filter((l) => l !== langId);
+      }
+
+      return [...prevSafe, langId];
+    });
   };
 
-  const isLastSelected = (langId: SupportedLanguage) => 
-    selectedLanguages.length === 1 && selectedLanguages.includes(langId);
+  const isLastSelected = (langId: SupportedLanguage) =>
+    selectedLanguagesSafe.length === 1 && selectedLanguagesSafe.includes(langId);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>, langId: SupportedLanguage, isDisabled: boolean) => {
     if (isDisabled) return;
@@ -63,7 +70,7 @@ export function SupportedLanguagesSection({
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {AVAILABLE_LANGUAGES.map((lang) => {
-            const isSelected = selectedLanguages.includes(lang.id);
+            const isSelected = selectedLanguagesSafe.includes(lang.id);
             const cannotDeselect = isLastSelected(lang.id);
             const isDisabled = disabled || cannotDeselect;
             
@@ -96,7 +103,7 @@ export function SupportedLanguagesSection({
             );
           })}
         </div>
-        {selectedLanguages.length === 0 && (
+        {selectedLanguagesSafe.length === 0 && (
           <p className="text-xs text-destructive mt-2">
             At least one language must be selected.
           </p>
