@@ -2413,7 +2413,7 @@ const Profile = () => {
         progress: 0,
         startDate: "20 July",
         status: "coming-soon" as const,
-        bgColor: "bg-green-100 dark:bg-green-950/40",
+        bgColor: "bg-slate-100 dark:bg-slate-900/40",
         badgeType: "Student",
       },
     ];
