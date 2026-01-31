@@ -6,5 +6,6 @@ export { ProblemRow } from './ProblemRow';
 export { ProblemDescription } from './ProblemDescription';
 export { CodeEditor } from './CodeEditor';
 export { TestCasePanel } from './TestCasePanel';
+export { ProblemListDrawer } from './ProblemListDrawer';
 export type { Problem, SkillData, DifficultyFilter, StatusFilter } from './types';
 export type { ProblemDetail } from './problemDetailData';

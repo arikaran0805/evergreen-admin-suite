@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -12,7 +12,9 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ProblemDescription } from "@/components/practice/ProblemDescription";
 import { CodeEditor } from "@/components/practice/CodeEditor";
 import { TestCasePanel, TestResult } from "@/components/practice/TestCasePanel";
-import { usePublishedPracticeProblem } from "@/hooks/usePracticeProblems";
+import { ProblemListDrawer } from "@/components/practice/ProblemListDrawer";
+import { usePublishedPracticeProblem, usePublishedPracticeProblems } from "@/hooks/usePracticeProblems";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -124,6 +126,27 @@ export default function ProblemDetail() {
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Fetch skill info
+  const { data: skill } = useQuery({
+    queryKey: ["practice-skill-by-slug", skillId],
+    queryFn: async () => {
+      if (!skillId) return null;
+      const { data, error } = await supabase
+        .from("practice_skills")
+        .select("id, name, slug")
+        .eq("slug", skillId)
+        .eq("status", "published")
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!skillId,
+  });
+
+  // Fetch all problems in this skill
+  const { data: allProblemsInSkill = [] } = usePublishedPracticeProblems(skillId);
 
   // Fetch problem from database
   const { data: dbProblem, isLoading } = usePublishedPracticeProblem(skillId, problemId);
@@ -379,6 +402,16 @@ export default function ProblemDetail() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
+      {/* Problem List Drawer */}
+      <ProblemListDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        skillName={skill?.name || "Problems"}
+        problems={allProblemsInSkill}
+        currentProblemSlug={problemId}
+        onSelectProblem={(slug) => navigate(`/practice/${skillId}/problem/${slug}`)}
+      />
+
       {/* Top Navigation Bar */}
       <div className="h-12 flex items-center px-4 border-b border-border/50 bg-card shrink-0">
         <div className="flex items-center gap-2">
@@ -390,13 +423,25 @@ export default function ProblemDetail() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium px-2">{problem.title}</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          
+          {/* Skill Name - clickable to open drawer */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <List className="h-3.5 w-3.5" />
+            <span>{skill?.name || "Problems"}</span>
+          </button>
+
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium px-2">{problem.title}</span>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
