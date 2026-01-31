@@ -98,8 +98,8 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     return parsedValue;
   }, []);
 
-  // Track if change originated from editor to prevent feedback loop
-  const isInternalUpdate = useRef(false);
+  // Track the last content we sent to parent to prevent feedback loops
+  const lastSentContentRef = useRef<string>('');
 
   // Editor instance
   const editor = useEditor({
@@ -108,16 +108,14 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     editable: !disabled,
     autofocus: autoFocus,
     onUpdate: ({ editor }) => {
-      isInternalUpdate.current = true;
       const json = editor.getJSON();
-      onChange(serializeContent(json));
+      const serialized = serializeContent(json);
+      // Store what we're sending to parent
+      lastSentContentRef.current = serialized;
+      onChange(serialized);
       if (draftKey) {
         autosave.debouncedSave(json);
       }
-      // Reset flag after a tick to allow the state update to propagate
-      setTimeout(() => {
-        isInternalUpdate.current = false;
-      }, 0);
     },
   });
 
@@ -128,7 +126,15 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
 
   // Sync external value - only when change is from parent (not from typing)
   useEffect(() => {
-    if (!editor || isInternalUpdate.current) return;
+    if (!editor) return;
+    
+    // Get the serialized incoming value
+    const incomingValue = typeof value === 'string' ? value : JSON.stringify(value);
+    
+    // Skip if this is the same content we just sent to parent (prevents feedback loop)
+    if (incomingValue === lastSentContentRef.current) {
+      return;
+    }
     
     const newContent = parseContent(value);
     const current = JSON.stringify(editor.getJSON());
@@ -141,6 +147,7 @@ export const LightEditor = forwardRef<LightEditorRef, LightEditorProps>(({
     
     if (isValueEmpty && current !== incoming) {
       // Parent is resetting to empty - clear editor AND draft
+      lastSentContentRef.current = ''; // Reset the ref too
       editor.commands.setContent(newContent);
       if (draftKey) {
         autosave.clearDraft();
