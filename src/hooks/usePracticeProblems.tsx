@@ -2,6 +2,25 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface TestCase {
+  id: string;
+  input: string;
+  expected_output: string;
+  is_visible: boolean;
+}
+
+export interface FunctionParameter {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export interface FunctionSignature {
+  name: string;
+  parameters: FunctionParameter[];
+  return_type: string;
+}
+
 export interface PracticeProblem {
   id: string;
   skill_id: string;
@@ -21,6 +40,30 @@ export interface PracticeProblem {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  // LeetCode-critical fields
+  test_cases: TestCase[];
+  input_format: string;
+  output_format: string;
+  time_limit: number;
+  memory_limit: number;
+  supported_languages: string[];
+  function_signature: FunctionSignature;
+  tags: string[];
+}
+
+// Helper to transform DB row to PracticeProblem
+function transformProblem(row: any): PracticeProblem {
+  return {
+    ...row,
+    test_cases: (row.test_cases || []) as TestCase[],
+    function_signature: (row.function_signature || { name: "solution", parameters: [], return_type: "int" }) as FunctionSignature,
+    supported_languages: (row.supported_languages || ["python", "javascript"]) as string[],
+    tags: (row.tags || []) as string[],
+    constraints: (row.constraints || []) as string[],
+    hints: (row.hints || []) as string[],
+    examples: (row.examples || []) as any[],
+    starter_code: (row.starter_code || {}) as Record<string, string>,
+  };
 }
 
 export function usePracticeProblems(skillId: string | undefined) {
@@ -35,7 +78,7 @@ export function usePracticeProblems(skillId: string | undefined) {
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as PracticeProblem[];
+      return (data || []).map(transformProblem);
     },
     enabled: !!skillId,
   });
@@ -53,7 +96,7 @@ export function usePracticeProblem(id: string | undefined) {
         .single();
 
       if (error) throw error;
-      return data as PracticeProblem;
+      return transformProblem(data);
     },
     enabled: !!id,
   });
@@ -83,7 +126,7 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as PracticeProblem[];
+      return (data || []).map(transformProblem);
     },
     enabled: !!skillSlug,
   });
@@ -114,7 +157,7 @@ export function usePublishedPracticeProblem(skillSlug: string | undefined, probl
         .single();
 
       if (error) return null;
-      return data as PracticeProblem;
+      return transformProblem(data);
     },
     enabled: !!skillSlug && !!problemSlug,
   });
@@ -139,6 +182,15 @@ export function useCreatePracticeProblem() {
       is_premium?: boolean;
       display_order?: number;
       status?: string;
+      // LeetCode-critical fields
+      test_cases?: TestCase[];
+      input_format?: string;
+      output_format?: string;
+      time_limit?: number;
+      memory_limit?: number;
+      supported_languages?: string[];
+      function_signature?: FunctionSignature;
+      tags?: string[];
     }) => {
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
@@ -159,6 +211,15 @@ export function useCreatePracticeProblem() {
           display_order: problem.display_order || 0,
           status: problem.status || "draft",
           created_by: userData.user?.id,
+          // LeetCode-critical fields
+          test_cases: (problem.test_cases || []) as unknown as any,
+          input_format: problem.input_format || "",
+          output_format: problem.output_format || "",
+          time_limit: problem.time_limit || 1000,
+          memory_limit: problem.memory_limit || 256,
+          supported_languages: problem.supported_languages || ["python", "javascript"],
+          function_signature: (problem.function_signature || { name: "solution", parameters: [], return_type: "int" }) as unknown as any,
+          tags: problem.tags || [],
         })
         .select()
         .single();
@@ -180,10 +241,58 @@ export function useUpdatePracticeProblem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<PracticeProblem> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: {
+      id: string;
+      title?: string;
+      slug?: string;
+      difficulty?: "Easy" | "Medium" | "Hard";
+      sub_topic?: string;
+      description?: string;
+      examples?: any[];
+      constraints?: string[];
+      hints?: string[];
+      starter_code?: Record<string, string>;
+      solution?: string;
+      is_premium?: boolean;
+      display_order?: number;
+      status?: string;
+      test_cases?: TestCase[];
+      input_format?: string;
+      output_format?: string;
+      time_limit?: number;
+      memory_limit?: number;
+      supported_languages?: string[];
+      function_signature?: FunctionSignature;
+      tags?: string[];
+    }) => {
+      // Build update object, converting complex types
+      const updatePayload: Record<string, any> = {};
+      
+      if (updates.title !== undefined) updatePayload.title = updates.title;
+      if (updates.slug !== undefined) updatePayload.slug = updates.slug;
+      if (updates.difficulty !== undefined) updatePayload.difficulty = updates.difficulty;
+      if (updates.sub_topic !== undefined) updatePayload.sub_topic = updates.sub_topic;
+      if (updates.description !== undefined) updatePayload.description = updates.description;
+      if (updates.examples !== undefined) updatePayload.examples = updates.examples;
+      if (updates.constraints !== undefined) updatePayload.constraints = updates.constraints;
+      if (updates.hints !== undefined) updatePayload.hints = updates.hints;
+      if (updates.starter_code !== undefined) updatePayload.starter_code = updates.starter_code;
+      if (updates.solution !== undefined) updatePayload.solution = updates.solution;
+      if (updates.is_premium !== undefined) updatePayload.is_premium = updates.is_premium;
+      if (updates.display_order !== undefined) updatePayload.display_order = updates.display_order;
+      if (updates.status !== undefined) updatePayload.status = updates.status;
+      if (updates.test_cases !== undefined) updatePayload.test_cases = updates.test_cases;
+      if (updates.input_format !== undefined) updatePayload.input_format = updates.input_format;
+      if (updates.output_format !== undefined) updatePayload.output_format = updates.output_format;
+      if (updates.time_limit !== undefined) updatePayload.time_limit = updates.time_limit;
+      if (updates.memory_limit !== undefined) updatePayload.memory_limit = updates.memory_limit;
+      if (updates.supported_languages !== undefined) updatePayload.supported_languages = updates.supported_languages;
+      if (updates.function_signature !== undefined) updatePayload.function_signature = updates.function_signature;
+      if (updates.tags !== undefined) updatePayload.tags = updates.tags;
+
       const { data, error } = await supabase
         .from("practice_problems")
-        .update(updates)
+        .update(updatePayload)
         .eq("id", id)
         .select()
         .single();
