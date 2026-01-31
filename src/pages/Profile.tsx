@@ -2541,7 +2541,7 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 -mx-4 px-4 py-6 rounded-2xl dashboard-bg">
+        <div className={`flex flex-col lg:flex-row gap-8 -mx-4 px-4 py-6 rounded-2xl ${activeTab === 'practice' ? 'bg-background' : 'dashboard-bg'}`}>
           {/* Sidebar - hidden for Practice Lab */}
           {activeTab !== 'practice' && (
           <aside className="lg:w-64 flex-shrink-0 animate-sidebar">
