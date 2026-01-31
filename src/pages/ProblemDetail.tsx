@@ -195,7 +195,7 @@ export default function ProblemDetail() {
           <ResizablePanel defaultSize={60} minSize={35} className="min-h-0">
             <ResizablePanelGroup direction="vertical">
               {/* Code Editor */}
-              <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
+              <ResizablePanel defaultSize={65} minSize={20} className="min-h-0">
                 <CodeEditor
                   problem={problem}
                   supportedLanguages={problem.supportedLanguages}
@@ -207,7 +207,7 @@ export default function ProblemDetail() {
               <ResizableHandle withHandle />
 
               {/* Test Case Panel */}
-              <ResizablePanel defaultSize={35} minSize={20} className="min-h-0">
+              <ResizablePanel defaultSize={35} minSize={5} className="min-h-0">
                 <TestCasePanel
                   testCases={problem.testCases}
                   results={results}
