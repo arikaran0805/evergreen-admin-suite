@@ -2141,15 +2141,23 @@ export type Database = {
           difficulty: string
           display_order: number | null
           examples: Json | null
+          function_signature: Json | null
           hints: Json | null
           id: string
+          input_format: string | null
           is_premium: boolean | null
+          memory_limit: number | null
+          output_format: string | null
           skill_id: string
           slug: string
           solution: string | null
           starter_code: Json | null
           status: string
           sub_topic: string
+          supported_languages: string[] | null
+          tags: string[] | null
+          test_cases: Json | null
+          time_limit: number | null
           title: string
           updated_at: string
         }
@@ -2161,15 +2169,23 @@ export type Database = {
           difficulty?: string
           display_order?: number | null
           examples?: Json | null
+          function_signature?: Json | null
           hints?: Json | null
           id?: string
+          input_format?: string | null
           is_premium?: boolean | null
+          memory_limit?: number | null
+          output_format?: string | null
           skill_id: string
           slug: string
           solution?: string | null
           starter_code?: Json | null
           status?: string
           sub_topic: string
+          supported_languages?: string[] | null
+          tags?: string[] | null
+          test_cases?: Json | null
+          time_limit?: number | null
           title: string
           updated_at?: string
         }
@@ -2181,15 +2197,23 @@ export type Database = {
           difficulty?: string
           display_order?: number | null
           examples?: Json | null
+          function_signature?: Json | null
           hints?: Json | null
           id?: string
+          input_format?: string | null
           is_premium?: boolean | null
+          memory_limit?: number | null
+          output_format?: string | null
           skill_id?: string
           slug?: string
           solution?: string | null
           starter_code?: Json | null
           status?: string
           sub_topic?: string
+          supported_languages?: string[] | null
+          tags?: string[] | null
+          test_cases?: Json | null
+          time_limit?: number | null
           title?: string
           updated_at?: string
         }

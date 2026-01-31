@@ -136,44 +136,54 @@ export default function AdminProblemEditor() {
       setExamples(problem.examples || []);
       setConstraints(problem.constraints || []);
       setHints(problem.hints || []);
-      setStarterCode(problem.starter_code || { python: "", javascript: "", sql: "" });
+      setStarterCode(problem.starter_code || { python: "", javascript: "", sql: "", java: "", cpp: "" });
+      // Load LeetCode-critical fields
+      setTestCases(problem.test_cases || []);
+      setInputFormat(problem.input_format || "");
+      setOutputFormat(problem.output_format || "");
+      setTimeLimit(problem.time_limit || 1000);
+      setMemoryLimit(problem.memory_limit || 256);
+      setSelectedLanguages((problem.supported_languages || ["python", "javascript"]) as SupportedLanguage[]);
+      setFunctionSignature(problem.function_signature || { name: "solution", parameters: [], return_type: "int" });
+      setTags(problem.tags || []);
     }
   }, [problem, form]);
 
   const onSubmit = async (data: ProblemFormData) => {
+    const problemData = {
+      title: data.title,
+      slug: data.slug,
+      difficulty: data.difficulty,
+      sub_topic: data.sub_topic,
+      description: data.description,
+      is_premium: data.is_premium,
+      display_order: data.display_order,
+      status: data.status,
+      solution: data.solution,
+      examples,
+      constraints,
+      hints,
+      starter_code: starterCode,
+      // LeetCode-critical fields
+      test_cases: testCases,
+      input_format: inputFormat,
+      output_format: outputFormat,
+      time_limit: timeLimit,
+      memory_limit: memoryLimit,
+      supported_languages: selectedLanguagesSafe,
+      function_signature: functionSignature,
+      tags,
+    };
+
     if (isEditing) {
       await updateMutation.mutateAsync({
         id: problemId,
-        title: data.title,
-        slug: data.slug,
-        difficulty: data.difficulty,
-        sub_topic: data.sub_topic,
-        description: data.description,
-        is_premium: data.is_premium,
-        display_order: data.display_order,
-        status: data.status,
-        solution: data.solution,
-        examples,
-        constraints,
-        hints,
-        starter_code: starterCode,
+        ...problemData,
       });
     } else {
       await createMutation.mutateAsync({
         skill_id: skillId,
-        title: data.title,
-        slug: data.slug,
-        difficulty: data.difficulty,
-        sub_topic: data.sub_topic,
-        description: data.description,
-        is_premium: data.is_premium,
-        display_order: data.display_order,
-        status: data.status,
-        solution: data.solution,
-        examples,
-        constraints,
-        hints,
-        starter_code: starterCode,
+        ...problemData,
       });
     }
     navigate(`/admin/practice/skills/${skillId}/problems`);
