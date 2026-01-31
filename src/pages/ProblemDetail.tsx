@@ -62,6 +62,24 @@ export default function ProblemDetail() {
     })),
   } : null;
 
+  // Check if code is essentially unimplemented (starter code)
+  const isCodeUnimplemented = (code: string): boolean => {
+    const unimplementedPatterns = [
+      /pass\s*$/m,                    // Python pass statement
+      /\/\/\s*Write your code here/i, // JS/TS comment
+      /#\s*Write your code here/i,    // Python comment
+      /throw\s+new\s+Error/i,         // Throwing not implemented
+      /return\s*;?\s*$/m,             // Empty return
+      /^\s*$/,                         // Empty or whitespace only
+    ];
+    
+    // Check if code matches starter code patterns
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < 50) return true; // Very short code likely unimplemented
+    
+    return unimplementedPatterns.some(pattern => pattern.test(code));
+  };
+
   // RUN: Only executes visible test cases (shown to learner)
   const handleRun = async (code: string, language: string) => {
     if (!problem) return;
@@ -76,24 +94,29 @@ export default function ProblemDetail() {
     // Simulate running visible tests only
     await new Promise(resolve => setTimeout(resolve, 1500));
     
+    const isUnimplemented = isCodeUnimplemented(code);
+    
     // Mock results for visible test cases only
     const mockResults: TestResult[] = problem.testCases.map((tc: any, i: number) => ({
       id: i,
       input: tc.input,
       expected: tc.expected,
-      actual: i === 0 ? tc.expected : (Math.random() > 0.5 ? tc.expected : "Wrong answer"),
-      passed: i === 0 ? true : Math.random() > 0.3,
-      runtime: `${Math.floor(Math.random() * 50 + 10)}ms`,
+      actual: isUnimplemented ? "No output (code not implemented)" : tc.expected,
+      passed: isUnimplemented ? false : true,
+      runtime: isUnimplemented ? undefined : `${Math.floor(Math.random() * 50 + 10)}ms`,
     }));
     
     setResults(mockResults);
-    setOutput(`Running ${language}...\n\nVisible test cases executed: ${mockResults.length}\nPassed: ${mockResults.filter(r => r.passed).length}`);
+    setOutput(isUnimplemented 
+      ? `Running ${language}...\n\n⚠️ Your code appears to be unimplemented.\nPlease write your solution before running.`
+      : `Running ${language}...\n\nVisible test cases executed: ${mockResults.length}\nPassed: ${mockResults.filter(r => r.passed).length}`
+    );
     setIsRunning(false);
     
     if (mockResults.every(r => r.passed)) {
       toast.success("All visible test cases passed!");
     } else {
-      toast.error("Some test cases failed");
+      toast.error(isUnimplemented ? "Code not implemented" : "Some test cases failed");
     }
   };
 
@@ -111,25 +134,26 @@ export default function ProblemDetail() {
     // Simulate submission - runs ALL test cases
     await new Promise(resolve => setTimeout(resolve, 2000));
     
+    const isUnimplemented = isCodeUnimplemented(code);
     const totalTestCases = problem.allTestCases.length;
     const hiddenCount = problem.allTestCases.filter((tc: any) => !tc.isVisible).length;
     const visibleCount = totalTestCases - hiddenCount;
     
-    // Mock: simulate pass/fail across all test cases
-    const passedCount = Math.floor(Math.random() * totalTestCases) + Math.ceil(totalTestCases * 0.5);
-    const allPassed = passedCount >= totalTestCases;
-    
-    setOutput(`Submitting ${language}...\n\nTotal test cases: ${totalTestCases} (${visibleCount} visible, ${hiddenCount} hidden)\nPassed: ${allPassed ? totalTestCases : passedCount}/${totalTestCases}`);
-    
-    if (allPassed) {
-      toast.success("Accepted! Your solution passed all test cases.", {
-        description: `Runtime: ${Math.floor(Math.random() * 50 + 30)}ms, Memory: ${(Math.random() * 20 + 30).toFixed(1)}MB`,
+    if (isUnimplemented) {
+      setOutput(`Submitting ${language}...\n\n⚠️ Submission rejected.\nYour code appears to be unimplemented.\nPlease write your solution before submitting.`);
+      toast.error("Submission Failed", {
+        description: "Please implement your solution before submitting.",
       });
-    } else {
-      toast.error("Wrong Answer", {
-        description: `Failed on test case ${passedCount + 1}/${totalTestCases}${hiddenCount > 0 ? " (hidden test case)" : ""}`,
-      });
+      setIsRunning(false);
+      return;
     }
+    
+    // Mock: For demo, pass all tests if code is implemented
+    setOutput(`Submitting ${language}...\n\nTotal test cases: ${totalTestCases} (${visibleCount} visible, ${hiddenCount} hidden)\nPassed: ${totalTestCases}/${totalTestCases}`);
+    
+    toast.success("Accepted! Your solution passed all test cases.", {
+      description: `Runtime: ${Math.floor(Math.random() * 50 + 30)}ms, Memory: ${(Math.random() * 20 + 30).toFixed(1)}MB`,
+    });
     
     setIsRunning(false);
   };
