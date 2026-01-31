@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,6 @@ import {
   ArrowRight,
   Sparkles,
   Target,
-  CheckCircle2,
   Calendar,
   TrendingUp,
   Rocket,
@@ -89,9 +89,14 @@ const miniProjects = [
 ];
 
 export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
+  const navigate = useNavigate();
   
   const todaysPractice = getTodaysPractice(enrolledCourses);
   const hasActivity = enrolledCourses.length > 0;
+
+  const handleSkillClick = (skillId: string) => {
+    navigate(`/practice/${skillId}`);
+  };
 
   // Empty state for new users
   if (!hasActivity && !userId) {
@@ -265,6 +270,7 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
               <Card 
                 key={skill.id} 
                 className="bg-muted/50 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                onClick={() => handleSkillClick(skill.id)}
               >
                 <CardContent className="p-5 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
