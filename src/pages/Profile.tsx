@@ -31,7 +31,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
 import { z } from "zod";
-import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail } from "lucide-react";
+import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail, HelpCircle, Code } from "lucide-react";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -1481,20 +1481,50 @@ const Profile = () => {
         <div className="flex flex-col space-y-6 h-full">
           {/* Today's Focus Card */}
           <Card className="card-premium rounded-xl animate-stagger-1">
-            <CardContent className="p-6 min-h-[140px] flex items-center">
-              <div className="flex flex-col justify-center w-full">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">
-                    Today's Focus
-                  </span>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold text-primary uppercase tracking-wider">
+                  Today's Focus
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Lesson Suggestion */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Continue Learning</p>
+                    <p className="text-xs text-muted-foreground truncate">{focusContent.message}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </div>
-                <p className="text-lg font-semibold text-foreground leading-snug">
-                  {focusContent.message}
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {focusContent.subtext}
-                </p>
+
+                {/* MCQ Suggestion */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <HelpCircle className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Daily Quiz</p>
+                    <p className="text-xs text-muted-foreground">Test your knowledge with MCQs</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
+
+                {/* Debug & Practice Suggestion */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-violet-500/5 border border-violet-500/10 hover:bg-violet-500/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
+                    <Code className="h-4 w-4 text-violet-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Debug & Practice</p>
+                    <p className="text-xs text-muted-foreground">Hands-on coding challenges</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1506,26 +1536,23 @@ const Profile = () => {
           />
 
           {/* AI Mentor Card */}
-          <Card className="card-premium rounded-xl animate-stagger-3 flex-1">
-            <CardContent className="p-6 min-h-[180px]">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-white" />
+          <Card className="card-premium rounded-xl animate-stagger-3">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-xl font-bold">AI Mentor</h3>
-              </div>
-              
-              <p className="text-base text-muted-foreground mb-5">
-                Your personal AI guide to becoming job-ready.
-              </p>
-              
-              <div className="p-4 rounded-lg bg-muted/50 border">
-                <p className="text-sm text-muted-foreground mb-1">Recommended:</p>
-                <p className="text-base font-medium">
-                  {completedInCareer < careerRelatedSlugs.length 
-                    ? `Complete your ${career?.name || 'career'} courses to improve readiness`
-                    : 'Great job! Explore advanced topics next'}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold">AI Mentor</h3>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {completedInCareer < careerRelatedSlugs.length 
+                      ? `Complete ${career?.name || 'career'} courses to improve`
+                      : 'Great job! Explore advanced topics'}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0">
+                  Ask
+                </Button>
               </div>
             </CardContent>
           </Card>
