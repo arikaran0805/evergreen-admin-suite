@@ -32,6 +32,19 @@ import {
   useCreatePracticeProblem,
   useUpdatePracticeProblem,
 } from "@/hooks/usePracticeProblems";
+import {
+  TestCasesSection,
+  IOFormatSection,
+  LimitsSection,
+  SupportedLanguagesSection,
+  FunctionSignatureSection,
+  ProblemTagsSection,
+  ProblemPreviewDialog,
+  type TestCase,
+  type SupportedLanguage,
+  type FunctionSignature,
+} from "@/components/admin/problem-editor";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const problemSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -51,6 +64,7 @@ export default function AdminProblemEditor() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
   const isEditing = !!problemId && problemId !== "new";
+  const { isAdmin, isSuperModerator, isSeniorModerator, isModerator } = useUserRole();
 
   const { data: skill } = usePracticeSkill(skillId);
   const { data: problem, isLoading } = usePracticeProblem(isEditing ? problemId : undefined);
@@ -64,7 +78,29 @@ export default function AdminProblemEditor() {
     python: "",
     javascript: "",
     sql: "",
+    java: "",
+    cpp: "",
   });
+
+  // New LeetCode-critical fields
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [inputFormat, setInputFormat] = useState("");
+  const [outputFormat, setOutputFormat] = useState("");
+  const [timeLimit, setTimeLimit] = useState(1000);
+  const [memoryLimit, setMemoryLimit] = useState(256);
+  const [selectedLanguages, setSelectedLanguages] = useState<SupportedLanguage[]>(["python", "javascript"]);
+  const [functionSignature, setFunctionSignature] = useState<FunctionSignature>({
+    name: "solution",
+    parameters: [],
+    return_type: "int",
+  });
+  const [tags, setTags] = useState<string[]>([]);
+
+  // Role-based permissions
+  const canEditTestCases = isAdmin;
+  const canEditLimits = isAdmin || isSuperModerator;
+  const canEditAll = isAdmin || isSuperModerator || isSeniorModerator;
+  const isViewOnly = isModerator && !isSeniorModerator && !isSuperModerator && !isAdmin;
 
   const form = useForm<ProblemFormData>({
     resolver: zodResolver(problemSchema),
@@ -190,20 +226,41 @@ export default function AdminProblemEditor() {
     );
   }
 
+  const hiddenTestCasesCount = testCases.filter((tc) => !tc.is_visible).length;
+  const canPublish = hiddenTestCasesCount >= 1 && selectedLanguages.length >= 1;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/practice/skills/${skillId}/problems`)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? "Edit Problem" : "Create Problem"}
-          </h1>
-          <p className="text-muted-foreground">
-            {skill?.name} &gt; {isEditing ? "Edit" : "New Problem"}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/practice/skills/${skillId}/problems`)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {isEditing ? "Edit Problem" : "Create Problem"}
+            </h1>
+            <p className="text-muted-foreground">
+              {skill?.name} &gt; {isEditing ? "Edit" : "New Problem"}
+            </p>
+          </div>
         </div>
+        <ProblemPreviewDialog
+          title={form.watch("title")}
+          difficulty={form.watch("difficulty")}
+          description={form.watch("description") || ""}
+          inputFormat={inputFormat}
+          outputFormat={outputFormat}
+          examples={examples}
+          constraints={constraints}
+          hints={hints}
+          tags={tags}
+          testCases={testCases}
+          starterCode={starterCode}
+          selectedLanguages={selectedLanguages}
+          timeLimit={timeLimit}
+          memoryLimit={memoryLimit}
+        />
       </div>
 
       <Form {...form}>
@@ -363,6 +420,15 @@ export default function AdminProblemEditor() {
             </CardContent>
           </Card>
 
+          {/* Input/Output Format - NEW */}
+          <IOFormatSection
+            inputFormat={inputFormat}
+            outputFormat={outputFormat}
+            onInputFormatChange={setInputFormat}
+            onOutputFormatChange={setOutputFormat}
+            disabled={isViewOnly}
+          />
+
           {/* Examples */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -474,42 +540,117 @@ export default function AdminProblemEditor() {
             </CardContent>
           </Card>
 
-          {/* Starter Code */}
+          {/* Supported Languages - NEW */}
+          <SupportedLanguagesSection
+            selectedLanguages={selectedLanguages}
+            onChange={setSelectedLanguages}
+            disabled={isViewOnly}
+          />
+
+          {/* Time & Memory Limits - NEW */}
+          <LimitsSection
+            timeLimit={timeLimit}
+            memoryLimit={memoryLimit}
+            onTimeLimitChange={setTimeLimit}
+            onMemoryLimitChange={setMemoryLimit}
+            disabled={!canEditLimits}
+          />
+
+          {/* Function Signature - NEW */}
+          <FunctionSignatureSection
+            signature={functionSignature}
+            onChange={setFunctionSignature}
+            disabled={isViewOnly}
+          />
+
+          {/* Problem Tags - NEW */}
+          <ProblemTagsSection
+            tags={tags}
+            onChange={setTags}
+            disabled={isViewOnly}
+          />
+
+          {/* Test Cases - NEW */}
+          <TestCasesSection
+            testCases={testCases}
+            onChange={setTestCases}
+            disabled={!canEditTestCases}
+          />
+
+          {/* Starter Code - Updated to show only selected languages */}
           <Card>
             <CardHeader>
               <CardTitle>Starter Code</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Only showing languages selected above.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Python</label>
-                <Textarea
-                  value={starterCode.python || ""}
-                  onChange={(e) => setStarterCode({ ...starterCode, python: e.target.value })}
-                  rows={4}
-                  className="mt-1 font-mono text-sm"
-                  placeholder="def solution():\n    pass"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">JavaScript</label>
-                <Textarea
-                  value={starterCode.javascript || ""}
-                  onChange={(e) => setStarterCode({ ...starterCode, javascript: e.target.value })}
-                  rows={4}
-                  className="mt-1 font-mono text-sm"
-                  placeholder="function solution() {\n    \n}"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">SQL</label>
-                <Textarea
-                  value={starterCode.sql || ""}
-                  onChange={(e) => setStarterCode({ ...starterCode, sql: e.target.value })}
-                  rows={4}
-                  className="mt-1 font-mono text-sm"
-                  placeholder="SELECT * FROM table;"
-                />
-              </div>
+              {selectedLanguages.includes("python") && (
+                <div>
+                  <label className="text-sm font-medium">Python</label>
+                  <Textarea
+                    value={starterCode.python || ""}
+                    onChange={(e) => setStarterCode({ ...starterCode, python: e.target.value })}
+                    rows={4}
+                    className="mt-1 font-mono text-sm"
+                    placeholder="def solution():\n    pass"
+                    disabled={isViewOnly}
+                  />
+                </div>
+              )}
+              {selectedLanguages.includes("javascript") && (
+                <div>
+                  <label className="text-sm font-medium">JavaScript</label>
+                  <Textarea
+                    value={starterCode.javascript || ""}
+                    onChange={(e) => setStarterCode({ ...starterCode, javascript: e.target.value })}
+                    rows={4}
+                    className="mt-1 font-mono text-sm"
+                    placeholder="function solution() {\n    \n}"
+                    disabled={isViewOnly}
+                  />
+                </div>
+              )}
+              {selectedLanguages.includes("java") && (
+                <div>
+                  <label className="text-sm font-medium">Java</label>
+                  <Textarea
+                    value={starterCode.java || ""}
+                    onChange={(e) => setStarterCode({ ...starterCode, java: e.target.value })}
+                    rows={4}
+                    className="mt-1 font-mono text-sm"
+                    placeholder="class Solution {\n    public void solution() {\n    }\n}"
+                    disabled={isViewOnly}
+                  />
+                </div>
+              )}
+              {selectedLanguages.includes("cpp") && (
+                <div>
+                  <label className="text-sm font-medium">C++</label>
+                  <Textarea
+                    value={starterCode.cpp || ""}
+                    onChange={(e) => setStarterCode({ ...starterCode, cpp: e.target.value })}
+                    rows={4}
+                    className="mt-1 font-mono text-sm"
+                    placeholder="class Solution {\npublic:\n    void solution() {\n    }\n};"
+                    disabled={isViewOnly}
+                  />
+                </div>
+              )}
+              {selectedLanguages.includes("sql") && (
+                <div>
+                  <label className="text-sm font-medium">SQL</label>
+                  <Textarea
+                    value={starterCode.sql || ""}
+                    onChange={(e) => setStarterCode({ ...starterCode, sql: e.target.value })}
+                    rows={4}
+                    className="mt-1 font-mono text-sm"
+                    placeholder="SELECT * FROM table;"
+                    disabled={isViewOnly}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -535,15 +676,28 @@ export default function AdminProblemEditor() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => navigate(`/admin/practice/skills/${skillId}/problems`)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="gap-2">
-              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Save className="h-4 w-4" />
-              {isEditing ? "Update Problem" : "Create Problem"}
-            </Button>
+          <div className="flex items-center justify-between border-t pt-6">
+            <div className="text-sm text-muted-foreground">
+              {!canPublish && form.watch("status") === "published" && (
+                <span className="text-destructive">
+                  Cannot publish: requires at least 1 hidden test case and 1 language.
+                </span>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" onClick={() => navigate(`/admin/practice/skills/${skillId}/problems`)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={createMutation.isPending || updateMutation.isPending || isViewOnly}
+                className="gap-2"
+              >
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Save className="h-4 w-4" />
+                {isEditing ? "Update Problem" : "Create Problem"}
+              </Button>
+            </div>
           </div>
         </form>
       </Form>
