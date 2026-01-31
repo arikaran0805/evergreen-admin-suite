@@ -1,6 +1,7 @@
 export { PracticeLab } from './PracticeLab';
 export { ProblemFilters } from './ProblemFilters';
 export { ProblemSection } from './ProblemSection';
+export { LessonProblemSection } from './LessonProblemSection';
 export { ProblemRow } from './ProblemRow';
 export { ProblemDescription } from './ProblemDescription';
 export { CodeEditor } from './CodeEditor';

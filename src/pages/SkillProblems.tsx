@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProblemFilters } from "@/components/practice/ProblemFilters";
-import { ProblemSection } from "@/components/practice/ProblemSection";
+import { LessonProblemSection } from "@/components/practice/LessonProblemSection";
 import { usePublishedPracticeProblems, ProblemWithMapping } from "@/hooks/usePracticeProblems";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -183,7 +183,7 @@ export default function SkillProblems() {
         />
 
         {/* Problem Sections - Grouped by Lesson > Sub-Topic */}
-        <div className="mt-6 space-y-8">
+        <div className="mt-6 space-y-6">
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
@@ -192,20 +192,16 @@ export default function SkillProblems() {
             </div>
           ) : Object.keys(groupedByLesson).length > 0 ? (
             Object.entries(groupedByLesson).map(([lessonKey, lessonData]) => (
-              <div key={lessonKey} className="space-y-4">
-                {/* Render each sub-topic within the lesson */}
-                {Object.entries(lessonData.subTopics).map(([subTopicTitle, problems]) => (
-                  <ProblemSection
-                    key={`${lessonKey}-${subTopicTitle}`}
-                    title={lessonData.lessonTitle !== "General" 
-                      ? `${lessonData.lessonTitle}` 
-                      : subTopicTitle}
-                    problems={problems}
-                    onProblemClick={handleProblemClick}
-                    onSolutionClick={handleSolutionClick}
-                  />
-                ))}
-              </div>
+              <LessonProblemSection
+                key={lessonKey}
+                lessonTitle={lessonData.lessonTitle}
+                subTopics={Object.entries(lessonData.subTopics).map(([title, problems]) => ({
+                  title,
+                  problems,
+                }))}
+                onProblemClick={handleProblemClick}
+                onSolutionClick={handleSolutionClick}
+              />
             ))
           ) : filteredProblems.length === 0 && displayProblems.length > 0 ? (
             <div className="text-center py-12 text-muted-foreground">
