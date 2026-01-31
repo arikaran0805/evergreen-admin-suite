@@ -97,7 +97,7 @@ export const ProfileWeeklyActivityCard = ({
             <h3 className="text-lg font-bold">Weekly Activity</h3>
             <p className="text-xs text-muted-foreground">Time spent per day (hrs)</p>
           </div>
-          <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center h-28 text-sm text-muted-foreground">
             Loading activity...
           </div>
         </CardContent>
@@ -114,7 +114,7 @@ export const ProfileWeeklyActivityCard = ({
         </div>
 
         <TooltipProvider delayDuration={100}>
-          <div className="flex items-end justify-between gap-2 h-40 px-1">
+          <div className="flex items-end justify-between gap-2 h-28 px-1">
             {days.map((date, index) => {
               const daySeconds = daySecondsByIndex[index] || 0;
               const hasActivity = daySeconds > 0;
@@ -153,7 +153,7 @@ export const ProfileWeeklyActivityCard = ({
                         )}
                       </div>
 
-                      <div className="w-full relative flex items-end justify-center" style={{ height: "100px" }}>
+                      <div className="w-full relative flex items-end justify-center" style={{ height: "70px" }}>
                         <div
                           className={cn(
                             "w-full max-w-7 rounded-full transition-all duration-300",
