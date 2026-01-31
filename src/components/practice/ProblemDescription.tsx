@@ -136,19 +136,22 @@ export function ProblemDescription({ problem }: ProblemDescriptionProps) {
 
             {/* Hints */}
             {problem.hints && problem.hints.length > 0 && (
-              <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
+              <div className="space-y-3">
+                <button
                   onClick={() => setShowHints(!showHints)}
-                  className="text-muted-foreground hover:text-foreground gap-2 px-0"
+                  className={cn(
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
+                    showHints 
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
                 >
-                  <Lightbulb className="h-4 w-4" />
+                  <Lightbulb className={cn("h-4 w-4", showHints && "text-amber-500")} />
                   {showHints ? 'Hide' : 'Show'} Hints ({problem.hints.length})
                   {showHints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
+                </button>
                 {showHints && (
-                  <div className="mt-3 space-y-2">
+                  <div className="space-y-2">
                     {problem.hints.map((hint, i) => (
                       <div key={i} className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
                         <p className="text-sm text-foreground/80">
