@@ -480,7 +480,8 @@ const Profile = () => {
 
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
-    if (tab && sidebarItems.some(item => item.id === tab)) {
+    const allTabs = [...sidebarItems, ...exploreItems, ...accountItems];
+    if (tab && allTabs.some(item => item.id === tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -1437,7 +1438,7 @@ const Profile = () => {
                     <CardDescription>Practice exercises based on your enrolled courses</CardDescription>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab('practice')} className="gap-1">
+                <Button variant="outline" size="sm" onClick={() => handleTabChange('practice')} className="gap-1">
                   View All <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -1456,7 +1457,7 @@ const Profile = () => {
                     <Card 
                       key={enrollment.id} 
                       className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border"
-                      onClick={() => setActiveTab('practice')}
+                      onClick={() => handleTabChange('practice')}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
