@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 export const AVAILABLE_LANGUAGES = [
   { id: "python", label: "Python", icon: "🐍" },
@@ -24,6 +23,8 @@ export function SupportedLanguagesSection({
   disabled = false,
 }: SupportedLanguagesSectionProps) {
   const toggleLanguage = (langId: SupportedLanguage) => {
+    if (disabled) return;
+    
     if (selectedLanguages.includes(langId)) {
       // Don't allow removing if it's the last one
       if (selectedLanguages.length > 1) {
@@ -33,6 +34,9 @@ export function SupportedLanguagesSection({
       onChange([...selectedLanguages, langId]);
     }
   };
+
+  const isLastSelected = (langId: SupportedLanguage) => 
+    selectedLanguages.length === 1 && selectedLanguages.includes(langId);
 
   return (
     <Card>
@@ -44,31 +48,34 @@ export function SupportedLanguagesSection({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {AVAILABLE_LANGUAGES.map((lang) => (
-            <div
-              key={lang.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                selectedLanguages.includes(lang.id)
-                  ? "bg-primary/10 border-primary"
-                  : "hover:bg-muted/50"
-              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={() => !disabled && toggleLanguage(lang.id)}
-            >
-              <Checkbox
-                id={`lang-${lang.id}`}
-                checked={selectedLanguages.includes(lang.id)}
-                disabled={disabled || (selectedLanguages.length === 1 && selectedLanguages.includes(lang.id))}
-                onCheckedChange={() => toggleLanguage(lang.id)}
-              />
-              <Label
-                htmlFor={`lang-${lang.id}`}
-                className="flex items-center gap-2 cursor-pointer"
+          {AVAILABLE_LANGUAGES.map((lang) => {
+            const isSelected = selectedLanguages.includes(lang.id);
+            const cannotDeselect = isLastSelected(lang.id);
+            
+            return (
+              <button
+                type="button"
+                key={lang.id}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                  isSelected
+                    ? "bg-primary/10 border-primary"
+                    : "hover:bg-muted/50 border-input"
+                } ${disabled || cannotDeselect ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                onClick={() => toggleLanguage(lang.id)}
+                disabled={disabled || cannotDeselect}
               >
-                <span>{lang.icon}</span>
-                <span className="text-sm">{lang.label}</span>
-              </Label>
-            </div>
-          ))}
+                <Checkbox
+                  checked={isSelected}
+                  disabled={disabled || cannotDeselect}
+                  className="pointer-events-none"
+                />
+                <span className="flex items-center gap-2">
+                  <span>{lang.icon}</span>
+                  <span className="text-sm font-medium">{lang.label}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
         {selectedLanguages.length === 0 && (
           <p className="text-xs text-destructive mt-2">

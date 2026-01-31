@@ -79,19 +79,17 @@ export function ProblemTagsSection({
             <Badge
               key={tag}
               variant="secondary"
-              className="pl-3 pr-1 py-1 text-sm"
+              className="pl-3 pr-1 py-1.5 text-sm flex items-center gap-1"
             >
               {tag}
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 ml-1 hover:bg-destructive/20"
+                className="h-5 w-5 ml-1 rounded-full hover:bg-destructive/20 flex items-center justify-center disabled:opacity-50"
                 onClick={() => removeTag(tag)}
                 disabled={disabled}
               >
                 <X className="h-3 w-3" />
-              </Button>
+              </button>
             </Badge>
           ))}
           {tags.length === 0 && (
