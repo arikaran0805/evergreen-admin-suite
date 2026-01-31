@@ -73,6 +73,7 @@ interface Lesson {
   title: string;
   description: string | null;
   lesson_rank: string;
+  lesson_order: number;
   is_published: boolean;
   created_at: string;
 }
@@ -549,12 +550,17 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       // Get the last lesson_rank to append new lesson at the end
       const lastRank = lessons.length > 0 ? lessons[lessons.length - 1].lesson_rank : null;
       const newRank = getRankForLast(lastRank);
+      
+      // Calculate next lesson_order (for unique constraint)
+      const maxOrder = lessons.reduce((max, l) => Math.max(max, l.lesson_order || 0), 0);
+      const newOrder = maxOrder + 1;
 
       const { error } = await supabase.from("course_lessons").insert({
         course_id: courseId,
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         lesson_rank: newRank,
+        lesson_order: newOrder,
         is_published: false,
         created_by: session.user.id,
       });
