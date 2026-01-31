@@ -26,6 +26,10 @@ export default function ProblemDetail() {
   const { data: dbProblem, isLoading } = usePublishedPracticeProblem(skillId, problemId);
 
   // Convert database problem to display format
+  // test_cases from DB have { id, input, expected_output, is_visible }
+  const allTestCases = dbProblem?.test_cases || [];
+  const visibleTestCases = allTestCases.filter((tc: any) => tc.is_visible);
+  
   const problem = dbProblem ? {
     id: dbProblem.id,
     title: dbProblem.title,
@@ -41,13 +45,22 @@ export default function ProblemDetail() {
     hints: dbProblem.hints || [],
     starterCode: dbProblem.starter_code || {},
     supportedLanguages: dbProblem.supported_languages || [],
-    testCases: (dbProblem.examples || []).map((ex: any, i: number) => ({
-      id: i + 1,
-      input: ex.input || "",
-      expected: ex.output || "",
+    // Visible test cases for UI display
+    testCases: visibleTestCases.map((tc: any, i: number) => ({
+      id: tc.id || i + 1,
+      input: tc.input || "",
+      expected: tc.expected_output || "",
+    })),
+    // All test cases for submit
+    allTestCases: allTestCases.map((tc: any, i: number) => ({
+      id: tc.id || i + 1,
+      input: tc.input || "",
+      expected: tc.expected_output || "",
+      isVisible: tc.is_visible ?? true,
     })),
   } : null;
 
+  // RUN: Only executes visible test cases (shown to learner)
   const handleRun = async (code: string, language: string) => {
     if (!problem) return;
     
@@ -55,10 +68,10 @@ export default function ProblemDetail() {
     setResults([]);
     setOutput("");
     
-    // Simulate running tests
+    // Simulate running visible tests only
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Mock results
+    // Mock results for visible test cases only
     const mockResults: TestResult[] = problem.testCases.map((tc: any, i: number) => ({
       id: i,
       input: tc.input,
@@ -69,31 +82,44 @@ export default function ProblemDetail() {
     }));
     
     setResults(mockResults);
-    setOutput(`Running ${language}...\n\nTest cases executed: ${mockResults.length}\nPassed: ${mockResults.filter(r => r.passed).length}`);
+    setOutput(`Running ${language}...\n\nVisible test cases executed: ${mockResults.length}\nPassed: ${mockResults.filter(r => r.passed).length}`);
     setIsRunning(false);
     
     if (mockResults.every(r => r.passed)) {
-      toast.success("All test cases passed!");
+      toast.success("All visible test cases passed!");
     } else {
       toast.error("Some test cases failed");
     }
   };
 
+  // SUBMIT: Executes ALL test cases (visible + hidden)
   const handleSubmit = async (code: string, language: string) => {
-    setIsRunning(true);
+    if (!problem) return;
     
-    // Simulate submission
+    setIsRunning(true);
+    setResults([]);
+    setOutput("");
+    
+    // Simulate submission - runs ALL test cases
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const allPassed = Math.random() > 0.4;
+    const totalTestCases = problem.allTestCases.length;
+    const hiddenCount = problem.allTestCases.filter((tc: any) => !tc.isVisible).length;
+    const visibleCount = totalTestCases - hiddenCount;
+    
+    // Mock: simulate pass/fail across all test cases
+    const passedCount = Math.floor(Math.random() * totalTestCases) + Math.ceil(totalTestCases * 0.5);
+    const allPassed = passedCount >= totalTestCases;
+    
+    setOutput(`Submitting ${language}...\n\nTotal test cases: ${totalTestCases} (${visibleCount} visible, ${hiddenCount} hidden)\nPassed: ${allPassed ? totalTestCases : passedCount}/${totalTestCases}`);
     
     if (allPassed) {
       toast.success("Accepted! Your solution passed all test cases.", {
-        description: "Runtime: 45ms, Memory: 42.1MB",
+        description: `Runtime: ${Math.floor(Math.random() * 50 + 30)}ms, Memory: ${(Math.random() * 20 + 30).toFixed(1)}MB`,
       });
     } else {
       toast.error("Wrong Answer", {
-        description: "Your solution failed on hidden test cases.",
+        description: `Failed on test case ${passedCount + 1}/${totalTestCases}${hiddenCount > 0 ? " (hidden test case)" : ""}`,
       });
     }
     
