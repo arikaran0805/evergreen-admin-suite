@@ -1535,55 +1535,32 @@ const Profile = () => {
             weeklyActivityData={weeklyActivityData}
           />
 
-          {/* AI Mentor Card - Match Recommended Labs height */}
-          <Card className="card-premium rounded-xl animate-stagger-3">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">AI Mentor</CardTitle>
-                    <CardDescription>Your personal learning assistant</CardDescription>
-                  </div>
+          {/* AI Mentor Card - Expand to match Practice Labs height */}
+          <Card className="card-premium rounded-xl animate-stagger-3 flex-1 flex flex-col">
+            <CardContent className="p-5 flex-1 flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/30">
+                  <Sparkles className="h-6 w-6 text-white" />
                 </div>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <Sparkles className="h-4 w-4" />
-                  Ask
-                </Button>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold">AI Mentor</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your personal learning assistant
+                  </p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
-                        <BookOpen className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">Learning Guidance</p>
-                        <p className="text-xs text-muted-foreground mt-1">Personalized tips</p>
-                        <Badge variant="secondary" className="mt-2 text-xs">Guide</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0">
-                        <HelpCircle className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">Ask Questions</p>
-                        <p className="text-xs text-muted-foreground mt-1">Get instant answers</p>
-                        <Badge variant="secondary" className="mt-2 text-xs">Q&A</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              
+              <div className="flex-1 flex flex-col justify-between">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {completedInCareer < careerRelatedSlugs.length 
+                    ? `Continue your ${career?.name || 'career'} journey. Get personalized guidance on what to learn next and improve your skills.`
+                    : 'Great progress! Ask me about advanced topics, career advice, or explore new learning paths.'}
+                </p>
+                
+                <Button variant="default" className="w-full mt-4 gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
+                  <Sparkles className="h-4 w-4" />
+                  Ask AI Mentor
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -92,12 +92,12 @@ export const ProfileWeeklyActivityCard = ({
   if (loading) {
     return (
       <Card className={cn("card-premium rounded-xl", className)}>
-        <CardContent className="p-4">
-          <div className="space-y-0.5">
-            <h3 className="text-base font-bold">Weekly Activity</h3>
-            <p className="text-[11px] text-muted-foreground">Time spent per day</p>
+        <CardContent className="p-5">
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold">Weekly Activity</h3>
+            <p className="text-xs text-muted-foreground">Time spent per day (hrs)</p>
           </div>
-          <div className="flex items-center justify-center h-20 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center h-28 text-sm text-muted-foreground">
             Loading activity...
           </div>
         </CardContent>
@@ -107,14 +107,14 @@ export const ProfileWeeklyActivityCard = ({
 
   return (
     <Card className={cn("card-premium rounded-xl", className)}>
-      <CardContent className="p-4">
-        <div className="space-y-0.5 mb-3">
-          <h3 className="text-base font-bold">Weekly Activity</h3>
-          <p className="text-[11px] text-muted-foreground">Time spent per day</p>
+      <CardContent className="p-5">
+        <div className="space-y-1 mb-4">
+          <h3 className="text-lg font-bold">Weekly Activity</h3>
+          <p className="text-xs text-muted-foreground">Time spent per day (hrs)</p>
         </div>
 
         <TooltipProvider delayDuration={100}>
-          <div className="flex items-end justify-between gap-1.5 h-20 px-0.5">
+          <div className="flex items-end justify-between gap-2 h-28 px-1">
             {days.map((date, index) => {
               const daySeconds = daySecondsByIndex[index] || 0;
               const hasActivity = daySeconds > 0;
@@ -153,7 +153,7 @@ export const ProfileWeeklyActivityCard = ({
                         )}
                       </div>
 
-                      <div className="w-full relative flex items-end justify-center" style={{ height: "50px" }}>
+                      <div className="w-full relative flex items-end justify-center" style={{ height: "70px" }}>
                         <div
                           className={cn(
                             "w-full max-w-7 rounded-full transition-all duration-300",
@@ -209,19 +209,32 @@ export const ProfileWeeklyActivityCard = ({
           </div>
         </TooltipProvider>
 
-        <div className="pt-3 border-t border-border/50 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-base">{formatDuration(weeklyActivityData.totalSeconds)}</span>
-            {percentChange !== null && weeklyActivityData.totalSeconds > 0 && (
-              <span className={cn("text-[10px] font-medium", percentChange >= 0 ? "text-primary" : "text-muted-foreground")}>
-                {percentChange >= 0 ? "+" : ""}{percentChange}%
+        <div className="pt-4 border-t border-border/50">
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground text-xs font-medium">Total Time</span>
+              <span className="font-bold text-xl tracking-tight">
+                {formatDuration(weeklyActivityData.totalSeconds)}
               </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 text-sm">
-            <span className="font-semibold">{weeklyActivityData.activeDays}/7</span>
-            <span className="text-muted-foreground text-xs">days</span>
-            {weeklyActivityData.activeDays >= 5 && <span>🔥</span>}
+              {percentChange !== null && weeklyActivityData.totalSeconds > 0 && (
+                <span
+                  className={cn(
+                    "text-[10px] font-medium",
+                    percentChange >= 0 ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  {percentChange >= 0 ? "+" : ""}
+                  {percentChange}% vs last week
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="text-muted-foreground text-xs font-medium">Active Days This Week</span>
+              <span className="font-bold text-xl tracking-tight">
+                {weeklyActivityData.activeDays} / 7{weeklyActivityData.activeDays >= 5 ? " 🔥" : ""}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>
