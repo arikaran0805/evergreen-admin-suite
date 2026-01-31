@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Play, Send, RotateCcw, Settings, Maximize2 } from "lucide-react";
+import { RotateCcw, Settings, Maximize2 } from "lucide-react";
 import { ProblemDetail } from "./problemDetailData";
 import { cn } from "@/lib/utils";
 
@@ -101,17 +101,13 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: Cod
             variant="outline" 
             size="sm" 
             onClick={() => onRun(code, language)}
-            className="gap-2"
           >
-            <Play className="h-4 w-4" />
             Run
           </Button>
           <Button 
             size="sm" 
             onClick={() => onSubmit(code, language)}
-            className="gap-2"
           >
-            <Send className="h-4 w-4" />
             Submit
           </Button>
         </div>
