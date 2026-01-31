@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Dispatch, type KeyboardEvent, type SetStateAction } from "react";
 import { X, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ const SUGGESTED_TAGS = [
 
 interface ProblemTagsSectionProps {
   tags: string[];
-  onChange: (tags: string[]) => void;
+  onChange: Dispatch<SetStateAction<string[]>>;
   disabled?: boolean;
 }
 
@@ -43,20 +43,30 @@ export function ProblemTagsSection({
 
   const addTag = (tag: string) => {
     const normalizedTag = tag.trim();
-    if (normalizedTag && !tags.includes(normalizedTag)) {
-      onChange([...tags, normalizedTag]);
-    }
+    if (!normalizedTag) return;
+
+    onChange((prev) => (prev.includes(normalizedTag) ? prev : [...prev, normalizedTag]));
     setInputValue("");
   };
 
   const removeTag = (tag: string) => {
-    onChange(tags.filter((t) => t !== tag));
+    onChange((prev) => prev.filter((t) => t !== tag));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
+
     if (e.key === "Enter") {
       e.preventDefault();
       addTag(inputValue);
+    }
+
+    // Convenience: backspace on empty input removes last tag
+    if (e.key === "Backspace" && inputValue.trim() === "") {
+      if (tags.length > 0) {
+        e.preventDefault();
+        onChange((prev) => prev.slice(0, -1));
+      }
     }
   };
 

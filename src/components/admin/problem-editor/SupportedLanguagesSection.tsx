@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -13,7 +14,7 @@ export type SupportedLanguage = typeof AVAILABLE_LANGUAGES[number]["id"];
 
 interface SupportedLanguagesSectionProps {
   selectedLanguages: SupportedLanguage[];
-  onChange: (languages: SupportedLanguage[]) => void;
+  onChange: Dispatch<SetStateAction<SupportedLanguage[]>>;
   disabled?: boolean;
 }
 
@@ -24,15 +25,15 @@ export function SupportedLanguagesSection({
 }: SupportedLanguagesSectionProps) {
   const toggleLanguage = (langId: SupportedLanguage) => {
     if (disabled) return;
-    
-    if (selectedLanguages.includes(langId)) {
-      // Don't allow removing if it's the last one
-      if (selectedLanguages.length > 1) {
-        onChange(selectedLanguages.filter((l) => l !== langId));
+
+    onChange((prev) => {
+      if (prev.includes(langId)) {
+        // Don't allow removing if it's the last one
+        if (prev.length <= 1) return prev;
+        return prev.filter((l) => l !== langId);
       }
-    } else {
-      onChange([...selectedLanguages, langId]);
-    }
+      return [...prev, langId];
+    });
   };
 
   const isLastSelected = (langId: SupportedLanguage) => 
