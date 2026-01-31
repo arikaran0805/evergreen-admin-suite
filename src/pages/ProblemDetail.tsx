@@ -156,20 +156,20 @@ export default function ProblemDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
           {/* Left Panel - Problem Description */}
-          <ResizablePanel defaultSize={40} minSize={25}>
+          <ResizablePanel defaultSize={40} minSize={25} className="min-h-0">
             <ProblemDescription problem={problem} />
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
           {/* Right Panel - Code Editor + Test Cases */}
-          <ResizablePanel defaultSize={60} minSize={35}>
+          <ResizablePanel defaultSize={60} minSize={35} className="min-h-0">
             <ResizablePanelGroup direction="vertical">
               {/* Code Editor */}
-              <ResizablePanel defaultSize={65} minSize={30}>
+              <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
                 <CodeEditor
                   problem={problem}
                   supportedLanguages={problem.supportedLanguages}
@@ -181,7 +181,7 @@ export default function ProblemDetail() {
               <ResizableHandle withHandle />
 
               {/* Test Case Panel */}
-              <ResizablePanel defaultSize={35} minSize={20}>
+              <ResizablePanel defaultSize={35} minSize={20} className="min-h-0">
                 <TestCasePanel
                   testCases={problem.testCases}
                   results={results}
