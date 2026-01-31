@@ -29,6 +29,7 @@ import { ContinueLearningCard } from "@/components/ContinueLearningCard";
 import Layout from "@/components/Layout";
 import { useUserRole } from "@/hooks/useUserRole";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
+import { LightEditor } from "@/components/tiptap";
 import { useWeeklyActivity } from "@/hooks/useWeeklyActivity";
 import { z } from "zod";
 import { icons, RotateCcw, Code2, Play, CheckCircle2, AlertCircle, Mail, HelpCircle, Code } from "lucide-react";
@@ -1891,14 +1892,22 @@ const Profile = () => {
     };
 
     const handleSubmitReply = async (parentId: string, postId: string) => {
-      if (!replyContent.trim() || !userId) return;
+      if (!replyContent || !userId) return;
+      
+      // Check if content is empty TipTap doc
+      try {
+        const parsed = JSON.parse(replyContent);
+        const isEmpty = !parsed?.content?.some((node: any) => 
+          node.content?.some((c: any) => c.text?.trim())
+        );
+        if (isEmpty) return;
+      } catch {
+        if (!replyContent.trim()) return;
+      }
       
       setSubmittingReply(true);
       try {
-        const contentJson = JSON.stringify({
-          type: "doc",
-          content: [{ type: "paragraph", content: [{ type: "text", text: replyContent.trim() }] }]
-        });
+        const contentJson = replyContent;
         
         const { data, error } = await supabase
           .from('comments')
@@ -2051,6 +2060,11 @@ const Profile = () => {
                                     <span className="text-sm font-medium">
                                       {getDisplayName(reply)}
                                     </span>
+                                    {reply.user_id === comment.user_id && (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/30">
+                                        Author
+                                      </Badge>
+                                    )}
                                     <span className="text-xs text-muted-foreground">
                                       {formatDate(reply.created_at)}
                                     </span>
@@ -2073,16 +2087,11 @@ const Profile = () => {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 space-y-2">
-                            <Input
-                              placeholder="Write a reply..."
+                            <LightEditor
                               value={replyContent}
-                              onChange={(e) => setReplyContent(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault();
-                                  handleSubmitReply(comment.id, comment.post_id);
-                                }
-                              }}
+                              onChange={setReplyContent}
+                              placeholder="Write a reply..."
+                              minHeight="60px"
                             />
                             <div className="flex justify-between items-center">
                               <Button 
@@ -2100,7 +2109,7 @@ const Profile = () => {
                               </Button>
                               <Button 
                                 size="sm"
-                                disabled={!replyContent.trim() || submittingReply}
+                                disabled={!replyContent || submittingReply}
                                 onClick={() => handleSubmitReply(comment.id, comment.post_id)}
                               >
                                 {submittingReply ? "Posting..." : "Reply"}
