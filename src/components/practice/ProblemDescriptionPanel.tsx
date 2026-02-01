@@ -60,21 +60,21 @@ export function ProblemDescriptionPanel({
   // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full w-10 flex flex-col bg-card">
+      <div className="h-full w-8 flex flex-col bg-card">
         {/* Vertical tabs */}
         <div className="flex-1 flex flex-col py-1">
           <button
             onClick={() => setActiveTab("description")}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-1 py-2 text-xs transition-colors border-l-2",
+              "flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2",
               activeTab === "description" 
                 ? "border-primary text-foreground bg-muted/50" 
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
           >
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4 shrink-0" />
             <span 
-              className="font-medium text-[10px]"
+              className="font-medium text-xs"
               style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
               Description
@@ -84,15 +84,15 @@ export function ProblemDescriptionPanel({
           <button
             onClick={() => setActiveTab("editorial")}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-1 py-2 text-xs transition-colors border-l-2",
+              "flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2",
               activeTab === "editorial" 
                 ? "border-primary text-foreground bg-muted/50" 
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
           >
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-4 w-4 shrink-0" />
             <span 
-              className="font-medium text-[10px]"
+              className="font-medium text-xs"
               style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
               Editorial
@@ -102,15 +102,15 @@ export function ProblemDescriptionPanel({
           <button
             onClick={() => setActiveTab("submissions")}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-1 py-2 text-xs transition-colors border-l-2",
+              "flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2",
               activeTab === "submissions" 
                 ? "border-primary text-foreground bg-muted/50" 
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
           >
-            <History className="h-4 w-4" />
+            <History className="h-4 w-4 shrink-0" />
             <span 
-              className="font-medium text-[10px]"
+              className="font-medium text-xs"
               style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
               Submissions
@@ -124,11 +124,11 @@ export function ProblemDescriptionPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-6 w-6"
               onClick={onToggleExpand}
               title="Fullscreen"
             >
-              <Maximize2 className="h-3.5 w-3.5" />
+              <Maximize2 className="h-3 w-3" />
             </Button>
           )}
           
@@ -136,11 +136,11 @@ export function ProblemDescriptionPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-6 w-6"
               onClick={onToggleCollapse}
               title="Expand panel"
             >
-              <ArrowRightFromLine className="h-3.5 w-3.5" />
+              <ArrowRightFromLine className="h-3 w-3" />
             </Button>
           )}
         </div>
