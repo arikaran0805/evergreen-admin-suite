@@ -36,8 +36,6 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: Cod
   const [code, setCode] = useState(problem.starterCode[availableLanguages[0]] || "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const lineCount = code.split('\n').length;
-
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
     setCode(problem.starterCode[newLang] || '');
@@ -100,19 +98,8 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: Cod
         </div>
       </div>
 
-      {/* Code Area with Line Numbers */}
+      {/* Code Area */}
       <div className="flex-1 overflow-hidden flex bg-background">
-        {/* Line Numbers */}
-        <div className="flex-shrink-0 py-4 pr-3 pl-2 text-right select-none">
-          {Array.from({ length: lineCount }, (_, i) => (
-            <div 
-              key={i + 1} 
-              className="font-mono text-sm leading-6 text-muted-foreground"
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
 
         {/* Code Editor */}
         <textarea
