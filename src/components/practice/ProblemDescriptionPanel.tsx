@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose, Check, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +13,17 @@ interface Example {
   input: string;
   output: string;
   explanation?: string;
+}
+
+interface Submission {
+  id: string;
+  code: string;
+  language: string;
+  status: "accepted" | "wrong_answer" | "runtime_error" | "time_limit_exceeded" | "compilation_error";
+  passed_count: number;
+  total_count: number;
+  runtime_ms: number;
+  submitted_at: string;
 }
 
 interface ProblemDescriptionPanelProps {
@@ -27,6 +38,10 @@ interface ProblemDescriptionPanelProps {
   onToggleExpand?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+  submissions?: Submission[];
+  onViewSubmission?: (submission: Submission) => void;
 }
 
 const difficultyColors: Record<string, string> = {
@@ -47,9 +62,15 @@ export function ProblemDescriptionPanel({
   onToggleExpand,
   isCollapsed = false,
   onToggleCollapse,
+  activeTab: controlledActiveTab,
+  onTabChange,
+  submissions = [],
+  onViewSubmission,
 }: ProblemDescriptionPanelProps) {
   const [hintsExpanded, setHintsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState("description");
+  const [internalActiveTab, setInternalActiveTab] = useState("description");
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const setActiveTab = onTabChange ?? setInternalActiveTab;
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -405,11 +426,62 @@ export function ProblemDescriptionPanel({
 
         {activeTab === "submissions" && (
           <div className="p-4">
-            <div className="text-center py-12 text-muted-foreground">
-              <History className="h-8 w-8 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No submissions yet</p>
-              <p className="text-xs mt-1">Submit your solution to see history</p>
-            </div>
+            {submissions.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <History className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No submissions yet</p>
+                <p className="text-xs mt-1">Submit your solution to see history</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {submissions.map((submission) => {
+                  const isAccepted = submission.status === "accepted";
+                  const statusColors = {
+                    accepted: "text-green-600 dark:text-green-500",
+                    wrong_answer: "text-red-600 dark:text-red-500",
+                    runtime_error: "text-red-600 dark:text-red-500",
+                    time_limit_exceeded: "text-amber-600 dark:text-amber-500",
+                    compilation_error: "text-red-600 dark:text-red-500",
+                  };
+                  const statusLabels = {
+                    accepted: "Accepted",
+                    wrong_answer: "Wrong Answer",
+                    runtime_error: "Runtime Error",
+                    time_limit_exceeded: "Time Limit Exceeded",
+                    compilation_error: "Compilation Error",
+                  };
+                  
+                  return (
+                    <button
+                      key={submission.id}
+                      onClick={() => onViewSubmission?.(submission)}
+                      className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          {isAccepted ? (
+                            <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+                          )}
+                          <span className={cn("text-sm font-medium", statusColors[submission.status])}>
+                            {statusLabels[submission.status]}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(submission.submitted_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>{submission.language}</span>
+                        <span>{submission.passed_count}/{submission.total_count} tests</span>
+                        <span>{submission.runtime_ms}ms</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>

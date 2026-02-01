@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,6 +14,7 @@ import { ProblemListDrawer } from "@/components/practice/ProblemListDrawer";
 import { TestResult } from "@/components/practice/TestCasePanel";
 import { usePublishedPracticeProblem, usePublishedPracticeProblems } from "@/hooks/usePracticeProblems";
 import { useCodeJudge, convertTestCasesToJudgeFormat, getVerdictDisplay } from "@/hooks/useCodeJudge";
+import { useProblemSubmissions, Submission } from "@/hooks/useProblemSubmissions";
 import { useQuery } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
@@ -70,7 +71,16 @@ export default function ProblemDetail() {
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   
+  // Tab state for panels
+  const [descriptionActiveTab, setDescriptionActiveTab] = useState("description");
+  const [testCaseActiveTab, setTestCaseActiveTab] = useState("testcase");
+  
   const { judge } = useCodeJudge();
+  
+  // Submissions hook
+  const { submissions, addSubmission, lastSubmittedCode } = useProblemSubmissions(
+    problemId ? `${skillId}_${problemId}` : undefined
+  );
 
   // Fetch skill info
   const { data: skill } = useQuery({
@@ -165,6 +175,8 @@ export default function ProblemDetail() {
     setIsRunning(true);
     setResults([]);
     setOutput(`Running ${language}...\n`);
+    // Switch to result tab when running
+    setTestCaseActiveTab("result");
     
     try {
       const judgeTestCases = convertTestCasesToJudgeFormat(
@@ -242,6 +254,8 @@ export default function ProblemDetail() {
     setIsRunning(true);
     setResults([]);
     setOutput(`Submitting ${language}...\n`);
+    // Switch to result tab when submitting
+    setTestCaseActiveTab("result");
     
     try {
       const judgeTestCases = convertTestCasesToJudgeFormat(
@@ -293,9 +307,33 @@ export default function ProblemDetail() {
       setResults(testResults);
       setOutput(outputLog);
 
+      // Map verdict to submission status
+      const statusMap: Record<string, Submission["status"]> = {
+        accepted: "accepted",
+        wrong_answer: "wrong_answer",
+        runtime_error: "runtime_error",
+        time_limit_exceeded: "time_limit_exceeded",
+        compilation_error: "compilation_error",
+      };
+
+      // Save submission
+      addSubmission({
+        code,
+        language,
+        status: statusMap[judgeResult.verdict] || "wrong_answer",
+        passed_count: judgeResult.passed_count,
+        total_count: judgeResult.total_count,
+        runtime_ms: judgeResult.total_runtime_ms,
+      });
+
+      // Switch to submissions tab in description panel
+      setDescriptionActiveTab("submissions");
+
       if (judgeResult.verdict === 'accepted') {
-        toast.success("🎉 Accepted!", {
-          description: `All ${judgeResult.total_count} test cases passed in ${judgeResult.total_runtime_ms}ms`,
+        toast.success("🎉 Congratulations! All test cases passed!", {
+          description: `You solved this problem in ${judgeResult.total_runtime_ms}ms. Great job!`,
+          duration: 5000,
+          icon: <PartyPopper className="h-5 w-5 text-green-500" />,
         });
       } else if (judgeResult.verdict === 'compilation_error') {
         toast.error("Compilation Error", { description: "Fix errors before submitting" });
@@ -412,6 +450,9 @@ export default function ProblemDetail() {
                 onToggleExpand={handleExpandDescription}
                 isCollapsed={isDescriptionCollapsed}
                 onToggleCollapse={handleToggleCollapseDescription}
+                activeTab={descriptionActiveTab}
+                onTabChange={setDescriptionActiveTab}
+                submissions={submissions}
               />
             </div>
           )}
@@ -428,6 +469,9 @@ export default function ProblemDetail() {
               expandedPanel={expandedPanel}
               onExpandEditor={handleExpandEditor}
               onExpandTestcase={handleExpandTestcase}
+              testCaseActiveTab={testCaseActiveTab}
+              onTestCaseTabChange={setTestCaseActiveTab}
+              lastSubmittedCode={lastSubmittedCode}
             />
           )}
         </div>
@@ -500,6 +544,9 @@ export default function ProblemDetail() {
                 onToggleExpand={handleExpandDescription}
                 isCollapsed={isDescriptionCollapsed}
                 onToggleCollapse={handleToggleCollapseDescription}
+                activeTab={descriptionActiveTab}
+                onTabChange={setDescriptionActiveTab}
+                submissions={submissions}
               />
             </div>
             <div className="flex-1 min-h-[50vh]">
@@ -515,6 +562,9 @@ export default function ProblemDetail() {
                 expandedPanel={null}
                 onExpandEditor={handleExpandEditor}
                 onExpandTestcase={handleExpandTestcase}
+                testCaseActiveTab={testCaseActiveTab}
+                onTestCaseTabChange={setTestCaseActiveTab}
+                lastSubmittedCode={lastSubmittedCode}
               />
             </div>
           </div>
@@ -545,6 +595,9 @@ export default function ProblemDetail() {
                     onToggleExpand={handleExpandDescription}
                     isCollapsed={isDescriptionCollapsed}
                     onToggleCollapse={handleToggleCollapseDescription}
+                    activeTab={descriptionActiveTab}
+                    onTabChange={setDescriptionActiveTab}
+                    submissions={submissions}
                   />
                 </div>
               </ResizablePanel>
@@ -565,6 +618,9 @@ export default function ProblemDetail() {
                   expandedPanel={null}
                   onExpandEditor={handleExpandEditor}
                   onExpandTestcase={handleExpandTestcase}
+                  testCaseActiveTab={testCaseActiveTab}
+                  onTestCaseTabChange={setTestCaseActiveTab}
+                  lastSubmittedCode={lastSubmittedCode}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>
