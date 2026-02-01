@@ -178,11 +178,11 @@ export function TestCasePanel({
 
   return (
     <div 
-      className="h-full flex flex-col bg-card border-t border-border/50"
+      className="h-full flex flex-col bg-card border-t border-border/50 overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="border-b border-border/50 px-4">
           <div className="flex items-center justify-between">
             <TabsList className="h-10 bg-transparent p-0 gap-4">
@@ -252,7 +252,7 @@ export function TestCasePanel({
           </div>
         </div>
 
-        <TabsContent value="testcase" className="flex-1 min-h-0 m-0">
+        <TabsContent value="testcase" className="flex-1 min-h-0 overflow-hidden m-0">
           <ScrollArea className="h-full w-full">
             <div className="p-4">
               {/* Test Case Tabs */}
@@ -294,7 +294,7 @@ export function TestCasePanel({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="result" className="flex-1 min-h-0 m-0">
+        <TabsContent value="result" className="flex-1 min-h-0 overflow-hidden m-0">
           <ScrollArea className="h-full w-full">
             <div className="p-4 pb-8">
               {isRunning ? (
@@ -500,7 +500,7 @@ export function TestCasePanel({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="output" className="flex-1 min-h-0 m-0">
+        <TabsContent value="output" className="flex-1 min-h-0 overflow-hidden m-0">
           <ScrollArea className="h-full w-full">
             <div className="p-4 pb-8">
               {output ? (
