@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, ChevronRight, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,24 +57,69 @@ export function ProblemDescriptionPanel({
   const [dislikeCount, setDislikeCount] = useState(56);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Collapsed state: vertical header layout
+  // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full w-full flex flex-col items-center py-3 bg-card">
-        {/* Top buttons */}
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          {onToggleCollapse && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onToggleCollapse}
-              title="Show panel"
+      <div className="h-full w-full flex flex-col bg-card">
+        {/* Vertical tabs */}
+        <div className="flex-1 flex flex-col py-2">
+          <button
+            onClick={() => setActiveTab("description")}
+            className={cn(
+              "flex flex-col items-center gap-1 px-2 py-3 text-xs transition-colors border-l-2",
+              activeTab === "description" 
+                ? "border-primary text-foreground bg-muted/50" 
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <FileText className="h-5 w-5" />
+            <span 
+              className="font-medium"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
-              <PanelLeftOpen className="h-4 w-4" />
-            </Button>
-          )}
+              Description
+            </span>
+          </button>
 
+          <button
+            onClick={() => setActiveTab("editorial")}
+            className={cn(
+              "flex flex-col items-center gap-1 px-2 py-3 text-xs transition-colors border-l-2",
+              activeTab === "editorial" 
+                ? "border-primary text-foreground bg-muted/50" 
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <BookOpen className="h-5 w-5" />
+            <span 
+              className="font-medium"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            >
+              Editorial
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("submissions")}
+            className={cn(
+              "flex flex-col items-center gap-1 px-2 py-3 text-xs transition-colors border-l-2",
+              activeTab === "submissions" 
+                ? "border-primary text-foreground bg-muted/50" 
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <History className="h-5 w-5" />
+            <span 
+              className="font-medium"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            >
+              Submissions
+            </span>
+          </button>
+        </div>
+
+        {/* Bottom buttons */}
+        <div className="flex flex-col items-center gap-1 py-3 border-t border-border/50">
           {onToggleExpand && (
             <Button
               variant="ghost"
@@ -86,17 +131,18 @@ export function ProblemDescriptionPanel({
               <Maximize2 className="h-4 w-4" />
             </Button>
           )}
-        </div>
-
-        {/* Vertical text */}
-        <div className="flex-1 flex items-center justify-center min-h-0 py-4">
-          <div 
-            className="flex items-center gap-2 text-muted-foreground"
-            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-          >
-            <FileText className="h-4 w-4 shrink-0" />
-            <span className="text-sm font-medium truncate max-h-[200px]">{title}</span>
-          </div>
+          
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleCollapse}
+              title="Expand panel"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     );
