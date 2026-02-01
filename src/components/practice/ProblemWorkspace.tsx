@@ -333,33 +333,24 @@ export function ProblemWorkspace({
                 {/* Collapse Button - Always visible */}
                 <Button 
                   variant="ghost" 
-                  size="sm"
-                  className="h-8 px-2 gap-1.5 text-muted-foreground hover:text-foreground"
+                  size="icon"
+                  className="h-8 w-8"
                   onClick={handleToggleEditorPanelCollapse}
                   title={isEditorPanelCollapsed ? "Show editor" : "Hide editor"}
                 >
                   {isEditorPanelCollapsed ? (
-                    <>
-                      <PanelTopOpen className="h-4 w-4" />
-                      <span className="text-xs">Show Editor</span>
-                    </>
+                    <PanelTopOpen className="h-4 w-4" />
                   ) : (
-                    <>
-                      <PanelTopClose className="h-4 w-4" />
-                      <span className="text-xs">Hide Editor</span>
-                    </>
+                    <PanelTopClose className="h-4 w-4" />
                   )}
                 </Button>
                 
-                {/* Expand Button - Show on hover */}
+                {/* Expand Button - Always visible */}
                 {onExpandEditor && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn(
-                      "h-8 w-8 transition-opacity",
-                      isEditorHovered ? "opacity-100" : "opacity-0"
-                    )}
+                    className="h-8 w-8"
                     onClick={onExpandEditor}
                     title="Fullscreen"
                   >
