@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen } from "lucide-react";
+import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Code, AlignLeft, FileCode } from "lucide-react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -159,11 +159,32 @@ export function ProblemWorkspace({
           onMouseEnter={() => setIsEditorHovered(true)}
           onMouseLeave={() => setIsEditorHovered(false)}
         >
-          {/* Editor Header with Language Selector and Actions */}
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
+          {/* First Header Row - Title and Controls */}
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
+            <div className="flex items-center gap-2">
+              <Code className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Code</span>
+            </div>
+            <div className="flex items-center gap-0.5">
+              {onExpandEditor && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={onExpandEditor}
+                  title="Exit fullscreen"
+                >
+                  <Shrink className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Second Header Row - Language Selector and Tools */}
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background">
             <div className="flex items-center gap-2">
               <Select value={language} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="w-[130px] h-8 text-sm bg-background">
+                <SelectTrigger className="w-[130px] h-7 text-sm bg-background border-none shadow-none">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -175,33 +196,25 @@ export function ProblemWorkspace({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
+                <AlignLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Retrieve last submitted code">
+                <FileCode className="h-4 w-4" />
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8" 
+                className="h-7 w-7" 
                 onClick={handleReset}
                 title="Reset code"
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
                 <Settings className="h-4 w-4" />
               </Button>
-              {onExpandEditor && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn(
-                    "h-8 w-8 transition-opacity",
-                    isEditorHovered || isEditorExpanded ? "opacity-100" : "opacity-0"
-                  )}
-                  onClick={onExpandEditor}
-                  title="Exit fullscreen"
-                >
-                  <Shrink className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           </div>
 
@@ -303,11 +316,47 @@ export function ProblemWorkspace({
             onMouseEnter={() => setIsEditorHovered(true)}
             onMouseLeave={() => setIsEditorHovered(false)}
           >
-            {/* Editor Header with Language Selector and Actions */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
+            {/* First Header Row - Title and Controls */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
+              <div className="flex items-center gap-2">
+                <Code className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Code</span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                {/* Collapse Button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleToggleEditorPanelCollapse}
+                  title={isEditorPanelCollapsed ? "Show editor" : "Hide editor"}
+                >
+                  {isEditorPanelCollapsed ? (
+                    <PanelTopOpen className="h-4 w-4" />
+                  ) : (
+                    <PanelTopClose className="h-4 w-4" />
+                  )}
+                </Button>
+                {/* Expand Button */}
+                {onExpandEditor && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7"
+                    onClick={onExpandEditor}
+                    title="Fullscreen"
+                  >
+                    <Expand className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Second Header Row - Language Selector and Tools */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background">
               <div className="flex items-center gap-2">
                 <Select value={language} onValueChange={handleLanguageChange}>
-                  <SelectTrigger className="w-[130px] h-8 text-sm bg-background">
+                  <SelectTrigger className="w-[130px] h-7 text-sm bg-background border-none shadow-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -319,46 +368,25 @@ export function ProblemWorkspace({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
+                  <AlignLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Retrieve last submitted code">
+                  <FileCode className="h-4 w-4" />
+                </Button>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8" 
+                  className="h-7 w-7" 
                   onClick={handleReset}
                   title="Reset code"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
                   <Settings className="h-4 w-4" />
                 </Button>
-                {/* Collapse Button - Always visible */}
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleToggleEditorPanelCollapse}
-                  title={isEditorPanelCollapsed ? "Show editor" : "Hide editor"}
-                >
-                  {isEditorPanelCollapsed ? (
-                    <PanelTopOpen className="h-4 w-4" />
-                  ) : (
-                    <PanelTopClose className="h-4 w-4" />
-                  )}
-                </Button>
-                
-                {/* Expand Button - Always visible */}
-                {onExpandEditor && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={onExpandEditor}
-                    title="Fullscreen"
-                  >
-                    <Expand className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
             </div>
 
