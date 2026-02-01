@@ -430,8 +430,14 @@ export function TestCasePanel({
                           ? "bg-green-500/10 border border-green-500/20" 
                           : "bg-amber-500/10 border border-amber-500/20"
                       )}>
-                        <div className="flex items-center justify-center gap-2 text-center">
-                          <span className={cn("font-medium", colorClass)}>
+                        <div className="flex flex-col items-center gap-1 text-center">
+                          <span className={cn(
+                            "text-lg font-semibold",
+                            allPassed ? "text-green-600 dark:text-green-500" : "text-amber-600 dark:text-amber-500"
+                          )}>
+                            {passedCount} / {totalCount} Passed
+                          </span>
+                          <span className={cn("text-sm", colorClass)}>
                             {message}
                           </span>
                         </div>
