@@ -118,7 +118,7 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit, readO
             fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
             lineNumbers: "on",
             lineNumbersMinChars: 3,
-            lineDecorationsWidth: 0,
+            lineDecorationsWidth: 16,
             glyphMargin: false,
             folding: false,
             minimap: { enabled: false },
