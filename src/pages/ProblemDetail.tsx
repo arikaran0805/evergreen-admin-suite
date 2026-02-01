@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 
 // Function signature types
 interface FunctionSignatureObj {
@@ -55,19 +56,19 @@ function getParameterNames(signature: FunctionSignature): string[] {
 }
 
 type ExpandedPanel = 'description' | 'editor' | 'testcase' | null;
-type CollapsedPanel = 'description' | 'editor' | 'testcase' | null;
 
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const descriptionPanelRef = useRef<ImperativePanelHandle>(null);
   
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
-  const [collapsedPanel, setCollapsedPanel] = useState<CollapsedPanel>(null);
+  const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   
   const { judge } = useCodeJudge();
 
@@ -144,17 +145,17 @@ export default function ProblemDetail() {
     setExpandedPanel(expandedPanel === 'testcase' ? null : 'testcase');
   };
 
-  // Panel collapse handlers
-  const handleCollapseDescription = () => {
-    setCollapsedPanel(collapsedPanel === 'description' ? null : 'description');
-  };
+  const handleToggleCollapseDescription = () => {
+    if (isMobile) {
+      setIsDescriptionCollapsed((v) => !v);
+      return;
+    }
 
-  const handleCollapseEditor = () => {
-    setCollapsedPanel(collapsedPanel === 'editor' ? null : 'editor');
-  };
-
-  const handleCollapseTestcase = () => {
-    setCollapsedPanel(collapsedPanel === 'testcase' ? null : 'testcase');
+    if (isDescriptionCollapsed) {
+      descriptionPanelRef.current?.expand();
+    } else {
+      descriptionPanelRef.current?.collapse();
+    }
   };
 
   // RUN: Execute code against visible test cases
@@ -409,8 +410,8 @@ export default function ProblemDetail() {
                 hints={problem.hints}
                 isExpanded={true}
                 onToggleExpand={handleExpandDescription}
-                isCollapsed={collapsedPanel === 'description'}
-                onToggleCollapse={handleCollapseDescription}
+                isCollapsed={isDescriptionCollapsed}
+                onToggleCollapse={handleToggleCollapseDescription}
               />
             </div>
           )}
@@ -427,9 +428,6 @@ export default function ProblemDetail() {
               expandedPanel={expandedPanel}
               onExpandEditor={handleExpandEditor}
               onExpandTestcase={handleExpandTestcase}
-              collapsedPanel={collapsedPanel === 'editor' || collapsedPanel === 'testcase' ? collapsedPanel : null}
-              onCollapseEditor={handleCollapseEditor}
-              onCollapseTestcase={handleCollapseTestcase}
             />
           )}
         </div>
@@ -487,7 +485,10 @@ export default function ProblemDetail() {
         {isMobile ? (
           // Mobile: Stack vertically
           <div className="h-full flex flex-col overflow-auto p-1.5 gap-1.5">
-            <div className="min-h-[50vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+            <div className={cn(
+              "bg-card rounded-lg border border-border shadow-sm overflow-hidden",
+              isDescriptionCollapsed ? "min-h-[56px]" : "min-h-[50vh]"
+            )}>
               <ProblemDescriptionPanel
                 title={problem.title}
                 difficulty={problem.difficulty}
@@ -497,8 +498,8 @@ export default function ProblemDetail() {
                 hints={problem.hints}
                 isExpanded={false}
                 onToggleExpand={handleExpandDescription}
-                isCollapsed={collapsedPanel === 'description'}
-                onToggleCollapse={handleCollapseDescription}
+                isCollapsed={isDescriptionCollapsed}
+                onToggleCollapse={handleToggleCollapseDescription}
               />
             </div>
             <div className="flex-1 min-h-[50vh]">
@@ -514,9 +515,6 @@ export default function ProblemDetail() {
                 expandedPanel={null}
                 onExpandEditor={handleExpandEditor}
                 onExpandTestcase={handleExpandTestcase}
-                collapsedPanel={collapsedPanel === 'editor' || collapsedPanel === 'testcase' ? collapsedPanel : null}
-                onCollapseEditor={handleCollapseEditor}
-                onCollapseTestcase={handleCollapseTestcase}
               />
             </div>
           </div>
@@ -525,7 +523,16 @@ export default function ProblemDetail() {
           <div className="h-full p-1.5">
             <ResizablePanelGroup direction="horizontal" className="h-full">
               {/* Left Panel - Problem Description */}
-              <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
+              <ResizablePanel
+                ref={descriptionPanelRef}
+                defaultSize={45}
+                minSize={25}
+                collapsible
+                collapsedSize={8}
+                className="min-h-0"
+                onCollapse={() => setIsDescriptionCollapsed(true)}
+                onExpand={() => setIsDescriptionCollapsed(false)}
+              >
                 <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                   <ProblemDescriptionPanel
                     title={problem.title}
@@ -536,8 +543,8 @@ export default function ProblemDetail() {
                     hints={problem.hints}
                     isExpanded={false}
                     onToggleExpand={handleExpandDescription}
-                    isCollapsed={collapsedPanel === 'description'}
-                    onToggleCollapse={handleCollapseDescription}
+                    isCollapsed={isDescriptionCollapsed}
+                    onToggleCollapse={handleToggleCollapseDescription}
                   />
                 </div>
               </ResizablePanel>
@@ -558,9 +565,6 @@ export default function ProblemDetail() {
                   expandedPanel={null}
                   onExpandEditor={handleExpandEditor}
                   onExpandTestcase={handleExpandTestcase}
-                  collapsedPanel={collapsedPanel === 'editor' || collapsedPanel === 'testcase' ? collapsedPanel : null}
-                  onCollapseEditor={handleCollapseEditor}
-                  onCollapseTestcase={handleCollapseTestcase}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

@@ -40,6 +40,55 @@ export function TestCasePanel({
 
   const hasResults = results.length > 0;
 
+  // Collapsed state: keep a visible header bar so the reopen icon is always reachable.
+  if (isCollapsed && !isExpanded) {
+    return (
+      <div
+        className="h-full flex items-center justify-between px-4 bg-card border-t border-border/50"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium text-muted-foreground truncate">Test Cases</span>
+          {hasResults && (
+            <span
+              className={cn(
+                "w-2 h-2 rounded-full shrink-0",
+                results.every((r) => r.passed) ? "bg-green-500" : "bg-red-500"
+              )}
+            />
+          )}
+        </div>
+
+        <div className="flex items-center gap-0.5 shrink-0">
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleCollapse}
+              title="Show panel"
+            >
+              <PanelBottomOpen className="h-4 w-4" />
+            </Button>
+          )}
+
+          {onToggleExpand && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleExpand}
+              title="Fullscreen"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="h-full flex flex-col bg-card border-t border-border/50"
@@ -80,7 +129,7 @@ export function TestCasePanel({
             {/* Collapse & Expand Buttons - Show on hover */}
             <div className={cn(
               "flex items-center gap-0.5 shrink-0 transition-opacity",
-              isHovered || isExpanded ? "opacity-100" : "opacity-0"
+              isHovered || isExpanded || isCollapsed ? "opacity-100" : "opacity-0"
             )}>
               {onToggleCollapse && !isExpanded && (
                 <Button
