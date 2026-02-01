@@ -367,7 +367,7 @@ export default function ProblemDetail() {
       <div className="flex-1 min-h-0 overflow-hidden bg-muted/30">
         {isMobile ? (
           // Mobile: Stack vertically
-          <div className="h-full flex flex-col overflow-auto p-2 gap-2">
+          <div className="h-full flex flex-col overflow-auto p-1.5 gap-1.5">
             <div className="min-h-[50vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <ProblemDescriptionPanel
                 title={problem.title}
@@ -393,7 +393,7 @@ export default function ProblemDetail() {
           </div>
         ) : (
           // Desktop: Horizontal split with padding
-          <div className="h-full p-2">
+          <div className="h-full p-1.5">
             <ResizablePanelGroup direction="horizontal" className="h-full">
               {/* Left Panel - Problem Description */}
               <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
@@ -409,7 +409,7 @@ export default function ProblemDetail() {
                 </div>
               </ResizablePanel>
 
-              <ResizableHandle withHandle className="mx-1 bg-transparent data-[panel-group-direction=horizontal]:w-2" />
+              <ResizableHandle withHandle />
 
               {/* Right Panel - Code Editor + Test Cases */}
               <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
