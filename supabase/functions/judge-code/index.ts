@@ -118,6 +118,7 @@ def compare_outputs(actual, expected):
 
 def run_tests():
     test_cases = json.loads('''${testCasesJson}''')
+    param_names = ${JSON.stringify(parameterNames)}
     results = []
     
     for tc in test_cases:
@@ -135,8 +136,13 @@ def run_tests():
         }
         
         try:
+            # FIX 1: Validate all required parameters exist
+            for p in param_names:
+                if p not in inputs:
+                    raise ValueError(f"Missing input for parameter '{p}'")
+            
             # Build arguments in correct order
-            args = [inputs.get(p) for p in ${JSON.stringify(parameterNames)}]
+            args = [inputs[p] for p in param_names]
             
             start_time = time.time()
             actual = ${functionName}(*args)
@@ -220,6 +226,13 @@ function runTests() {
     };
     
     try {
+      // FIX 1: Validate all required parameters exist
+      for (const p of paramNames) {
+        if (!(p in tc.inputs)) {
+          throw new Error(\`Missing input for parameter '\${p}'\`);
+        }
+      }
+      
       const args = paramNames.map(p => tc.inputs[p]);
       
       const startTime = performance.now();
@@ -369,8 +382,8 @@ serve(async (req) => {
     const pistonResult = await pistonResponse.json();
     console.log('Piston result:', JSON.stringify(pistonResult).substring(0, 500));
 
-    // Check for compilation errors
-    if (pistonResult.compile?.stderr) {
+    // FIX 3: Check for compilation errors (only for compiled languages, not Python)
+    if (pistonResult.compile?.stderr && language !== 'python') {
       const response: JudgeResponse = {
         verdict: 'compilation_error',
         passed_count: 0,
@@ -418,8 +431,9 @@ serve(async (req) => {
     const stderr = pistonResult.run?.stderr || '';
     const output = stdout + (stderr ? '\n' + stderr : '');
 
-    // Check for runtime errors in stderr
-    if (stderr && !stdout.includes('[')) {
+    // FIX 2: Only treat stderr as runtime error if there's NO valid JSON output at all
+    // This allows debug prints/warnings while still catching actual errors
+    if (stderr && !stdout.trim()) {
       const response: JudgeResponse = {
         verdict: 'runtime_error',
         passed_count: 0,
