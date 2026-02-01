@@ -1,10 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, Tag } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface Example {
   id: number;
@@ -40,6 +42,57 @@ export function ProblemDescriptionPanel({
 }: ProblemDescriptionPanelProps) {
   const [hintsExpanded, setHintsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [likeCount, setLikeCount] = useState(1234);
+  const [dislikeCount, setDislikeCount] = useState(56);
+
+  const handleLike = () => {
+    if (liked) {
+      setLiked(false);
+      setLikeCount(prev => prev - 1);
+    } else {
+      setLiked(true);
+      setLikeCount(prev => prev + 1);
+      if (disliked) {
+        setDisliked(false);
+        setDislikeCount(prev => prev - 1);
+      }
+    }
+  };
+
+  const handleDislike = () => {
+    if (disliked) {
+      setDisliked(false);
+      setDislikeCount(prev => prev - 1);
+    } else {
+      setDisliked(true);
+      setDislikeCount(prev => prev + 1);
+      if (liked) {
+        setLiked(false);
+        setLikeCount(prev => prev - 1);
+      }
+    }
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard!");
+  };
+
+  const handleComment = () => {
+    toast.info("Comments feature coming soon!");
+  };
+
+  const handleFeedback = () => {
+    toast.info("Thank you! Feedback form coming soon.");
+  };
+
+  const handleSave = () => {
+    setSaved(!saved);
+    toast.success(saved ? "Removed from saved" : "Saved to your collection");
+  };
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -214,6 +267,132 @@ export function ProblemDescriptionPanel({
           </div>
         )}
       </ScrollArea>
+
+      {/* Engagement Footer */}
+      <div className="shrink-0 border-t border-border/50 px-4 py-2 bg-muted/20">
+        <TooltipProvider delayDuration={300}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              {/* Like */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-8 px-2 gap-1.5",
+                      liked && "text-primary"
+                    )}
+                    onClick={handleLike}
+                  >
+                    <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+                    <span className="text-xs">{likeCount}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Like</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Dislike */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-8 px-2 gap-1.5",
+                      disliked && "text-destructive"
+                    )}
+                    onClick={handleDislike}
+                  >
+                    <ThumbsDown className={cn("h-4 w-4", disliked && "fill-current")} />
+                    <span className="text-xs">{dislikeCount}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Dislike</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <div className="w-px h-5 bg-border mx-1" />
+
+              {/* Comment */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleComment}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Comments</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Share */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Share</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {/* Feedback */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleFeedback}
+                  >
+                    <Flag className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Report / Feedback</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Save */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8",
+                      saved && "text-primary"
+                    )}
+                    onClick={handleSave}
+                  >
+                    <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>{saved ? "Unsave" : "Save"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+      </div>
     </div>
   );
 }
