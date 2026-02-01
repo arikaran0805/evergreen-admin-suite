@@ -324,12 +324,18 @@ export function ProblemWorkspace({
           onExpand={() => setIsEditorPanelCollapsed(false)}
         >
           <div 
-            className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
+            className={cn(
+              "flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden",
+              isEditorPanelCollapsed ? "h-auto" : "h-full"
+            )}
             onMouseEnter={() => setIsEditorHovered(true)}
             onMouseLeave={() => setIsEditorHovered(false)}
           >
             {/* First Header Row - Title and Controls (Always visible) */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
+            <div className={cn(
+              "flex items-center justify-between px-3 py-1.5 bg-muted/40",
+              !isEditorPanelCollapsed && "border-b border-border"
+            )}>
               <div className="flex items-center gap-2">
                 <Code className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Code</span>
