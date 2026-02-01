@@ -55,6 +55,7 @@ function getParameterNames(signature: FunctionSignature): string[] {
 }
 
 type ExpandedPanel = 'description' | 'editor' | 'testcase' | null;
+type CollapsedPanel = 'description' | 'editor' | 'testcase' | null;
 
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
@@ -66,6 +67,7 @@ export default function ProblemDetail() {
   const [output, setOutput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
+  const [collapsedPanel, setCollapsedPanel] = useState<CollapsedPanel>(null);
   
   const { judge } = useCodeJudge();
 
@@ -140,6 +142,19 @@ export default function ProblemDetail() {
 
   const handleExpandTestcase = () => {
     setExpandedPanel(expandedPanel === 'testcase' ? null : 'testcase');
+  };
+
+  // Panel collapse handlers
+  const handleCollapseDescription = () => {
+    setCollapsedPanel(collapsedPanel === 'description' ? null : 'description');
+  };
+
+  const handleCollapseEditor = () => {
+    setCollapsedPanel(collapsedPanel === 'editor' ? null : 'editor');
+  };
+
+  const handleCollapseTestcase = () => {
+    setCollapsedPanel(collapsedPanel === 'testcase' ? null : 'testcase');
   };
 
   // RUN: Execute code against visible test cases
@@ -394,6 +409,8 @@ export default function ProblemDetail() {
                 hints={problem.hints}
                 isExpanded={true}
                 onToggleExpand={handleExpandDescription}
+                isCollapsed={collapsedPanel === 'description'}
+                onToggleCollapse={handleCollapseDescription}
               />
             </div>
           )}
@@ -410,6 +427,9 @@ export default function ProblemDetail() {
               expandedPanel={expandedPanel}
               onExpandEditor={handleExpandEditor}
               onExpandTestcase={handleExpandTestcase}
+              collapsedPanel={collapsedPanel === 'editor' || collapsedPanel === 'testcase' ? collapsedPanel : null}
+              onCollapseEditor={handleCollapseEditor}
+              onCollapseTestcase={handleCollapseTestcase}
             />
           )}
         </div>
@@ -477,6 +497,8 @@ export default function ProblemDetail() {
                 hints={problem.hints}
                 isExpanded={false}
                 onToggleExpand={handleExpandDescription}
+                isCollapsed={collapsedPanel === 'description'}
+                onToggleCollapse={handleCollapseDescription}
               />
             </div>
             <div className="flex-1 min-h-[50vh]">
@@ -492,6 +514,9 @@ export default function ProblemDetail() {
                 expandedPanel={null}
                 onExpandEditor={handleExpandEditor}
                 onExpandTestcase={handleExpandTestcase}
+                collapsedPanel={collapsedPanel === 'editor' || collapsedPanel === 'testcase' ? collapsedPanel : null}
+                onCollapseEditor={handleCollapseEditor}
+                onCollapseTestcase={handleCollapseTestcase}
               />
             </div>
           </div>
@@ -511,6 +536,8 @@ export default function ProblemDetail() {
                     hints={problem.hints}
                     isExpanded={false}
                     onToggleExpand={handleExpandDescription}
+                    isCollapsed={collapsedPanel === 'description'}
+                    onToggleCollapse={handleCollapseDescription}
                   />
                 </div>
               </ResizablePanel>
@@ -531,6 +558,9 @@ export default function ProblemDetail() {
                   expandedPanel={null}
                   onExpandEditor={handleExpandEditor}
                   onExpandTestcase={handleExpandTestcase}
+                  collapsedPanel={collapsedPanel === 'editor' || collapsedPanel === 'testcase' ? collapsedPanel : null}
+                  onCollapseEditor={handleCollapseEditor}
+                  onCollapseTestcase={handleCollapseTestcase}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>
