@@ -314,7 +314,7 @@ export function TestCasePanel({
                   "p-4 rounded-lg",
                   results.every(r => r.passed) 
                     ? "bg-green-500/10 border border-green-500/20" 
-                    : "bg-red-500/10 border border-red-500/20"
+                    : "bg-amber-500/10 border border-amber-500/20"
                 )}>
                   <div className={cn(
                     "flex items-center gap-2",
@@ -334,12 +334,9 @@ export function TestCasePanel({
                         </>
                       )
                     ) : (
-                      <>
-                        <X className="h-5 w-5 text-red-600 dark:text-red-500" />
-                        <span className="font-medium text-red-600 dark:text-red-500">
-                          {results.filter(r => r.passed).length}/{results.length} tests passed
-                        </span>
-                      </>
+                      <span className="font-medium text-amber-600 dark:text-amber-500">
+                        ⚠️ You're close — {results.filter(r => r.passed).length}/{results.length} tests passed
+                      </span>
                     )}
                   </div>
                 </div>
