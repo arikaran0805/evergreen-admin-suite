@@ -60,7 +60,11 @@ export function ProblemDescriptionPanel({
   // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full w-7 flex flex-col bg-card">
+      <div 
+        className="h-full w-7 flex flex-col bg-card group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         {/* Vertical tabs */}
         <div className="flex-1 flex flex-col py-1">
           <button
@@ -118,8 +122,11 @@ export function ProblemDescriptionPanel({
           </button>
         </div>
 
-        {/* Bottom buttons */}
-        <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50">
+        {/* Bottom buttons - Show on hover */}
+        <div className={cn(
+          "flex flex-col items-center gap-0.5 py-2 border-t border-border/50 transition-opacity",
+          isHovered ? "opacity-100" : "opacity-0"
+        )}>
           {onToggleExpand && (
             <Button
               variant="ghost"
