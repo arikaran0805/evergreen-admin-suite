@@ -364,11 +364,11 @@ export default function ProblemDetail() {
       </div>
 
       {/* Main Content - Three Panel Layout */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden bg-muted/30">
         {isMobile ? (
           // Mobile: Stack vertically
-          <div className="h-full flex flex-col overflow-auto">
-            <div className="min-h-[50vh]">
+          <div className="h-full flex flex-col overflow-auto p-2 gap-2">
+            <div className="min-h-[50vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <ProblemDescriptionPanel
                 title={problem.title}
                 difficulty={problem.difficulty}
@@ -392,36 +392,40 @@ export default function ProblemDetail() {
             </div>
           </div>
         ) : (
-          // Desktop: Horizontal split
-          <ResizablePanelGroup direction="horizontal">
-            {/* Left Panel - Problem Description */}
-            <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
-              <ProblemDescriptionPanel
-                title={problem.title}
-                difficulty={problem.difficulty}
-                description={problem.description}
-                examples={problem.examples}
-                constraints={problem.constraints}
-                hints={problem.hints}
-              />
-            </ResizablePanel>
+          // Desktop: Horizontal split with padding
+          <div className="h-full p-2">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Left Panel - Problem Description */}
+              <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
+                <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                  <ProblemDescriptionPanel
+                    title={problem.title}
+                    difficulty={problem.difficulty}
+                    description={problem.description}
+                    examples={problem.examples}
+                    constraints={problem.constraints}
+                    hints={problem.hints}
+                  />
+                </div>
+              </ResizablePanel>
 
-            <ResizableHandle withHandle />
+              <ResizableHandle withHandle className="mx-1 bg-transparent data-[panel-group-direction=horizontal]:w-2" />
 
-            {/* Right Panel - Code Editor + Test Cases */}
-            <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
-              <ProblemWorkspace
-                starterCode={problem.starterCode}
-                supportedLanguages={problem.supportedLanguages}
-                testCases={problem.testCases}
-                onRun={handleRun}
-                onSubmit={handleSubmit}
-                results={results}
-                isRunning={isRunning}
-                output={output}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
+              {/* Right Panel - Code Editor + Test Cases */}
+              <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
+                <ProblemWorkspace
+                  starterCode={problem.starterCode}
+                  supportedLanguages={problem.supportedLanguages}
+                  testCases={problem.testCases}
+                  onRun={handleRun}
+                  onSubmit={handleSubmit}
+                  results={results}
+                  isRunning={isRunning}
+                  output={output}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
         )}
       </div>
     </div>

@@ -102,13 +102,13 @@ export function ProblemWorkspace({
   const monacoLanguage = monacoLanguageMap[language] || 'plaintext';
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col gap-2">
       <ResizablePanelGroup direction="vertical" className="flex-1">
         {/* Code Editor Panel */}
         <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
-          <div className="h-full flex flex-col bg-card">
+          <div className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden">
             {/* Editor Header with Language Selector and Actions */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/30">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
               <div className="flex items-center gap-2">
                 <Select value={language} onValueChange={handleLanguageChange}>
                   <SelectTrigger className="w-[130px] h-8 text-sm bg-background">
@@ -191,7 +191,7 @@ export function ProblemWorkspace({
             </div>
 
             {/* Footer with Run/Submit */}
-            <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-muted/20">
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40">
               <span className="text-xs text-muted-foreground">
                 Press <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Ctrl</kbd> + <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Enter</kbd> to run
               </span>
@@ -216,7 +216,7 @@ export function ProblemWorkspace({
           </div>
         </ResizablePanel>
 
-        <ResizableHandle withHandle />
+        <ResizableHandle withHandle className="my-1 bg-transparent data-[panel-group-direction=vertical]:h-2" />
 
         {/* Test Case Panel */}
         <ResizablePanel 
@@ -227,12 +227,14 @@ export function ProblemWorkspace({
           collapsedSize={10}
           className="min-h-0"
         >
-          <TestCasePanel
-            testCases={testCases}
-            results={results}
-            isRunning={isRunning}
-            output={output}
-          />
+          <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+            <TestCasePanel
+              testCases={testCases}
+              results={results}
+              isRunning={isRunning}
+              output={output}
+            />
+          </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
