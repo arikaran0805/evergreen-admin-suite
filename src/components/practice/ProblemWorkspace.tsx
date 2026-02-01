@@ -244,7 +244,7 @@ export function ProblemWorkspace({
                 fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
                 lineNumbers: "on",
                 lineNumbersMinChars: 3,
-                lineDecorationsWidth: 8,
+                lineDecorationsWidth: 16,
                 glyphMargin: true,
                 folding: true,
                 foldingHighlight: true,
@@ -324,18 +324,12 @@ export function ProblemWorkspace({
           onExpand={() => setIsEditorPanelCollapsed(false)}
         >
           <div 
-            className={cn(
-              "flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden",
-              isEditorPanelCollapsed ? "h-auto" : "h-full"
-            )}
+            className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
             onMouseEnter={() => setIsEditorHovered(true)}
             onMouseLeave={() => setIsEditorHovered(false)}
           >
             {/* First Header Row - Title and Controls (Always visible) */}
-            <div className={cn(
-              "flex items-center justify-between px-3 py-1.5 bg-muted/40",
-              !isEditorPanelCollapsed && "border-b border-border"
-            )}>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
               <div className="flex items-center gap-2">
                 <Code className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Code</span>
@@ -436,7 +430,7 @@ export function ProblemWorkspace({
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
                       lineNumbers: "on",
                       lineNumbersMinChars: 3,
-                      lineDecorationsWidth: 8,
+                      lineDecorationsWidth: 16,
                       glyphMargin: true,
                       folding: true,
                       foldingHighlight: true,
