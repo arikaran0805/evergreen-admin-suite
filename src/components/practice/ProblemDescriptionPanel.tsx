@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, ChevronRight, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2, PanelLeftClose, ArrowRightFromLine } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -140,7 +140,7 @@ export function ProblemDescriptionPanel({
               onClick={onToggleCollapse}
               title="Expand panel"
             >
-              <PanelLeftOpen className="h-3.5 w-3.5" />
+              <ArrowRightFromLine className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
@@ -243,7 +243,7 @@ export function ProblemDescriptionPanel({
                 title={isCollapsed ? "Show panel" : "Hide panel"}
               >
                 {isCollapsed ? (
-                  <PanelLeftOpen className="h-4 w-4" />
+                  <ArrowRightFromLine className="h-4 w-4" />
                 ) : (
                   <PanelLeftClose className="h-4 w-4" />
                 )}
