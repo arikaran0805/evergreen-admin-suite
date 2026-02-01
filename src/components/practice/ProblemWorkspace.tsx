@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Play, Send, Settings, Maximize2 } from "lucide-react";
+import { RotateCcw, Settings, Maximize2 } from "lucide-react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -139,26 +139,6 @@ export function ProblemWorkspace({
                 <Button variant="ghost" size="icon" className="h-8 w-8" title="Fullscreen">
                   <Maximize2 className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-border mx-1" />
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={handleRun}
-                  disabled={isRunning}
-                >
-                  <Play className="h-3.5 w-3.5" />
-                  Run
-                </Button>
-                <Button 
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={handleSubmit}
-                  disabled={isRunning}
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  Submit
-                </Button>
               </div>
             </div>
 
@@ -210,11 +190,28 @@ export function ProblemWorkspace({
               />
             </div>
 
-            {/* Keyboard Shortcut Hint */}
-            <div className="px-3 py-1.5 border-t border-border/50 bg-muted/20">
+            {/* Footer with Run/Submit */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-muted/20">
               <span className="text-xs text-muted-foreground">
                 Press <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Ctrl</kbd> + <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Enter</kbd> to run
               </span>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleRun}
+                  disabled={isRunning}
+                >
+                  Run
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleSubmit}
+                  disabled={isRunning}
+                >
+                  Submit
+                </Button>
+              </div>
             </div>
           </div>
         </ResizablePanel>
