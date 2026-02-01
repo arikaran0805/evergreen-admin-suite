@@ -102,7 +102,7 @@ export function ProblemWorkspace({
   const monacoLanguage = monacoLanguageMap[language] || 'plaintext';
 
   return (
-    <div className="h-full flex flex-col gap-2">
+    <div className="h-full flex flex-col gap-1.5">
       <ResizablePanelGroup direction="vertical" className="flex-1">
         {/* Code Editor Panel */}
         <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
@@ -216,7 +216,7 @@ export function ProblemWorkspace({
           </div>
         </ResizablePanel>
 
-        <ResizableHandle withHandle className="my-1 bg-transparent data-[panel-group-direction=vertical]:h-2" />
+        <ResizableHandle withHandle />
 
         {/* Test Case Panel */}
         <ResizablePanel 
