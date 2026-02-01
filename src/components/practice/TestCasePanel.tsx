@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseCodeError } from "@/lib/errorParser";
 
@@ -32,6 +32,58 @@ interface TestCasePanelProps {
   onErrorLineClick?: (line: number) => void;
   globalError?: string;
   isSubmit?: boolean;
+}
+
+// Hidden Test Case Component with expandable output
+function HiddenTestCase({ result, index }: { result: TestResult; index: number }) {
+  const [showOutput, setShowOutput] = useState(false);
+  
+  return (
+    <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
+      <div className="flex items-center gap-2">
+        {result.passed ? (
+          <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+        ) : (
+          <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+        )}
+        <span className="font-medium text-sm">Test Case {index + 1}</span>
+        <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">Hidden</span>
+        {result.runtime && (
+          <span className="text-xs text-muted-foreground ml-auto mr-2">{result.runtime}</span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs gap-1"
+          onClick={() => setShowOutput(!showOutput)}
+        >
+          <Eye className="h-3 w-3" />
+          {showOutput ? "Hide" : "Show Output"}
+        </Button>
+      </div>
+      
+      {showOutput && (
+        <div className="mt-3 space-y-2 text-sm font-mono border-t border-border/50 pt-3">
+          <div>
+            <span className="text-muted-foreground">Input: </span>
+            <span>{result.input}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Expected: </span>
+            <span>{result.expected}</span>
+          </div>
+          {result.actual && (
+            <div>
+              <span className="text-muted-foreground">Output: </span>
+              <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
+                {result.actual}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TestCasePanel({ 
@@ -316,10 +368,7 @@ export function TestCasePanel({
                     ? "bg-green-500/10 border border-green-500/20" 
                     : "bg-amber-500/10 border border-amber-500/20"
                 )}>
-                  <div className={cn(
-                    "flex items-center gap-2",
-                    results.every(r => r.passed) && isSubmit && "justify-center"
-                  )}>
+                  <div className="flex items-center justify-center gap-2">
                     {results.every(r => r.passed) ? (
                       isSubmit ? (
                         <span className="font-medium text-green-600 dark:text-green-500 text-center">
@@ -348,23 +397,14 @@ export function TestCasePanel({
                   ? parseCodeError(result.error, language, userCodeLineCount) 
                   : null;
                 
-                // Hidden test case - show minimal info
+                // Hidden test case - show minimal info with expandable output
                 if (result.isHidden) {
                   return (
-                    <div key={i} className="border border-border/50 rounded-lg p-4 bg-muted/20">
-                      <div className="flex items-center gap-2">
-                        {result.passed ? (
-                          <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-600 dark:text-red-500" />
-                        )}
-                        <span className="font-medium text-sm">Test Case {i + 1}</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">Hidden</span>
-                        {result.runtime && (
-                          <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
-                        )}
-                      </div>
-                    </div>
+                    <HiddenTestCase 
+                      key={i}
+                      result={result}
+                      index={i}
+                    />
                   );
                 }
                 
