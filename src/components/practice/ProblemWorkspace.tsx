@@ -23,6 +23,7 @@ import { parseCodeError } from "@/lib/errorParser";
 import { useProblemCodePersistence } from "@/hooks/useProblemCodePersistence";
 import { usePracticeEditorSettings } from "@/hooks/usePracticeEditorSettings";
 import { PracticeEditorSettingsPopover } from "./PracticeEditorSettingsPopover";
+import { formatPython, registerMonacoPythonFormatter } from "@/lib/formatters/pythonFormatter";
 
 interface ProblemWorkspaceProps {
   problemId: string;
@@ -95,6 +96,11 @@ export function ProblemWorkspace({
   const [errorLine, setErrorLine] = useState<number | undefined>();
 
   const { settings, updateSetting } = usePracticeEditorSettings();
+  const tabWidthRef = useRef(settings.tabSize);
+
+  useEffect(() => {
+    tabWidthRef.current = settings.tabSize;
+  }, [settings.tabSize]);
   
   // Use the persistence hook for code management
   const {
@@ -185,6 +191,9 @@ export function ProblemWorkspace({
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Enable Python formatting for Monaco's built-in Format Document action.
+    registerMonacoPythonFormatter(monaco, () => tabWidthRef.current);
     
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       handleRun();
@@ -212,7 +221,32 @@ export function ProblemWorkspace({
     if (!editor) return;
 
     const action = editor.getAction?.("editor.action.formatDocument");
-    if (!action || (typeof action.isSupported === "function" && !action.isSupported())) {
+    const isSupported =
+      !!action && (typeof action.isSupported !== "function" || action.isSupported());
+
+    // Fallback: Monaco doesn't ship a Python formatter by default.
+    if (!isSupported && language === "python") {
+      try {
+        const model = editor.getModel?.();
+        if (!model) return;
+
+        const formatted = await formatPython(model.getValue(), {
+          tabWidth: settings.tabSize,
+        });
+
+        model.pushEditOperations(
+          [],
+          [{ range: model.getFullModelRange(), text: formatted }],
+          () => null,
+        );
+        toast.success("Formatted");
+      } catch {
+        toast.error("Couldn't format this code.");
+      }
+      return;
+    }
+
+    if (!isSupported) {
       toast.info("Formatting isn't available for this language yet.");
       return;
     }
@@ -223,7 +257,7 @@ export function ProblemWorkspace({
     } catch {
       toast.error("Couldn't format this code.");
     }
-  }, []);
+  }, [language, settings.tabSize]);
 
   const handleRun = () => {
     testPanelRef.current?.expand();
