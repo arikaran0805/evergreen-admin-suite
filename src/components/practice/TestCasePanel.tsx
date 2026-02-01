@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Check, X, Clock, Terminal, Maximize2, Minimize2, PanelBottomClose, PanelBottomOpen } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface TestResult {
@@ -81,7 +81,7 @@ export function TestCasePanel({
               onClick={onToggleExpand}
               title="Fullscreen"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Expand className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -155,9 +155,9 @@ export function TestCasePanel({
                   title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
                 >
                   {isExpanded ? (
-                    <Minimize2 className="h-4 w-4" />
+                    <Shrink className="h-4 w-4" />
                   ) : (
-                    <Maximize2 className="h-4 w-4" />
+                    <Expand className="h-4 w-4" />
                   )}
                 </Button>
               )}
