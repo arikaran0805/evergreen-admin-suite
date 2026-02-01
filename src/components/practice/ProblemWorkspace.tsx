@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -20,13 +20,16 @@ import { TestCasePanel, TestResult } from "./TestCasePanel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { parseCodeError } from "@/lib/errorParser";
+import { useProblemCodePersistence } from "@/hooks/useProblemCodePersistence";
 
 interface ProblemWorkspaceProps {
+  problemId: string;
   starterCode: Record<string, string>;
   supportedLanguages: string[];
   testCases: { input: string; expected: string }[];
   onRun: (code: string, language: string) => void;
   onSubmit: (code: string, language: string) => void;
+  onCodeSubmitted?: (code: string, language: string) => void;
   results: TestResult[];
   isRunning: boolean;
   output: string;
@@ -35,7 +38,6 @@ interface ProblemWorkspaceProps {
   onExpandTestcase?: () => void;
   testCaseActiveTab?: string;
   onTestCaseTabChange?: (tab: string) => void;
-  lastSubmittedCode?: { code: string; language: string } | null;
   globalError?: string;
   isSubmit?: boolean;
 }
@@ -61,11 +63,13 @@ const monacoLanguageMap: Record<string, string> = {
 };
 
 export function ProblemWorkspace({
+  problemId,
   starterCode,
   supportedLanguages,
   testCases,
   onRun,
   onSubmit,
+  onCodeSubmitted,
   results,
   isRunning,
   output,
@@ -74,7 +78,6 @@ export function ProblemWorkspace({
   onExpandTestcase,
   testCaseActiveTab,
   onTestCaseTabChange,
-  lastSubmittedCode,
   globalError,
   isSubmit = false,
 }: ProblemWorkspaceProps) {
@@ -89,11 +92,26 @@ export function ProblemWorkspace({
   const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
   const [errorLine, setErrorLine] = useState<number | undefined>();
   
+  // Use the persistence hook for code management
+  const {
+    code,
+    language,
+    setCode,
+    handleLanguageChange: persistenceHandleLanguageChange,
+    handleReset: persistenceHandleReset,
+    restoreLastSubmission,
+    saveAsLastSubmission,
+    hasLastSubmission,
+    hasDraft,
+  } = useProblemCodePersistence({
+    problemId,
+    starterCode,
+    supportedLanguages,
+  });
+
   const availableLanguages = supportedLanguages.length > 0 
     ? supportedLanguages 
     : Object.keys(starterCode);
-  const [language, setLanguage] = useState(availableLanguages[0] || "python");
-  const [code, setCode] = useState(starterCode[availableLanguages[0]] || "");
 
   const userCodeLineCount = code.split('\n').length;
 
@@ -131,22 +149,22 @@ export function ProblemWorkspace({
   }, []);
 
   const handleLanguageChange = (newLang: string) => {
-    setLanguage(newLang);
-    setCode(starterCode[newLang] || '');
+    persistenceHandleLanguageChange(newLang);
     clearErrorHighlight();
   };
 
   const handleReset = () => {
-    setCode(starterCode[language] || '');
+    persistenceHandleReset();
     clearErrorHighlight();
   };
 
   const handleRetrieveLastCode = () => {
-    if (lastSubmittedCode) {
-      setCode(lastSubmittedCode.code);
-      setLanguage(lastSubmittedCode.language);
-      clearErrorHighlight();
-      toast.success("Last submitted code restored");
+    if (hasLastSubmission) {
+      const restored = restoreLastSubmission();
+      if (restored) {
+        clearErrorHighlight();
+        toast.success("Last submitted code restored");
+      }
     } else {
       toast.info("No previous submission found");
     }
@@ -158,7 +176,7 @@ export function ProblemWorkspace({
     if (errorLine) {
       clearErrorHighlight();
     }
-  }, [errorLine, clearErrorHighlight]);
+  }, [errorLine, clearErrorHighlight, setCode]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
@@ -180,6 +198,8 @@ export function ProblemWorkspace({
     testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
     clearErrorHighlight();
+    // Save as last submitted code when submitting
+    saveAsLastSubmission(code, language);
     onSubmit(code, language);
   };
 
@@ -287,8 +307,9 @@ export function ProblemWorkspace({
                 variant="ghost" 
                 size="icon" 
                 className="h-7 w-7" 
-                title="Retrieve last submitted code"
+                title="Restore last submission"
                 onClick={handleRetrieveLastCode}
+                disabled={!hasLastSubmission}
               >
                 <FileCode className="h-4 w-4" />
               </Button>
@@ -479,8 +500,9 @@ export function ProblemWorkspace({
                       variant="ghost" 
                       size="icon" 
                       className="h-7 w-7" 
-                      title="Retrieve last submitted code"
+                      title="Restore last submission"
                       onClick={handleRetrieveLastCode}
+                      disabled={!hasLastSubmission}
                     >
                       <FileCode className="h-4 w-4" />
                     </Button>
