@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List, Maximize2, Minimize2, PanelLeftClose, PanelRightClose } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -18,8 +18,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Function signature types
 interface FunctionSignatureObj {
@@ -64,13 +62,8 @@ export default function ProblemDetail() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [expandedPanel, setExpandedPanel] = useState<'description' | 'workspace' | null>(null);
   
   const { judge } = useCodeJudge();
-
-  const toggleExpand = (panel: 'description' | 'workspace') => {
-    setExpandedPanel(current => current === panel ? null : panel);
-  };
 
   // Fetch skill info
   const { data: skill } = useQuery({
@@ -399,114 +392,27 @@ export default function ProblemDetail() {
             </div>
           </div>
         ) : (
-          // Desktop: Horizontal split with padding and fullscreen support
-          <div className="h-full p-1.5 flex gap-1.5">
-            {/* Left Panel - Problem Description */}
-            <div className={cn(
-              "h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden transition-all duration-300 flex flex-col",
-              expandedPanel === 'workspace' && "hidden",
-              expandedPanel === 'description' ? "flex-1" : "w-[45%]",
-              !expandedPanel && "flex-shrink-0"
-            )}>
-              {/* Panel Header with expand control */}
-              <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-muted/30 shrink-0">
-                <span className="text-xs font-medium text-muted-foreground">Description</span>
-                <TooltipProvider delayDuration={300}>
-                  <div className="flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => toggleExpand('description')}
-                        >
-                          {expandedPanel === 'description' ? (
-                            <Minimize2 className="h-3.5 w-3.5" />
-                          ) : (
-                            <Maximize2 className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>{expandedPanel === 'description' ? 'Exit fullscreen' : 'Fullscreen'}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    {!expandedPanel && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => setExpandedPanel('workspace')}
-                          >
-                            <PanelLeftClose className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p>Collapse panel</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </TooltipProvider>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <ProblemDescriptionPanel
-                  title={problem.title}
-                  difficulty={problem.difficulty}
-                  description={problem.description}
-                  examples={problem.examples}
-                  constraints={problem.constraints}
-                  hints={problem.hints}
-                />
-              </div>
-            </div>
+          // Desktop: Horizontal split with padding
+          <div className="h-full p-1.5">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Left Panel - Problem Description */}
+              <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
+                <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                  <ProblemDescriptionPanel
+                    title={problem.title}
+                    difficulty={problem.difficulty}
+                    description={problem.description}
+                    examples={problem.examples}
+                    constraints={problem.constraints}
+                    hints={problem.hints}
+                  />
+                </div>
+              </ResizablePanel>
 
-            {/* Collapsed Description Tab */}
-            {expandedPanel === 'workspace' && (
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setExpandedPanel(null)}
-                      className="h-full w-8 bg-card rounded-lg border border-border shadow-sm flex items-center justify-center hover:bg-muted/50 transition-colors"
-                    >
-                      <PanelRightClose className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Show description</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+              <ResizableHandle withHandle />
 
-            {/* Right Panel - Code Editor + Test Cases */}
-            <div className={cn(
-              "h-full transition-all duration-300",
-              expandedPanel === 'description' && "hidden",
-              expandedPanel === 'workspace' ? "flex-1" : "flex-1"
-            )}>
-              {/* Collapsed Workspace Tab */}
-              {expandedPanel === 'description' ? (
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setExpandedPanel(null)}
-                        className="h-full w-8 bg-card rounded-lg border border-border shadow-sm flex items-center justify-center hover:bg-muted/50 transition-colors"
-                      >
-                        <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">
-                      <p>Show code editor</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
+              {/* Right Panel - Code Editor + Test Cases */}
+              <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
                 <ProblemWorkspace
                   starterCode={problem.starterCode}
                   supportedLanguages={problem.supportedLanguages}
@@ -516,12 +422,9 @@ export default function ProblemDetail() {
                   results={results}
                   isRunning={isRunning}
                   output={output}
-                  isExpanded={expandedPanel === 'workspace'}
-                  onToggleExpand={() => toggleExpand('workspace')}
-                  onCollapse={() => setExpandedPanel('description')}
                 />
-              )}
-            </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
         )}
       </div>

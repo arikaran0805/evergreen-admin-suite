@@ -13,12 +13,11 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Maximize2, Minimize2, PanelRightClose, PanelTopClose, PanelBottomClose } from "lucide-react";
+import { RotateCcw, Settings, Maximize2 } from "lucide-react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProblemWorkspaceProps {
   starterCode: Record<string, string>;
@@ -29,9 +28,6 @@ interface ProblemWorkspaceProps {
   results: TestResult[];
   isRunning: boolean;
   output: string;
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
-  onCollapse?: () => void;
 }
 
 const languageLabels: Record<string, string> = {
@@ -63,15 +59,9 @@ export function ProblemWorkspace({
   results,
   isRunning,
   output,
-  isExpanded,
-  onToggleExpand,
-  onCollapse,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
   const testPanelRef = useRef<ImperativePanelHandle>(null);
-  const codePanelRef = useRef<ImperativePanelHandle>(null);
-  const [testPanelCollapsed, setTestPanelCollapsed] = useState(false);
-  const [codePanelExpanded, setCodePanelExpanded] = useState(false);
   
   const availableLanguages = supportedLanguages.length > 0 
     ? supportedLanguages 
@@ -99,39 +89,13 @@ export function ProblemWorkspace({
   }, []);
 
   const handleRun = () => {
-    if (testPanelCollapsed) {
-      setTestPanelCollapsed(false);
-    }
     testPanelRef.current?.resize(35);
     onRun(code, language);
   };
 
   const handleSubmit = () => {
-    if (testPanelCollapsed) {
-      setTestPanelCollapsed(false);
-    }
     testPanelRef.current?.resize(35);
     onSubmit(code, language);
-  };
-
-  const toggleCodePanelExpand = () => {
-    if (codePanelExpanded) {
-      setCodePanelExpanded(false);
-      testPanelRef.current?.resize(35);
-    } else {
-      setCodePanelExpanded(true);
-      testPanelRef.current?.collapse();
-    }
-  };
-
-  const toggleTestPanelCollapse = () => {
-    if (testPanelCollapsed) {
-      setTestPanelCollapsed(false);
-      testPanelRef.current?.resize(35);
-    } else {
-      setTestPanelCollapsed(true);
-      testPanelRef.current?.collapse();
-    }
   };
 
   const monacoTheme = theme === 'dark' ? 'vs-dark' : 'vs';
@@ -139,61 +103,9 @@ export function ProblemWorkspace({
 
   return (
     <div className="h-full flex flex-col gap-1.5">
-      {/* Workspace Header with expand controls */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-card rounded-lg border border-border shadow-sm shrink-0">
-        <span className="text-xs font-medium text-muted-foreground">Code</span>
-        <TooltipProvider delayDuration={300}>
-          <div className="flex items-center gap-1">
-            {onToggleExpand && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={onToggleExpand}
-                  >
-                    {isExpanded ? (
-                      <Minimize2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <Maximize2 className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>{isExpanded ? 'Exit fullscreen' : 'Fullscreen'}</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {onCollapse && !isExpanded && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={onCollapse}
-                  >
-                    <PanelRightClose className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Collapse panel</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        </TooltipProvider>
-      </div>
-
       <ResizablePanelGroup direction="vertical" className="flex-1">
         {/* Code Editor Panel */}
-        <ResizablePanel 
-          ref={codePanelRef}
-          defaultSize={65} 
-          minSize={30} 
-          className="min-h-0"
-        >
+        <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
           <div className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden">
             {/* Editor Header with Language Selector and Actions */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
@@ -211,54 +123,23 @@ export function ProblemWorkspace({
                   </SelectContent>
                 </Select>
               </div>
-              <TooltipProvider delayDuration={300}>
-                <div className="flex items-center gap-1.5">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8" 
-                        onClick={handleReset}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>Reset code</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>Settings</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={toggleCodePanelExpand}
-                      >
-                        {codePanelExpanded ? (
-                          <Minimize2 className="h-4 w-4" />
-                        ) : (
-                          <Maximize2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>{codePanelExpanded ? 'Show test panel' : 'Expand editor'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
+              <div className="flex items-center gap-1.5">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={handleReset}
+                  title="Reset code"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Fullscreen">
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Monaco Editor */}
@@ -341,47 +222,18 @@ export function ProblemWorkspace({
         <ResizablePanel 
           ref={testPanelRef} 
           defaultSize={35} 
-          minSize={5} 
+          minSize={10} 
           collapsible
-          collapsedSize={5}
+          collapsedSize={10}
           className="min-h-0"
-          onCollapse={() => setTestPanelCollapsed(true)}
-          onExpand={() => setTestPanelCollapsed(false)}
         >
-          <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden flex flex-col">
-            {/* Test Panel Header */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40 shrink-0">
-              <span className="text-xs font-medium text-muted-foreground">Test Cases</span>
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6"
-                      onClick={toggleTestPanelCollapse}
-                    >
-                      {testPanelCollapsed ? (
-                        <PanelTopClose className="h-3.5 w-3.5" />
-                      ) : (
-                        <PanelBottomClose className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>{testPanelCollapsed ? 'Expand' : 'Collapse'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <TestCasePanel
-                testCases={testCases}
-                results={results}
-                isRunning={isRunning}
-                output={output}
-              />
-            </div>
+          <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+            <TestCasePanel
+              testCases={testCases}
+              results={results}
+              isRunning={isRunning}
+              output={output}
+            />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
