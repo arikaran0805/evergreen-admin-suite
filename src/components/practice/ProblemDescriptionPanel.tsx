@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2 } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,6 +25,8 @@ interface ProblemDescriptionPanelProps {
   tags?: string[];
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const difficultyColors: Record<string, string> = {
@@ -43,6 +45,8 @@ export function ProblemDescriptionPanel({
   tags = [],
   isExpanded = false,
   onToggleExpand,
+  isCollapsed = false,
+  onToggleCollapse,
 }: ProblemDescriptionPanelProps) {
   const [hintsExpanded, setHintsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
@@ -134,25 +138,42 @@ export function ProblemDescriptionPanel({
             </TabsList>
           </Tabs>
           
-          {/* Expand Button - Show on hover */}
-          {onToggleExpand && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-8 w-8 shrink-0 transition-opacity",
-                isHovered || isExpanded ? "opacity-100" : "opacity-0"
-              )}
-              onClick={onToggleExpand}
-              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
-            >
-              {isExpanded ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
-            </Button>
-          )}
+          {/* Collapse & Expand Buttons - Show on hover */}
+          <div className={cn(
+            "flex items-center gap-0.5 shrink-0 transition-opacity",
+            isHovered || isExpanded ? "opacity-100" : "opacity-0"
+          )}>
+            {onToggleCollapse && !isExpanded && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onToggleCollapse}
+                title={isCollapsed ? "Show panel" : "Hide panel"}
+              >
+                {isCollapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            {onToggleExpand && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onToggleExpand}
+                title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+              >
+                {isExpanded ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
