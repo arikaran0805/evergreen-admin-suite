@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 // Function signature types
 interface FunctionSignatureObj {
@@ -53,6 +54,8 @@ function getParameterNames(signature: FunctionSignature): string[] {
   return [];
 }
 
+type ExpandedPanel = 'description' | 'editor' | 'testcase' | null;
+
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
@@ -62,6 +65,7 @@ export default function ProblemDetail() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
   
   const { judge } = useCodeJudge();
 
@@ -124,6 +128,19 @@ export default function ProblemDetail() {
       isVisible: tc.is_visible ?? true,
     })),
   } : null;
+
+  // Panel expand handlers
+  const handleExpandDescription = () => {
+    setExpandedPanel(expandedPanel === 'description' ? null : 'description');
+  };
+
+  const handleExpandEditor = () => {
+    setExpandedPanel(expandedPanel === 'editor' ? null : 'editor');
+  };
+
+  const handleExpandTestcase = () => {
+    setExpandedPanel(expandedPanel === 'testcase' ? null : 'testcase');
+  };
 
   // RUN: Execute code against visible test cases
   const handleRun = async (code: string, language: string) => {
@@ -318,6 +335,88 @@ export default function ProblemDetail() {
     );
   }
 
+  // Render fullscreen panel if expanded
+  if (expandedPanel) {
+    return (
+      <div className="h-screen flex flex-col bg-background">
+        {/* Problem List Drawer */}
+        <ProblemListDrawer
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          skillName={skill?.name || "Problems"}
+          problems={allProblemsInSkill}
+          currentProblemSlug={problemId}
+          onSelectProblem={(slug) => navigate(`/practice/${skillId}/problem/${slug}`)}
+        />
+
+        {/* Top Navigation Bar */}
+        <div className="h-12 flex items-center px-4 border-b border-border/50 bg-card shrink-0">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigate(`/practice/${skillId}`)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <List className="h-3.5 w-3.5" />
+              <span>{skill?.name || "Problems"}</span>
+            </button>
+
+            <div className="flex items-center">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium px-2">{problem.title}</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Fullscreen Panel Content */}
+        <div className="flex-1 min-h-0 overflow-hidden bg-muted/30 p-1.5">
+          {expandedPanel === 'description' && (
+            <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+              <ProblemDescriptionPanel
+                title={problem.title}
+                difficulty={problem.difficulty}
+                description={problem.description}
+                examples={problem.examples}
+                constraints={problem.constraints}
+                hints={problem.hints}
+                isExpanded={true}
+                onToggleExpand={handleExpandDescription}
+              />
+            </div>
+          )}
+          {(expandedPanel === 'editor' || expandedPanel === 'testcase') && (
+            <ProblemWorkspace
+              starterCode={problem.starterCode}
+              supportedLanguages={problem.supportedLanguages}
+              testCases={problem.testCases}
+              onRun={handleRun}
+              onSubmit={handleSubmit}
+              results={results}
+              isRunning={isRunning}
+              output={output}
+              expandedPanel={expandedPanel}
+              onExpandEditor={handleExpandEditor}
+              onExpandTestcase={handleExpandTestcase}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Problem List Drawer */}
@@ -376,6 +475,8 @@ export default function ProblemDetail() {
                 examples={problem.examples}
                 constraints={problem.constraints}
                 hints={problem.hints}
+                isExpanded={false}
+                onToggleExpand={handleExpandDescription}
               />
             </div>
             <div className="flex-1 min-h-[50vh]">
@@ -388,6 +489,9 @@ export default function ProblemDetail() {
                 results={results}
                 isRunning={isRunning}
                 output={output}
+                expandedPanel={null}
+                onExpandEditor={handleExpandEditor}
+                onExpandTestcase={handleExpandTestcase}
               />
             </div>
           </div>
@@ -405,11 +509,13 @@ export default function ProblemDetail() {
                     examples={problem.examples}
                     constraints={problem.constraints}
                     hints={problem.hints}
+                    isExpanded={false}
+                    onToggleExpand={handleExpandDescription}
                   />
                 </div>
               </ResizablePanel>
 
-              <ResizableHandle withHandle />
+              <ResizableHandle />
 
               {/* Right Panel - Code Editor + Test Cases */}
               <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
@@ -422,6 +528,9 @@ export default function ProblemDetail() {
                   results={results}
                   isRunning={isRunning}
                   output={output}
+                  expandedPanel={null}
+                  onExpandEditor={handleExpandEditor}
+                  onExpandTestcase={handleExpandTestcase}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

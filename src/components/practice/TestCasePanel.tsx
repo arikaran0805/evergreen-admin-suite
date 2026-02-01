@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X, Clock, Terminal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Check, X, Clock, Terminal, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface TestResult {
@@ -17,45 +18,81 @@ interface TestCasePanelProps {
   results: TestResult[];
   isRunning: boolean;
   output: string;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-export function TestCasePanel({ testCases, results, isRunning, output }: TestCasePanelProps) {
+export function TestCasePanel({ 
+  testCases, 
+  results, 
+  isRunning, 
+  output,
+  isExpanded = false,
+  onToggleExpand,
+}: TestCasePanelProps) {
   const [activeTab, setActiveTab] = useState("testcase");
   const [selectedCase, setSelectedCase] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   const hasResults = results.length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-card border-t border-border/50">
+    <div 
+      className="h-full flex flex-col bg-card border-t border-border/50"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="border-b border-border/50 px-4">
-          <TabsList className="h-10 bg-transparent p-0 gap-4">
-            <TabsTrigger 
-              value="testcase" 
-              className="h-10 px-0 pb-2.5 pt-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Testcase
-            </TabsTrigger>
-            <TabsTrigger 
-              value="result" 
-              className="h-10 px-0 pb-2.5 pt-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Test Result
-              {hasResults && (
-                <span className={cn(
-                  "ml-2 w-2 h-2 rounded-full",
-                  results.every(r => r.passed) ? "bg-green-500" : "bg-red-500"
-                )} />
-              )}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="output" 
-              className="h-10 px-0 pb-2.5 pt-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm text-muted-foreground data-[state=active]:text-foreground"
-            >
-              <Terminal className="h-4 w-4 mr-1.5" />
-              Output
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="h-10 bg-transparent p-0 gap-4">
+              <TabsTrigger 
+                value="testcase" 
+                className="h-10 px-0 pb-2.5 pt-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm text-muted-foreground data-[state=active]:text-foreground"
+              >
+                Testcase
+              </TabsTrigger>
+              <TabsTrigger 
+                value="result" 
+                className="h-10 px-0 pb-2.5 pt-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm text-muted-foreground data-[state=active]:text-foreground"
+              >
+                Test Result
+                {hasResults && (
+                  <span className={cn(
+                    "ml-2 w-2 h-2 rounded-full",
+                    results.every(r => r.passed) ? "bg-green-500" : "bg-red-500"
+                  )} />
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="output" 
+                className="h-10 px-0 pb-2.5 pt-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm text-muted-foreground data-[state=active]:text-foreground"
+              >
+                <Terminal className="h-4 w-4 mr-1.5" />
+                Output
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Expand Button - Show on hover */}
+            {onToggleExpand && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 shrink-0 transition-opacity",
+                  isHovered || isExpanded ? "opacity-100" : "opacity-0"
+                )}
+                onClick={onToggleExpand}
+                title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+              >
+                {isExpanded ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
         <TabsContent value="testcase" className="flex-1 overflow-auto m-0 p-4">
