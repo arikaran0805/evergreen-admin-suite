@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2, PanelLeftClose, ArrowRightFromLine } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,7 +60,7 @@ export function ProblemDescriptionPanel({
   // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full w-8 flex flex-col bg-card">
+      <div className="h-full w-7 flex flex-col bg-card">
         {/* Vertical tabs */}
         <div className="flex-1 flex flex-col py-1">
           <button
@@ -128,7 +128,7 @@ export function ProblemDescriptionPanel({
               onClick={onToggleExpand}
               title="Fullscreen"
             >
-              <Maximize2 className="h-3 w-3" />
+              <Expand className="h-3 w-3" />
             </Button>
           )}
           
@@ -140,7 +140,7 @@ export function ProblemDescriptionPanel({
               onClick={onToggleCollapse}
               title="Expand panel"
             >
-              <ArrowRightFromLine className="h-3 w-3" />
+              <PanelLeftClose className="h-3 w-3" />
             </Button>
           )}
         </div>
@@ -234,36 +234,32 @@ export function ProblemDescriptionPanel({
             "flex items-center gap-0.5 shrink-0 transition-opacity",
             isHovered || isExpanded || isCollapsed ? "opacity-100" : "opacity-0"
           )}>
-            {onToggleCollapse && !isExpanded && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={onToggleCollapse}
-                title={isCollapsed ? "Show panel" : "Hide panel"}
-              >
-                {isCollapsed ? (
-                  <ArrowRightFromLine className="h-4 w-4" />
-                ) : (
+              {onToggleCollapse && !isExpanded && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onToggleCollapse}
+                  title={isCollapsed ? "Show panel" : "Hide panel"}
+                >
                   <PanelLeftClose className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            {onToggleExpand && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={onToggleExpand}
-                title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
-              >
-                {isExpanded ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </Button>
-            )}
+                </Button>
+              )}
+              {onToggleExpand && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onToggleExpand}
+                  title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+                >
+                  {isExpanded ? (
+                    <Shrink className="h-4 w-4" />
+                  ) : (
+                    <Expand className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
           </div>
         </div>
       </div>

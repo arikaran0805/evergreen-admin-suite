@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Maximize2, Minimize2, PanelTopClose, PanelTopOpen } from "lucide-react";
+import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen } from "lucide-react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -199,7 +199,7 @@ export function ProblemWorkspace({
                   onClick={onExpandEditor}
                   title="Exit fullscreen"
                 >
-                  <Minimize2 className="h-4 w-4" />
+                  <Shrink className="h-4 w-4" />
                 </Button>
               )}
             </div>
@@ -354,7 +354,7 @@ export function ProblemWorkspace({
                     onClick={onExpandEditor}
                     title="Fullscreen"
                   >
-                    <Maximize2 className="h-4 w-4" />
+                    <Expand className="h-4 w-4" />
                   </Button>
                 )}
               </div>
