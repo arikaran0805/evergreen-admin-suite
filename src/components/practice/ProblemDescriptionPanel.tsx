@@ -60,21 +60,21 @@ export function ProblemDescriptionPanel({
   // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full w-full flex flex-col bg-card">
+      <div className="h-full w-10 flex flex-col bg-card">
         {/* Vertical tabs */}
-        <div className="flex-1 flex flex-col py-2">
+        <div className="flex-1 flex flex-col py-1">
           <button
             onClick={() => setActiveTab("description")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-3 text-xs transition-colors border-l-2",
+              "flex flex-col items-center gap-0.5 px-1 py-2 text-xs transition-colors border-l-2",
               activeTab === "description" 
                 ? "border-primary text-foreground bg-muted/50" 
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
           >
-            <FileText className="h-5 w-5" />
+            <FileText className="h-4 w-4" />
             <span 
-              className="font-medium"
+              className="font-medium text-[10px]"
               style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
               Description
@@ -84,15 +84,15 @@ export function ProblemDescriptionPanel({
           <button
             onClick={() => setActiveTab("editorial")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-3 text-xs transition-colors border-l-2",
+              "flex flex-col items-center gap-0.5 px-1 py-2 text-xs transition-colors border-l-2",
               activeTab === "editorial" 
                 ? "border-primary text-foreground bg-muted/50" 
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
           >
-            <BookOpen className="h-5 w-5" />
+            <BookOpen className="h-4 w-4" />
             <span 
-              className="font-medium"
+              className="font-medium text-[10px]"
               style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
               Editorial
@@ -102,15 +102,15 @@ export function ProblemDescriptionPanel({
           <button
             onClick={() => setActiveTab("submissions")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-3 text-xs transition-colors border-l-2",
+              "flex flex-col items-center gap-0.5 px-1 py-2 text-xs transition-colors border-l-2",
               activeTab === "submissions" 
                 ? "border-primary text-foreground bg-muted/50" 
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
           >
-            <History className="h-5 w-5" />
+            <History className="h-4 w-4" />
             <span 
-              className="font-medium"
+              className="font-medium text-[10px]"
               style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
               Submissions
@@ -119,16 +119,16 @@ export function ProblemDescriptionPanel({
         </div>
 
         {/* Bottom buttons */}
-        <div className="flex flex-col items-center gap-1 py-3 border-t border-border/50">
+        <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50">
           {onToggleExpand && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7"
               onClick={onToggleExpand}
               title="Fullscreen"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="h-3.5 w-3.5" />
             </Button>
           )}
           
@@ -136,11 +136,11 @@ export function ProblemDescriptionPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7"
               onClick={onToggleCollapse}
               title="Expand panel"
             >
-              <ChevronRight className="h-4 w-4" />
+              <PanelLeftOpen className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
