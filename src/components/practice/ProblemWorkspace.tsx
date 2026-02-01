@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Braces, AlignLeft, FileCode, Maximize } from "lucide-react";
+import { RotateCcw, Expand, Shrink, PanelTopClose, PanelTopOpen, Braces, AlignLeft, FileCode, Maximize } from "lucide-react";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { parseCodeError } from "@/lib/errorParser";
 import { useProblemCodePersistence } from "@/hooks/useProblemCodePersistence";
+import { usePracticeEditorSettings } from "@/hooks/usePracticeEditorSettings";
+import { PracticeEditorSettingsPopover } from "./PracticeEditorSettingsPopover";
 
 interface ProblemWorkspaceProps {
   problemId: string;
@@ -91,6 +93,8 @@ export function ProblemWorkspace({
   const [isEditorPanelCollapsed, setIsEditorPanelCollapsed] = useState(false);
   const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
   const [errorLine, setErrorLine] = useState<number | undefined>();
+
+  const { settings, updateSetting } = usePracticeEditorSettings();
   
   // Use the persistence hook for code management
   const {
@@ -185,6 +189,40 @@ export function ProblemWorkspace({
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       handleRun();
     });
+  }, []);
+
+  // Apply editor settings whenever they change
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.updateOptions({
+      fontSize: settings.fontSize,
+      wordWrap: settings.wordWrap ? "on" : "off",
+      lineNumbers: settings.lineNumbers ? "on" : "off",
+      minimap: { enabled: settings.minimap },
+    });
+
+    const model = editor.getModel?.();
+    model?.updateOptions?.({ tabSize: settings.tabSize, insertSpaces: true });
+  }, [settings]);
+
+  const handleFormatCode = useCallback(async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const action = editor.getAction?.("editor.action.formatDocument");
+    if (!action || (typeof action.isSupported === "function" && !action.isSupported())) {
+      toast.info("Formatting isn't available for this language yet.");
+      return;
+    }
+
+    try {
+      await action.run();
+      toast.success("Formatted");
+    } catch {
+      toast.error("Couldn't format this code.");
+    }
   }, []);
 
   const handleRun = () => {
@@ -300,7 +338,13 @@ export function ProblemWorkspace({
               </Select>
             </div>
             <div className="flex items-center gap-0.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                title="Format code"
+                onClick={handleFormatCode}
+              >
                 <AlignLeft className="h-4 w-4" />
               </Button>
               <Button 
@@ -322,9 +366,7 @@ export function ProblemWorkspace({
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
-                <Settings className="h-4 w-4" />
-              </Button>
+              <PracticeEditorSettingsPopover settings={settings} onChange={updateSetting} />
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -347,20 +389,20 @@ export function ProblemWorkspace({
               onChange={handleEditorChange}
               onMount={handleEditorMount}
               options={{
-                fontSize: 14,
+                fontSize: settings.fontSize,
                 fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                      lineNumbers: "on",
+                lineNumbers: settings.lineNumbers ? "on" : "off",
                 lineNumbersMinChars: 1,
-                      lineDecorationsWidth: 8,
+                lineDecorationsWidth: 8,
                 glyphMargin: true,
                 folding: true,
                 foldingHighlight: true,
                 showFoldingControls: "always",
-                minimap: { enabled: false },
-                wordWrap: "on",
+                minimap: { enabled: settings.minimap },
+                wordWrap: settings.wordWrap ? "on" : "off",
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
-                tabSize: 4,
+                tabSize: settings.tabSize,
                 insertSpaces: true,
                 renderIndentGuides: true,
                 padding: { top: 16, bottom: 16 },
@@ -493,7 +535,13 @@ export function ProblemWorkspace({
                     </Select>
                   </div>
                   <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      title="Format code"
+                      onClick={handleFormatCode}
+                    >
                       <AlignLeft className="h-4 w-4" />
                     </Button>
                     <Button 
@@ -515,9 +563,7 @@ export function ProblemWorkspace({
                     >
                       <RotateCcw className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                    <PracticeEditorSettingsPopover settings={settings} onChange={updateSetting} />
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -540,20 +586,20 @@ export function ProblemWorkspace({
                     onChange={handleEditorChange}
                     onMount={handleEditorMount}
                     options={{
-                      fontSize: 14,
+                      fontSize: settings.fontSize,
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                      lineNumbers: "on",
+                      lineNumbers: settings.lineNumbers ? "on" : "off",
                       lineNumbersMinChars: 1,
                       lineDecorationsWidth: 8,
                       glyphMargin: true,
                       folding: true,
                       foldingHighlight: true,
                       showFoldingControls: "always",
-                      minimap: { enabled: false },
-                      wordWrap: "on",
+                      minimap: { enabled: settings.minimap },
+                      wordWrap: settings.wordWrap ? "on" : "off",
                       scrollBeyondLastLine: false,
                       automaticLayout: true,
-                      tabSize: 4,
+                      tabSize: settings.tabSize,
                       insertSpaces: true,
                       renderIndentGuides: true,
                       padding: { top: 16, bottom: 16 },
