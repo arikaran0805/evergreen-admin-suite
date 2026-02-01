@@ -39,9 +39,14 @@ interface TestCasePanelProps {
 function HiddenTestCase({ result, index }: { result: TestResult; index: number }) {
   const [showOutput, setShowOutput] = useState(false);
   
-  // For hidden test cases, input/expected are intentionally hidden
+  const inputValue = (result.input ?? "").toString();
+  const expectedValue = (result.expected ?? "").toString();
+
+  const hasInput = inputValue.trim().length > 0;
+  const hasExpected = expectedValue.trim().length > 0;
+
   // But we should always show the user's actual output
-  const actualOutput = result.actual?.trim();
+  const actualOutput = result.actual?.toString().trim();
   const hasActualOutput = actualOutput && actualOutput.length > 0;
   
   return (
@@ -72,14 +77,22 @@ function HiddenTestCase({ result, index }: { result: TestResult; index: number }
         <div className="mt-3 space-y-2 text-sm font-mono border-t border-border/50 pt-3">
           <div>
             <span className="text-muted-foreground">Input: </span>
-            <span className="text-muted-foreground/60 italic">hidden</span>
+            {hasInput ? (
+              <span>{inputValue}</span>
+            ) : (
+              <span className="text-muted-foreground/60 italic">hidden</span>
+            )}
           </div>
           <div>
             <span className="text-muted-foreground">Expected: </span>
-            <span className="text-muted-foreground/60 italic">hidden</span>
+            {hasExpected ? (
+              <span>{expectedValue}</span>
+            ) : (
+              <span className="text-muted-foreground/60 italic">hidden</span>
+            )}
           </div>
           <div>
-            <span className="text-muted-foreground">Your Output: </span>
+            <span className="text-muted-foreground">Output: </span>
             {hasActualOutput ? (
               <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
                 {actualOutput}
@@ -88,11 +101,6 @@ function HiddenTestCase({ result, index }: { result: TestResult; index: number }
               <span className="text-muted-foreground/60 italic">(no output produced)</span>
             )}
           </div>
-          {result.passed ? (
-            <p className="text-xs text-green-600 dark:text-green-500 mt-2">✓ Your output matches the expected result</p>
-          ) : (
-            <p className="text-xs text-red-600 dark:text-red-500 mt-2">✗ Your output does not match the expected result</p>
-          )}
         </div>
       )}
     </div>

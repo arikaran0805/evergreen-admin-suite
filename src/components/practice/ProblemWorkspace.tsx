@@ -417,8 +417,8 @@ export function ProblemWorkspace({
 
   // Default view: both panels
   return (
-    <div className="h-full flex flex-col gap-1.5">
-      <ResizablePanelGroup direction="vertical" className="flex-1">
+    <div className="h-full min-h-0 flex flex-col gap-1.5">
+      <ResizablePanelGroup direction="vertical" className="flex-1 min-h-0">
         {/* Code Editor Panel */}
         <ResizablePanel
           ref={editorPanelRef}
