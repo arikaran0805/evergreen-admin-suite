@@ -330,36 +330,42 @@ export function ProblemWorkspace({
                 <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
                   <Settings className="h-4 w-4" />
                 </Button>
-                {/* Collapse & Expand Buttons - Show on hover */}
-                <div className={cn(
-                  "flex items-center gap-0.5 transition-opacity",
-                  isEditorHovered || isEditorPanelCollapsed ? "opacity-100" : "opacity-0"
-                )}>
+                {/* Collapse Button - Always visible */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-8 px-2 gap-1.5 text-muted-foreground hover:text-foreground"
+                  onClick={handleToggleEditorPanelCollapse}
+                  title={isEditorPanelCollapsed ? "Show editor" : "Hide editor"}
+                >
+                  {isEditorPanelCollapsed ? (
+                    <>
+                      <PanelTopOpen className="h-4 w-4" />
+                      <span className="text-xs">Show Editor</span>
+                    </>
+                  ) : (
+                    <>
+                      <PanelTopClose className="h-4 w-4" />
+                      <span className="text-xs">Hide Editor</span>
+                    </>
+                  )}
+                </Button>
+                
+                {/* Expand Button - Show on hover */}
+                {onExpandEditor && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-8 w-8"
-                    onClick={handleToggleEditorPanelCollapse}
-                    title={isEditorPanelCollapsed ? "Show editor" : "Hide editor"}
-                  >
-                    {isEditorPanelCollapsed ? (
-                      <PanelTopOpen className="h-4 w-4" />
-                    ) : (
-                      <PanelTopClose className="h-4 w-4" />
+                    className={cn(
+                      "h-8 w-8 transition-opacity",
+                      isEditorHovered ? "opacity-100" : "opacity-0"
                     )}
+                    onClick={onExpandEditor}
+                    title="Fullscreen"
+                  >
+                    <Maximize2 className="h-4 w-4" />
                   </Button>
-                  {onExpandEditor && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={onExpandEditor}
-                      title="Fullscreen"
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
             </div>
 
