@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Code, AlignLeft, FileCode, Maximize } from "lucide-react";
+import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Braces, AlignLeft, FileCode, Maximize } from "lucide-react";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -260,9 +260,9 @@ export function ProblemWorkspace({
           onMouseLeave={() => setIsEditorHovered(false)}
         >
           {/* First Header Row - Title and Controls */}
-          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50">
+          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
             <div className="flex items-center gap-2">
-              <Code className="h-4 w-4 text-muted-foreground" />
+              <Braces className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Code</span>
             </div>
             <div className={cn(
@@ -436,9 +436,9 @@ export function ProblemWorkspace({
             onMouseLeave={() => setIsEditorHovered(false)}
           >
             {/* First Header Row - Title and Controls (Always visible) */}
-            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50">
+            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
               <div className="flex items-center gap-2">
-                <Code className="h-4 w-4 text-muted-foreground" />
+                <Braces className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Code</span>
               </div>
               <div className={cn(
