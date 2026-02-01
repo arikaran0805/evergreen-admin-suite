@@ -19,6 +19,7 @@ import { RotateCcw, Settings, Maximize2, AlignLeft } from "lucide-react";
 import { ProblemDetail } from "./problemDetailData";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
+import { registerMonacoPythonFormatter } from "@/lib/formatters/pythonFormatter";
 
 interface CodeEditorProps {
   problem: ProblemDetail;
@@ -115,6 +116,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<string[]>([]);
   const monacoRef = useRef<Monaco | null>(null);
+  const tabWidthRef = useRef(settings.tabSize);
   
   // Use refs for callbacks to avoid stale closures
   const codeRef = useRef(code);
@@ -133,6 +135,10 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   useEffect(() => {
     onRunRef.current = onRun;
   }, [onRun]);
+
+  useEffect(() => {
+    tabWidthRef.current = settings.tabSize;
+  }, [settings.tabSize]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -258,6 +264,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Enable Python formatting for Monaco's built-in Format Document action.
+    registerMonacoPythonFormatter(monaco, () => tabWidthRef.current);
     
     // Add Ctrl+Enter keybinding to run code - uses refs to avoid stale closures
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
