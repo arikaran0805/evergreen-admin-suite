@@ -31,11 +31,57 @@ async function executeCode(code: string, language: string): Promise<{ output: st
   return { output: data?.output || '', error: data?.error || null };
 }
 
+// Function signature can be either a string or JSON object
+interface FunctionSignatureObj {
+  name: string;
+  parameters?: { name: string; type: string }[];
+  return_type?: string;
+}
+
+type FunctionSignature = string | FunctionSignatureObj | null;
+
+// Extract function name from signature (string or object)
+function getFunctionName(signature: FunctionSignature): string | null {
+  if (!signature) return null;
+  
+  // If it's an object with a name property
+  if (typeof signature === 'object' && 'name' in signature) {
+    return signature.name;
+  }
+  
+  // If it's a string like "twoSum(nums, target)"
+  if (typeof signature === 'string') {
+    const funcMatch = signature.match(/^(\w+)\s*\(/);
+    return funcMatch ? funcMatch[1] : null;
+  }
+  
+  return null;
+}
+
+// Get parameter names from signature
+function getParameterNames(signature: FunctionSignature): string[] {
+  if (!signature) return [];
+  
+  // If it's an object with parameters
+  if (typeof signature === 'object' && 'parameters' in signature && Array.isArray(signature.parameters)) {
+    return signature.parameters.map(p => p.name);
+  }
+  
+  // If it's a string, extract from parentheses
+  if (typeof signature === 'string') {
+    const match = signature.match(/\(([^)]*)\)/);
+    if (!match) return [];
+    return match[1].split(',').map(arg => arg.trim().split(/[:\s]/)[0]).filter(Boolean);
+  }
+  
+  return [];
+}
+
 // Wrap user code with test harness for specific input
 function wrapCodeWithTestHarness(
   userCode: string, 
   language: string, 
-  functionSignature: string | null,
+  functionSignature: FunctionSignature,
   testInput: string
 ): string {
   // If no function signature, just run the code as-is
@@ -43,11 +89,11 @@ function wrapCodeWithTestHarness(
     return userCode;
   }
 
-  // Parse function name from signature (e.g., "twoSum(nums, target)" -> "twoSum")
-  const funcMatch = functionSignature.match(/^(\w+)\s*\(/);
-  const funcName = funcMatch ? funcMatch[1] : null;
-  
+  const funcName = getFunctionName(functionSignature);
   if (!funcName) return userCode;
+
+  const paramNames = getParameterNames(functionSignature);
+  const argsString = paramNames.join(', ');
 
   // Build test harness based on language
   if (language === 'python') {
@@ -56,7 +102,7 @@ function wrapCodeWithTestHarness(
 # Test harness
 if __name__ == "__main__":
     ${testInput}
-    result = ${funcName}(${extractArgs(functionSignature)})
+    result = ${funcName}(${argsString})
     print(result)
 `;
   }
@@ -66,19 +112,12 @@ if __name__ == "__main__":
 
 // Test harness
 ${testInput}
-const result = ${funcName}(${extractArgs(functionSignature)});
+const result = ${funcName}(${argsString});
 console.log(JSON.stringify(result));
 `;
   }
 
   return userCode;
-}
-
-// Extract argument names from function signature
-function extractArgs(signature: string): string {
-  const match = signature.match(/\(([^)]*)\)/);
-  if (!match) return '';
-  return match[1].split(',').map(arg => arg.trim().split(':')[0].split('=')[0].trim()).join(', ');
 }
 
 // Normalize output for comparison
