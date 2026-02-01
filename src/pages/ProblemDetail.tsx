@@ -528,7 +528,7 @@ export default function ProblemDetail() {
                 defaultSize={45}
                 minSize={25}
                 collapsible
-                collapsedSize={8}
+                collapsedSize={3}
                 className="min-h-0"
                 onCollapse={() => setIsDescriptionCollapsed(true)}
                 onExpand={() => setIsDescriptionCollapsed(false)}
