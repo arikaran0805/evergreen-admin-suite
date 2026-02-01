@@ -71,6 +71,7 @@ export default function ProblemDetail() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
+  const [isSubmit, setIsSubmit] = useState(false);
   
   // Tab state for panels
   const [descriptionActiveTab, setDescriptionActiveTab] = useState("description");
@@ -174,6 +175,7 @@ export default function ProblemDetail() {
     if (!problem) return;
     
     setIsRunning(true);
+    setIsSubmit(false);
     setResults([]);
     setGlobalError(undefined);
     setOutput(`Running ${language}...\n`);
@@ -255,6 +257,7 @@ export default function ProblemDetail() {
     if (!problem) return;
     
     setIsRunning(true);
+    setIsSubmit(true);
     setResults([]);
     setGlobalError(undefined);
     setOutput(`Submitting ${language}...\n`);
@@ -477,6 +480,7 @@ export default function ProblemDetail() {
               onTestCaseTabChange={setTestCaseActiveTab}
               lastSubmittedCode={lastSubmittedCode}
               globalError={globalError}
+              isSubmit={isSubmit}
             />
           )}
         </div>
@@ -570,6 +574,7 @@ export default function ProblemDetail() {
                 testCaseActiveTab={testCaseActiveTab}
                 onTestCaseTabChange={setTestCaseActiveTab}
                 lastSubmittedCode={lastSubmittedCode}
+                isSubmit={isSubmit}
               />
             </div>
           </div>
@@ -627,6 +632,7 @@ export default function ProblemDetail() {
                   onTestCaseTabChange={setTestCaseActiveTab}
                   lastSubmittedCode={lastSubmittedCode}
                   globalError={globalError}
+                  isSubmit={isSubmit}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

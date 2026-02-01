@@ -30,6 +30,7 @@ interface TestCasePanelProps {
   userCodeLineCount?: number;
   onErrorLineClick?: (line: number) => void;
   globalError?: string;
+  isSubmit?: boolean;
 }
 
 export function TestCasePanel({ 
@@ -47,6 +48,7 @@ export function TestCasePanel({
   userCodeLineCount = 100,
   onErrorLineClick,
   globalError,
+  isSubmit = false,
 }: TestCasePanelProps) {
   const [internalActiveTab, setInternalActiveTab] = useState("testcase");
   const activeTab = controlledActiveTab ?? internalActiveTab;
@@ -313,14 +315,23 @@ export function TestCasePanel({
                     ? "bg-green-500/10 border border-green-500/20" 
                     : "bg-red-500/10 border border-red-500/20"
                 )}>
-                  <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "flex items-center gap-2",
+                    results.every(r => r.passed) && isSubmit && "justify-center"
+                  )}>
                     {results.every(r => r.passed) ? (
-                      <>
-                        <Check className="h-5 w-5 text-green-600 dark:text-green-500" />
-                        <span className="font-medium text-green-600 dark:text-green-500">
+                      isSubmit ? (
+                        <span className="font-medium text-green-600 dark:text-green-500 text-center">
                           🎉 Congratulations! You nailed it!
                         </span>
-                      </>
+                      ) : (
+                        <>
+                          <Check className="h-5 w-5 text-green-600 dark:text-green-500" />
+                          <span className="font-medium text-green-600 dark:text-green-500">
+                            {results.filter(r => r.passed).length}/{results.length} tests passed
+                          </span>
+                        </>
+                      )
                     ) : (
                       <>
                         <X className="h-5 w-5 text-red-600 dark:text-red-500" />
