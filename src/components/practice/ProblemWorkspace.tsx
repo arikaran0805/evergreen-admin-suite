@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Code, AlignLeft, FileCode } from "lucide-react";
+import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Code, AlignLeft, FileCode, Maximize } from "lucide-react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -165,14 +165,17 @@ export function ProblemWorkspace({
               <Code className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Code</span>
             </div>
-            <div className="flex items-center gap-0.5">
+            <div className={cn(
+              "flex items-center gap-0.5 transition-opacity",
+              isEditorHovered ? "opacity-100" : "opacity-0"
+            )}>
               {onExpandEditor && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className="h-7 w-7"
                   onClick={onExpandEditor}
-                  title="Exit fullscreen"
+                  title="Collapse panel"
                 >
                   <Shrink className="h-4 w-4" />
                 </Button>
@@ -214,6 +217,15 @@ export function ProblemWorkspace({
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
                 <Settings className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7" 
+                onClick={() => document.documentElement.requestFullscreen()}
+                title="Fullscreen"
+              >
+                <Maximize className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -316,13 +328,16 @@ export function ProblemWorkspace({
             onMouseEnter={() => setIsEditorHovered(true)}
             onMouseLeave={() => setIsEditorHovered(false)}
           >
-            {/* First Header Row - Title and Controls */}
+            {/* First Header Row - Title and Controls (Always visible) */}
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
               <div className="flex items-center gap-2">
                 <Code className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Code</span>
               </div>
-              <div className="flex items-center gap-0.5">
+              <div className={cn(
+                "flex items-center gap-0.5 transition-opacity",
+                isEditorHovered ? "opacity-100" : "opacity-0"
+              )}>
                 {/* Collapse Button */}
                 <Button 
                   variant="ghost" 
@@ -337,14 +352,14 @@ export function ProblemWorkspace({
                     <PanelTopClose className="h-4 w-4" />
                   )}
                 </Button>
-                {/* Expand Button */}
+                {/* Expand Panel Button */}
                 {onExpandEditor && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="h-7 w-7"
                     onClick={onExpandEditor}
-                    title="Fullscreen"
+                    title="Expand panel"
                   >
                     <Expand className="h-4 w-4" />
                   </Button>
@@ -352,46 +367,55 @@ export function ProblemWorkspace({
               </div>
             </div>
 
-            {/* Second Header Row - Language Selector and Tools */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background">
-              <div className="flex items-center gap-2">
-                <Select value={language} onValueChange={handleLanguageChange}>
-                  <SelectTrigger className="w-[130px] h-7 text-sm bg-background border-none shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableLanguages.map((lang) => (
-                      <SelectItem key={lang} value={lang}>
-                        {languageLabels[lang] || lang}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-0.5">
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
-                  <AlignLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="Retrieve last submitted code">
-                  <FileCode className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7" 
-                  onClick={handleReset}
-                  title="Reset code"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
             {!isEditorPanelCollapsed && (
               <>
+                {/* Second Header Row - Language Selector and Tools (Hidden when collapsed) */}
+                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background">
+                  <div className="flex items-center gap-2">
+                    <Select value={language} onValueChange={handleLanguageChange}>
+                      <SelectTrigger className="w-[130px] h-7 text-sm bg-background border-none shadow-none">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableLanguages.map((lang) => (
+                          <SelectItem key={lang} value={lang}>
+                            {languageLabels[lang] || lang}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
+                      <AlignLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Retrieve last submitted code">
+                      <FileCode className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      onClick={handleReset}
+                      title="Reset code"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Settings">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      onClick={() => document.documentElement.requestFullscreen()}
+                      title="Fullscreen"
+                    >
+                      <Maximize className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Monaco Editor */}
                 <div className="flex-1 overflow-hidden">
                   <Editor
