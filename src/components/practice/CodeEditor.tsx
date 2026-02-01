@@ -115,6 +115,24 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<string[]>([]);
   const monacoRef = useRef<Monaco | null>(null);
+  
+  // Use refs for callbacks to avoid stale closures
+  const codeRef = useRef(code);
+  const languageRef = useRef(language);
+  const onRunRef = useRef(onRun);
+  
+  // Keep refs in sync
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
+  
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+  
+  useEffect(() => {
+    onRunRef.current = onRun;
+  }, [onRun]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -129,7 +147,6 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     highlightErrorLine: (line: number) => {
       if (editorRef.current && monacoRef.current) {
         const monaco = monacoRef.current;
-        // Clear previous decorations
         decorationsRef.current = editorRef.current.deltaDecorations(
           decorationsRef.current,
           [
@@ -144,7 +161,6 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
             },
           ]
         );
-        // Scroll to the error line
         editorRef.current.revealLineInCenter(line);
       }
     },
@@ -200,8 +216,15 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
 
   const handleFormatCode = useCallback(() => {
     if (editorRef.current) {
-      // Use Monaco's built-in format action
-      editorRef.current.getAction('editor.action.formatDocument')?.run();
+      const editor = editorRef.current;
+      // Trigger format action
+      const action = editor.getAction('editor.action.formatDocument');
+      if (action) {
+        action.run();
+      } else {
+        // Fallback: manually trigger formatting via command
+        editor.trigger('keyboard', 'editor.action.formatDocument', null);
+      }
     }
   }, []);
 
@@ -212,6 +235,18 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     saveSettings(newSettings);
+    
+    // Apply settings immediately to the editor if it exists
+    if (editorRef.current) {
+      const editor = editorRef.current;
+      editor.updateOptions({
+        fontSize: key === 'fontSize' ? value as number : settings.fontSize,
+        tabSize: key === 'tabSize' ? value as number : settings.tabSize,
+        wordWrap: key === 'wordWrap' ? (value ? 'on' : 'off') : (settings.wordWrap ? 'on' : 'off'),
+        lineNumbers: key === 'lineNumbers' ? (value ? 'on' : 'off') : (settings.lineNumbers ? 'on' : 'off'),
+        minimap: { enabled: key === 'minimap' ? value as boolean : settings.minimap },
+      });
+    }
   };
 
   const handleEditorChange = useCallback((value: string | undefined) => {
@@ -224,16 +259,16 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     editorRef.current = editor;
     monacoRef.current = monaco;
     
-    // Add Ctrl+Enter keybinding to run code
+    // Add Ctrl+Enter keybinding to run code - uses refs to avoid stale closures
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      onRun(code, language);
+      onRunRef.current(codeRef.current, languageRef.current);
     });
 
     // Add Shift+Alt+F keybinding for format
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () => {
-      editor.getAction('editor.action.formatDocument')?.run();
+      editor.trigger('keyboard', 'editor.action.formatDocument', null);
     });
-  }, [onRun, code, language]);
+  }, []);
 
   const monacoTheme = theme === 'dark' ? 'vs-dark' : 'vs';
   const monacoLanguage = monacoLanguageMap[language] || 'plaintext';
