@@ -7,7 +7,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RotateCcw, Settings, Maximize2 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { RotateCcw, Settings, Maximize2, AlignLeft } from "lucide-react";
 import { ProblemDetail } from "./problemDetailData";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
@@ -53,6 +61,45 @@ const monacoLanguageMap: Record<string, string> = {
   mysql: "sql",
 };
 
+// Editor settings interface
+interface EditorSettings {
+  fontSize: number;
+  tabSize: number;
+  wordWrap: boolean;
+  minimap: boolean;
+  lineNumbers: boolean;
+}
+
+const DEFAULT_SETTINGS: EditorSettings = {
+  fontSize: 14,
+  tabSize: 4,
+  wordWrap: true,
+  minimap: false,
+  lineNumbers: true,
+};
+
+// Load settings from localStorage
+const loadSettings = (): EditorSettings => {
+  try {
+    const saved = localStorage.getItem('code-editor-settings');
+    if (saved) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error('Failed to load editor settings:', e);
+  }
+  return DEFAULT_SETTINGS;
+};
+
+// Save settings to localStorage
+const saveSettings = (settings: EditorSettings) => {
+  try {
+    localStorage.setItem('code-editor-settings', JSON.stringify(settings));
+  } catch (e) {
+    console.error('Failed to save editor settings:', e);
+  }
+};
+
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function CodeEditor(
   { problem, supportedLanguages, onRun, onSubmit, readOnly = false, errorLine, onCodeChange },
   ref
@@ -63,6 +110,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     : Object.keys(problem.starterCode);
   const [language, setLanguage] = useState(availableLanguages[0] || "python");
   const [code, setCode] = useState(problem.starterCode[availableLanguages[0]] || "");
+  const [settings, setSettings] = useState<EditorSettings>(loadSettings);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<string[]>([]);
   const monacoRef = useRef<Monaco | null>(null);
@@ -149,6 +198,22 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onCodeChange?.(resetCode, language);
   };
 
+  const handleFormatCode = useCallback(() => {
+    if (editorRef.current) {
+      // Use Monaco's built-in format action
+      editorRef.current.getAction('editor.action.formatDocument')?.run();
+    }
+  }, []);
+
+  const handleSettingChange = <K extends keyof EditorSettings>(
+    key: K,
+    value: EditorSettings[K]
+  ) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
   const handleEditorChange = useCallback((value: string | undefined) => {
     const newCode = value || '';
     setCode(newCode);
@@ -162,6 +227,11 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     // Add Ctrl+Enter keybinding to run code
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRun(code, language);
+    });
+
+    // Add Shift+Alt+F keybinding for format
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () => {
+      editor.getAction('editor.action.formatDocument')?.run();
     });
   }, [onRun, code, language]);
 
@@ -187,13 +257,90 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
           </Select>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReset}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={handleFormatCode}
+            title="Format Code (Shift+Alt+F)"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReset} title="Reset Code">
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Editor Settings">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72" align="end">
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">Editor Settings</h4>
+                
+                {/* Font Size */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Font Size</Label>
+                    <span className="text-xs text-muted-foreground">{settings.fontSize}px</span>
+                  </div>
+                  <Slider
+                    value={[settings.fontSize]}
+                    onValueChange={([value]) => handleSettingChange('fontSize', value)}
+                    min={10}
+                    max={24}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Tab Size */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Tab Size</Label>
+                    <span className="text-xs text-muted-foreground">{settings.tabSize} spaces</span>
+                  </div>
+                  <Slider
+                    value={[settings.tabSize]}
+                    onValueChange={([value]) => handleSettingChange('tabSize', value)}
+                    min={2}
+                    max={8}
+                    step={2}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Word Wrap */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Word Wrap</Label>
+                  <Switch
+                    checked={settings.wordWrap}
+                    onCheckedChange={(checked) => handleSettingChange('wordWrap', checked)}
+                  />
+                </div>
+
+                {/* Line Numbers */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Line Numbers</Label>
+                  <Switch
+                    checked={settings.lineNumbers}
+                    onCheckedChange={(checked) => handleSettingChange('lineNumbers', checked)}
+                  />
+                </div>
+
+                {/* Minimap */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Minimap</Label>
+                  <Switch
+                    checked={settings.minimap}
+                    onCheckedChange={(checked) => handleSettingChange('minimap', checked)}
+                  />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button variant="ghost" size="icon" className="h-8 w-8" title="Maximize">
             <Maximize2 className="h-4 w-4" />
           </Button>
         </div>
@@ -210,18 +357,18 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
           onMount={handleEditorMount}
           options={{
             readOnly,
-            fontSize: 14,
+            fontSize: settings.fontSize,
             fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-            lineNumbers: "on",
+            lineNumbers: settings.lineNumbers ? "on" : "off",
             lineNumbersMinChars: 3,
             lineDecorationsWidth: 16,
             glyphMargin: true,
             folding: false,
-            minimap: { enabled: false },
-            wordWrap: "on",
+            minimap: { enabled: settings.minimap },
+            wordWrap: settings.wordWrap ? "on" : "off",
             scrollBeyondLastLine: false,
             automaticLayout: true,
-            tabSize: 4,
+            tabSize: settings.tabSize,
             insertSpaces: true,
             renderIndentGuides: true,
             padding: { top: 16, bottom: 16 },
