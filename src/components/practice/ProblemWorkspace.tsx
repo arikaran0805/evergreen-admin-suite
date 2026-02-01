@@ -18,6 +18,7 @@ import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ProblemWorkspaceProps {
   starterCode: Record<string, string>;
@@ -31,6 +32,9 @@ interface ProblemWorkspaceProps {
   expandedPanel?: 'editor' | 'testcase' | null;
   onExpandEditor?: () => void;
   onExpandTestcase?: () => void;
+  testCaseActiveTab?: string;
+  onTestCaseTabChange?: (tab: string) => void;
+  lastSubmittedCode?: { code: string; language: string } | null;
 }
 
 const languageLabels: Record<string, string> = {
@@ -65,6 +69,9 @@ export function ProblemWorkspace({
   expandedPanel,
   onExpandEditor,
   onExpandTestcase,
+  testCaseActiveTab,
+  onTestCaseTabChange,
+  lastSubmittedCode,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
@@ -86,6 +93,16 @@ export function ProblemWorkspace({
 
   const handleReset = () => {
     setCode(starterCode[language] || '');
+  };
+
+  const handleRetrieveLastCode = () => {
+    if (lastSubmittedCode) {
+      setCode(lastSubmittedCode.code);
+      setLanguage(lastSubmittedCode.language);
+      toast.success("Last submitted code restored");
+    } else {
+      toast.info("No previous submission found");
+    }
   };
 
   const handleEditorChange = useCallback((value: string | undefined) => {
@@ -203,7 +220,13 @@ export function ProblemWorkspace({
               <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
                 <AlignLeft className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Retrieve last submitted code">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7" 
+                title="Retrieve last submitted code"
+                onClick={handleRetrieveLastCode}
+              >
                 <FileCode className="h-4 w-4" />
               </Button>
               <Button 
@@ -389,7 +412,13 @@ export function ProblemWorkspace({
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Format code">
                       <AlignLeft className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Retrieve last submitted code">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      title="Retrieve last submitted code"
+                      onClick={handleRetrieveLastCode}
+                    >
                       <FileCode className="h-4 w-4" />
                     </Button>
                     <Button 
@@ -517,6 +546,8 @@ export function ProblemWorkspace({
               onToggleExpand={onExpandTestcase}
               isCollapsed={isTestPanelCollapsed}
               onToggleCollapse={handleToggleTestPanelCollapse}
+              activeTab={testCaseActiveTab}
+              onTabChange={onTestCaseTabChange}
             />
           </div>
         </ResizablePanel>

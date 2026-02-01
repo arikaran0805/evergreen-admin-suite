@@ -22,6 +22,8 @@ interface TestCasePanelProps {
   onToggleExpand?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 export function TestCasePanel({ 
@@ -33,8 +35,13 @@ export function TestCasePanel({
   onToggleExpand,
   isCollapsed = false,
   onToggleCollapse,
+  activeTab: controlledActiveTab,
+  onTabChange,
 }: TestCasePanelProps) {
-  const [activeTab, setActiveTab] = useState("testcase");
+  const [internalActiveTab, setInternalActiveTab] = useState("testcase");
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const setActiveTab = onTabChange ?? setInternalActiveTab;
+  
   const [selectedCase, setSelectedCase] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
