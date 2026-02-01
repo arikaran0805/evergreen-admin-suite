@@ -284,16 +284,18 @@ export default function ProblemDetail() {
         time_limit_ms: 5000
       });
 
-      const visibleResults = judgeResult.test_results.filter(tr => tr.is_visible);
-      const testResults: TestResult[] = visibleResults.map((tr, i) => {
-        const originalTc = problem.testCases[i];
+      // Include ALL test results (visible and hidden)
+      const testResults: TestResult[] = judgeResult.test_results.map((tr, i) => {
+        const originalTc = problem.allTestCases[i];
+        const isHidden = !tr.is_visible;
         return {
           id: i,
-          input: originalTc?.input || '',
-          expected: JSON.stringify(tr.expected_output),
-          actual: tr.error || JSON.stringify(tr.actual_output) || "No output",
+          input: isHidden ? '' : (originalTc?.input || ''),
+          expected: isHidden ? '' : JSON.stringify(tr.expected_output),
+          actual: isHidden ? '' : (tr.error || JSON.stringify(tr.actual_output) || "No output"),
           passed: tr.passed,
           runtime: tr.passed ? `${tr.runtime_ms || 0}ms` : undefined,
+          isHidden,
         };
       });
 

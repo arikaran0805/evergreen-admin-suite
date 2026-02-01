@@ -13,6 +13,7 @@ export interface TestResult {
   passed?: boolean;
   runtime?: string;
   error?: string;
+  isHidden?: boolean;
 }
 
 interface TestCasePanelProps {
@@ -349,6 +350,26 @@ export function TestCasePanel({
                 const errorParsed = result.error 
                   ? parseCodeError(result.error, language, userCodeLineCount) 
                   : null;
+                
+                // Hidden test case - show minimal info
+                if (result.isHidden) {
+                  return (
+                    <div key={i} className="border border-border/50 rounded-lg p-4 bg-muted/20">
+                      <div className="flex items-center gap-2">
+                        {result.passed ? (
+                          <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+                        )}
+                        <span className="font-medium text-sm">Test Case {i + 1}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">Hidden</span>
+                        {result.runtime && (
+                          <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
                 
                 return (
                   <div key={i} className="border border-border/50 rounded-lg p-4">
