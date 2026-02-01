@@ -67,6 +67,7 @@ export default function ProblemDetail() {
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
+  const [globalError, setGlobalError] = useState<string | undefined>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
@@ -174,6 +175,7 @@ export default function ProblemDetail() {
     
     setIsRunning(true);
     setResults([]);
+    setGlobalError(undefined);
     setOutput(`Running ${language}...\n`);
     // Switch to result tab when running
     setTestCaseActiveTab("result");
@@ -222,6 +224,7 @@ export default function ProblemDetail() {
 
       if (judgeResult.error) {
         outputLog += `\n\n❌ Error: ${judgeResult.error}`;
+        setGlobalError(judgeResult.error);
       }
 
       setResults(testResults);
@@ -253,6 +256,7 @@ export default function ProblemDetail() {
     
     setIsRunning(true);
     setResults([]);
+    setGlobalError(undefined);
     setOutput(`Submitting ${language}...\n`);
     // Switch to result tab when submitting
     setTestCaseActiveTab("result");
@@ -472,6 +476,7 @@ export default function ProblemDetail() {
               testCaseActiveTab={testCaseActiveTab}
               onTestCaseTabChange={setTestCaseActiveTab}
               lastSubmittedCode={lastSubmittedCode}
+              globalError={globalError}
             />
           )}
         </div>
@@ -621,6 +626,7 @@ export default function ProblemDetail() {
                   testCaseActiveTab={testCaseActiveTab}
                   onTestCaseTabChange={setTestCaseActiveTab}
                   lastSubmittedCode={lastSubmittedCode}
+                  globalError={globalError}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

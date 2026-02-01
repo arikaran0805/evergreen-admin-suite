@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { parseCodeError } from "@/lib/errorParser";
 
 export interface TestResult {
   id: number;
@@ -11,6 +12,7 @@ export interface TestResult {
   actual?: string;
   passed?: boolean;
   runtime?: string;
+  error?: string;
 }
 
 interface TestCasePanelProps {
@@ -24,6 +26,10 @@ interface TestCasePanelProps {
   onToggleCollapse?: () => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  language?: string;
+  userCodeLineCount?: number;
+  onErrorLineClick?: (line: number) => void;
+  globalError?: string;
 }
 
 export function TestCasePanel({ 
@@ -37,6 +43,10 @@ export function TestCasePanel({
   onToggleCollapse,
   activeTab: controlledActiveTab,
   onTabChange,
+  language = 'python',
+  userCodeLineCount = 100,
+  onErrorLineClick,
+  globalError,
 }: TestCasePanelProps) {
   const [internalActiveTab, setInternalActiveTab] = useState("testcase");
   const activeTab = controlledActiveTab ?? internalActiveTab;
@@ -44,8 +54,10 @@ export function TestCasePanel({
   
   const [selectedCase, setSelectedCase] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [showRawError, setShowRawError] = useState(false);
 
   const hasResults = results.length > 0;
+  const hasError = globalError || results.some(r => r.error);
 
   // Collapsed state: keep a visible header bar so the reopen icon is always reachable.
   if (isCollapsed && !isExpanded) {
@@ -218,66 +230,178 @@ export function TestCasePanel({
             </div>
           ) : hasResults ? (
             <div className="space-y-4">
-              {/* Summary */}
-              <div className={cn(
-                "p-4 rounded-lg",
-                results.every(r => r.passed) 
-                  ? "bg-green-500/10 border border-green-500/20" 
-                  : "bg-red-500/10 border border-red-500/20"
-              )}>
-                <div className="flex items-center gap-2">
-                  {results.every(r => r.passed) ? (
-                    <>
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-500" />
-                      <span className="font-medium text-green-600 dark:text-green-500">
-                        🎉 Congratulations! You nailed it!
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <X className="h-5 w-5 text-red-600 dark:text-red-500" />
-                      <span className="font-medium text-red-600 dark:text-red-500">
-                        {results.filter(r => r.passed).length}/{results.length} tests passed
-                      </span>
-                    </>
-                  )}
+              {/* Global Error Display (for syntax/compilation errors) */}
+              {globalError && (() => {
+                const parsed = parseCodeError(globalError, language, userCodeLineCount);
+                return (
+                  <div className={cn(
+                    "rounded-lg border overflow-hidden",
+                    parsed.isUserCodeError 
+                      ? "bg-red-500/10 border-red-500/30" 
+                      : "bg-muted/50 border-border/50"
+                  )}>
+                    <div className="p-4">
+                      <div className="flex items-start gap-3">
+                        <X className={cn(
+                          "h-5 w-5 mt-0.5 shrink-0",
+                          parsed.isUserCodeError ? "text-red-500" : "text-muted-foreground"
+                        )} />
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={cn(
+                              "font-semibold",
+                              parsed.isUserCodeError 
+                                ? "text-red-600 dark:text-red-400" 
+                                : "text-muted-foreground"
+                            )}>
+                              {parsed.isUserCodeError ? `❌ ${parsed.friendlyType}` : "⚙️ Internal Error"}
+                            </span>
+                            {parsed.isUserCodeError && parsed.userLine && (
+                              <button
+                                onClick={() => onErrorLineClick?.(parsed.userLine!)}
+                                className="text-sm px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
+                              >
+                                line {parsed.userLine}
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground/80">
+                            {parsed.isUserCodeError 
+                              ? parsed.friendlyMessage 
+                              : "This error is not your fault - it occurred in the test harness."}
+                          </p>
+                          {parsed.codeSnippet && (
+                            <div className="mt-2 p-2 rounded bg-muted/50 font-mono text-sm border border-border/50">
+                              <span className="text-muted-foreground">→ </span>
+                              <span className="text-red-600 dark:text-red-400">{parsed.codeSnippet}</span>
+                            </div>
+                          )}
+                          {parsed.message && parsed.isUserCodeError && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {parsed.type}: {parsed.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Technical Details Collapsible */}
+                    <div className="border-t border-border/30">
+                      <button
+                        onClick={() => setShowRawError(!showRawError)}
+                        className="w-full flex items-center justify-between px-4 py-2 text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
+                      >
+                        <span>View technical details</span>
+                        {showRawError ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </button>
+                      {showRawError && (
+                        <div className="px-4 pb-4">
+                          <pre className="text-xs font-mono p-3 rounded bg-muted/50 overflow-x-auto whitespace-pre-wrap break-all border border-border/30 text-muted-foreground max-h-48 overflow-y-auto">
+                            {parsed.rawError}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {/* Summary - Only show if no global error */}
+              {!globalError && (
+                <div className={cn(
+                  "p-4 rounded-lg",
+                  results.every(r => r.passed) 
+                    ? "bg-green-500/10 border border-green-500/20" 
+                    : "bg-red-500/10 border border-red-500/20"
+                )}>
+                  <div className="flex items-center gap-2">
+                    {results.every(r => r.passed) ? (
+                      <>
+                        <Check className="h-5 w-5 text-green-600 dark:text-green-500" />
+                        <span className="font-medium text-green-600 dark:text-green-500">
+                          🎉 Congratulations! You nailed it!
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <X className="h-5 w-5 text-red-600 dark:text-red-500" />
+                        <span className="font-medium text-red-600 dark:text-red-500">
+                          {results.filter(r => r.passed).length}/{results.length} tests passed
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Individual Results */}
-              {results.map((result, i) => (
-                <div key={i} className="border border-border/50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    {result.passed ? (
-                      <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
-                    ) : (
-                      <X className="h-4 w-4 text-red-600 dark:text-red-500" />
-                    )}
-                    <span className="font-medium text-sm">Test Case {i + 1}</span>
-                    {result.runtime && (
-                      <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
-                    )}
-                  </div>
-                  <div className="space-y-2 text-sm font-mono">
-                    <div>
-                      <span className="text-muted-foreground">Input: </span>
-                      <span>{result.input}</span>
+              {results.map((result, i) => {
+                const errorParsed = result.error 
+                  ? parseCodeError(result.error, language, userCodeLineCount) 
+                  : null;
+                
+                return (
+                  <div key={i} className="border border-border/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      {result.passed ? (
+                        <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+                      )}
+                      <span className="font-medium text-sm">Test Case {i + 1}</span>
+                      {result.runtime && (
+                        <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
+                      )}
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Expected: </span>
-                      <span>{result.expected}</span>
-                    </div>
-                    {result.actual && (
-                      <div>
-                        <span className="text-muted-foreground">Output: </span>
-                        <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
-                          {result.actual}
-                        </span>
+                    
+                    {/* Error display for this test case */}
+                    {errorParsed && !globalError && (
+                      <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-red-600 dark:text-red-400 font-medium">
+                            {errorParsed.friendlyType}
+                          </span>
+                          {errorParsed.userLine && (
+                            <button
+                              onClick={() => onErrorLineClick?.(errorParsed.userLine!)}
+                              className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
+                            >
+                              line {errorParsed.userLine}
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-foreground/70 mt-1">
+                          {errorParsed.friendlyMessage}
+                        </p>
+                        {errorParsed.message && (
+                          <p className="text-xs text-muted-foreground mt-1 font-mono">
+                            {errorParsed.message.substring(0, 100)}
+                            {errorParsed.message.length > 100 ? '...' : ''}
+                          </p>
+                        )}
                       </div>
                     )}
+                    
+                    <div className="space-y-2 text-sm font-mono">
+                      <div>
+                        <span className="text-muted-foreground">Input: </span>
+                        <span>{result.input}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Expected: </span>
+                        <span>{result.expected}</span>
+                      </div>
+                      {result.actual && !result.error && (
+                        <div>
+                          <span className="text-muted-foreground">Output: </span>
+                          <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
+                            {result.actual}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">

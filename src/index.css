@@ -470,3 +470,42 @@ All colors MUST be HSL.
     color: #e6c07b !important;
   }
 }
+
+/* Monaco Editor Error Line Highlighting */
+.error-line-highlight {
+  background-color: hsl(0 84% 60% / 0.15) !important;
+  border-left: 3px solid hsl(0 84% 60%) !important;
+}
+
+.dark .error-line-highlight {
+  background-color: hsl(0 62% 50% / 0.2) !important;
+  border-left: 3px solid hsl(0 62% 50%) !important;
+}
+
+.error-line-glyph {
+  background-color: hsl(0 84% 60%);
+  border-radius: 50%;
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: 4px;
+  margin-top: 6px;
+}
+
+.error-line-decoration {
+  background-color: hsl(0 84% 60%);
+  width: 3px !important;
+}
+
+/* Animation for error highlight */
+@keyframes error-pulse {
+  0%, 100% {
+    background-color: hsl(0 84% 60% / 0.15);
+  }
+  50% {
+    background-color: hsl(0 84% 60% / 0.25);
+  }
+}
+
+.error-line-highlight-animated {
+  animation: error-pulse 1.5s ease-in-out infinite;
+}
