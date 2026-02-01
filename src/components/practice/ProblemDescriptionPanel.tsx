@@ -144,11 +144,8 @@ export function ProblemDescriptionPanel({
           </button>
         </div>
 
-        {/* Bottom buttons - Show on hover */}
-        <div className={cn(
-          "flex flex-col items-center gap-0.5 py-2 border-t border-border/50 transition-opacity",
-          isHovered ? "opacity-100" : "opacity-0"
-        )}>
+        {/* Bottom buttons - Show on hover only */}
+        <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           {onToggleExpand && (
             <Button
               variant="ghost"
