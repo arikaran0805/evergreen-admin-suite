@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,18 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import type { ImperativePanelHandle } from "react-resizable-panels";
-import { ProblemDescription } from "@/components/practice/ProblemDescription";
-import { CodeEditor } from "@/components/practice/CodeEditor";
-import { TestCasePanel, TestResult } from "@/components/practice/TestCasePanel";
+import { ProblemDescriptionPanel } from "@/components/practice/ProblemDescriptionPanel";
+import { ProblemWorkspace } from "@/components/practice/ProblemWorkspace";
 import { ProblemListDrawer } from "@/components/practice/ProblemListDrawer";
+import { TestResult } from "@/components/practice/TestCasePanel";
 import { usePublishedPracticeProblem, usePublishedPracticeProblems } from "@/hooks/usePracticeProblems";
 import { useCodeJudge, convertTestCasesToJudgeFormat, getVerdictDisplay } from "@/hooks/useCodeJudge";
 import { useQuery } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Function signature can be either a string or JSON object
+// Function signature types
 interface FunctionSignatureObj {
   name: string;
   parameters?: { name: string; type: string }[];
@@ -28,54 +28,41 @@ interface FunctionSignatureObj {
 
 type FunctionSignature = string | FunctionSignatureObj | null;
 
-// Extract function name from signature (string or object)
 function getFunctionName(signature: FunctionSignature): string {
   if (!signature) return 'solution';
-  
-  // If it's an object with a name property
   if (typeof signature === 'object' && 'name' in signature) {
     return signature.name;
   }
-  
-  // If it's a string like "twoSum(nums, target)"
   if (typeof signature === 'string') {
     const funcMatch = signature.match(/^(\w+)\s*\(/);
     return funcMatch ? funcMatch[1] : 'solution';
   }
-  
   return 'solution';
 }
 
-// Get parameter names from signature
 function getParameterNames(signature: FunctionSignature): string[] {
   if (!signature) return [];
-  
-  // If it's an object with parameters
   if (typeof signature === 'object' && 'parameters' in signature && Array.isArray(signature.parameters)) {
     return signature.parameters.map(p => p.name);
   }
-  
-  // If it's a string, extract from parentheses
   if (typeof signature === 'string') {
     const match = signature.match(/\(([^)]*)\)/);
     if (!match) return [];
     return match[1].split(',').map(arg => arg.trim().split(/[:\s]/)[0]).filter(Boolean);
   }
-  
   return [];
 }
 
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
-  const testPanelRef = useRef<ImperativePanelHandle>(null);
+  const isMobile = useIsMobile();
   
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  // Use the new judge hook
   const { judge } = useCodeJudge();
 
   // Fetch skill info
@@ -125,13 +112,11 @@ export default function ProblemDetail() {
     starterCode: dbProblem.starter_code || {},
     supportedLanguages: dbProblem.supported_languages || [],
     functionSignature,
-    // Visible test cases for UI display
     testCases: visibleTestCases.map((tc: any, i: number) => ({
       id: tc.id || i + 1,
       input: tc.input || "",
       expected: tc.expected_output || "",
     })),
-    // All test cases for submit
     allTestCases: allTestCases.map((tc: any, i: number) => ({
       id: tc.id || i + 1,
       input: tc.input || "",
@@ -140,17 +125,15 @@ export default function ProblemDetail() {
     })),
   } : null;
 
-  // RUN: Execute code and test against visible test cases only
+  // RUN: Execute code against visible test cases
   const handleRun = async (code: string, language: string) => {
     if (!problem) return;
     
-    testPanelRef.current?.resize(35);
     setIsRunning(true);
     setResults([]);
     setOutput(`Running ${language}...\n`);
     
     try {
-      // Convert visible test cases to judge format
       const judgeTestCases = convertTestCasesToJudgeFormat(
         problem.testCases.map(tc => ({
           id: tc.id,
@@ -170,7 +153,6 @@ export default function ProblemDetail() {
         time_limit_ms: 5000
       });
 
-      // Convert judge results to TestResult format
       const testResults: TestResult[] = judgeResult.test_results.map((tr, i) => ({
         id: i,
         input: problem.testCases[i]?.input || '',
@@ -180,7 +162,6 @@ export default function ProblemDetail() {
         runtime: tr.passed ? `${tr.runtime_ms || 0}ms` : undefined,
       }));
 
-      // Build output log
       const verdictDisplay = getVerdictDisplay(judgeResult.verdict);
       let outputLog = `Running ${language}...\n\n`;
       
@@ -201,7 +182,6 @@ export default function ProblemDetail() {
       setResults(testResults);
       setOutput(outputLog);
 
-      // Show toast based on verdict
       if (judgeResult.verdict === 'accepted') {
         toast.success("All visible test cases passed!");
       } else if (judgeResult.verdict === 'compilation_error') {
@@ -222,17 +202,15 @@ export default function ProblemDetail() {
     setIsRunning(false);
   };
 
-  // SUBMIT: Execute code against ALL test cases (including hidden)
+  // SUBMIT: Execute code against ALL test cases
   const handleSubmit = async (code: string, language: string) => {
     if (!problem) return;
     
-    testPanelRef.current?.resize(35);
     setIsRunning(true);
     setResults([]);
     setOutput(`Submitting ${language}...\n`);
     
     try {
-      // Convert all test cases (visible + hidden) to judge format
       const judgeTestCases = convertTestCasesToJudgeFormat(
         problem.allTestCases.map(tc => ({
           id: tc.id,
@@ -252,7 +230,6 @@ export default function ProblemDetail() {
         time_limit_ms: 5000
       });
 
-      // Only show visible test results in the UI
       const visibleResults = judgeResult.test_results.filter(tr => tr.is_visible);
       const testResults: TestResult[] = visibleResults.map((tr, i) => {
         const originalTc = problem.testCases[i];
@@ -266,7 +243,6 @@ export default function ProblemDetail() {
         };
       });
 
-      // Build output log
       const verdictDisplay = getVerdictDisplay(judgeResult.verdict);
       const hiddenCount = problem.allTestCases.filter(tc => !tc.isVisible).length;
       const visibleCount = problem.allTestCases.length - hiddenCount;
@@ -284,7 +260,6 @@ export default function ProblemDetail() {
       setResults(testResults);
       setOutput(outputLog);
 
-      // Show toast based on verdict
       if (judgeResult.verdict === 'accepted') {
         toast.success("🎉 Accepted!", {
           description: `All ${judgeResult.total_count} test cases passed in ${judgeResult.total_runtime_ms}ms`,
@@ -296,7 +271,6 @@ export default function ProblemDetail() {
       } else if (judgeResult.verdict === 'time_limit_exceeded') {
         toast.error("Time Limit Exceeded");
       } else {
-        // Find which test case failed
         const failedIndex = judgeResult.test_results.findIndex(tr => !tr.passed);
         const failedIsHidden = failedIndex >= 0 && !judgeResult.test_results[failedIndex].is_visible;
         toast.error("Wrong Answer", {
@@ -389,43 +363,66 @@ export default function ProblemDetail() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Three Panel Layout */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
-          {/* Left Panel - Problem Description */}
-          <ResizablePanel defaultSize={40} minSize={25} className="min-h-0">
-            <ProblemDescription problem={problem} />
-          </ResizablePanel>
+        {isMobile ? (
+          // Mobile: Stack vertically
+          <div className="h-full flex flex-col overflow-auto">
+            <div className="min-h-[50vh]">
+              <ProblemDescriptionPanel
+                title={problem.title}
+                difficulty={problem.difficulty}
+                description={problem.description}
+                examples={problem.examples}
+                constraints={problem.constraints}
+                hints={problem.hints}
+              />
+            </div>
+            <div className="flex-1 min-h-[50vh]">
+              <ProblemWorkspace
+                starterCode={problem.starterCode}
+                supportedLanguages={problem.supportedLanguages}
+                testCases={problem.testCases}
+                onRun={handleRun}
+                onSubmit={handleSubmit}
+                results={results}
+                isRunning={isRunning}
+                output={output}
+              />
+            </div>
+          </div>
+        ) : (
+          // Desktop: Horizontal split
+          <ResizablePanelGroup direction="horizontal">
+            {/* Left Panel - Problem Description */}
+            <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
+              <ProblemDescriptionPanel
+                title={problem.title}
+                difficulty={problem.difficulty}
+                description={problem.description}
+                examples={problem.examples}
+                constraints={problem.constraints}
+                hints={problem.hints}
+              />
+            </ResizablePanel>
 
-          <ResizableHandle withHandle />
+            <ResizableHandle withHandle />
 
-          {/* Right Panel - Code Editor + Test Cases */}
-          <ResizablePanel defaultSize={60} minSize={35} className="min-h-0">
-            <ResizablePanelGroup direction="vertical">
-              {/* Code Editor */}
-              <ResizablePanel defaultSize={95} minSize={20} className="min-h-0">
-                <CodeEditor
-                  problem={problem}
-                  supportedLanguages={problem.supportedLanguages}
-                  onRun={handleRun}
-                  onSubmit={handleSubmit}
-                />
-              </ResizablePanel>
-
-              <ResizableHandle withHandle />
-
-              {/* Test Case Panel - collapsed by default, expands on Run/Submit */}
-              <ResizablePanel ref={testPanelRef} defaultSize={5} minSize={5} className="min-h-0">
-                <TestCasePanel
-                  testCases={problem.testCases}
-                  results={results}
-                  isRunning={isRunning}
-                  output={output}
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            {/* Right Panel - Code Editor + Test Cases */}
+            <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
+              <ProblemWorkspace
+                starterCode={problem.starterCode}
+                supportedLanguages={problem.supportedLanguages}
+                testCases={problem.testCases}
+                onRun={handleRun}
+                onSubmit={handleSubmit}
+                results={results}
+                isRunning={isRunning}
+                output={output}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
     </div>
   );
