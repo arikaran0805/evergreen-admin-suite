@@ -103,12 +103,11 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: Cod
       {/* Code Area with Line Numbers */}
       <div className="flex-1 overflow-hidden flex bg-background">
         {/* Line Numbers */}
-        <div className="flex-shrink-0 py-4 pr-2 pl-4 text-right select-none bg-muted/30 border-r border-border">
+        <div className="flex-shrink-0 py-4 pr-3 pl-2 text-right select-none">
           {Array.from({ length: lineCount }, (_, i) => (
             <div 
               key={i + 1} 
               className="font-mono text-sm leading-6 text-muted-foreground"
-              style={{ minWidth: '2rem' }}
             >
               {i + 1}
             </div>
