@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Check, X, Clock, Terminal, Maximize2, Minimize2 } from "lucide-react";
+import { Check, X, Clock, Terminal, Maximize2, Minimize2, PanelBottomClose, PanelBottomOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface TestResult {
@@ -20,6 +20,8 @@ interface TestCasePanelProps {
   output: string;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function TestCasePanel({ 
@@ -29,6 +31,8 @@ export function TestCasePanel({
   output,
   isExpanded = false,
   onToggleExpand,
+  isCollapsed = false,
+  onToggleCollapse,
 }: TestCasePanelProps) {
   const [activeTab, setActiveTab] = useState("testcase");
   const [selectedCase, setSelectedCase] = useState(0);
@@ -73,25 +77,42 @@ export function TestCasePanel({
               </TabsTrigger>
             </TabsList>
             
-            {/* Expand Button - Show on hover */}
-            {onToggleExpand && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 shrink-0 transition-opacity",
-                  isHovered || isExpanded ? "opacity-100" : "opacity-0"
-                )}
-                onClick={onToggleExpand}
-                title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
-              >
-                {isExpanded ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </Button>
-            )}
+            {/* Collapse & Expand Buttons - Show on hover */}
+            <div className={cn(
+              "flex items-center gap-0.5 shrink-0 transition-opacity",
+              isHovered || isExpanded ? "opacity-100" : "opacity-0"
+            )}>
+              {onToggleCollapse && !isExpanded && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onToggleCollapse}
+                  title={isCollapsed ? "Show panel" : "Hide panel"}
+                >
+                  {isCollapsed ? (
+                    <PanelBottomOpen className="h-4 w-4" />
+                  ) : (
+                    <PanelBottomClose className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              {onToggleExpand && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onToggleExpand}
+                  title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+                >
+                  {isExpanded ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

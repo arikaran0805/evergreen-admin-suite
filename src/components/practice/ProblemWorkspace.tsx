@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Settings, Maximize2, Minimize2 } from "lucide-react";
+import { RotateCcw, Settings, Maximize2, Minimize2, PanelTopClose, PanelTopOpen } from "lucide-react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -31,6 +31,9 @@ interface ProblemWorkspaceProps {
   expandedPanel?: 'editor' | 'testcase' | null;
   onExpandEditor?: () => void;
   onExpandTestcase?: () => void;
+  collapsedPanel?: 'editor' | 'testcase' | null;
+  onCollapseEditor?: () => void;
+  onCollapseTestcase?: () => void;
 }
 
 const languageLabels: Record<string, string> = {
@@ -65,6 +68,9 @@ export function ProblemWorkspace({
   expandedPanel,
   onExpandEditor,
   onExpandTestcase,
+  collapsedPanel,
+  onCollapseEditor,
+  onCollapseTestcase,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
   const testPanelRef = useRef<ImperativePanelHandle>(null);
@@ -300,20 +306,38 @@ export function ProblemWorkspace({
                 <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
                   <Settings className="h-4 w-4" />
                 </Button>
-                {onExpandEditor && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn(
-                      "h-8 w-8 transition-opacity",
-                      isEditorHovered ? "opacity-100" : "opacity-0"
-                    )}
-                    onClick={onExpandEditor}
-                    title="Fullscreen"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </Button>
-                )}
+                {/* Collapse & Expand Buttons - Show on hover */}
+                <div className={cn(
+                  "flex items-center gap-0.5 transition-opacity",
+                  isEditorHovered ? "opacity-100" : "opacity-0"
+                )}>
+                  {onCollapseEditor && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={onCollapseEditor}
+                      title={collapsedPanel === 'editor' ? "Show editor" : "Hide editor"}
+                    >
+                      {collapsedPanel === 'editor' ? (
+                        <PanelTopOpen className="h-4 w-4" />
+                      ) : (
+                        <PanelTopClose className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                  {onExpandEditor && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={onExpandEditor}
+                      title="Fullscreen"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
