@@ -12,11 +12,10 @@ export interface Submission {
 }
 
 const STORAGE_KEY_PREFIX = "problem_submissions_";
-const LAST_CODE_PREFIX = "problem_last_code_";
+const LAST_SUBMITTED_PREFIX = "problem_last_submitted_";
 
 export function useProblemSubmissions(problemId: string | undefined) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [lastSubmittedCode, setLastSubmittedCode] = useState<{ code: string; language: string } | null>(null);
 
   // Load submissions from localStorage
   useEffect(() => {
@@ -28,15 +27,6 @@ export function useProblemSubmissions(problemId: string | undefined) {
         setSubmissions(JSON.parse(stored));
       } catch {
         setSubmissions([]);
-      }
-    }
-
-    const lastCode = localStorage.getItem(`${LAST_CODE_PREFIX}${problemId}`);
-    if (lastCode) {
-      try {
-        setLastSubmittedCode(JSON.parse(lastCode));
-      } catch {
-        setLastSubmittedCode(null);
       }
     }
   }, [problemId]);
@@ -56,22 +46,46 @@ export function useProblemSubmissions(problemId: string | undefined) {
       return updated;
     });
 
-    // Save last submitted code
-    const lastCode = { code: submission.code, language: submission.language };
-    setLastSubmittedCode(lastCode);
-    localStorage.setItem(`${LAST_CODE_PREFIX}${problemId}`, JSON.stringify(lastCode));
+    // Save last submitted code per language
+    const lastCode = { 
+      code: submission.code, 
+      language: submission.language,
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem(`${LAST_SUBMITTED_PREFIX}${problemId}_${submission.language}`, JSON.stringify(lastCode));
 
     return newSubmission;
   }, [problemId]);
 
-  const getLastSubmittedCode = useCallback(() => {
-    return lastSubmittedCode;
-  }, [lastSubmittedCode]);
+  // Get last submitted code for a specific language
+  const getLastSubmittedCode = useCallback((language?: string) => {
+    if (!problemId) return null;
+    
+    // If language specified, get for that language
+    if (language) {
+      try {
+        const stored = localStorage.getItem(`${LAST_SUBMITTED_PREFIX}${problemId}_${language}`);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch {
+        // Ignore
+      }
+      return null;
+    }
+    
+    // If no language, get from most recent submission
+    if (submissions.length > 0) {
+      const latest = submissions[0];
+      return { code: latest.code, language: latest.language };
+    }
+    
+    return null;
+  }, [problemId, submissions]);
 
   return {
     submissions,
     addSubmission,
-    lastSubmittedCode,
     getLastSubmittedCode,
   };
 }

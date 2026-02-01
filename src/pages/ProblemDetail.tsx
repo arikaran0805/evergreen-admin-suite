@@ -80,9 +80,12 @@ export default function ProblemDetail() {
   const { judge } = useCodeJudge();
   
   // Submissions hook
-  const { submissions, addSubmission, lastSubmittedCode } = useProblemSubmissions(
+  const { submissions, addSubmission } = useProblemSubmissions(
     problemId ? `${skillId}_${problemId}` : undefined
   );
+  
+  // Problem ID for persistence
+  const persistenceProblemId = problemId ? `${skillId}_${problemId}` : "";
 
   // Fetch skill info
   const { data: skill } = useQuery({
@@ -467,6 +470,7 @@ export default function ProblemDetail() {
           )}
           {(expandedPanel === 'editor' || expandedPanel === 'testcase') && (
             <ProblemWorkspace
+              problemId={persistenceProblemId}
               starterCode={problem.starterCode}
               supportedLanguages={problem.supportedLanguages}
               testCases={problem.testCases}
@@ -480,7 +484,6 @@ export default function ProblemDetail() {
               onExpandTestcase={handleExpandTestcase}
               testCaseActiveTab={testCaseActiveTab}
               onTestCaseTabChange={setTestCaseActiveTab}
-              lastSubmittedCode={lastSubmittedCode}
               globalError={globalError}
               isSubmit={isSubmit}
             />
@@ -562,6 +565,7 @@ export default function ProblemDetail() {
             </div>
             <div className="flex-1 min-h-[50vh]">
               <ProblemWorkspace
+                problemId={persistenceProblemId}
                 starterCode={problem.starterCode}
                 supportedLanguages={problem.supportedLanguages}
                 testCases={problem.testCases}
@@ -575,7 +579,6 @@ export default function ProblemDetail() {
                 onExpandTestcase={handleExpandTestcase}
                 testCaseActiveTab={testCaseActiveTab}
                 onTestCaseTabChange={setTestCaseActiveTab}
-                lastSubmittedCode={lastSubmittedCode}
                 isSubmit={isSubmit}
               />
             </div>
@@ -619,6 +622,7 @@ export default function ProblemDetail() {
               {/* Right Panel - Code Editor + Test Cases */}
               <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
                 <ProblemWorkspace
+                  problemId={persistenceProblemId}
                   starterCode={problem.starterCode}
                   supportedLanguages={problem.supportedLanguages}
                   testCases={problem.testCases}
@@ -632,7 +636,6 @@ export default function ProblemDetail() {
                   onExpandTestcase={handleExpandTestcase}
                   testCaseActiveTab={testCaseActiveTab}
                   onTestCaseTabChange={setTestCaseActiveTab}
-                  lastSubmittedCode={lastSubmittedCode}
                   globalError={globalError}
                   isSubmit={isSubmit}
                 />
