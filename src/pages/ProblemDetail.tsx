@@ -288,19 +288,19 @@ export default function ProblemDetail() {
       });
 
       // Include ALL test results (visible and hidden)
-      // For hidden cases: hide input/expected but ALWAYS show actual output for debugging
+      // Hidden cases are only visually redacted in the UI; we keep the raw values here so the
+      // "Show Output" toggle can reveal input/expected/output.
       const testResults: TestResult[] = judgeResult.test_results.map((tr, i) => {
         const originalTc = problem.allTestCases[i];
         const isHidden = !tr.is_visible;
-        
-        // Always show actual output - this helps users debug hidden test failures
+
         const actualOutput = tr.error || (tr.actual_output !== undefined ? JSON.stringify(tr.actual_output) : "");
-        
+
         return {
           id: i,
-          input: isHidden ? '' : (originalTc?.input || ''),
-          expected: isHidden ? '' : JSON.stringify(tr.expected_output),
-          actual: actualOutput, // Always pass actual output, even for hidden cases
+          input: originalTc?.input || "",
+          expected: JSON.stringify(tr.expected_output),
+          actual: actualOutput,
           passed: tr.passed,
           runtime: `${tr.runtime_ms || 0}ms`,
           isHidden,
