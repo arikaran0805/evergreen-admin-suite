@@ -39,27 +39,28 @@ interface TestCasePanelProps {
 function HiddenTestCase({ result, index }: { result: TestResult; index: number }) {
   const [showOutput, setShowOutput] = useState(false);
   
-  const hasInput = result.input !== undefined && result.input !== null && result.input !== '';
-  const hasExpected = result.expected !== undefined && result.expected !== null && result.expected !== '';
-  const hasActual = result.actual !== undefined && result.actual !== null && result.actual !== '';
+  // For hidden test cases, input/expected are intentionally hidden
+  // But we should always show the user's actual output
+  const actualOutput = result.actual?.trim();
+  const hasActualOutput = actualOutput && actualOutput.length > 0;
   
   return (
     <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         {result.passed ? (
-          <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+          <Check className="h-4 w-4 text-green-600 dark:text-green-500 shrink-0" />
         ) : (
-          <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+          <X className="h-4 w-4 text-red-600 dark:text-red-500 shrink-0" />
         )}
         <span className="font-medium text-sm">Test Case {index + 1}</span>
         <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">Hidden</span>
         {result.runtime && (
-          <span className="text-xs text-muted-foreground ml-auto mr-2">{result.runtime}</span>
+          <span className="text-xs text-muted-foreground">{result.runtime}</span>
         )}
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 px-2 text-xs gap-1 ml-auto"
+          className="h-6 px-2 text-xs gap-1 ml-auto shrink-0"
           onClick={() => setShowOutput(!showOutput)}
         >
           <Eye className="h-3 w-3" />
@@ -71,18 +72,27 @@ function HiddenTestCase({ result, index }: { result: TestResult; index: number }
         <div className="mt-3 space-y-2 text-sm font-mono border-t border-border/50 pt-3">
           <div>
             <span className="text-muted-foreground">Input: </span>
-            <span>{hasInput ? result.input : <span className="text-muted-foreground/50 italic">hidden</span>}</span>
+            <span className="text-muted-foreground/60 italic">hidden</span>
           </div>
           <div>
             <span className="text-muted-foreground">Expected: </span>
-            <span>{hasExpected ? result.expected : <span className="text-muted-foreground/50 italic">hidden</span>}</span>
+            <span className="text-muted-foreground/60 italic">hidden</span>
           </div>
           <div>
-            <span className="text-muted-foreground">Output: </span>
-            <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
-              {hasActual ? result.actual : <span className="text-muted-foreground/50 italic">no output</span>}
-            </span>
+            <span className="text-muted-foreground">Your Output: </span>
+            {hasActualOutput ? (
+              <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
+                {actualOutput}
+              </span>
+            ) : (
+              <span className="text-muted-foreground/60 italic">(no output produced)</span>
+            )}
           </div>
+          {result.passed ? (
+            <p className="text-xs text-green-600 dark:text-green-500 mt-2">✓ Your output matches the expected result</p>
+          ) : (
+            <p className="text-xs text-red-600 dark:text-red-500 mt-2">✗ Your output does not match the expected result</p>
+          )}
         </div>
       )}
     </div>
@@ -242,11 +252,11 @@ export function TestCasePanel({
           </div>
         </div>
 
-        <TabsContent value="testcase" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
+        <TabsContent value="testcase" className="flex-1 min-h-0 m-0">
+          <ScrollArea className="h-full w-full">
             <div className="p-4">
               {/* Test Case Tabs */}
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-4 flex-wrap">
                 {testCases.map((_, i) => (
                   <button
                     key={i}
@@ -284,9 +294,9 @@ export function TestCasePanel({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="result" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-4">
+        <TabsContent value="result" className="flex-1 min-h-0 m-0">
+          <ScrollArea className="h-full w-full">
+            <div className="p-4 pb-8">
               {isRunning ? (
                 <div className="flex items-center justify-center h-32">
                   <Clock className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
@@ -490,9 +500,9 @@ export function TestCasePanel({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="output" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-4">
+        <TabsContent value="output" className="flex-1 min-h-0 m-0">
+          <ScrollArea className="h-full w-full">
+            <div className="p-4 pb-8">
               {output ? (
                 <pre className="font-mono text-sm whitespace-pre-wrap">{output}</pre>
               ) : (
