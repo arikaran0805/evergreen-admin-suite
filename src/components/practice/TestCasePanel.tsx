@@ -229,7 +229,9 @@ export function TestCasePanel({
                   {results.every(r => r.passed) ? (
                     <>
                       <Check className="h-5 w-5 text-green-600 dark:text-green-500" />
-                      <span className="font-medium text-green-600 dark:text-green-500">All tests passed!</span>
+                      <span className="font-medium text-green-600 dark:text-green-500">
+                        🎉 Congratulations! You nailed it!
+                      </span>
                     </>
                   ) : (
                     <>
