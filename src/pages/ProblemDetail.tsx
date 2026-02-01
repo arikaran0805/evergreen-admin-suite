@@ -14,22 +14,10 @@ import { CodeEditor } from "@/components/practice/CodeEditor";
 import { TestCasePanel, TestResult } from "@/components/practice/TestCasePanel";
 import { ProblemListDrawer } from "@/components/practice/ProblemListDrawer";
 import { usePublishedPracticeProblem, usePublishedPracticeProblems } from "@/hooks/usePracticeProblems";
+import { useCodeJudge, convertTestCasesToJudgeFormat, getVerdictDisplay } from "@/hooks/useCodeJudge";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-// Execute code via edge function
-async function executeCode(code: string, language: string): Promise<{ output: string; error: string | null }> {
-  const { data, error } = await supabase.functions.invoke('execute-code', {
-    body: { code, language }
-  });
-  
-  if (error) {
-    return { output: '', error: error.message };
-  }
-  
-  return { output: data?.output || '', error: data?.error || null };
-}
 
 // Function signature can be either a string or JSON object
 interface FunctionSignatureObj {
@@ -41,8 +29,8 @@ interface FunctionSignatureObj {
 type FunctionSignature = string | FunctionSignatureObj | null;
 
 // Extract function name from signature (string or object)
-function getFunctionName(signature: FunctionSignature): string | null {
-  if (!signature) return null;
+function getFunctionName(signature: FunctionSignature): string {
+  if (!signature) return 'solution';
   
   // If it's an object with a name property
   if (typeof signature === 'object' && 'name' in signature) {
@@ -52,10 +40,10 @@ function getFunctionName(signature: FunctionSignature): string | null {
   // If it's a string like "twoSum(nums, target)"
   if (typeof signature === 'string') {
     const funcMatch = signature.match(/^(\w+)\s*\(/);
-    return funcMatch ? funcMatch[1] : null;
+    return funcMatch ? funcMatch[1] : 'solution';
   }
   
-  return null;
+  return 'solution';
 }
 
 // Get parameter names from signature
@@ -77,86 +65,6 @@ function getParameterNames(signature: FunctionSignature): string[] {
   return [];
 }
 
-// Wrap user code with test harness for specific input
-function wrapCodeWithTestHarness(
-  userCode: string, 
-  language: string, 
-  functionSignature: FunctionSignature,
-  testInput: string
-): string {
-  // If no function signature, just run the code as-is
-  if (!functionSignature) {
-    return userCode;
-  }
-
-  const funcName = getFunctionName(functionSignature);
-  if (!funcName) return userCode;
-
-  const paramNames = getParameterNames(functionSignature);
-  const argsString = paramNames.join(', ');
-
-  // Build test harness based on language
-  if (language === 'python') {
-    return `${userCode}
-
-# Test harness
-if __name__ == "__main__":
-    ${testInput}
-    result = ${funcName}(${argsString})
-    print(result)
-`;
-  }
-  
-  if (language === 'javascript' || language === 'typescript') {
-    return `${userCode}
-
-// Test harness
-${testInput}
-const result = ${funcName}(${argsString});
-console.log(JSON.stringify(result));
-`;
-  }
-
-  return userCode;
-}
-
-// Normalize output for comparison
-function normalizeOutput(output: string): string {
-  return output
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .replace(/[\[\](),]/g, match => match) // Keep brackets/parens
-    .replace(/'/g, '"'); // Normalize quotes
-}
-
-// Check if outputs match (flexible comparison)
-function outputsMatch(actual: string, expected: string): boolean {
-  const normalActual = normalizeOutput(actual);
-  const normalExpected = normalizeOutput(expected);
-  
-  // Exact match
-  if (normalActual === normalExpected) return true;
-  
-  // Check if actual contains expected (for arrays, the order might differ)
-  if (normalActual.includes(normalExpected) || normalExpected.includes(normalActual)) return true;
-  
-  // Try parsing as JSON for array comparison
-  try {
-    const actualParsed = JSON.parse(actual.trim());
-    const expectedParsed = JSON.parse(expected.trim());
-    
-    if (Array.isArray(actualParsed) && Array.isArray(expectedParsed)) {
-      // Sort and compare for unordered array comparison
-      return JSON.stringify(actualParsed.sort()) === JSON.stringify(expectedParsed.sort());
-    }
-    
-    return JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
-  } catch {
-    return false;
-  }
-}
-
 export default function ProblemDetail() {
   const { skillId, problemId } = useParams<{ skillId: string; problemId: string }>();
   const navigate = useNavigate();
@@ -166,6 +74,9 @@ export default function ProblemDetail() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [output, setOutput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Use the new judge hook
+  const { judge } = useCodeJudge();
 
   // Fetch skill info
   const { data: skill } = useQuery({
@@ -194,6 +105,10 @@ export default function ProblemDetail() {
   const allTestCases = dbProblem?.test_cases || [];
   const visibleTestCases = allTestCases.filter((tc: any) => tc.is_visible);
   
+  const functionSignature = (dbProblem as any)?.function_signature || null;
+  const functionName = getFunctionName(functionSignature);
+  const parameterNames = getParameterNames(functionSignature);
+  
   const problem = dbProblem ? {
     id: dbProblem.id,
     title: dbProblem.title,
@@ -209,7 +124,7 @@ export default function ProblemDetail() {
     hints: dbProblem.hints || [],
     starterCode: dbProblem.starter_code || {},
     supportedLanguages: dbProblem.supported_languages || [],
-    functionSignature: (dbProblem as any).function_signature || null,
+    functionSignature,
     // Visible test cases for UI display
     testCases: visibleTestCases.map((tc: any, i: number) => ({
       id: tc.id || i + 1,
@@ -225,7 +140,7 @@ export default function ProblemDetail() {
     })),
   } : null;
 
-  // RUN: Execute code and test against visible test cases
+  // RUN: Execute code and test against visible test cases only
   const handleRun = async (code: string, language: string) => {
     if (!problem) return;
     
@@ -234,78 +149,73 @@ export default function ProblemDetail() {
     setResults([]);
     setOutput(`Running ${language}...\n`);
     
-    const startTime = Date.now();
-    const testResults: TestResult[] = [];
-    let outputLog = `Running ${language}...\n\n`;
-    
     try {
-      // Execute the code directly first to check for syntax errors
-      const { output: rawOutput, error } = await executeCode(code, language);
+      // Convert visible test cases to judge format
+      const judgeTestCases = convertTestCasesToJudgeFormat(
+        problem.testCases.map(tc => ({
+          id: tc.id,
+          input: tc.input,
+          expected_output: tc.expected,
+          is_visible: true
+        })),
+        parameterNames
+      );
+
+      const judgeResult = await judge({
+        code,
+        language,
+        function_name: functionName,
+        parameter_names: parameterNames,
+        test_cases: judgeTestCases,
+        time_limit_ms: 5000
+      });
+
+      // Convert judge results to TestResult format
+      const testResults: TestResult[] = judgeResult.test_results.map((tr, i) => ({
+        id: i,
+        input: problem.testCases[i]?.input || '',
+        expected: JSON.stringify(tr.expected_output),
+        actual: tr.error || JSON.stringify(tr.actual_output) || "No output",
+        passed: tr.passed,
+        runtime: tr.passed ? `${tr.runtime_ms || 0}ms` : undefined,
+      }));
+
+      // Build output log
+      const verdictDisplay = getVerdictDisplay(judgeResult.verdict);
+      let outputLog = `Running ${language}...\n\n`;
       
-      if (error) {
-        outputLog += `❌ Error:\n${error}`;
-        setOutput(outputLog);
-        setIsRunning(false);
-        toast.error("Execution Error", { description: error.substring(0, 100) });
-        return;
+      testResults.forEach((tr, i) => {
+        outputLog += `Test ${i + 1}: ${tr.passed ? '✓ Passed' : '✗ Failed'}`;
+        if (tr.runtime) outputLog += ` (${tr.runtime})`;
+        outputLog += '\n';
+      });
+
+      outputLog += `\n${judgeResult.passed_count}/${judgeResult.total_count} test cases passed`;
+      outputLog += `\nTotal Runtime: ${judgeResult.total_runtime_ms}ms`;
+      outputLog += `\nVerdict: ${verdictDisplay.label}`;
+
+      if (judgeResult.error) {
+        outputLog += `\n\n❌ Error: ${judgeResult.error}`;
       }
-      
-      // If there are test cases, run them
-      if (problem.testCases.length > 0) {
-        for (let i = 0; i < problem.testCases.length; i++) {
-          const tc = problem.testCases[i];
-          
-          // Wrap code with test harness for this specific test case
-          const wrappedCode = wrapCodeWithTestHarness(
-            code, 
-            language, 
-            problem.functionSignature,
-            tc.input
-          );
-          
-          const { output: testOutput, error: testError } = await executeCode(wrappedCode, language);
-          const runtime = `${Math.floor(Math.random() * 30 + 5)}ms`;
-          
-          const actual = testError || testOutput.trim();
-          const passed = !testError && outputsMatch(testOutput, tc.expected);
-          
-          testResults.push({
-            id: i,
-            input: tc.input,
-            expected: tc.expected,
-            actual: actual || "No output",
-            passed,
-            runtime: passed ? runtime : undefined,
-          });
-          
-          outputLog += `Test ${i + 1}: ${passed ? '✓ Passed' : '✗ Failed'}\n`;
-        }
-      } else {
-        // No test cases, just show raw output
-        outputLog += `Output:\n${rawOutput}`;
-      }
-      
-      const elapsed = Date.now() - startTime;
-      const passedCount = testResults.filter(r => r.passed).length;
-      
-      if (testResults.length > 0) {
-        outputLog += `\n${passedCount}/${testResults.length} test cases passed (${elapsed}ms)`;
-      }
-      
+
       setResults(testResults);
       setOutput(outputLog);
-      
-      if (testResults.length > 0) {
-        if (testResults.every(r => r.passed)) {
-          toast.success("All visible test cases passed!");
-        } else {
-          toast.error(`${testResults.length - passedCount} test case(s) failed`);
-        }
+
+      // Show toast based on verdict
+      if (judgeResult.verdict === 'accepted') {
+        toast.success("All visible test cases passed!");
+      } else if (judgeResult.verdict === 'compilation_error') {
+        toast.error("Compilation Error", { description: judgeResult.error?.substring(0, 100) });
+      } else if (judgeResult.verdict === 'runtime_error') {
+        toast.error("Runtime Error", { description: judgeResult.error?.substring(0, 100) });
+      } else if (judgeResult.verdict === 'time_limit_exceeded') {
+        toast.error("Time Limit Exceeded");
+      } else {
+        toast.error(`${judgeResult.total_count - judgeResult.passed_count} test case(s) failed`);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Execution failed";
-      outputLog += `❌ Error: ${errorMsg}`;
-      setOutput(outputLog);
+      setOutput(`Running ${language}...\n\n❌ Error: ${errorMsg}`);
       toast.error("Execution Failed", { description: errorMsg });
     }
     
@@ -321,86 +231,81 @@ export default function ProblemDetail() {
     setResults([]);
     setOutput(`Submitting ${language}...\n`);
     
-    const startTime = Date.now();
-    const testResults: TestResult[] = [];
-    let outputLog = `Submitting ${language}...\n\n`;
-    
-    const totalTests = problem.allTestCases.length;
-    const hiddenCount = problem.allTestCases.filter((tc: any) => !tc.isVisible).length;
-    
     try {
-      // First check for syntax errors
-      const { error: syntaxError } = await executeCode(code, language);
+      // Convert all test cases (visible + hidden) to judge format
+      const judgeTestCases = convertTestCasesToJudgeFormat(
+        problem.allTestCases.map(tc => ({
+          id: tc.id,
+          input: tc.input,
+          expected_output: tc.expected,
+          is_visible: tc.isVisible
+        })),
+        parameterNames
+      );
+
+      const judgeResult = await judge({
+        code,
+        language,
+        function_name: functionName,
+        parameter_names: parameterNames,
+        test_cases: judgeTestCases,
+        time_limit_ms: 5000
+      });
+
+      // Only show visible test results in the UI
+      const visibleResults = judgeResult.test_results.filter(tr => tr.is_visible);
+      const testResults: TestResult[] = visibleResults.map((tr, i) => {
+        const originalTc = problem.testCases[i];
+        return {
+          id: i,
+          input: originalTc?.input || '',
+          expected: JSON.stringify(tr.expected_output),
+          actual: tr.error || JSON.stringify(tr.actual_output) || "No output",
+          passed: tr.passed,
+          runtime: tr.passed ? `${tr.runtime_ms || 0}ms` : undefined,
+        };
+      });
+
+      // Build output log
+      const verdictDisplay = getVerdictDisplay(judgeResult.verdict);
+      const hiddenCount = problem.allTestCases.filter(tc => !tc.isVisible).length;
+      const visibleCount = problem.allTestCases.length - hiddenCount;
       
-      if (syntaxError) {
-        outputLog += `❌ Compilation/Syntax Error:\n${syntaxError}`;
-        setOutput(outputLog);
-        setIsRunning(false);
-        toast.error("Submission Failed", { description: "Fix errors before submitting" });
-        return;
+      let outputLog = `Submitting ${language}...\n\n`;
+      outputLog += `Total test cases: ${judgeResult.total_count} (${visibleCount} visible, ${hiddenCount} hidden)\n`;
+      outputLog += `Passed: ${judgeResult.passed_count}/${judgeResult.total_count}\n`;
+      outputLog += `Total Runtime: ${judgeResult.total_runtime_ms}ms\n`;
+      outputLog += `\nVerdict: ${verdictDisplay.label}`;
+
+      if (judgeResult.error) {
+        outputLog += `\n\n❌ Error: ${judgeResult.error}`;
       }
-      
-      let passedCount = 0;
-      let failedOnTest = -1;
-      
-      // Run all test cases
-      for (let i = 0; i < problem.allTestCases.length; i++) {
-        const tc = problem.allTestCases[i];
-        
-        const wrappedCode = wrapCodeWithTestHarness(
-          code, 
-          language, 
-          problem.functionSignature,
-          tc.input
-        );
-        
-        const { output: testOutput, error: testError } = await executeCode(wrappedCode, language);
-        
-        const passed = !testError && outputsMatch(testOutput, tc.expected);
-        
-        if (passed) {
-          passedCount++;
-        } else if (failedOnTest === -1) {
-          failedOnTest = i;
-        }
-        
-        // Only show visible test results in the UI
-        if (tc.isVisible) {
-          testResults.push({
-            id: i,
-            input: tc.input,
-            expected: tc.expected,
-            actual: testError || testOutput.trim() || "No output",
-            passed,
-            runtime: passed ? `${Math.floor(Math.random() * 30 + 5)}ms` : undefined,
-          });
-        }
-      }
-      
-      const elapsed = Date.now() - startTime;
-      const allPassed = passedCount === totalTests;
-      
-      outputLog += `Total test cases: ${totalTests} (${totalTests - hiddenCount} visible, ${hiddenCount} hidden)\n`;
-      outputLog += `Passed: ${passedCount}/${totalTests}\n`;
-      outputLog += `Runtime: ${elapsed}ms\n`;
-      
+
       setResults(testResults);
       setOutput(outputLog);
-      
-      if (allPassed) {
+
+      // Show toast based on verdict
+      if (judgeResult.verdict === 'accepted') {
         toast.success("🎉 Accepted!", {
-          description: `All ${totalTests} test cases passed in ${elapsed}ms`,
+          description: `All ${judgeResult.total_count} test cases passed in ${judgeResult.total_runtime_ms}ms`,
         });
+      } else if (judgeResult.verdict === 'compilation_error') {
+        toast.error("Compilation Error", { description: "Fix errors before submitting" });
+      } else if (judgeResult.verdict === 'runtime_error') {
+        toast.error("Runtime Error", { description: judgeResult.error?.substring(0, 100) });
+      } else if (judgeResult.verdict === 'time_limit_exceeded') {
+        toast.error("Time Limit Exceeded");
       } else {
-        const failedIsHidden = failedOnTest >= 0 && !problem.allTestCases[failedOnTest].isVisible;
+        // Find which test case failed
+        const failedIndex = judgeResult.test_results.findIndex(tr => !tr.passed);
+        const failedIsHidden = failedIndex >= 0 && !judgeResult.test_results[failedIndex].is_visible;
         toast.error("Wrong Answer", {
-          description: `Failed on test case ${failedOnTest + 1}/${totalTests}${failedIsHidden ? " (hidden)" : ""}`,
+          description: `Failed on test case ${failedIndex + 1}/${judgeResult.total_count}${failedIsHidden ? " (hidden)" : ""}`,
         });
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Submission failed";
-      outputLog += `❌ Error: ${errorMsg}`;
-      setOutput(outputLog);
+      setOutput(`Submitting ${language}...\n\n❌ Error: ${errorMsg}`);
       toast.error("Submission Failed", { description: errorMsg });
     }
     
