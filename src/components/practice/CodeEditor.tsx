@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,13 +9,15 @@ import {
 } from "@/components/ui/select";
 import { RotateCcw, Settings, Maximize2 } from "lucide-react";
 import { ProblemDetail } from "./problemDetailData";
-import { cn } from "@/lib/utils";
+import Editor, { OnMount } from "@monaco-editor/react";
+import { useTheme } from "next-themes";
 
 interface CodeEditorProps {
   problem: ProblemDetail;
   supportedLanguages?: string[];
   onRun: (code: string, language: string) => void;
   onSubmit: (code: string, language: string) => void;
+  readOnly?: boolean;
 }
 
 const languageLabels: Record<string, string> = {
@@ -28,13 +30,24 @@ const languageLabels: Record<string, string> = {
   mysql: "MySQL",
 };
 
-export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: CodeEditorProps) {
+// Map our language names to Monaco language identifiers
+const monacoLanguageMap: Record<string, string> = {
+  python: "python",
+  javascript: "javascript",
+  typescript: "typescript",
+  java: "java",
+  cpp: "cpp",
+  sql: "sql",
+  mysql: "sql",
+};
+
+export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit, readOnly = false }: CodeEditorProps) {
+  const { theme } = useTheme();
   const availableLanguages = supportedLanguages && supportedLanguages.length > 0 
     ? supportedLanguages 
     : Object.keys(problem.starterCode);
   const [language, setLanguage] = useState(availableLanguages[0] || "python");
   const [code, setCode] = useState(problem.starterCode[availableLanguages[0]] || "");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
@@ -45,27 +58,19 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: Cod
     setCode(problem.starterCode[language] || '');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Handle Tab key for indentation
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = e.currentTarget.selectionStart;
-      const end = e.currentTarget.selectionEnd;
-      const newCode = code.substring(0, start) + '    ' + code.substring(end);
-      setCode(newCode);
-      // Set cursor position after tab
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 4;
-        }
-      }, 0);
-    }
-    // Ctrl+Enter to run
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault();
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    setCode(value || '');
+  }, []);
+
+  const handleEditorMount: OnMount = useCallback((editor, monaco) => {
+    // Add Ctrl+Enter keybinding to run code
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRun(code, language);
-    }
-  };
+    });
+  }, [onRun, code, language]);
+
+  const monacoTheme = theme === 'dark' ? 'vs-dark' : 'vs';
+  const monacoLanguage = monacoLanguageMap[language] || 'plaintext';
 
   return (
     <div className="h-full flex flex-col bg-card border-l border-border/50">
@@ -98,25 +103,51 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit }: Cod
         </div>
       </div>
 
-      {/* Code Area */}
-      <div className="flex-1 overflow-hidden flex bg-background">
-
-        {/* Code Editor */}
-        <textarea
-          ref={textareaRef}
+      {/* Code Area - Monaco Editor */}
+      <div className="flex-1 overflow-hidden bg-background">
+        <Editor
+          height="100%"
+          language={monacoLanguage}
           value={code}
-          onChange={(e) => setCode(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className={cn(
-            "flex-1 p-4 resize-none",
-            "font-mono text-sm leading-6",
-            "bg-background text-foreground",
-            "focus:outline-none",
-            "overflow-auto"
-          )}
-          style={{ tabSize: 4 }}
-          spellCheck={false}
-          placeholder="Write your code here..."
+          theme={monacoTheme}
+          onChange={handleEditorChange}
+          onMount={handleEditorMount}
+          options={{
+            readOnly,
+            fontSize: 14,
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+            lineNumbers: "on",
+            minimap: { enabled: false },
+            wordWrap: "on",
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            tabSize: 4,
+            insertSpaces: true,
+            renderIndentGuides: true,
+            padding: { top: 16, bottom: 16 },
+            scrollbar: {
+              vertical: "auto",
+              horizontal: "auto",
+              verticalScrollbarSize: 10,
+              horizontalScrollbarSize: 10,
+            },
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
+            overviewRulerLanes: 0,
+            renderLineHighlight: "line",
+            cursorBlinking: "smooth",
+            cursorSmoothCaretAnimation: "on",
+            smoothScrolling: true,
+            contextmenu: true,
+            folding: true,
+            foldingHighlight: false,
+            showFoldingControls: "mouseover",
+            bracketPairColorization: { enabled: true },
+            guides: {
+              indentation: true,
+              bracketPairs: true,
+            },
+          }}
         />
       </div>
 
