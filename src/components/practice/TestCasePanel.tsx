@@ -398,9 +398,9 @@ export function TestCasePanel({
                     let colorClass = "";
 
                     if (isSubmit) {
-                      // SUBMIT MODE
+                      // SUBMIT MODE (Sample + Hidden Tests)
                       if (allPassed) {
-                        message = "🎉 Great job! Your solution passed all test cases.";
+                        message = "🎉 Great job! Your logic handled all test cases correctly.";
                         colorClass = "text-green-600 dark:text-green-500";
                       } else if (nonePassed) {
                         message = "🔁 That's okay — take another look at the core logic.";
@@ -412,10 +412,10 @@ export function TestCasePanel({
                     } else {
                       // RUN MODE (Sample Tests Only)
                       if (allPassed) {
-                        message = "✅ Nice! Samples passed — try Submit to check edge cases.";
+                        message = "✅ Samples passed — try Submit to check edge cases.";
                         colorClass = "text-green-600 dark:text-green-500";
                       } else if (nonePassed) {
-                        message = "🔍 Let's revisit the logic — try stepping through the sample input.";
+                        message = "🔍 Let's revisit the logic and recheck the sample input.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       } else {
                         message = "🧠 Good progress — a small tweak could fix the remaining cases.";
