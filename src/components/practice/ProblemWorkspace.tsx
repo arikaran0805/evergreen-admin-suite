@@ -75,6 +75,7 @@ export function ProblemWorkspace({
   const { theme } = useTheme();
   const testPanelRef = useRef<ImperativePanelHandle>(null);
   const [isEditorHovered, setIsEditorHovered] = useState(false);
+  const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
   
   const availableLanguages = supportedLanguages.length > 0 
     ? supportedLanguages 
@@ -103,12 +104,22 @@ export function ProblemWorkspace({
 
   const handleRun = () => {
     testPanelRef.current?.resize(35);
+    setIsTestPanelCollapsed(false);
     onRun(code, language);
   };
 
   const handleSubmit = () => {
     testPanelRef.current?.resize(35);
+    setIsTestPanelCollapsed(false);
     onSubmit(code, language);
+  };
+
+  const handleToggleTestPanelCollapse = () => {
+    if (isTestPanelCollapsed) {
+      testPanelRef.current?.expand();
+    } else {
+      testPanelRef.current?.collapse();
+    }
   };
 
   const monacoTheme = theme === 'dark' ? 'vs-dark' : 'vs';
@@ -423,8 +434,10 @@ export function ProblemWorkspace({
           defaultSize={35} 
           minSize={10} 
           collapsible
-          collapsedSize={10}
+          collapsedSize={0}
           className="min-h-0"
+          onCollapse={() => setIsTestPanelCollapsed(true)}
+          onExpand={() => setIsTestPanelCollapsed(false)}
         >
           <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
             <TestCasePanel
@@ -434,6 +447,8 @@ export function ProblemWorkspace({
               output={output}
               isExpanded={false}
               onToggleExpand={onExpandTestcase}
+              isCollapsed={isTestPanelCollapsed}
+              onToggleCollapse={handleToggleTestPanelCollapse}
             />
           </div>
         </ResizablePanel>
