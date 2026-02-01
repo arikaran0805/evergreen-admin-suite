@@ -31,9 +31,6 @@ interface ProblemWorkspaceProps {
   expandedPanel?: 'editor' | 'testcase' | null;
   onExpandEditor?: () => void;
   onExpandTestcase?: () => void;
-  collapsedPanel?: 'editor' | 'testcase' | null;
-  onCollapseEditor?: () => void;
-  onCollapseTestcase?: () => void;
 }
 
 const languageLabels: Record<string, string> = {
@@ -68,13 +65,12 @@ export function ProblemWorkspace({
   expandedPanel,
   onExpandEditor,
   onExpandTestcase,
-  collapsedPanel,
-  onCollapseEditor,
-  onCollapseTestcase,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
+  const editorPanelRef = useRef<ImperativePanelHandle>(null);
   const testPanelRef = useRef<ImperativePanelHandle>(null);
   const [isEditorHovered, setIsEditorHovered] = useState(false);
+  const [isEditorPanelCollapsed, setIsEditorPanelCollapsed] = useState(false);
   const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
   
   const availableLanguages = supportedLanguages.length > 0 
@@ -103,15 +99,23 @@ export function ProblemWorkspace({
   }, []);
 
   const handleRun = () => {
+    testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
-    setIsTestPanelCollapsed(false);
     onRun(code, language);
   };
 
   const handleSubmit = () => {
+    testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
-    setIsTestPanelCollapsed(false);
     onSubmit(code, language);
+  };
+
+  const handleToggleEditorPanelCollapse = () => {
+    if (isEditorPanelCollapsed) {
+      editorPanelRef.current?.expand();
+    } else {
+      editorPanelRef.current?.collapse();
+    }
   };
 
   const handleToggleTestPanelCollapse = () => {
@@ -282,7 +286,16 @@ export function ProblemWorkspace({
     <div className="h-full flex flex-col gap-1.5">
       <ResizablePanelGroup direction="vertical" className="flex-1">
         {/* Code Editor Panel */}
-        <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
+        <ResizablePanel
+          ref={editorPanelRef}
+          defaultSize={65}
+          minSize={30}
+          collapsible
+          collapsedSize={8}
+          className="min-h-0"
+          onCollapse={() => setIsEditorPanelCollapsed(true)}
+          onExpand={() => setIsEditorPanelCollapsed(false)}
+        >
           <div 
             className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
             onMouseEnter={() => setIsEditorHovered(true)}
@@ -320,23 +333,21 @@ export function ProblemWorkspace({
                 {/* Collapse & Expand Buttons - Show on hover */}
                 <div className={cn(
                   "flex items-center gap-0.5 transition-opacity",
-                  isEditorHovered ? "opacity-100" : "opacity-0"
+                  isEditorHovered || isEditorPanelCollapsed ? "opacity-100" : "opacity-0"
                 )}>
-                  {onCollapseEditor && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={onCollapseEditor}
-                      title={collapsedPanel === 'editor' ? "Show editor" : "Hide editor"}
-                    >
-                      {collapsedPanel === 'editor' ? (
-                        <PanelTopOpen className="h-4 w-4" />
-                      ) : (
-                        <PanelTopClose className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={handleToggleEditorPanelCollapse}
+                    title={isEditorPanelCollapsed ? "Show editor" : "Hide editor"}
+                  >
+                    {isEditorPanelCollapsed ? (
+                      <PanelTopOpen className="h-4 w-4" />
+                    ) : (
+                      <PanelTopClose className="h-4 w-4" />
+                    )}
+                  </Button>
                   {onExpandEditor && (
                     <Button 
                       variant="ghost" 
@@ -352,77 +363,81 @@ export function ProblemWorkspace({
               </div>
             </div>
 
-            {/* Monaco Editor */}
-            <div className="flex-1 overflow-hidden">
-              <Editor
-                height="100%"
-                language={monacoLanguage}
-                value={code}
-                theme={monacoTheme}
-                onChange={handleEditorChange}
-                onMount={handleEditorMount}
-                options={{
-                  fontSize: 14,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                  lineNumbers: "on",
-                  lineNumbersMinChars: 3,
-                  lineDecorationsWidth: 16,
-                  glyphMargin: false,
-                  folding: false,
-                  minimap: { enabled: false },
-                  wordWrap: "on",
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  tabSize: 4,
-                  insertSpaces: true,
-                  renderIndentGuides: true,
-                  padding: { top: 16, bottom: 16 },
-                  scrollbar: {
-                    vertical: "auto",
-                    horizontal: "auto",
-                    verticalScrollbarSize: 10,
-                    horizontalScrollbarSize: 10,
-                  },
-                  overviewRulerBorder: false,
-                  hideCursorInOverviewRuler: true,
-                  overviewRulerLanes: 0,
-                  renderLineHighlight: "line",
-                  cursorBlinking: "smooth",
-                  cursorSmoothCaretAnimation: "on",
-                  smoothScrolling: true,
-                  contextmenu: true,
-                  bracketPairColorization: { enabled: true },
-                  guides: {
-                    indentation: true,
-                    bracketPairs: true,
-                  },
-                }}
-              />
-            </div>
+            {!isEditorPanelCollapsed && (
+              <>
+                {/* Monaco Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language={monacoLanguage}
+                    value={code}
+                    theme={monacoTheme}
+                    onChange={handleEditorChange}
+                    onMount={handleEditorMount}
+                    options={{
+                      fontSize: 14,
+                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+                      lineNumbers: "on",
+                      lineNumbersMinChars: 3,
+                      lineDecorationsWidth: 16,
+                      glyphMargin: false,
+                      folding: false,
+                      minimap: { enabled: false },
+                      wordWrap: "on",
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 4,
+                      insertSpaces: true,
+                      renderIndentGuides: true,
+                      padding: { top: 16, bottom: 16 },
+                      scrollbar: {
+                        vertical: "auto",
+                        horizontal: "auto",
+                        verticalScrollbarSize: 10,
+                        horizontalScrollbarSize: 10,
+                      },
+                      overviewRulerBorder: false,
+                      hideCursorInOverviewRuler: true,
+                      overviewRulerLanes: 0,
+                      renderLineHighlight: "line",
+                      cursorBlinking: "smooth",
+                      cursorSmoothCaretAnimation: "on",
+                      smoothScrolling: true,
+                      contextmenu: true,
+                      bracketPairColorization: { enabled: true },
+                      guides: {
+                        indentation: true,
+                        bracketPairs: true,
+                      },
+                    }}
+                  />
+                </div>
 
-            {/* Footer with Run/Submit */}
-            <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40">
-              <span className="text-xs text-muted-foreground">
-                Press <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Ctrl</kbd> + <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Enter</kbd> to run
-              </span>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleRun}
-                  disabled={isRunning}
-                >
-                  Run
-                </Button>
-                <Button 
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={isRunning}
-                >
-                  Submit
-                </Button>
-              </div>
-            </div>
+                {/* Footer with Run/Submit */}
+                <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40">
+                  <span className="text-xs text-muted-foreground">
+                    Press <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Ctrl</kbd> + <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">Enter</kbd> to run
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleRun}
+                      disabled={isRunning}
+                    >
+                      Run
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={handleSubmit}
+                      disabled={isRunning}
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </ResizablePanel>
 
@@ -434,7 +449,7 @@ export function ProblemWorkspace({
           defaultSize={35} 
           minSize={10} 
           collapsible
-          collapsedSize={0}
+          collapsedSize={8}
           className="min-h-0"
           onCollapse={() => setIsTestPanelCollapsed(true)}
           onExpand={() => setIsTestPanelCollapsed(false)}

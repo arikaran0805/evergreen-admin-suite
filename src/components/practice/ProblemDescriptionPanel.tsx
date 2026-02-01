@@ -57,6 +57,44 @@ export function ProblemDescriptionPanel({
   const [dislikeCount, setDislikeCount] = useState(56);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Collapsed state: keep a visible header bar so the reopen icon is always reachable.
+  if (isCollapsed && !isExpanded) {
+    return (
+      <div className="h-full flex items-center justify-between px-4 bg-card">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm font-medium text-muted-foreground truncate">{title}</span>
+        </div>
+
+        <div className="flex items-center gap-0.5 shrink-0">
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleCollapse}
+              title="Show panel"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          )}
+
+          {onToggleExpand && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleExpand}
+              title="Fullscreen"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const handleLike = () => {
     if (liked) {
       setLiked(false);
@@ -141,7 +179,7 @@ export function ProblemDescriptionPanel({
           {/* Collapse & Expand Buttons - Show on hover */}
           <div className={cn(
             "flex items-center gap-0.5 shrink-0 transition-opacity",
-            isHovered || isExpanded ? "opacity-100" : "opacity-0"
+            isHovered || isExpanded || isCollapsed ? "opacity-100" : "opacity-0"
           )}>
             {onToggleCollapse && !isExpanded && (
               <Button
