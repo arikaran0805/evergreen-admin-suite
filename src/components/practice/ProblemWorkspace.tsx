@@ -161,6 +161,8 @@ export function ProblemWorkspace({
             output={output}
             isExpanded={true}
             onToggleExpand={onExpandTestcase}
+            activeTab={testCaseActiveTab}
+            onTabChange={onTestCaseTabChange}
           />
         </div>
       </div>
