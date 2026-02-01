@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,6 +23,8 @@ interface ProblemDescriptionPanelProps {
   constraints: string[];
   hints?: string[];
   tags?: string[];
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 const difficultyColors: Record<string, string> = {
@@ -39,6 +41,8 @@ export function ProblemDescriptionPanel({
   constraints,
   hints = [],
   tags = [],
+  isExpanded = false,
+  onToggleExpand,
 }: ProblemDescriptionPanelProps) {
   const [hintsExpanded, setHintsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
@@ -47,6 +51,7 @@ export function ProblemDescriptionPanel({
   const [saved, setSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(1234);
   const [dislikeCount, setDislikeCount] = useState(56);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleLike = () => {
     if (liked) {
@@ -95,34 +100,60 @@ export function ProblemDescriptionPanel({
   };
 
   return (
-    <div className="h-full flex flex-col bg-card">
+    <div 
+      className="h-full flex flex-col bg-card"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Tab Header */}
       <div className="border-b border-border/50 px-4 shrink-0">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-11 bg-transparent p-0 gap-4">
-            <TabsTrigger 
-              value="description" 
-              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
+        <div className="flex items-center justify-between">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+            <TabsList className="h-11 bg-transparent p-0 gap-4">
+              <TabsTrigger 
+                value="description" 
+                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
+              >
+                <FileText className="h-4 w-4" />
+                Description
+              </TabsTrigger>
+              <TabsTrigger 
+                value="editorial" 
+                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
+              >
+                <BookOpen className="h-4 w-4" />
+                Editorial
+              </TabsTrigger>
+              <TabsTrigger 
+                value="submissions" 
+                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
+              >
+                <History className="h-4 w-4" />
+                Submissions
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {/* Expand Button - Show on hover */}
+          {onToggleExpand && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 shrink-0 transition-opacity",
+                isHovered || isExpanded ? "opacity-100" : "opacity-0"
+              )}
+              onClick={onToggleExpand}
+              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
             >
-              <FileText className="h-4 w-4" />
-              Description
-            </TabsTrigger>
-            <TabsTrigger 
-              value="editorial" 
-              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
-            >
-              <BookOpen className="h-4 w-4" />
-              Editorial
-            </TabsTrigger>
-            <TabsTrigger 
-              value="submissions" 
-              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
-            >
-              <History className="h-4 w-4" />
-              Submissions
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+              {isExpanded ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tab Content */}
