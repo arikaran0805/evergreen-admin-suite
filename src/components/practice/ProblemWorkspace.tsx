@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { RotateCcw, Settings, Expand, Shrink, PanelTopClose, PanelTopOpen, Code, AlignLeft, FileCode, Maximize } from "lucide-react";
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { parseCodeError } from "@/lib/errorParser";
 
 interface ProblemWorkspaceProps {
   starterCode: Record<string, string>;
@@ -35,6 +36,7 @@ interface ProblemWorkspaceProps {
   testCaseActiveTab?: string;
   onTestCaseTabChange?: (tab: string) => void;
   lastSubmittedCode?: { code: string; language: string } | null;
+  globalError?: string;
 }
 
 const languageLabels: Record<string, string> = {
@@ -72,13 +74,18 @@ export function ProblemWorkspace({
   testCaseActiveTab,
   onTestCaseTabChange,
   lastSubmittedCode,
+  globalError,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
   const testPanelRef = useRef<ImperativePanelHandle>(null);
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<Monaco | null>(null);
+  const decorationsRef = useRef<string[]>([]);
   const [isEditorHovered, setIsEditorHovered] = useState(false);
   const [isEditorPanelCollapsed, setIsEditorPanelCollapsed] = useState(false);
   const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
+  const [errorLine, setErrorLine] = useState<number | undefined>();
   
   const availableLanguages = supportedLanguages.length > 0 
     ? supportedLanguages 
@@ -86,19 +93,57 @@ export function ProblemWorkspace({
   const [language, setLanguage] = useState(availableLanguages[0] || "python");
   const [code, setCode] = useState(starterCode[availableLanguages[0]] || "");
 
+  const userCodeLineCount = code.split('\n').length;
+
+  // Error line highlighting helper
+  const highlightErrorLine = useCallback((line: number) => {
+    setErrorLine(line);
+    if (editorRef.current && monacoRef.current) {
+      const monaco = monacoRef.current;
+      decorationsRef.current = editorRef.current.deltaDecorations(
+        decorationsRef.current,
+        [
+          {
+            range: new monaco.Range(line, 1, line, 1),
+            options: {
+              isWholeLine: true,
+              className: 'error-line-highlight',
+              glyphMarginClassName: 'error-line-glyph',
+              linesDecorationsClassName: 'error-line-decoration',
+            },
+          },
+        ]
+      );
+      editorRef.current.revealLineInCenter(line);
+    }
+  }, []);
+
+  const clearErrorHighlight = useCallback(() => {
+    setErrorLine(undefined);
+    if (editorRef.current) {
+      decorationsRef.current = editorRef.current.deltaDecorations(
+        decorationsRef.current,
+        []
+      );
+    }
+  }, []);
+
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
     setCode(starterCode[newLang] || '');
+    clearErrorHighlight();
   };
 
   const handleReset = () => {
     setCode(starterCode[language] || '');
+    clearErrorHighlight();
   };
 
   const handleRetrieveLastCode = () => {
     if (lastSubmittedCode) {
       setCode(lastSubmittedCode.code);
       setLanguage(lastSubmittedCode.language);
+      clearErrorHighlight();
       toast.success("Last submitted code restored");
     } else {
       toast.info("No previous submission found");
@@ -107,9 +152,16 @@ export function ProblemWorkspace({
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     setCode(value || '');
-  }, []);
+    // Clear error highlighting when user edits code
+    if (errorLine) {
+      clearErrorHighlight();
+    }
+  }, [errorLine, clearErrorHighlight]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       handleRun();
     });
@@ -118,12 +170,14 @@ export function ProblemWorkspace({
   const handleRun = () => {
     testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
+    clearErrorHighlight();
     onRun(code, language);
   };
 
   const handleSubmit = () => {
     testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
+    clearErrorHighlight();
     onSubmit(code, language);
   };
 
@@ -163,6 +217,10 @@ export function ProblemWorkspace({
             onToggleExpand={onExpandTestcase}
             activeTab={testCaseActiveTab}
             onTabChange={onTestCaseTabChange}
+            language={language}
+            userCodeLineCount={userCodeLineCount}
+            onErrorLineClick={highlightErrorLine}
+            globalError={globalError}
           />
         </div>
       </div>
@@ -550,6 +608,10 @@ export function ProblemWorkspace({
               onToggleCollapse={handleToggleTestPanelCollapse}
               activeTab={testCaseActiveTab}
               onTabChange={onTestCaseTabChange}
+              language={language}
+              userCodeLineCount={userCodeLineCount}
+              onErrorLineClick={highlightErrorLine}
+              globalError={globalError}
             />
           </div>
         </ResizablePanel>

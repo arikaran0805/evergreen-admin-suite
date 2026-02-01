@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { RotateCcw, Settings, Maximize2 } from "lucide-react";
 import { ProblemDetail } from "./problemDetailData";
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 
 interface CodeEditorProps {
@@ -18,6 +18,18 @@ interface CodeEditorProps {
   onRun: (code: string, language: string) => void;
   onSubmit: (code: string, language: string) => void;
   readOnly?: boolean;
+  errorLine?: number;
+  onCodeChange?: (code: string, language: string) => void;
+}
+
+export interface CodeEditorRef {
+  getCode: () => string;
+  getLanguage: () => string;
+  setCode: (code: string) => void;
+  setLanguage: (language: string) => void;
+  getLineCount: () => number;
+  highlightErrorLine: (line: number) => void;
+  clearErrorHighlight: () => void;
 }
 
 const languageLabels: Record<string, string> = {
@@ -41,28 +53,112 @@ const monacoLanguageMap: Record<string, string> = {
   mysql: "sql",
 };
 
-export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit, readOnly = false }: CodeEditorProps) {
+export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function CodeEditor(
+  { problem, supportedLanguages, onRun, onSubmit, readOnly = false, errorLine, onCodeChange },
+  ref
+) {
   const { theme } = useTheme();
   const availableLanguages = supportedLanguages && supportedLanguages.length > 0 
     ? supportedLanguages 
     : Object.keys(problem.starterCode);
   const [language, setLanguage] = useState(availableLanguages[0] || "python");
   const [code, setCode] = useState(problem.starterCode[availableLanguages[0]] || "");
+  const editorRef = useRef<any>(null);
+  const decorationsRef = useRef<string[]>([]);
+  const monacoRef = useRef<Monaco | null>(null);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    getCode: () => code,
+    getLanguage: () => language,
+    setCode: (newCode: string) => setCode(newCode),
+    setLanguage: (newLang: string) => {
+      setLanguage(newLang);
+      setCode(problem.starterCode[newLang] || '');
+    },
+    getLineCount: () => code.split('\n').length,
+    highlightErrorLine: (line: number) => {
+      if (editorRef.current && monacoRef.current) {
+        const monaco = monacoRef.current;
+        // Clear previous decorations
+        decorationsRef.current = editorRef.current.deltaDecorations(
+          decorationsRef.current,
+          [
+            {
+              range: new monaco.Range(line, 1, line, 1),
+              options: {
+                isWholeLine: true,
+                className: 'error-line-highlight',
+                glyphMarginClassName: 'error-line-glyph',
+                linesDecorationsClassName: 'error-line-decoration',
+              },
+            },
+          ]
+        );
+        // Scroll to the error line
+        editorRef.current.revealLineInCenter(line);
+      }
+    },
+    clearErrorHighlight: () => {
+      if (editorRef.current) {
+        decorationsRef.current = editorRef.current.deltaDecorations(
+          decorationsRef.current,
+          []
+        );
+      }
+    },
+  }), [code, language, problem.starterCode]);
+
+  // Handle external error line changes
+  useEffect(() => {
+    if (errorLine && editorRef.current && monacoRef.current) {
+      const monaco = monacoRef.current;
+      decorationsRef.current = editorRef.current.deltaDecorations(
+        decorationsRef.current,
+        [
+          {
+            range: new monaco.Range(errorLine, 1, errorLine, 1),
+            options: {
+              isWholeLine: true,
+              className: 'error-line-highlight',
+              glyphMarginClassName: 'error-line-glyph',
+              linesDecorationsClassName: 'error-line-decoration',
+            },
+          },
+        ]
+      );
+      editorRef.current.revealLineInCenter(errorLine);
+    } else if (!errorLine && editorRef.current) {
+      decorationsRef.current = editorRef.current.deltaDecorations(
+        decorationsRef.current,
+        []
+      );
+    }
+  }, [errorLine]);
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
-    setCode(problem.starterCode[newLang] || '');
+    const newCode = problem.starterCode[newLang] || '';
+    setCode(newCode);
+    onCodeChange?.(newCode, newLang);
   };
 
   const handleReset = () => {
-    setCode(problem.starterCode[language] || '');
+    const resetCode = problem.starterCode[language] || '';
+    setCode(resetCode);
+    onCodeChange?.(resetCode, language);
   };
 
   const handleEditorChange = useCallback((value: string | undefined) => {
-    setCode(value || '');
-  }, []);
+    const newCode = value || '';
+    setCode(newCode);
+    onCodeChange?.(newCode, language);
+  }, [language, onCodeChange]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    
     // Add Ctrl+Enter keybinding to run code
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRun(code, language);
@@ -119,7 +215,7 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit, readO
             lineNumbers: "on",
             lineNumbersMinChars: 3,
             lineDecorationsWidth: 16,
-            glyphMargin: false,
+            glyphMargin: true,
             folding: false,
             minimap: { enabled: false },
             wordWrap: "on",
@@ -175,4 +271,4 @@ export function CodeEditor({ problem, supportedLanguages, onRun, onSubmit, readO
       </div>
     </div>
   );
-}
+});
