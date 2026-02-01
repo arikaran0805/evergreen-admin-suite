@@ -37,6 +37,7 @@ interface ProblemWorkspaceProps {
   onTestCaseTabChange?: (tab: string) => void;
   lastSubmittedCode?: { code: string; language: string } | null;
   globalError?: string;
+  isSubmit?: boolean;
 }
 
 const languageLabels: Record<string, string> = {
@@ -75,6 +76,7 @@ export function ProblemWorkspace({
   onTestCaseTabChange,
   lastSubmittedCode,
   globalError,
+  isSubmit = false,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
@@ -221,6 +223,7 @@ export function ProblemWorkspace({
             userCodeLineCount={userCodeLineCount}
             onErrorLineClick={highlightErrorLine}
             globalError={globalError}
+            isSubmit={isSubmit}
           />
         </div>
       </div>
@@ -612,6 +615,7 @@ export function ProblemWorkspace({
               userCodeLineCount={userCodeLineCount}
               onErrorLineClick={highlightErrorLine}
               globalError={globalError}
+              isSubmit={isSubmit}
             />
           </div>
         </ResizablePanel>

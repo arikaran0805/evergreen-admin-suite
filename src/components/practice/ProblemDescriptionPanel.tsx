@@ -1,13 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose, Check, X, Clock, HardDrive } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose, Check, X, Clock } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { formatDistanceToNow, format, isToday, isYesterday, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 
 interface Example {
   id: number;
@@ -436,12 +436,12 @@ export function ProblemDescriptionPanel({
             ) : (
               <div className="divide-y divide-border/50">
                 {/* Header */}
-                <div className="grid grid-cols-[40px_1fr_100px_90px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground bg-muted/30">
+                <div className="grid grid-cols-[40px_1fr_100px_90px_140px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground bg-muted/30">
                   <span></span>
                   <span>Status</span>
                   <span>Language</span>
                   <span>Runtime</span>
-                  <span>Memory</span>
+                  <span>Date & Time</span>
                 </div>
                 {/* Rows */}
                 {submissions.map((submission, index) => {
@@ -463,13 +463,6 @@ export function ProblemDescriptionPanel({
                   
                   // Format the date
                   const submittedDate = new Date(submission.submitted_at);
-                  const formatSubmissionDate = () => {
-                    const days = differenceInDays(new Date(), submittedDate);
-                    if (days < 7) {
-                      return formatDistanceToNow(submittedDate, { addSuffix: true });
-                    }
-                    return format(submittedDate, "MMM d, yyyy");
-                  };
 
                   // Language display name mapping
                   const languageLabels: Record<string, string> = {
@@ -487,20 +480,17 @@ export function ProblemDescriptionPanel({
                     <button
                       key={submission.id}
                       onClick={() => onViewSubmission?.(submission)}
-                      className="w-full text-left grid grid-cols-[40px_1fr_100px_90px_90px] gap-2 px-4 py-3 hover:bg-muted/50 transition-colors items-center"
+                      className="w-full text-left grid grid-cols-[40px_1fr_100px_90px_140px] gap-2 px-4 py-3 hover:bg-muted/50 transition-colors items-center"
                     >
                       {/* Row number */}
                       <span className="text-sm text-muted-foreground">
                         {submissions.length - index}
                       </span>
                       
-                      {/* Status + Date */}
+                      {/* Status */}
                       <div className="flex flex-col gap-0.5">
                         <span className={cn("text-sm font-medium", statusColors[submission.status])}>
                           {statusLabels[submission.status]}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatSubmissionDate()}
                         </span>
                       </div>
                       
@@ -517,10 +507,10 @@ export function ProblemDescriptionPanel({
                         <span>{submission.runtime_ms} ms</span>
                       </div>
                       
-                      {/* Memory */}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <HardDrive className="h-3 w-3" />
-                        <span>N/A</span>
+                      {/* Date & Time */}
+                      <div className="text-xs text-muted-foreground">
+                        <div>{format(submittedDate, "MMM d, yyyy")}</div>
+                        <div>{format(submittedDate, "h:mm a")}</div>
                       </div>
                     </button>
                   );
