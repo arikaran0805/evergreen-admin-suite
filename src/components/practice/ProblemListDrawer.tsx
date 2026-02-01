@@ -43,7 +43,7 @@ export function ProblemListDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[500px] sm:w-[550px] p-0">
+      <SheetContent side="left" className="w-[90vw] max-w-[700px] p-0">
         <SheetHeader className="px-6 py-4 border-b border-border/50">
           <SheetTitle className="text-left">{skillName}</SheetTitle>
           <p className="text-sm text-muted-foreground text-left">
@@ -52,27 +52,30 @@ export function ProblemListDrawer({
         </SheetHeader>
         
         <ScrollArea className="h-[calc(100vh-100px)]">
-          <div className="py-4">
+          <div className="py-6 space-y-6">
             {Object.entries(groupedByLesson).map(([lessonTitle, subTopics]) => (
-              <div key={lessonTitle} className="mb-4">
-                {/* Lesson Header - Card style */}
-                <div className="mx-4 px-4 py-3 bg-muted/40 rounded-t-lg border border-border/50 border-b-0">
-                  <span className="font-semibold text-foreground">{lessonTitle}</span>
-                </div>
-                
-                {/* Sub-topics and Problems */}
-                <div className="mx-4 border border-border/50 border-t-0 rounded-b-lg overflow-hidden">
-                  {Object.entries(subTopics).map(([subTopicTitle, subTopicProblems]) => (
+              <div key={lessonTitle} className="mx-6">
+                {/* Lesson Card Container */}
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  {/* Lesson Header */}
+                  <div className="px-5 py-4 bg-muted/30">
+                    <span className="font-semibold text-foreground">{lessonTitle}</span>
+                  </div>
+                  
+                  {/* Sub-topics and Problems */}
+                  {Object.entries(subTopics).map(([subTopicTitle, subTopicProblems], subIdx) => (
                     <div key={subTopicTitle}>
                       {/* Sub-topic Header - with left accent border */}
-                      <div className="px-4 py-2 border-l-2 border-l-primary/60 bg-background">
+                      <div className="px-5 py-3 border-l-[3px] border-l-primary bg-background">
                         <span className="text-sm italic text-muted-foreground">{subTopicTitle}</span>
                       </div>
                       
                       {/* Problem Rows */}
-                      {subTopicProblems.map((problem) => {
+                      {subTopicProblems.map((problem, problemIdx) => {
                         const isActive = problem.slug === currentProblemSlug;
                         const isSolved = false; // TODO: integrate with user progress
+                        const isLast = problemIdx === subTopicProblems.length - 1 && 
+                                       subIdx === Object.keys(subTopics).length - 1;
                         
                         return (
                           <button
@@ -82,19 +85,20 @@ export function ProblemListDrawer({
                               onOpenChange(false);
                             }}
                             className={cn(
-                              "w-full px-4 py-3 flex items-center gap-3 text-left transition-colors border-t border-border/30",
-                              "hover:bg-muted/30",
+                              "w-full px-5 py-4 flex items-center gap-4 text-left transition-colors",
+                              "hover:bg-muted/20",
+                              !isLast && "border-b border-border/30",
                               isActive && "bg-primary/5"
                             )}
                           >
                             {/* Status Circle */}
                             <div className="shrink-0">
                               {isSolved ? (
-                                <div className="h-5 w-5 rounded-full border-2 border-emerald-500 flex items-center justify-center">
-                                  <Check className="h-3 w-3 text-emerald-500" />
+                                <div className="h-6 w-6 rounded-full border-2 border-emerald-500 flex items-center justify-center">
+                                  <Check className="h-3.5 w-3.5 text-emerald-500" />
                                 </div>
                               ) : (
-                                <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                                <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30" />
                               )}
                             </div>
                             
@@ -107,14 +111,14 @@ export function ProblemListDrawer({
                             </span>
                             
                             {/* Solution Link */}
-                            <div className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+                            <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground shrink-0">
                               <FileText className="h-4 w-4" />
-                              <span className="text-xs">Solution</span>
+                              <span className="text-sm">Solution</span>
                             </div>
                             
                             {/* Difficulty Badge */}
                             <span className={cn(
-                              "text-sm font-medium shrink-0 min-w-[50px] text-right",
+                              "text-sm font-medium shrink-0 min-w-[60px] text-right",
                               difficultyColors[problem.difficulty]
                             )}>
                               {problem.difficulty}
@@ -129,7 +133,7 @@ export function ProblemListDrawer({
             ))}
             
             {problems.length === 0 && (
-              <div className="px-4 py-8 text-center text-muted-foreground">
+              <div className="px-6 py-8 text-center text-muted-foreground">
                 <p>No problems available</p>
               </div>
             )}
