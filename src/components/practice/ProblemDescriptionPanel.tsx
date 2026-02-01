@@ -57,16 +57,12 @@ export function ProblemDescriptionPanel({
   const [dislikeCount, setDislikeCount] = useState(56);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Collapsed state: keep a visible header bar so the reopen icon is always reachable.
+  // Collapsed state: vertical header layout
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full flex items-center justify-between px-4 bg-card">
-        <div className="flex items-center gap-2 min-w-0">
-          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm font-medium text-muted-foreground truncate">{title}</span>
-        </div>
-
-        <div className="flex items-center gap-0.5 shrink-0">
+      <div className="h-full w-full flex flex-col items-center py-3 bg-card">
+        {/* Top buttons */}
+        <div className="flex flex-col items-center gap-1 shrink-0">
           {onToggleCollapse && (
             <Button
               variant="ghost"
@@ -90,6 +86,17 @@ export function ProblemDescriptionPanel({
               <Maximize2 className="h-4 w-4" />
             </Button>
           )}
+        </div>
+
+        {/* Vertical text */}
+        <div className="flex-1 flex items-center justify-center min-h-0 py-4">
+          <div 
+            className="flex items-center gap-2 text-muted-foreground"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          >
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="text-sm font-medium truncate max-h-[200px]">{title}</span>
+          </div>
         </div>
       </div>
     );
