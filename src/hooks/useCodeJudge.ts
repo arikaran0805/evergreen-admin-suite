@@ -107,6 +107,30 @@ export function useCodeJudge() {
   };
 }
 
+// Helper to parse a value string (handles JSON, Python literals, etc.)
+function parseValue(valueStr: string): unknown {
+  const trimmed = valueStr.trim();
+  
+  // Try direct JSON parse first
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Try Python-style conversion
+    const cleanValue = trimmed
+      .replace(/'/g, '"') // Python strings use single quotes
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false')
+      .replace(/\bNone\b/g, 'null');
+    
+    try {
+      return JSON.parse(cleanValue);
+    } catch {
+      // Return as string if all else fails
+      return trimmed;
+    }
+  }
+}
+
 // Helper to convert database test cases to judge format
 export function convertTestCasesToJudgeFormat(
   testCases: Array<{
@@ -118,33 +142,50 @@ export function convertTestCasesToJudgeFormat(
   parameterNames: string[]
 ): TestCaseInput[] {
   return testCases.map((tc, index) => {
-    // Parse the input string which contains variable assignments
-    // e.g., "nums = [2,7,11,15]\ntarget = 9"
     const inputs: Record<string, unknown> = {};
+    const inputStr = tc.input.trim();
     
-    // Try to parse input as structured data
-    const lines = tc.input.split('\n').filter(line => line.trim());
+    // Try to parse input as structured data with variable assignments
+    // e.g., "nums = [2,7,11,15]\ntarget = 9"
+    const lines = inputStr.split('\n').filter(line => line.trim());
+    let hasAssignments = false;
     
     for (const line of lines) {
       const match = line.match(/^(\w+)\s*=\s*(.+)$/);
       if (match) {
+        hasAssignments = true;
         const [, paramName, valueStr] = match;
+        inputs[paramName] = parseValue(valueStr.trim());
+      }
+    }
+    
+    // If no assignments found, try to parse as raw value(s)
+    // Handle single parameter case: input is just the value like "[2, 4, 6]"
+    if (!hasAssignments && parameterNames.length > 0) {
+      if (parameterNames.length === 1) {
+        // Single parameter - entire input is the value
+        inputs[parameterNames[0]] = parseValue(inputStr);
+      } else {
+        // Multiple parameters - try to parse as comma-separated or JSON array
         try {
-          // Try to parse as JSON
-          inputs[paramName] = JSON.parse(valueStr.trim());
-        } catch {
-          // If not valid JSON, try Python-style conversion
-          const cleanValue = valueStr.trim()
-            .replace(/'/g, '"') // Python strings
-            .replace(/True/g, 'true')
-            .replace(/False/g, 'false')
-            .replace(/None/g, 'null');
-          try {
-            inputs[paramName] = JSON.parse(cleanValue);
-          } catch {
-            // Store as string if all else fails
-            inputs[paramName] = valueStr.trim();
+          // Try parsing as JSON array first
+          const parsed = JSON.parse(inputStr);
+          if (Array.isArray(parsed) && parsed.length === parameterNames.length) {
+            parameterNames.forEach((name, i) => {
+              inputs[name] = parsed[i];
+            });
           }
+        } catch {
+          // Try splitting by newlines or commas
+          const values = lines.length === parameterNames.length 
+            ? lines 
+            : inputStr.split(',').map(v => v.trim());
+          
+          parameterNames.forEach((name, i) => {
+            if (values[i] !== undefined) {
+              inputs[name] = parseValue(values[i]);
+            }
+          });
         }
       }
     }
