@@ -4,6 +4,8 @@ export { ProblemSection } from './ProblemSection';
 export { LessonProblemSection } from './LessonProblemSection';
 export { ProblemRow } from './ProblemRow';
 export { ProblemDescription } from './ProblemDescription';
+export { ProblemDescriptionPanel } from './ProblemDescriptionPanel';
+export { ProblemWorkspace } from './ProblemWorkspace';
 export { CodeEditor } from './CodeEditor';
 export { TestCasePanel } from './TestCasePanel';
 export { ProblemListDrawer } from './ProblemListDrawer';
