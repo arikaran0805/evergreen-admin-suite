@@ -240,7 +240,7 @@ export function ProblemWorkspace({
           onMouseLeave={() => setIsEditorHovered(false)}
         >
           {/* First Header Row - Title and Controls */}
-          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
+          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50">
             <div className="flex items-center gap-2">
               <Code className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Code</span>
@@ -415,7 +415,7 @@ export function ProblemWorkspace({
             onMouseLeave={() => setIsEditorHovered(false)}
           >
             {/* First Header Row - Title and Controls (Always visible) */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/40">
+            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50">
               <div className="flex items-center gap-2">
                 <Code className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Code</span>
