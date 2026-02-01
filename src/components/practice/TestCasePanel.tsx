@@ -388,35 +388,56 @@ export function TestCasePanel({
                   })()}
                   
                   {/* Summary - Only show if no global error */}
-                  {!globalError && (
-                    <div className={cn(
-                      "p-4 rounded-lg",
-                      results.every(r => r.passed) 
-                        ? "bg-green-500/10 border border-green-500/20" 
-                        : "bg-amber-500/10 border border-amber-500/20"
-                    )}>
-                      <div className="flex items-center justify-center gap-2">
-                        {results.every(r => r.passed) ? (
-                          isSubmit ? (
-                            <span className="font-medium text-green-600 dark:text-green-500 text-center">
-                              🎉 Congratulations! You nailed it!
-                            </span>
-                          ) : (
-                            <>
-                              <Check className="h-5 w-5 text-green-600 dark:text-green-500" />
-                              <span className="font-medium text-green-600 dark:text-green-500">
-                                {results.filter(r => r.passed).length}/{results.length} tests passed
-                              </span>
-                            </>
-                          )
-                        ) : (
-                          <span className="font-medium text-amber-600 dark:text-amber-500">
-                            ⚠️ You're close — {results.filter(r => r.passed).length}/{results.length} tests passed
+                  {!globalError && (() => {
+                    const passedCount = results.filter(r => r.passed).length;
+                    const totalCount = results.length;
+                    const allPassed = passedCount === totalCount;
+                    const nonePassed = passedCount === 0;
+
+                    let message = "";
+                    let colorClass = "";
+
+                    if (isSubmit) {
+                      // SUBMIT MODE
+                      if (allPassed) {
+                        message = "🎉 Great job! Your solution passed all test cases.";
+                        colorClass = "text-green-600 dark:text-green-500";
+                      } else if (nonePassed) {
+                        message = "🔁 That's okay — take another look at the core logic.";
+                        colorClass = "text-amber-600 dark:text-amber-500";
+                      } else {
+                        message = "🧠 You're very close — review edge cases and try again.";
+                        colorClass = "text-amber-600 dark:text-amber-500";
+                      }
+                    } else {
+                      // RUN MODE (Sample Tests Only)
+                      if (allPassed) {
+                        message = "✅ Nice! Samples passed — try Submit to check edge cases.";
+                        colorClass = "text-green-600 dark:text-green-500";
+                      } else if (nonePassed) {
+                        message = "🔍 Let's revisit the logic — try stepping through the sample input.";
+                        colorClass = "text-amber-600 dark:text-amber-500";
+                      } else {
+                        message = "🧠 Good progress — a small tweak could fix the remaining cases.";
+                        colorClass = "text-amber-600 dark:text-amber-500";
+                      }
+                    }
+
+                    return (
+                      <div className={cn(
+                        "p-4 rounded-lg",
+                        allPassed 
+                          ? "bg-green-500/10 border border-green-500/20" 
+                          : "bg-amber-500/10 border border-amber-500/20"
+                      )}>
+                        <div className="flex items-center justify-center gap-2 text-center">
+                          <span className={cn("font-medium", colorClass)}>
+                            {message}
                           </span>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Individual Results */}
                   {results.map((result, i) => {
