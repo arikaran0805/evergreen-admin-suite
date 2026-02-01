@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, FileText, Code2, History } from "lucide-react";
 import { useState } from "react";
 import { ProblemDetail } from "./problemDetailData";
 import { cn } from "@/lib/utils";
@@ -31,20 +31,23 @@ export function ProblemDescription({ problem }: ProblemDescriptionProps) {
           <TabsList className="h-11 bg-transparent p-0 gap-4">
             <TabsTrigger 
               value="description" 
-              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground"
+              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
             >
+              <FileText className="h-4 w-4" />
               Description
             </TabsTrigger>
             <TabsTrigger 
               value="solutions" 
-              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground"
+              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
             >
+              <Code2 className="h-4 w-4" />
               Solutions
             </TabsTrigger>
             <TabsTrigger 
               value="submissions" 
-              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground"
+              className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
             >
+              <History className="h-4 w-4" />
               Submissions
             </TabsTrigger>
           </TabsList>
