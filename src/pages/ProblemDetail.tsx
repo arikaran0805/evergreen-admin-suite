@@ -406,6 +406,23 @@ export default function ProblemDetail() {
     );
   }
 
+  // Calculate previous/next problems for navigation
+  const currentIndex = allProblemsInSkill.findIndex((p) => p.slug === problemId);
+  const prevProblem = currentIndex > 0 ? allProblemsInSkill[currentIndex - 1] : null;
+  const nextProblem = currentIndex < allProblemsInSkill.length - 1 ? allProblemsInSkill[currentIndex + 1] : null;
+
+  const handlePrevProblem = () => {
+    if (prevProblem) {
+      navigate(`/practice/${skillId}/problem/${prevProblem.slug}`);
+    }
+  };
+
+  const handleNextProblem = () => {
+    if (nextProblem) {
+      navigate(`/practice/${skillId}/problem/${nextProblem.slug}`);
+    }
+  };
+
   // Render fullscreen panel if expanded
   if (expandedPanel) {
     return (
@@ -441,11 +458,23 @@ export default function ProblemDetail() {
             </button>
 
             <div className="flex items-center">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={handlePrevProblem}
+                disabled={!prevProblem}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm font-medium px-2">{problem.title}</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={handleNextProblem}
+                disabled={!nextProblem}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -532,11 +561,23 @@ export default function ProblemDetail() {
           </button>
 
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={handlePrevProblem}
+              disabled={!prevProblem}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium px-2">{problem.title}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={handleNextProblem}
+              disabled={!nextProblem}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
