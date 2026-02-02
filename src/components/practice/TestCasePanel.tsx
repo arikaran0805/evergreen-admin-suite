@@ -388,12 +388,15 @@ export function TestCasePanel({
                         <div className="px-4 py-3 space-y-3 bg-background/50">
                           {parsed.isUserCodeError ? (
                             <>
-                              {/* Primary error message (like: NameError: name 'count' is not defined) */}
+                              {/* Primary error message - different format for syntax vs runtime */}
                               <p className={cn("text-sm", style.headerText)}>
-                                {parsed.type}: {parsed.friendlyMessage}
+                                {isSyntaxError(parsed) 
+                                  ? parsed.friendlyMessage  // Syntax: Clean human message only
+                                  : `${parsed.type}: ${parsed.friendlyMessage}`  // Runtime: Include error type
+                                }
                               </p>
 
-                              {/* Fix hint - what kind of fix is required */}
+                              {/* Fix hint - coaching guidance */}
                               {parsed.fixHint && (
                                 <p className="text-xs text-muted-foreground italic flex items-start gap-1.5">
                                   <span>💡</span>
@@ -448,7 +451,7 @@ export function TestCasePanel({
                           )}
                         </div>
 
-                        {/* Technical Details (Collapsible) */}
+                        {/* Technical Details (Collapsible) - Raw stderr output */}
                         <div className="border-t border-border/30">
                           <button
                             onClick={() => setShowRawError(!showRawError)}
@@ -461,7 +464,7 @@ export function TestCasePanel({
                           {showRawError && (
                             <div className="px-4 pb-4">
                               <pre className="text-xs p-3 rounded bg-muted/50 overflow-x-auto whitespace-pre-wrap break-words border border-border/30 text-muted-foreground max-h-48 overflow-y-auto">
-                                {cleanErrorMessage(parsed.rawError)}
+                                {isSyntaxError(parsed) ? parsed.rawError : cleanErrorMessage(parsed.rawError)}
                               </pre>
                             </div>
                           )}

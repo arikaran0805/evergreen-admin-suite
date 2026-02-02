@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, AlertTriangle, XCircle, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, getPhaseDisplayText, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, isSyntaxError, getPhaseDisplayText, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
 
 interface ErrorDisplayProps {
   error: string;
@@ -78,12 +78,15 @@ export function ErrorDisplay({
         {/* Error Message */}
         {parsed.isUserCodeError ? (
           <>
-            {/* Primary error message (like: NameError: name 'count' is not defined) */}
+            {/* Primary error message - different format for syntax vs runtime */}
             <p className={cn("text-sm", style.headerText)}>
-              {parsed.type}: {parsed.friendlyMessage}
+              {isSyntaxError(parsed) 
+                ? parsed.friendlyMessage  // Syntax: Clean human message only
+                : `${parsed.type}: ${parsed.friendlyMessage}`  // Runtime: Include error type
+              }
             </p>
 
-            {/* Fix hint - what kind of fix is required */}
+            {/* Fix hint - coaching guidance */}
             {parsed.fixHint && (
               <p className="text-xs text-muted-foreground italic flex items-start gap-1.5">
                 <span>💡</span>
@@ -138,7 +141,7 @@ export function ErrorDisplay({
         )}
       </div>
 
-      {/* Technical Details (Collapsible) */}
+      {/* Technical Details (Collapsible) - Raw stderr output */}
       <div className="border-t border-border/30">
         <button
           onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
@@ -155,7 +158,7 @@ export function ErrorDisplay({
         {showTechnicalDetails && (
           <div className="px-4 pb-4">
             <pre className="text-xs p-3 rounded bg-muted/50 overflow-x-auto whitespace-pre-wrap break-words border border-border/30 text-muted-foreground max-h-48 overflow-y-auto">
-              {cleanErrorMessage(parsed.rawError)}
+              {isSyntaxError(parsed) ? parsed.rawError : cleanErrorMessage(parsed.rawError)}
             </pre>
           </div>
         )}
