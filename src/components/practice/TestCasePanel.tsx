@@ -33,6 +33,11 @@ interface TestCasePanelProps {
   onErrorLineClick?: (line: number) => void;
   globalError?: string;
   isSubmit?: boolean;
+  // New settings-driven props
+  showSampleTestcasesFirst?: boolean;
+  errorMessageStyle?: 'beginner' | 'standard';
+  revealOutputOnlyAfterRun?: boolean;
+  hasRunOnce?: boolean;
 }
 
 // Hidden Test Case Component with expandable output
@@ -123,6 +128,10 @@ export function TestCasePanel({
   onErrorLineClick,
   globalError,
   isSubmit = false,
+  showSampleTestcasesFirst = true,
+  errorMessageStyle = 'beginner',
+  revealOutputOnlyAfterRun = false,
+  hasRunOnce = false,
 }: TestCasePanelProps) {
   const [internalActiveTab, setInternalActiveTab] = useState("testcase");
   const activeTab = controlledActiveTab ?? internalActiveTab;
@@ -134,6 +143,16 @@ export function TestCasePanel({
 
   const hasResults = results.length > 0;
   const hasError = globalError || results.some(r => r.error);
+
+  // Sort results: show sample (visible) test cases first if setting is enabled
+  const sortedResults = showSampleTestcasesFirst 
+    ? [...results].sort((a, b) => {
+        // Non-hidden (sample) cases come first
+        if (!a.isHidden && b.isHidden) return -1;
+        if (a.isHidden && !b.isHidden) return 1;
+        return 0;
+      })
+    : results;
 
   // Collapsed state: keep a visible header bar so the reopen icon is always reachable.
   if (isCollapsed && !isExpanded) {
@@ -336,7 +355,9 @@ export function TestCasePanel({
                                     ? "text-red-600 dark:text-red-400" 
                                     : "text-muted-foreground"
                                 )}>
-                                  {parsed.isUserCodeError ? `❌ ${parsed.friendlyType}` : "⚙️ Internal Error"}
+                                  {parsed.isUserCodeError 
+                                    ? `❌ ${errorMessageStyle === 'beginner' ? parsed.friendlyType : parsed.type}` 
+                                    : "⚙️ Internal Error"}
                                 </span>
                                 {parsed.isUserCodeError && parsed.userLine && (
                                   <button
@@ -349,7 +370,7 @@ export function TestCasePanel({
                               </div>
                               <p className="text-sm text-foreground/80">
                                 {parsed.isUserCodeError 
-                                  ? parsed.friendlyMessage 
+                                  ? (errorMessageStyle === 'beginner' ? parsed.friendlyMessage : parsed.message)
                                   : "This error is not your fault - it occurred in the test harness."}
                               </p>
                               {parsed.codeSnippet && (
@@ -358,7 +379,7 @@ export function TestCasePanel({
                                   <span className="text-red-600 dark:text-red-400">{parsed.codeSnippet}</span>
                                 </div>
                               )}
-                              {parsed.message && parsed.isUserCodeError && (
+                              {errorMessageStyle === 'beginner' && parsed.message && parsed.isUserCodeError && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {parsed.type}: {parsed.message}
                                 </p>
@@ -446,7 +467,7 @@ export function TestCasePanel({
                   })()}
 
                   {/* Individual Results */}
-                  {results.map((result, i) => {
+                  {sortedResults.map((result, i) => {
                     const errorParsed = result.error 
                       ? parseCodeError(result.error, language, userCodeLineCount) 
                       : null;
@@ -455,7 +476,7 @@ export function TestCasePanel({
                     if (result.isHidden) {
                       return (
                         <HiddenTestCase 
-                          key={i}
+                          key={result.id ?? i}
                           result={result}
                           index={i}
                         />
@@ -463,25 +484,25 @@ export function TestCasePanel({
                     }
                     
                     return (
-                      <div key={i} className="border border-border/50 rounded-lg p-4">
+                      <div key={result.id ?? i} className="border border-border/50 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-3">
                           {result.passed ? (
                             <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
                           ) : (
                             <X className="h-4 w-4 text-red-600 dark:text-red-500" />
                           )}
-                          <span className="font-medium text-sm">Test Case {i + 1}</span>
+                          <span className="font-medium text-sm">Test Case {result.id ?? i + 1}</span>
                           {result.runtime && (
                             <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
                           )}
                         </div>
                         
-                        {/* Error display for this test case */}
+                        {/* Error display for this test case - respects errorMessageStyle */}
                         {errorParsed && !globalError && (
                           <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
                             <div className="flex items-center gap-2 text-sm">
                               <span className="text-red-600 dark:text-red-400 font-medium">
-                                {errorParsed.friendlyType}
+                                {errorMessageStyle === 'beginner' ? errorParsed.friendlyType : errorParsed.type}
                               </span>
                               {errorParsed.userLine && (
                                 <button
@@ -493,13 +514,19 @@ export function TestCasePanel({
                               )}
                             </div>
                             <p className="text-xs text-foreground/70 mt-1">
-                              {errorParsed.friendlyMessage}
+                              {errorMessageStyle === 'beginner' ? errorParsed.friendlyMessage : errorParsed.message}
                             </p>
-                            {errorParsed.message && (
+                            {errorMessageStyle === 'beginner' && errorParsed.message && (
                               <p className="text-xs text-muted-foreground mt-1 font-mono">
                                 {errorParsed.message.substring(0, 100)}
                                 {errorParsed.message.length > 100 ? '...' : ''}
                               </p>
+                            )}
+                            {errorMessageStyle === 'standard' && errorParsed.codeSnippet && (
+                              <div className="mt-2 p-2 rounded bg-muted/50 font-mono text-xs border border-border/50">
+                                <span className="text-muted-foreground">→ </span>
+                                <span className="text-red-600 dark:text-red-400">{errorParsed.codeSnippet}</span>
+                              </div>
                             )}
                           </div>
                         )}
@@ -538,7 +565,11 @@ export function TestCasePanel({
         <TabsContent value="output" className="flex-1 min-h-0 overflow-hidden m-0">
           <ScrollArea className="h-full w-full">
             <div className="p-4 pb-8">
-              {output ? (
+              {revealOutputOnlyAfterRun && !hasRunOnce ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>Output will appear after you run your code.</p>
+                </div>
+              ) : output ? (
                 <pre className="font-mono text-sm whitespace-pre-wrap">{output}</pre>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
