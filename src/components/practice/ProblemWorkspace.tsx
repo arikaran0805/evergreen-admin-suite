@@ -13,7 +13,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
-import { RotateCcw, Expand, Shrink, PanelTopClose, PanelTopOpen, Braces, AlignLeft, FileCode, Maximize } from "lucide-react";
+import { RotateCcw, Expand, Shrink, PanelTopClose, PanelTopOpen, Braces, AlignLeft, FileCode, Maximize, Settings } from "lucide-react";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { TestCasePanel, TestResult } from "./TestCasePanel";
@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { parseCodeError } from "@/lib/errorParser";
 import { useProblemCodePersistence } from "@/hooks/useProblemCodePersistence";
-import { usePracticeEditorSettings } from "@/hooks/usePracticeEditorSettings";
-import { PracticeEditorSettingsPopover } from "./PracticeEditorSettingsPopover";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { PlatformSettingsModal } from "./PlatformSettingsModal";
 import { formatPython, registerMonacoPythonFormatter } from "@/lib/formatters/pythonFormatter";
 
 interface ProblemWorkspaceProps {
@@ -94,13 +94,14 @@ export function ProblemWorkspace({
   const [isEditorPanelCollapsed, setIsEditorPanelCollapsed] = useState(false);
   const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
   const [errorLine, setErrorLine] = useState<number | undefined>();
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
-  const { settings, updateSetting } = usePracticeEditorSettings();
-  const tabWidthRef = useRef(settings.tabSize);
+  const { settings, monacoOptions } = usePlatformSettings();
+  const tabWidthRef = useRef(settings.codeEditor.tabSize);
 
   useEffect(() => {
-    tabWidthRef.current = settings.tabSize;
-  }, [settings.tabSize]);
+    tabWidthRef.current = settings.codeEditor.tabSize;
+  }, [settings.codeEditor.tabSize]);
   
   // Use the persistence hook for code management
   const {
@@ -205,16 +206,11 @@ export function ProblemWorkspace({
     const editor = editorRef.current;
     if (!editor) return;
 
-    editor.updateOptions({
-      fontSize: settings.fontSize,
-      wordWrap: settings.wordWrap ? "on" : "off",
-      lineNumbers: settings.lineNumbers ? "on" : "off",
-      minimap: { enabled: settings.minimap },
-    });
+    editor.updateOptions(monacoOptions);
 
     const model = editor.getModel?.();
-    model?.updateOptions?.({ tabSize: settings.tabSize, insertSpaces: true });
-  }, [settings]);
+    model?.updateOptions?.({ tabSize: settings.codeEditor.tabSize, insertSpaces: settings.codeEditor.indentationType === "spaces" });
+  }, [monacoOptions, settings.codeEditor.tabSize, settings.codeEditor.indentationType]);
 
   const handleFormatCode = useCallback(async () => {
     const editor = editorRef.current;
@@ -231,7 +227,7 @@ export function ProblemWorkspace({
         if (!model) return;
 
         const formatted = await formatPython(model.getValue(), {
-          tabWidth: settings.tabSize,
+          tabWidth: settings.codeEditor.tabSize,
         });
 
         model.pushEditOperations(
@@ -257,7 +253,7 @@ export function ProblemWorkspace({
     } catch {
       toast.error("Couldn't format this code.");
     }
-  }, [language, settings.tabSize]);
+  }, [language, settings.codeEditor.tabSize]);
 
   const handleRun = () => {
     testPanelRef.current?.expand();
@@ -325,6 +321,7 @@ export function ProblemWorkspace({
   // If editor is expanded, show only editor panel (full height)
   if (isEditorExpanded) {
     return (
+    <>
       <div className="h-full flex flex-col gap-1.5">
         <div 
           className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
@@ -400,7 +397,15 @@ export function ProblemWorkspace({
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <PracticeEditorSettingsPopover settings={settings} onChange={updateSetting} />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7" 
+                onClick={() => setSettingsModalOpen(true)}
+                title="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -423,21 +428,16 @@ export function ProblemWorkspace({
               onChange={handleEditorChange}
               onMount={handleEditorMount}
               options={{
-                fontSize: settings.fontSize,
-                fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                lineNumbers: settings.lineNumbers ? "on" : "off",
+                ...monacoOptions,
+                fontFamily: monacoOptions.fontFamily || "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
                 lineNumbersMinChars: 1,
                 lineDecorationsWidth: 8,
                 glyphMargin: true,
                 folding: true,
                 foldingHighlight: true,
                 showFoldingControls: "always",
-                minimap: { enabled: settings.minimap },
-                wordWrap: settings.wordWrap ? "on" : "off",
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
-                tabSize: settings.tabSize,
-                insertSpaces: true,
                 renderIndentGuides: true,
                 padding: { top: 16, bottom: 16 },
                 scrollbar: {
@@ -449,7 +449,6 @@ export function ProblemWorkspace({
                 overviewRulerBorder: false,
                 hideCursorInOverviewRuler: true,
                 overviewRulerLanes: 0,
-                renderLineHighlight: "line",
                 cursorBlinking: "smooth",
                 cursorSmoothCaretAnimation: "on",
                 smoothScrolling: true,
@@ -488,6 +487,13 @@ export function ProblemWorkspace({
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <PlatformSettingsModal 
+        open={settingsModalOpen} 
+        onOpenChange={setSettingsModalOpen} 
+      />
+    </>
     );
   }
 
@@ -597,7 +603,15 @@ export function ProblemWorkspace({
                     >
                       <RotateCcw className="h-4 w-4" />
                     </Button>
-                    <PracticeEditorSettingsPopover settings={settings} onChange={updateSetting} />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      onClick={() => setSettingsModalOpen(true)}
+                      title="Settings"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -620,21 +634,16 @@ export function ProblemWorkspace({
                     onChange={handleEditorChange}
                     onMount={handleEditorMount}
                     options={{
-                      fontSize: settings.fontSize,
-                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                      lineNumbers: settings.lineNumbers ? "on" : "off",
+                      ...monacoOptions,
+                      fontFamily: monacoOptions.fontFamily || "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
                       lineNumbersMinChars: 1,
                       lineDecorationsWidth: 8,
                       glyphMargin: true,
                       folding: true,
                       foldingHighlight: true,
                       showFoldingControls: "always",
-                      minimap: { enabled: settings.minimap },
-                      wordWrap: settings.wordWrap ? "on" : "off",
                       scrollBeyondLastLine: false,
                       automaticLayout: true,
-                      tabSize: settings.tabSize,
-                      insertSpaces: true,
                       renderIndentGuides: true,
                       padding: { top: 16, bottom: 16 },
                       scrollbar: {
@@ -646,7 +655,6 @@ export function ProblemWorkspace({
                       overviewRulerBorder: false,
                       hideCursorInOverviewRuler: true,
                       overviewRulerLanes: 0,
-                      renderLineHighlight: "line",
                       cursorBlinking: "smooth",
                       cursorSmoothCaretAnimation: "on",
                       smoothScrolling: true,
@@ -722,6 +730,12 @@ export function ProblemWorkspace({
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Settings Modal */}
+      <PlatformSettingsModal 
+        open={settingsModalOpen} 
+        onOpenChange={setSettingsModalOpen} 
+      />
     </div>
   );
 }
