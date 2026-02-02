@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, AlertTriangle, XCircle, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, isSyntaxError, getPhaseDisplayText, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
 
 interface ErrorDisplayProps {
   error: string;
@@ -78,13 +78,19 @@ export function ErrorDisplay({
         {/* Error Message */}
         {parsed.isUserCodeError ? (
           <>
-            {/* Primary error message - different format for syntax vs runtime */}
+            {/* Primary error message - human-friendly for both syntax and runtime */}
             <p className={cn("text-sm", style.headerText)}>
-              {isSyntaxError(parsed) 
-                ? parsed.friendlyMessage  // Syntax: Clean human message only
-                : `${parsed.type}: ${parsed.friendlyMessage}`  // Runtime: Include error type
-              }
+              {parsed.friendlyMessage}
             </p>
+
+            {/* Runtime Error: Show specific error type and message */}
+            {isRuntimeError(parsed) && (
+              <div className="text-xs font-mono bg-muted/50 rounded px-2 py-1.5 border border-border/30">
+                <span className="text-red-600 dark:text-red-400 font-medium">{parsed.type}</span>
+                <span className="text-muted-foreground">: </span>
+                <span className="text-foreground/80">{parsed.message}</span>
+              </div>
+            )}
 
             {/* Fix hint - coaching guidance */}
             {parsed.fixHint && (
