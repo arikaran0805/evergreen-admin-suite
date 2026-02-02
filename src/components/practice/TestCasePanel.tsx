@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye, AlertTriangle, XCircle, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, type ErrorCategory } from "@/lib/errorParser";
 
 export interface TestResult {
   id: number;
@@ -331,75 +331,133 @@ export function TestCasePanel({
                 </div>
               ) : hasResults ? (
                 <div className="space-y-4">
-                  {/* Global Error Display (for syntax/compilation errors) */}
+                  {/* Global Error Display (LeetCode-style) */}
                   {globalError && (() => {
                     const parsed = parseCodeError(globalError, language, userCodeLineCount);
+                    
+                    // Determine style based on error category
+                    const getCategoryStyle = (category: ErrorCategory) => {
+                      switch (category) {
+                        case 'syntax':
+                          return {
+                            headerBg: "bg-red-500/10",
+                            headerBorder: "border-red-500/20",
+                            headerText: "text-red-600 dark:text-red-400",
+                            Icon: XCircle,
+                          };
+                        case 'runtime':
+                          return {
+                            headerBg: "bg-red-500/10",
+                            headerBorder: "border-red-500/20",
+                            headerText: "text-red-600 dark:text-red-400",
+                            Icon: AlertTriangle,
+                          };
+                        case 'internal':
+                          return {
+                            headerBg: "bg-muted",
+                            headerBorder: "border-border",
+                            headerText: "text-muted-foreground",
+                            Icon: Cog,
+                          };
+                      }
+                    };
+                    
+                    const style = getCategoryStyle(parsed.category);
+                    const { Icon } = style;
+                    
+                    // Format header text (LeetCode style)
+                    const headerText = parsed.category === 'internal' 
+                      ? 'Internal Error' 
+                      : parsed.category === 'syntax' 
+                        ? 'Syntax Error' 
+                        : 'Runtime Error';
+
                     return (
                       <div className={cn(
-                        "rounded-lg border overflow-hidden",
-                        parsed.isUserCodeError 
-                          ? "bg-red-500/10 border-red-500/30" 
-                          : "bg-muted/50 border-border/50"
+                        "rounded-lg border overflow-hidden font-mono text-sm",
+                        style.headerBg,
+                        style.headerBorder
                       )}>
-                        <div className="p-4">
-                          <div className="flex items-start gap-3">
-                            <X className={cn(
-                              "h-5 w-5 mt-0.5 shrink-0",
-                              parsed.isUserCodeError ? "text-red-500" : "text-muted-foreground"
-                            )} />
-                            <div className="flex-1 min-w-0 space-y-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className={cn(
-                                  "font-semibold",
-                                  parsed.isUserCodeError 
-                                    ? "text-red-600 dark:text-red-400" 
-                                    : "text-muted-foreground"
-                                )}>
-                                  {parsed.isUserCodeError 
-                                    ? `❌ ${errorMessageStyle === 'beginner' ? parsed.friendlyType : parsed.type}` 
-                                    : "⚙️ Internal Error"}
-                                </span>
-                                {parsed.isUserCodeError && parsed.userLine && (
-                                  <button
-                                    onClick={() => onErrorLineClick?.(parsed.userLine!)}
-                                    className="text-sm px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
-                                  >
-                                    line {parsed.userLine}
-                                  </button>
-                                )}
-                              </div>
-                              <p className="text-sm text-foreground/80">
-                                {parsed.isUserCodeError 
-                                  ? (errorMessageStyle === 'beginner' ? parsed.friendlyMessage : parsed.message)
-                                  : "This error is not your fault - it occurred in the test harness."}
-                              </p>
-                              {parsed.codeSnippet && (
-                                <div className="mt-2 p-2 rounded bg-muted/50 font-mono text-sm border border-border/50">
-                                  <span className="text-muted-foreground">→ </span>
-                                  <span className="text-red-600 dark:text-red-400">{parsed.codeSnippet}</span>
-                                </div>
-                              )}
-                              {errorMessageStyle === 'beginner' && parsed.message && parsed.isUserCodeError && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {parsed.type}: {parsed.message}
-                                </p>
-                              )}
-                            </div>
+                        {/* Error Header - LeetCode style */}
+                        <div className="px-4 py-3 border-b border-border/30">
+                          <div className="flex items-center gap-2">
+                            <Icon className={cn("h-4 w-4", style.headerText)} />
+                            <span className={cn("font-bold text-base", style.headerText)}>
+                              {headerText}
+                            </span>
                           </div>
                         </div>
-                        {/* Technical Details Collapsible */}
+
+                        {/* Error Content */}
+                        <div className="px-4 py-3 space-y-3 bg-background/50">
+                          {parsed.isUserCodeError ? (
+                            <>
+                              {/* Primary error message (like: NameError: name 'count' is not defined) */}
+                              <p className={cn("text-sm", style.headerText)}>
+                                {parsed.type}: {parsed.friendlyMessage}
+                              </p>
+
+                              {/* Line reference with code snippet */}
+                              {parsed.userLine && (
+                                <div className="space-y-1">
+                                  <button
+                                    onClick={() => onErrorLineClick?.(parsed.userLine!)}
+                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
+                                  >
+                                    Line {parsed.userLine}:
+                                  </button>
+                                  
+                                  {parsed.codeLine && (
+                                    <div className="pl-0">
+                                      <pre className="text-foreground/90 whitespace-pre overflow-x-auto">
+                                        {parsed.codeLine}
+                                      </pre>
+                                      {parsed.pointer && (
+                                        <pre className={cn("whitespace-pre", style.headerText)}>
+                                          {parsed.pointer.replace(/^\s{4}/, '')}
+                                        </pre>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* If no line but we have code snippet */}
+                              {!parsed.userLine && parsed.codeLine && (
+                                <div className="space-y-1">
+                                  <pre className="text-foreground/90 whitespace-pre overflow-x-auto">
+                                    {parsed.codeLine}
+                                  </pre>
+                                  {parsed.pointer && (
+                                    <pre className={cn("whitespace-pre", style.headerText)}>
+                                      {parsed.pointer.replace(/^\s{4}/, '')}
+                                    </pre>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            // Internal error message
+                            <p className="text-sm text-muted-foreground">
+                              This looks like a system issue on our side. Please try again.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Technical Details (Collapsible) */}
                         <div className="border-t border-border/30">
                           <button
                             onClick={() => setShowRawError(!showRawError)}
-                            className="w-full flex items-center justify-between px-4 py-2 text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
+                            className="w-full flex items-center justify-between px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                           >
                             <span>View technical details</span>
                             {showRawError ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                           </button>
+                          
                           {showRawError && (
                             <div className="px-4 pb-4">
-                              <pre className="text-xs font-mono p-3 rounded bg-muted/50 overflow-x-auto whitespace-pre-wrap break-all border border-border/30 text-muted-foreground max-h-48 overflow-y-auto">
-                                {parsed.rawError}
+                              <pre className="text-xs p-3 rounded bg-muted/50 overflow-x-auto whitespace-pre-wrap break-words border border-border/30 text-muted-foreground max-h-48 overflow-y-auto">
+                                {cleanErrorMessage(parsed.rawError)}
                               </pre>
                             </div>
                           )}
