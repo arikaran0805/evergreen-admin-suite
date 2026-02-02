@@ -2,12 +2,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose, Check, X, Clock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import ShareDialog from "@/components/ShareDialog";
+import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 
 interface Example {
   id: number;
@@ -35,6 +37,7 @@ interface ProblemDescriptionPanelProps {
   constraints: string[];
   hints?: string[];
   tags?: string[];
+  problemId?: string;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   isCollapsed?: boolean;
@@ -51,6 +54,67 @@ const difficultyColors: Record<string, string> = {
   hard: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
 };
 
+// Storage keys
+const PROBLEM_REACTIONS_KEY = "unlockmemory-problem-reactions";
+const PROBLEM_BOOKMARKS_KEY = "unlockmemory-problem-bookmarks";
+
+// Helper to get/set localStorage
+function getProblemReaction(problemId: string): "like" | "dislike" | null {
+  try {
+    const stored = localStorage.getItem(PROBLEM_REACTIONS_KEY);
+    if (!stored) return null;
+    const reactions = JSON.parse(stored);
+    return reactions[problemId] || null;
+  } catch {
+    return null;
+  }
+}
+
+function setProblemReaction(problemId: string, reaction: "like" | "dislike" | null) {
+  try {
+    const stored = localStorage.getItem(PROBLEM_REACTIONS_KEY);
+    const reactions = stored ? JSON.parse(stored) : {};
+    if (reaction === null) {
+      delete reactions[problemId];
+    } else {
+      reactions[problemId] = reaction;
+    }
+    localStorage.setItem(PROBLEM_REACTIONS_KEY, JSON.stringify(reactions));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function isProblemBookmarked(problemId: string): boolean {
+  try {
+    const stored = localStorage.getItem(PROBLEM_BOOKMARKS_KEY);
+    if (!stored) return false;
+    const bookmarks = JSON.parse(stored);
+    return bookmarks.includes(problemId);
+  } catch {
+    return false;
+  }
+}
+
+function toggleProblemBookmark(problemId: string): boolean {
+  try {
+    const stored = localStorage.getItem(PROBLEM_BOOKMARKS_KEY);
+    const bookmarks: string[] = stored ? JSON.parse(stored) : [];
+    const index = bookmarks.indexOf(problemId);
+    if (index >= 0) {
+      bookmarks.splice(index, 1);
+      localStorage.setItem(PROBLEM_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+      return false;
+    } else {
+      bookmarks.push(problemId);
+      localStorage.setItem(PROBLEM_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
+
 export function ProblemDescriptionPanel({
   title,
   difficulty,
@@ -59,6 +123,7 @@ export function ProblemDescriptionPanel({
   constraints,
   hints = [],
   tags = [],
+  problemId = "",
   isExpanded = false,
   onToggleExpand,
   isCollapsed = false,
@@ -72,12 +137,84 @@ export function ProblemDescriptionPanel({
   const [internalActiveTab, setInternalActiveTab] = useState("description");
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const setActiveTab = onTabChange ?? setInternalActiveTab;
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Dialog states
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+
+  // Reaction/bookmark state - initialized from localStorage
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(1234);
   const [dislikeCount, setDislikeCount] = useState(56);
-  const [isHovered, setIsHovered] = useState(false);
+
+  // Load persisted state from localStorage
+  useEffect(() => {
+    if (!problemId) return;
+    const reaction = getProblemReaction(problemId);
+    setLiked(reaction === "like");
+    setDisliked(reaction === "dislike");
+    setSaved(isProblemBookmarked(problemId));
+  }, [problemId]);
+
+  // Handlers - must be defined before early return
+  const handleLike = useCallback(() => {
+    if (liked) {
+      setLiked(false);
+      setLikeCount(prev => prev - 1);
+      if (problemId) setProblemReaction(problemId, null);
+    } else {
+      setLiked(true);
+      setLikeCount(prev => prev + 1);
+      if (problemId) setProblemReaction(problemId, "like");
+      if (disliked) {
+        setDisliked(false);
+        setDislikeCount(prev => prev - 1);
+      }
+      toast.success("Thanks for the feedback!");
+    }
+  }, [liked, disliked, problemId]);
+
+  const handleDislike = useCallback(() => {
+    if (disliked) {
+      setDisliked(false);
+      setDislikeCount(prev => prev - 1);
+      if (problemId) setProblemReaction(problemId, null);
+    } else {
+      setDisliked(true);
+      setDislikeCount(prev => prev + 1);
+      if (problemId) setProblemReaction(problemId, "dislike");
+      if (liked) {
+        setLiked(false);
+        setLikeCount(prev => prev - 1);
+      }
+      toast.success("Thanks for the feedback!");
+    }
+  }, [liked, disliked, problemId]);
+
+  const handleShare = useCallback(() => {
+    setShareDialogOpen(true);
+  }, []);
+
+  const handleComment = useCallback(() => {
+    toast.info("Comments feature coming soon!");
+  }, []);
+
+  const handleFeedback = useCallback(() => {
+    setReportDialogOpen(true);
+  }, []);
+
+  const handleSave = useCallback(() => {
+    if (!problemId) {
+      toast.error("Cannot save - no problem ID");
+      return;
+    }
+    const newSaved = toggleProblemBookmark(problemId);
+    setSaved(newSaved);
+    toast.success(newSaved ? "Saved to your collection" : "Removed from saved");
+  }, [problemId]);
 
   // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
@@ -173,52 +310,6 @@ export function ProblemDescriptionPanel({
       </div>
     );
   }
-
-  const handleLike = () => {
-    if (liked) {
-      setLiked(false);
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLiked(true);
-      setLikeCount(prev => prev + 1);
-      if (disliked) {
-        setDisliked(false);
-        setDislikeCount(prev => prev - 1);
-      }
-    }
-  };
-
-  const handleDislike = () => {
-    if (disliked) {
-      setDisliked(false);
-      setDislikeCount(prev => prev - 1);
-    } else {
-      setDisliked(true);
-      setDislikeCount(prev => prev + 1);
-      if (liked) {
-        setLiked(false);
-        setLikeCount(prev => prev - 1);
-      }
-    }
-  };
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied to clipboard!");
-  };
-
-  const handleComment = () => {
-    toast.info("Comments feature coming soon!");
-  };
-
-  const handleFeedback = () => {
-    toast.info("Thank you! Feedback form coming soon.");
-  };
-
-  const handleSave = () => {
-    setSaved(!saved);
-    toast.success(saved ? "Removed from saved" : "Saved to your collection");
-  };
 
   return (
     <div 
@@ -643,6 +734,24 @@ export function ProblemDescriptionPanel({
           </div>
         </TooltipProvider>
       </div>
+
+      {/* Share Dialog */}
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        title={title}
+        url={window.location.href}
+      />
+
+      {/* Report Dialog */}
+      <ReportSuggestDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        contentType="post"
+        contentId={problemId}
+        contentTitle={title}
+        type="report"
+      />
     </div>
   );
 }
