@@ -298,6 +298,40 @@ function isSyntaxErrorType(errorType: string): boolean {
 }
 
 // ============================================================================
+// Runtime Error Detection (execution-time crashes)
+// ============================================================================
+
+const RUNTIME_ERROR_TYPES = [
+  'NameError',
+  'TypeError',
+  'ValueError',
+  'IndexError',
+  'KeyError',
+  'AttributeError',
+  'ZeroDivisionError',
+  'RecursionError',
+  'MemoryError',
+  'StopIteration',
+  'UnboundLocalError',
+  'RuntimeError',
+  'AssertionError',
+  'OverflowError',
+  'FileNotFoundError',
+  'IOError',
+  'ImportError',
+  'ModuleNotFoundError',
+  // JavaScript
+  'ReferenceError',
+  'RangeError',
+  'URIError',
+  'EvalError',
+];
+
+function isRuntimeErrorType(errorType: string): boolean {
+  return RUNTIME_ERROR_TYPES.includes(errorType);
+}
+
+// ============================================================================
 // Caret/Pointer Detection (improved for indented pointers)
 // ============================================================================
 
@@ -486,15 +520,21 @@ function parsePythonError(
     // For syntax errors: Keep ONLY the human-friendly explanation
     // Raw compiler messages go in "View technical details" via rawError
     result.friendlyMessage = errorInfo.explanation;
+  } else if (isRuntimeErrorType(result.type)) {
+    result.category = 'runtime';
+    result.executionPhase = 'execution';
+    result.friendlyType = 'Runtime Error';
+    // For runtime errors: Primary message explains code crashed
+    // Specific error details shown separately in UI
+    result.friendlyMessage = 'Your code started running but crashed during execution.';
+    result.fixHint = errorInfo.fixHint || 'This often happens due to invalid indexing, division by zero, or accessing missing values.';
   } else {
     result.category = errorInfo.category;
     result.executionPhase = errorInfo.phase;
     result.friendlyType = errorInfo.friendlyType;
-    // For runtime errors: Combine explanation with specific error
     result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
+    result.fixHint = errorInfo.fixHint;
   }
-
-  result.fixHint = errorInfo.fixHint;
 
   return result;
 }

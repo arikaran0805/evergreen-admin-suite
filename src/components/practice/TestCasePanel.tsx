@@ -392,9 +392,18 @@ export function TestCasePanel({
                               <p className={cn("text-sm", style.headerText)}>
                                 {isSyntaxError(parsed) 
                                   ? parsed.friendlyMessage  // Syntax: Clean human message only
-                                  : `${parsed.type}: ${parsed.friendlyMessage}`  // Runtime: Include error type
+                                  : parsed.friendlyMessage  // Runtime: Human-friendly crash message
                                 }
                               </p>
+
+                              {/* Runtime Error: Show specific error type and message */}
+                              {isRuntimeError(parsed) && (
+                                <div className="text-xs font-mono bg-muted/50 rounded px-2 py-1.5 border border-border/30">
+                                  <span className="text-red-600 dark:text-red-400 font-medium">{parsed.type}</span>
+                                  <span className="text-muted-foreground">: </span>
+                                  <span className="text-foreground/80">{parsed.message}</span>
+                                </div>
+                              )}
 
                               {/* Fix hint - coaching guidance */}
                               {parsed.fixHint && (
@@ -619,9 +628,10 @@ export function TestCasePanel({
                           {/* Runtime Error display for this specific test case */}
                           {errorParsed && !globalError && (
                             <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                              {/* Primary message: code crashed */}
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-red-600 dark:text-red-400 font-medium">
-                                  {errorMessageStyle === 'beginner' ? errorParsed.friendlyType : errorParsed.type}
+                                  {errorParsed.friendlyType}
                                 </span>
                                 {errorParsed.userLine && (
                                   <button
@@ -633,10 +643,16 @@ export function TestCasePanel({
                                 )}
                               </div>
                               <p className="text-xs text-foreground/70 mt-1">
-                                {errorMessageStyle === 'beginner' ? errorParsed.friendlyMessage : errorParsed.message}
+                                {errorParsed.friendlyMessage}
                               </p>
-                              {errorParsed.fixHint && errorMessageStyle === 'beginner' && (
-                                <p className="text-xs text-muted-foreground mt-1 italic">
+                              {/* Specific error type and message */}
+                              <div className="text-xs font-mono bg-muted/30 rounded px-2 py-1 mt-2 border border-border/30">
+                                <span className="text-red-600/80 dark:text-red-400/80 font-medium">{errorParsed.type}</span>
+                                <span className="text-muted-foreground">: </span>
+                                <span className="text-foreground/70">{errorParsed.message}</span>
+                              </div>
+                              {errorParsed.fixHint && (
+                                <p className="text-xs text-muted-foreground mt-2 italic">
                                   💡 {errorParsed.fixHint}
                                 </p>
                               )}
