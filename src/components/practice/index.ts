@@ -10,7 +10,7 @@ export { CodeEditor } from './CodeEditor';
 export type { CodeEditorRef } from './CodeEditor';
 export { TestCasePanel } from './TestCasePanel';
 export { ProblemListDrawer } from './ProblemListDrawer';
-export { ErrorDisplay, InlineError } from './ErrorDisplay';
+export { ErrorDisplay, InlineError, CompactError } from './ErrorDisplay';
 export { PlatformSettingsModal } from './PlatformSettingsModal';
 export type { Problem, SkillData, DifficultyFilter, StatusFilter } from './types';
 export type { ProblemDetail } from './problemDetailData';
