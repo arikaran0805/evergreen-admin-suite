@@ -517,33 +517,38 @@ export function TestCasePanel({
                       );
                     }
 
-                    // Logical Error state - code ran but produced wrong output
-                    let message = "";
+                    // Logical Error state - code ran successfully but produced wrong output
+                    let primaryMessage = "";
+                    let coachingHint = "";
                     let colorClass = "";
                     let headerText = allPassed ? "Accepted" : "Wrong Answer";
 
                     if (isSubmit) {
                       // SUBMIT MODE (Sample + Hidden Tests)
                       if (allPassed) {
-                        message = "🎉 Great job! Your logic handled all test cases correctly.";
+                        primaryMessage = "🎉 Great job! Your logic handled all test cases correctly.";
                         colorClass = "text-green-600 dark:text-green-500";
                       } else if (nonePassed) {
-                        message = "Your output doesn't match the expected result. Review your logic.";
+                        primaryMessage = "Your code ran successfully, but the output is incorrect.";
+                        coachingHint = "Your logic may be missing a condition or edge case.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       } else {
-                        message = "Some test cases failed. Check the expected vs actual output below.";
+                        primaryMessage = "Your code ran successfully, but some outputs don't match.";
+                        coachingHint = "Review the failing cases — you may be close to the solution.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       }
                     } else {
                       // RUN MODE (Sample Tests Only)
                       if (allPassed) {
-                        message = "✅ Samples passed — try Submit to check edge cases.";
+                        primaryMessage = "✅ Samples passed — try Submit to check edge cases.";
                         colorClass = "text-green-600 dark:text-green-500";
                       } else if (nonePassed) {
-                        message = "Your output doesn't match. Compare Expected vs Your Output below.";
+                        primaryMessage = "Your code ran successfully, but the output is incorrect.";
+                        coachingHint = "Compare Expected vs Your Output below to find the issue.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       } else {
-                        message = "Some samples failed. Review the differences below.";
+                        primaryMessage = "Your code ran successfully, but some outputs don't match.";
+                        coachingHint = "Check the failing test cases — your logic may need a small adjustment.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       }
                     }
@@ -571,8 +576,15 @@ export function TestCasePanel({
                             {passedCount} / {totalCount} Passed
                           </span>
                           <span className={cn("text-sm", colorClass)}>
-                            {message}
+                            {primaryMessage}
                           </span>
+                          {/* Coaching hint for logical errors */}
+                          {coachingHint && (
+                            <p className="text-xs text-muted-foreground italic mt-1 flex items-center gap-1.5">
+                              <span>💡</span>
+                              <span>{coachingHint}</span>
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
