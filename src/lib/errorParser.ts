@@ -483,14 +483,17 @@ function parsePythonError(
     result.category = 'syntax';
     result.executionPhase = 'parse';
     result.friendlyType = 'Syntax Error';
+    // For syntax errors: Keep ONLY the human-friendly explanation
+    // Raw compiler messages go in "View technical details" via rawError
+    result.friendlyMessage = errorInfo.explanation;
   } else {
     result.category = errorInfo.category;
     result.executionPhase = errorInfo.phase;
     result.friendlyType = errorInfo.friendlyType;
+    // For runtime errors: Combine explanation with specific error
+    result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
   }
 
-  // 7. Build combined friendly message (explanation + specific error)
-  result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
   result.fixHint = errorInfo.fixHint;
 
   return result;
