@@ -22,7 +22,13 @@ export interface CodeEditorSettings {
 export interface PracticeModeSettings {
   autoRunOnSave: boolean;
   showSampleTestcasesFirst: boolean;
-  errorMessageStyle: "beginner" | "standard";
+  /** 
+   * Error message style:
+   * - 'beginner': Friendly explanations, coaching hints, simplified wording
+   * - 'standard': Raw language-native error output, stripped of internal paths
+   * - 'advanced': Full raw error output exactly as produced, no stripping
+   */
+  errorMessageStyle: "beginner" | "standard" | "advanced";
   revealOutputOnlyAfterRun: boolean;
 }
 
