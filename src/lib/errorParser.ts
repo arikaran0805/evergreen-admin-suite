@@ -800,3 +800,42 @@ export function isSyntaxError(parsed: ParsedError): boolean {
 export function isRuntimeError(parsed: ParsedError): boolean {
   return parsed.category === 'runtime';
 }
+
+// ============================================================================
+// Utility: Detect runtime error pattern in raw output string
+// Used when error might appear in result.actual instead of result.error
+// ============================================================================
+
+const RUNTIME_ERROR_PATTERN = new RegExp(
+  `^(${[...RUNTIME_ERROR_TYPES, ...SYNTAX_ERROR_TYPES].join('|')}):`,
+  'i'
+);
+
+/**
+ * Check if a raw string contains a runtime/syntax error pattern
+ * This is used to detect errors that appear in output instead of error field
+ */
+export function containsErrorPattern(text: string | undefined | null): boolean {
+  if (!text) return false;
+  return RUNTIME_ERROR_PATTERN.test(text.trim());
+}
+
+/**
+ * Detect if text looks like a Python/JS exception output
+ * More permissive check for edge cases
+ */
+export function looksLikeError(text: string | undefined | null): boolean {
+  if (!text) return false;
+  const trimmed = text.trim();
+  
+  // Check for standard error format: "ErrorType: message"
+  if (RUNTIME_ERROR_PATTERN.test(trimmed)) return true;
+  
+  // Check for Traceback format
+  if (/^Traceback \(most recent call last\)/i.test(trimmed)) return true;
+  
+  // Check for "Error:" anywhere at start of line
+  if (/^[A-Z][a-zA-Z]*Error:/m.test(trimmed)) return true;
+  
+  return false;
+}
