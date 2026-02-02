@@ -35,7 +35,7 @@ interface TestCasePanelProps {
   isSubmit?: boolean;
   // New settings-driven props
   showSampleTestcasesFirst?: boolean;
-  errorMessageStyle?: 'beginner' | 'standard';
+  errorMessageStyle?: 'beginner' | 'standard' | 'advanced';
   revealOutputOnlyAfterRun?: boolean;
   hasRunOnce?: boolean;
 }
@@ -335,6 +335,7 @@ export function TestCasePanel({
                   {globalError && (() => {
                     const parsed = parseCodeError(globalError, language, userCodeLineCount);
                     const isBeginnerMode = errorMessageStyle === 'beginner';
+                    const isAdvancedMode = errorMessageStyle === 'advanced';
                     
                     // Determine style based on error category
                     const getCategoryStyle = (category: ErrorCategory) => {
@@ -369,6 +370,42 @@ export function TestCasePanel({
                     // Format header text - use friendlyType from parsed error
                     const headerText = parsed.friendlyType;
 
+                    // ADVANCED MODE: Full raw error output exactly as produced, no stripping
+                    if (isAdvancedMode) {
+                      return (
+                        <div className={cn(
+                          "rounded-lg border overflow-hidden font-mono text-sm",
+                          style.headerBg,
+                          style.headerBorder
+                        )}>
+                          {/* Error Header */}
+                          <div className="px-4 py-3 border-b border-border/30">
+                            <div className="flex items-center gap-2">
+                              <Icon className={cn("h-4 w-4", style.headerText)} />
+                              <span className={cn("font-bold text-base", style.headerText)}>
+                                {parsed.type}
+                              </span>
+                              {parsed.userLine && (
+                                <button
+                                  onClick={() => onErrorLineClick?.(parsed.userLine!)}
+                                  className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors"
+                                >
+                                  line {parsed.userLine}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Full Raw Error Content - No stripping at all */}
+                          <div className="px-4 py-3 bg-background/50">
+                            <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-96 overflow-y-auto">
+                              {parsed.rawError}
+                            </pre>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     // STANDARD MODE: Show raw language-native error output
                     if (!isBeginnerMode) {
                       return (
@@ -395,7 +432,7 @@ export function TestCasePanel({
                             </div>
                           </div>
 
-                          {/* Raw Error Content */}
+                          {/* Raw Error Content - Cleaned of internal paths */}
                           <div className="px-4 py-3 bg-background/50">
                             <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-64 overflow-y-auto">
                               {cleanErrorMessage(parsed.rawError)}
@@ -636,6 +673,7 @@ export function TestCasePanel({
                     }
                     
                     const isBeginnerMode = errorMessageStyle === 'beginner';
+                    const isAdvancedMode = errorMessageStyle === 'advanced';
                     
                     return sortedResults.map((result, i) => {
                       // Check for error in result.error field
@@ -688,7 +726,27 @@ export function TestCasePanel({
                           {/* Runtime Error display for this specific test case */}
                           {effectiveErrorParsed && !globalError && (
                             <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
-                              {isBeginnerMode ? (
+                              {isAdvancedMode ? (
+                                // ADVANCED MODE: Full raw error output, no stripping
+                                <>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-red-600 dark:text-red-400 font-medium">
+                                      {effectiveErrorParsed.type}
+                                    </span>
+                                    {effectiveErrorParsed.userLine && (
+                                      <button
+                                        onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
+                                        className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
+                                      >
+                                        line {effectiveErrorParsed.userLine}
+                                      </button>
+                                    )}
+                                  </div>
+                                  <pre className="text-xs text-foreground/80 mt-2 whitespace-pre-wrap break-words overflow-x-auto max-h-48 overflow-y-auto">
+                                    {effectiveErrorParsed.rawError}
+                                  </pre>
+                                </>
+                              ) : isBeginnerMode ? (
                                 // BEGINNER MODE: Friendly explanations + coaching hints
                                 <>
                                   <div className="flex items-center gap-2 text-sm">
@@ -720,7 +778,7 @@ export function TestCasePanel({
                                   )}
                                 </>
                               ) : (
-                                // STANDARD MODE: Raw language-native error
+                                // STANDARD MODE: Raw language-native error, cleaned
                                 <>
                                   <div className="flex items-center gap-2 text-sm">
                                     <span className="text-red-600 dark:text-red-400 font-medium">

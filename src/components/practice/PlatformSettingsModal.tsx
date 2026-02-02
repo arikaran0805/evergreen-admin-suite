@@ -363,11 +363,11 @@ function PracticeModeSection({
 
       <SettingRow
         label="Error Message Style"
-        description="Beginner mode shows friendlier error explanations"
+        description="Controls how error messages are displayed"
       >
         <Select
           value={practiceMode.errorMessageStyle}
-          onValueChange={(v: "beginner" | "standard") =>
+          onValueChange={(v: "beginner" | "standard" | "advanced") =>
             updateCategory("practiceMode", { errorMessageStyle: v })
           }
         >
@@ -377,6 +377,7 @@ function PracticeModeSection({
           <SelectContent>
             <SelectItem value="beginner">Beginner</SelectItem>
             <SelectItem value="standard">Standard</SelectItem>
+            <SelectItem value="advanced">Advanced</SelectItem>
           </SelectContent>
         </Select>
       </SettingRow>
