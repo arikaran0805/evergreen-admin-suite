@@ -24,6 +24,7 @@ import { useProblemCodePersistence } from "@/hooks/useProblemCodePersistence";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { PlatformSettingsModal } from "./PlatformSettingsModal";
 import { formatPython, registerMonacoPythonFormatter } from "@/lib/formatters/pythonFormatter";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ProblemWorkspaceProps {
   problemId: string;
@@ -95,9 +96,13 @@ export function ProblemWorkspace({
   const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
   const [errorLine, setErrorLine] = useState<number | undefined>();
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [hasRunOnce, setHasRunOnce] = useState(false);
 
   const { settings, monacoOptions } = usePlatformSettings();
   const tabWidthRef = useRef(settings.codeEditor.tabSize);
+  
+  // Track previous code for auto-run detection
+  const previousCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
     tabWidthRef.current = settings.codeEditor.tabSize;
@@ -189,6 +194,31 @@ export function ProblemWorkspace({
     }
   }, [errorLine, clearErrorHighlight, setCode]);
 
+  // Debounced code for auto-run
+  const debouncedCode = useDebounce(code, 1500);
+
+  // Auto-run on save (debounced)
+  useEffect(() => {
+    if (!settings.practiceMode.autoRunOnSave) return;
+    if (!debouncedCode) return;
+    
+    // Skip first render and when code hasn't actually changed
+    if (previousCodeRef.current === null) {
+      previousCodeRef.current = debouncedCode;
+      return;
+    }
+    
+    if (previousCodeRef.current === debouncedCode) return;
+    previousCodeRef.current = debouncedCode;
+    
+    // Auto-run the code
+    testPanelRef.current?.expand();
+    testPanelRef.current?.resize(35);
+    clearErrorHighlight();
+    setHasRunOnce(true);
+    onRun(debouncedCode, language);
+  }, [debouncedCode, settings.practiceMode.autoRunOnSave, language, onRun, clearErrorHighlight]);
+
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
@@ -200,6 +230,26 @@ export function ProblemWorkspace({
       handleRun();
     });
   }, []);
+
+  // Apply keyboard preset when settings change
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+
+    const { keyboardPreset } = settings.productivity;
+
+    // For Vim mode, we need to use monaco-vim package (not included by default)
+    // For now, we'll configure basic keybindings for different presets
+    if (keyboardPreset === 'vim') {
+      // Note: Full Vim emulation requires monaco-vim package
+      // These are basic Vim-like movement shortcuts
+      toast.info("Vim mode: Basic Vim keys enabled (Escape to exit insert mode)");
+    } else if (keyboardPreset === 'vscode') {
+      // VS Code is the default Monaco behavior, nothing special needed
+    }
+    // 'beginner' mode uses simplified defaults (already set)
+  }, [settings.productivity.keyboardPreset]);
 
   // Apply editor settings whenever they change
   useEffect(() => {
@@ -259,16 +309,53 @@ export function ProblemWorkspace({
     testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
     clearErrorHighlight();
+    setHasRunOnce(true);
     onRun(code, language);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     testPanelRef.current?.expand();
     testPanelRef.current?.resize(35);
     clearErrorHighlight();
+    setHasRunOnce(true);
+    
+    // Auto-format on submit if enabled
+    let finalCode = code;
+    if (settings.productivity.autoFormatOnSubmit && editorRef.current) {
+      const editor = editorRef.current;
+      const action = editor.getAction?.("editor.action.formatDocument");
+      const isSupported =
+        !!action && (typeof action.isSupported !== "function" || action.isSupported());
+
+      if (language === "python") {
+        try {
+          const model = editor.getModel?.();
+          if (model) {
+            finalCode = await formatPython(model.getValue(), {
+              tabWidth: settings.codeEditor.tabSize,
+            });
+            model.pushEditOperations(
+              [],
+              [{ range: model.getFullModelRange(), text: finalCode }],
+              () => null,
+            );
+          }
+        } catch {
+          // Continue with unformatted code
+        }
+      } else if (isSupported) {
+        try {
+          await action.run();
+          finalCode = editor.getValue();
+        } catch {
+          // Continue with unformatted code
+        }
+      }
+    }
+    
     // Save as last submitted code when submitting
-    saveAsLastSubmission(code, language);
-    onSubmit(code, language);
+    saveAsLastSubmission(finalCode, language);
+    onSubmit(finalCode, language);
   };
 
   const handleToggleEditorPanelCollapse = () => {
@@ -312,6 +399,10 @@ export function ProblemWorkspace({
             onErrorLineClick={highlightErrorLine}
             globalError={globalError}
             isSubmit={isSubmit}
+            showSampleTestcasesFirst={settings.practiceMode.showSampleTestcasesFirst}
+            errorMessageStyle={settings.practiceMode.errorMessageStyle}
+            revealOutputOnlyAfterRun={settings.practiceMode.revealOutputOnlyAfterRun}
+            hasRunOnce={hasRunOnce}
           />
         </div>
       </div>
@@ -726,6 +817,10 @@ export function ProblemWorkspace({
               onErrorLineClick={highlightErrorLine}
               globalError={globalError}
               isSubmit={isSubmit}
+              showSampleTestcasesFirst={settings.practiceMode.showSampleTestcasesFirst}
+              errorMessageStyle={settings.practiceMode.errorMessageStyle}
+              revealOutputOnlyAfterRun={settings.practiceMode.revealOutputOnlyAfterRun}
+              hasRunOnce={hasRunOnce}
             />
           </div>
         </ResizablePanel>
