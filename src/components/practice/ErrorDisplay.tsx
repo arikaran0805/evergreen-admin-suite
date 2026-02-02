@@ -29,14 +29,14 @@ export function ErrorDisplay({
   // Get style based on error category
   const getCategoryStyle = (category: ErrorCategory) => {
     switch (category) {
-      case 'compilation':
+      case 'syntax':
         return {
           headerBg: "bg-red-500/10",
           headerBorder: "border-red-500/20",
           headerText: "text-red-600 dark:text-red-400",
           icon: XCircle,
         };
-      case 'execution':
+      case 'runtime':
         return {
           headerBg: "bg-red-500/10",
           headerBorder: "border-red-500/20",
@@ -82,6 +82,14 @@ export function ErrorDisplay({
             <p className={cn("text-sm", style.headerText)}>
               {parsed.type}: {parsed.friendlyMessage}
             </p>
+
+            {/* Fix hint - what kind of fix is required */}
+            {parsed.fixHint && (
+              <p className="text-xs text-muted-foreground italic flex items-start gap-1.5">
+                <span>💡</span>
+                <span>{parsed.fixHint}</span>
+              </p>
+            )}
 
             {/* Line reference with code snippet */}
             {parsed.userLine && (

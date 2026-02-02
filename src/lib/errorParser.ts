@@ -3,15 +3,20 @@
  * Transforms raw execution errors into clean, learner-friendly messages
  * 
  * RESPONSIBILITY: This parser handles ONLY:
- * - Compilation failures (syntax, indentation, parse errors)
- * - Execution crashes (runtime errors)
- * - Platform/internal errors (timeouts, signals, infrastructure)
+ * - Syntax Errors (syntax, indentation, parse failures - occur BEFORE execution)
+ * - Runtime Errors (crashes during execution - IndexError, TypeError, etc.)
+ * - Internal Errors (platform/infrastructure failures - never blame the learner)
  * 
  * This parser does NOT handle:
- * - Output comparison (Expected vs Output)
+ * - Logical Errors (wrong output comparison - Expected vs Your Output)
  * - Test case counts or pass/fail ratios
  * - Wrong Answer verdicts
- * These belong in a separate Result Evaluator.
+ * These belong in a separate Result Evaluator that runs AFTER successful execution.
+ * 
+ * THREE LEARNER-FACING ERROR TYPES:
+ * 1. Syntax Error - Code couldn't be parsed/compiled. No test results shown.
+ * 2. Runtime Error - Code crashed during execution. Shows which test case crashed.
+ * 3. Logical Error - Code ran but produced wrong output. (NOT handled here)
  */
 
 // Line offsets for different languages (where user code starts in wrapped template)
@@ -27,11 +32,16 @@ export const USER_CODE_START_LINES: Record<string, number> = {
 // Types
 // ============================================================================
 
-/** Error categories aligned with execution phases */
-export type ErrorCategory = 'compilation' | 'execution' | 'internal';
+/** 
+ * Error categories for internal classification
+ * - 'syntax': Parse/compile-time errors (SyntaxError, IndentationError)
+ * - 'runtime': Execution crashes (NameError, TypeError, IndexError, etc.)
+ * - 'internal': Platform/infrastructure failures (never user's fault)
+ */
+export type ErrorCategory = 'syntax' | 'runtime' | 'internal';
 
 /** Execution phase where the error occurred */
-export type ExecutionPhase = 'compile' | 'runtime' | 'system';
+export type ExecutionPhase = 'parse' | 'execution' | 'system';
 
 export interface ParsedError {
   /** Original error type from the error message (e.g., "SyntaxError", "NameError") */
@@ -48,10 +58,12 @@ export interface ParsedError {
   userLine?: number;
   /** Whether this is a user code error vs platform error */
   isUserCodeError: boolean;
-  /** Human-friendly type label (e.g., "Compilation Error", "Runtime Error") */
+  /** Human-friendly type label: "Syntax Error", "Runtime Error", or "Internal Error" */
   friendlyType: string;
   /** Combined message: friendly explanation + specific error */
   friendlyMessage: string;
+  /** Guidance on what kind of fix is required */
+  fixHint?: string;
   /** The actual code line that caused the error */
   codeLine?: string;
   /** Caret pointer position (e.g., "       ^") */
@@ -67,137 +79,157 @@ export interface ParsedError {
 // ============================================================================
 
 interface ErrorInfo {
-  type: string;
+  friendlyType: string;
   explanation: string;
+  fixHint: string;
   category: ErrorCategory;
   phase: ExecutionPhase;
 }
 
 const ERROR_EXPLANATIONS: Record<string, ErrorInfo> = {
   // =========================================================================
-  // Compilation Errors (syntax, indentation, parse issues)
+  // Syntax Errors (parse/compile-time - code couldn't even start running)
   // =========================================================================
   SyntaxError: {
-    type: 'Compilation Error',
+    friendlyType: 'Syntax Error',
     explanation: 'There is a typo or invalid syntax in your code.',
-    category: 'compilation',
-    phase: 'compile',
+    fixHint: 'Check for missing brackets, colons, or quotes near the indicated line.',
+    category: 'syntax',
+    phase: 'parse',
   },
   IndentationError: {
-    type: 'Compilation Error',
+    friendlyType: 'Syntax Error',
     explanation: 'Check your spacing — Python requires consistent indentation.',
-    category: 'compilation',
-    phase: 'compile',
+    fixHint: 'Make sure all code blocks use the same number of spaces.',
+    category: 'syntax',
+    phase: 'parse',
   },
   TabError: {
-    type: 'Compilation Error',
+    friendlyType: 'Syntax Error',
     explanation: 'Inconsistent use of tabs and spaces for indentation.',
-    category: 'compilation',
-    phase: 'compile',
+    fixHint: 'Use only spaces (recommended) or only tabs, not both.',
+    category: 'syntax',
+    phase: 'parse',
   },
 
   // =========================================================================
-  // Execution Errors (runtime crashes)
+  // Runtime Errors (crashes during execution)
   // =========================================================================
   NameError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'You used a variable or function that was never defined.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check spelling and make sure the variable is defined before use.',
+    category: 'runtime',
+    phase: 'execution',
   },
   TypeError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'Operation applied to incompatible types.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check the types of your variables and convert if needed.',
+    category: 'runtime',
+    phase: 'execution',
   },
   ValueError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'The value is invalid for this operation.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check the input values being passed to the function.',
+    category: 'runtime',
+    phase: 'execution',
   },
   IndexError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'You tried to access an index that doesn\'t exist.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check array/list bounds and ensure index is within range.',
+    category: 'runtime',
+    phase: 'execution',
   },
   KeyError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'The key doesn\'t exist in the dictionary.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check if the key exists before accessing, or use .get() method.',
+    category: 'runtime',
+    phase: 'execution',
   },
   AttributeError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'The object doesn\'t have this attribute or method.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check the object type and available methods.',
+    category: 'runtime',
+    phase: 'execution',
   },
   ZeroDivisionError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'You tried to divide by zero.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Add a check to ensure the divisor is not zero.',
+    category: 'runtime',
+    phase: 'execution',
   },
   RecursionError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'Too many recursive calls — check your base case.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Ensure your recursion has a proper base case that terminates.',
+    category: 'runtime',
+    phase: 'execution',
   },
   MemoryError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'Your code ran out of memory — optimize your solution.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Look for ways to reduce memory usage or use a more efficient algorithm.',
+    category: 'runtime',
+    phase: 'execution',
   },
   StopIteration: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'Attempted to get next item from empty iterator.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check if the iterator has items before calling next().',
+    category: 'runtime',
+    phase: 'execution',
   },
   UnboundLocalError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'Variable referenced before assignment in local scope.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Initialize the variable before using it, or use "global" keyword.',
+    category: 'runtime',
+    phase: 'execution',
   },
   RuntimeError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'An error occurred while running your code.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Review the error message for specific guidance.',
+    category: 'runtime',
+    phase: 'execution',
   },
   Exception: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'An exception was raised during execution.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check the error message for details on what went wrong.',
+    category: 'runtime',
+    phase: 'execution',
   },
 
   // JavaScript errors
   ReferenceError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'You used a variable that was never defined.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check spelling and make sure the variable is declared.',
+    category: 'runtime',
+    phase: 'execution',
   },
   RangeError: {
-    type: 'Runtime Error',
+    friendlyType: 'Runtime Error',
     explanation: 'A value is not in the expected range.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Check array sizes and numeric values.',
+    category: 'runtime',
+    phase: 'execution',
   },
 
   // Generic fallback
   Error: {
-    type: 'Error',
+    friendlyType: 'Runtime Error',
     explanation: 'An unexpected error occurred.',
-    category: 'execution',
-    phase: 'runtime',
+    fixHint: 'Review the error message for specific guidance.',
+    category: 'runtime',
+    phase: 'execution',
   },
 };
 
@@ -252,17 +284,17 @@ function isInternalError(errorText: string): boolean {
 }
 
 // ============================================================================
-// Compilation Error Detection (syntax, indentation, parse)
+// Syntax Error Detection (parse-time errors)
 // ============================================================================
 
-const COMPILATION_ERROR_TYPES = [
+const SYNTAX_ERROR_TYPES = [
   'SyntaxError',
   'IndentationError',
   'TabError',
 ];
 
-function isCompilationErrorType(errorType: string): boolean {
-  return COMPILATION_ERROR_TYPES.includes(errorType);
+function isSyntaxErrorType(errorType: string): boolean {
+  return SYNTAX_ERROR_TYPES.includes(errorType);
 }
 
 // ============================================================================
@@ -343,8 +375,8 @@ function parsePythonError(
   const result: ParsedError = {
     type: 'Error',
     message: '',
-    category: 'execution',
-    executionPhase: 'runtime',
+    category: 'runtime',
+    executionPhase: 'execution',
     isUserCodeError: true,
     friendlyType: 'Runtime Error',
     friendlyMessage: 'An error occurred',
@@ -409,7 +441,7 @@ function parsePythonError(
   }
 
   // 4. For SyntaxError, also scan for standalone code + pointer blocks
-  if (isCompilationErrorType(result.type)) {
+  if (isSyntaxErrorType(result.type)) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
@@ -447,18 +479,19 @@ function parsePythonError(
   // 6. Determine category and phase based on error type
   const errorInfo = ERROR_EXPLANATIONS[result.type] || ERROR_EXPLANATIONS.Error;
   
-  if (isCompilationErrorType(result.type)) {
-    result.category = 'compilation';
-    result.executionPhase = 'compile';
-    result.friendlyType = 'Compilation Error';
+  if (isSyntaxErrorType(result.type)) {
+    result.category = 'syntax';
+    result.executionPhase = 'parse';
+    result.friendlyType = 'Syntax Error';
   } else {
     result.category = errorInfo.category;
     result.executionPhase = errorInfo.phase;
-    result.friendlyType = errorInfo.type;
+    result.friendlyType = errorInfo.friendlyType;
   }
 
   // 7. Build combined friendly message (explanation + specific error)
   result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
+  result.fixHint = errorInfo.fixHint;
 
   return result;
 }
@@ -474,8 +507,8 @@ function parseJavaScriptError(
   const result: ParsedError = {
     type: 'Error',
     message: '',
-    category: 'execution',
-    executionPhase: 'runtime',
+    category: 'runtime',
+    executionPhase: 'execution',
     isUserCodeError: true,
     friendlyType: 'Runtime Error',
     friendlyMessage: 'An error occurred',
@@ -489,11 +522,11 @@ function parseJavaScriptError(
     result.message = errorTypeMatch[2].trim();
   }
 
-  // Check for SyntaxError (compilation)
+  // Check for SyntaxError (syntax category)
   if (result.type === 'SyntaxError') {
-    result.category = 'compilation';
-    result.executionPhase = 'compile';
-    result.friendlyType = 'Compilation Error';
+    result.category = 'syntax';
+    result.executionPhase = 'parse';
+    result.friendlyType = 'Syntax Error';
   }
 
   // Look for line number in JS stack trace
@@ -519,12 +552,13 @@ function parseJavaScriptError(
 
   // Get friendly error info and build combined message
   const errorInfo = ERROR_EXPLANATIONS[result.type] || ERROR_EXPLANATIONS.Error;
-  if (result.category !== 'compilation') {
+  if (result.category !== 'syntax') {
     result.category = errorInfo.category;
     result.executionPhase = errorInfo.phase;
-    result.friendlyType = errorInfo.type;
+    result.friendlyType = errorInfo.friendlyType;
   }
   result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
+  result.fixHint = errorInfo.fixHint;
 
   return result;
 }
@@ -542,6 +576,7 @@ function createInternalError(errorText: string): ParsedError {
     isUserCodeError: false,
     friendlyType: 'Internal Error',
     friendlyMessage: 'This looks like a system issue on our side. Please try again.',
+    fixHint: 'This is not your fault. Please try running your code again.',
     rawError: errorText,
   };
 }
@@ -554,8 +589,8 @@ function createInternalError(errorText: string): ParsedError {
  * Parse error output from code execution and map to user's visible lines
  * Implements LeetCode-style error normalization
  * 
- * RESPONSIBILITY: Handles ONLY compilation, execution, and internal errors.
- * Does NOT handle output comparison, test case results, or Wrong Answer logic.
+ * RESPONSIBILITY: Handles ONLY Syntax Errors, Runtime Errors, and Internal Errors.
+ * Does NOT handle Logical Errors (output comparison, test case results, Wrong Answer).
  */
 export function parseCodeError(
   errorText: string,
@@ -587,10 +622,10 @@ export function parseCodeError(
   return {
     type: 'Error',
     message: errorText,
-    category: 'execution',
-    executionPhase: 'runtime',
+    category: 'runtime',
+    executionPhase: 'execution',
     isUserCodeError: true,
-    friendlyType: 'Error',
+    friendlyType: 'Runtime Error',
     friendlyMessage: 'An error occurred during execution.',
     rawError: errorText,
   };
@@ -696,13 +731,29 @@ export function isUserActionableError(parsed: ParsedError): boolean {
 
 export function getPhaseDisplayText(phase: ExecutionPhase): string {
   switch (phase) {
-    case 'compile':
-      return 'during compilation';
-    case 'runtime':
+    case 'parse':
+      return 'before execution (parsing)';
+    case 'execution':
       return 'during execution';
     case 'system':
       return 'due to a system issue';
     default:
       return '';
   }
+}
+
+// ============================================================================
+// Utility: Check if this is a syntax error (no test results should be shown)
+// ============================================================================
+
+export function isSyntaxError(parsed: ParsedError): boolean {
+  return parsed.category === 'syntax';
+}
+
+// ============================================================================
+// Utility: Check if this is a runtime error (show failing test case only)
+// ============================================================================
+
+export function isRuntimeError(parsed: ParsedError): boolean {
+  return parsed.category === 'runtime';
 }

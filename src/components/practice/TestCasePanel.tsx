@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye, AlertTriangle, XCircle, Cog } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye, AlertTriangle, XCircle, Cog, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, type ErrorCategory } from "@/lib/errorParser";
 
 export interface TestResult {
   id: number;
@@ -338,14 +338,14 @@ export function TestCasePanel({
                     // Determine style based on error category
                     const getCategoryStyle = (category: ErrorCategory) => {
                       switch (category) {
-                        case 'compilation':
+                        case 'syntax':
                           return {
                             headerBg: "bg-red-500/10",
                             headerBorder: "border-red-500/20",
                             headerText: "text-red-600 dark:text-red-400",
                             Icon: XCircle,
                           };
-                        case 'execution':
+                        case 'runtime':
                           return {
                             headerBg: "bg-red-500/10",
                             headerBorder: "border-red-500/20",
@@ -392,6 +392,14 @@ export function TestCasePanel({
                               <p className={cn("text-sm", style.headerText)}>
                                 {parsed.type}: {parsed.friendlyMessage}
                               </p>
+
+                              {/* Fix hint - what kind of fix is required */}
+                              {parsed.fixHint && (
+                                <p className="text-xs text-muted-foreground italic flex items-start gap-1.5">
+                                  <span>💡</span>
+                                  <span>{parsed.fixHint}</span>
+                                </p>
+                              )}
 
                               {/* Line reference with code snippet */}
                               {parsed.userLine && (
@@ -462,15 +470,44 @@ export function TestCasePanel({
                     );
                   })()}
                   
-                  {/* Summary - Only show if no global error */}
+                  {/* 
+                    ERROR STATE HANDLING:
+                    1. Syntax Error (globalError with syntax category): Show error ONLY, NO test results
+                    2. Runtime Error: Show which test case crashed, NO expected vs output
+                    3. Logical Error (no error, wrong output): Show pass count + Expected vs Output
+                  */}
+                  
+                  {/* Summary - Show for Logical Errors (when code ran but produced wrong output) */}
                   {!globalError && (() => {
                     const passedCount = results.filter(r => r.passed).length;
                     const totalCount = results.length;
                     const allPassed = passedCount === totalCount;
                     const nonePassed = passedCount === 0;
+                    const hasAnyRuntimeError = results.some(r => r.error);
 
+                    // If there's a runtime error, show "Runtime Error" header instead of pass count
+                    if (hasAnyRuntimeError) {
+                      return (
+                        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                          <div className="flex flex-col items-center gap-1 text-center">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                              <span className="text-lg font-semibold text-red-600 dark:text-red-400">
+                                Runtime Error
+                              </span>
+                            </div>
+                            <span className="text-sm text-red-600/80 dark:text-red-400/80">
+                              Your code crashed during execution. Check the error below.
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Logical Error state - code ran but produced wrong output
                     let message = "";
                     let colorClass = "";
+                    let headerText = allPassed ? "Accepted" : "Wrong Answer";
 
                     if (isSubmit) {
                       // SUBMIT MODE (Sample + Hidden Tests)
@@ -478,10 +515,10 @@ export function TestCasePanel({
                         message = "🎉 Great job! Your logic handled all test cases correctly.";
                         colorClass = "text-green-600 dark:text-green-500";
                       } else if (nonePassed) {
-                        message = "🔁 That's okay — take another look at the core logic.";
+                        message = "Your output doesn't match the expected result. Review your logic.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       } else {
-                        message = "🧠 You're very close — review edge cases and try again.";
+                        message = "Some test cases failed. Check the expected vs actual output below.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       }
                     } else {
@@ -490,10 +527,10 @@ export function TestCasePanel({
                         message = "✅ Samples passed — try Submit to check edge cases.";
                         colorClass = "text-green-600 dark:text-green-500";
                       } else if (nonePassed) {
-                        message = "🔍 Let's revisit the logic and recheck the sample input.";
+                        message = "Your output doesn't match. Compare Expected vs Your Output below.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       } else {
-                        message = "🧠 Good progress — a small tweak could fix the remaining cases.";
+                        message = "Some samples failed. Review the differences below.";
                         colorClass = "text-amber-600 dark:text-amber-500";
                       }
                     }
@@ -506,6 +543,14 @@ export function TestCasePanel({
                           : "bg-amber-500/10 border border-amber-500/20"
                       )}>
                         <div className="flex flex-col items-center gap-1 text-center">
+                          {!allPassed && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                              <span className="text-base font-semibold text-amber-600 dark:text-amber-500">
+                                {headerText}
+                              </span>
+                            </div>
+                          )}
                           <span className={cn(
                             "text-lg font-semibold",
                             allPassed ? "text-green-600 dark:text-green-500" : "text-amber-600 dark:text-amber-500"
@@ -520,92 +565,111 @@ export function TestCasePanel({
                     );
                   })()}
 
-                  {/* Individual Results */}
-                  {sortedResults.map((result, i) => {
-                    const errorParsed = result.error 
-                      ? parseCodeError(result.error, language, userCodeLineCount) 
-                      : null;
-                    
-                    // Hidden test case - show minimal info with expandable output
-                    if (result.isHidden) {
-                      return (
-                        <HiddenTestCase 
-                          key={result.id ?? i}
-                          result={result}
-                          index={i}
-                        />
-                      );
+                  {/* Individual Results - Only show if NOT a syntax error */}
+                  {(() => {
+                    // For Syntax Errors: Don't show any test results
+                    if (globalError) {
+                      const parsed = parseCodeError(globalError, language, userCodeLineCount);
+                      if (isSyntaxError(parsed)) {
+                        return null; // Syntax errors: NO test results shown
+                      }
                     }
                     
-                    return (
-                      <div key={result.id ?? i} className="border border-border/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          {result.passed ? (
-                            <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
-                          ) : (
-                            <X className="h-4 w-4 text-red-600 dark:text-red-500" />
-                          )}
-                          <span className="font-medium text-sm">Test Case {result.id ?? i + 1}</span>
-                          {result.runtime && (
-                            <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
-                          )}
-                        </div>
-                        
-                        {/* Error display for this test case - respects errorMessageStyle */}
-                        {errorParsed && !globalError && (
-                          <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-red-600 dark:text-red-400 font-medium">
-                                {errorMessageStyle === 'beginner' ? errorParsed.friendlyType : errorParsed.type}
-                              </span>
-                              {errorParsed.userLine && (
-                                <button
-                                  onClick={() => onErrorLineClick?.(errorParsed.userLine!)}
-                                  className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
-                                >
-                                  line {errorParsed.userLine}
-                                </button>
+                    return sortedResults.map((result, i) => {
+                      const errorParsed = result.error 
+                        ? parseCodeError(result.error, language, userCodeLineCount) 
+                        : null;
+                      const hasRuntimeError = errorParsed && isRuntimeError(errorParsed);
+                      
+                      // Hidden test case - show minimal info with expandable output
+                      if (result.isHidden) {
+                        return (
+                          <HiddenTestCase 
+                            key={result.id ?? i}
+                            result={result}
+                            index={i}
+                          />
+                        );
+                      }
+                      
+                      return (
+                        <div key={result.id ?? i} className="border border-border/50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            {result.passed ? (
+                              <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                            ) : hasRuntimeError ? (
+                              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-500" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+                            )}
+                            <span className="font-medium text-sm">
+                              Test Case {result.id ?? i + 1}
+                              {hasRuntimeError && (
+                                <span className="ml-2 text-xs text-red-600 dark:text-red-400">(crashed)</span>
+                              )}
+                            </span>
+                            {result.runtime && !hasRuntimeError && (
+                              <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
+                            )}
+                          </div>
+                          
+                          {/* Runtime Error display for this specific test case */}
+                          {errorParsed && !globalError && (
+                            <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-red-600 dark:text-red-400 font-medium">
+                                  {errorMessageStyle === 'beginner' ? errorParsed.friendlyType : errorParsed.type}
+                                </span>
+                                {errorParsed.userLine && (
+                                  <button
+                                    onClick={() => onErrorLineClick?.(errorParsed.userLine!)}
+                                    className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
+                                  >
+                                    line {errorParsed.userLine}
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-xs text-foreground/70 mt-1">
+                                {errorMessageStyle === 'beginner' ? errorParsed.friendlyMessage : errorParsed.message}
+                              </p>
+                              {errorParsed.fixHint && errorMessageStyle === 'beginner' && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">
+                                  💡 {errorParsed.fixHint}
+                                </p>
                               )}
                             </div>
-                            <p className="text-xs text-foreground/70 mt-1">
-                              {errorMessageStyle === 'beginner' ? errorParsed.friendlyMessage : errorParsed.message}
-                            </p>
-                            {errorMessageStyle === 'beginner' && errorParsed.message && (
-                              <p className="text-xs text-muted-foreground mt-1 font-mono">
-                                {errorParsed.message.substring(0, 100)}
-                                {errorParsed.message.length > 100 ? '...' : ''}
-                              </p>
-                            )}
-                            {errorMessageStyle === 'standard' && errorParsed.codeSnippet && (
-                              <div className="mt-2 p-2 rounded bg-muted/50 font-mono text-xs border border-border/50">
-                                <span className="text-muted-foreground">→ </span>
-                                <span className="text-red-600 dark:text-red-400">{errorParsed.codeSnippet}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        <div className="space-y-2 text-sm font-mono">
-                          <div>
-                            <span className="text-muted-foreground">Input: </span>
-                            <span>{result.input}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Expected: </span>
-                            <span>{result.expected}</span>
-                          </div>
-                          {result.actual && !result.error && (
-                            <div>
-                              <span className="text-muted-foreground">Output: </span>
-                              <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
-                                {result.actual}
-                              </span>
-                            </div>
                           )}
+                          
+                          {/* Test case details */}
+                          <div className="space-y-2 text-sm font-mono">
+                            <div>
+                              <span className="text-muted-foreground">Input: </span>
+                              <span>{result.input}</span>
+                            </div>
+                            
+                            {/* For Runtime Errors: DON'T show Expected vs Output (code crashed) */}
+                            {/* For Logical Errors: Show Expected vs Your Output */}
+                            {!hasRuntimeError && (
+                              <>
+                                <div>
+                                  <span className="text-muted-foreground">Expected: </span>
+                                  <span>{result.expected}</span>
+                                </div>
+                                {result.actual && (
+                                  <div>
+                                    <span className="text-muted-foreground">Your Output: </span>
+                                    <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
+                                      {result.actual}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
