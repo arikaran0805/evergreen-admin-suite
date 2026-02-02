@@ -9,18 +9,21 @@ interface ErrorDisplayProps {
   userCodeLineCount: number;
   className?: string;
   onLineClick?: (line: number) => void;
+  /** Error message style: 'beginner' (friendly) or 'standard' (raw) */
+  errorMessageStyle?: 'beginner' | 'standard';
 }
 
 /**
  * LeetCode-style Error Display
- * Clean, learner-friendly error presentation
+ * Supports both Beginner (friendly) and Standard (raw) error presentation
  */
 export function ErrorDisplay({ 
   error, 
   language, 
   userCodeLineCount, 
   className,
-  onLineClick 
+  onLineClick,
+  errorMessageStyle = 'beginner'
 }: ErrorDisplayProps) {
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   
@@ -55,7 +58,46 @@ export function ErrorDisplay({
   
   const style = getCategoryStyle(parsed.category);
   const Icon = style.icon;
+  const isBeginnerMode = errorMessageStyle === 'beginner';
 
+  // STANDARD MODE: Show raw language-native error output
+  if (!isBeginnerMode) {
+    return (
+      <div className={cn(
+        "rounded-lg border overflow-hidden font-mono text-sm",
+        style.headerBg,
+        style.headerBorder,
+        className
+      )}>
+        {/* Error Header */}
+        <div className="px-4 py-3 border-b border-border/30">
+          <div className="flex items-center gap-2">
+            <Icon className={cn("h-4 w-4", style.headerText)} />
+            <span className={cn("font-bold text-base", style.headerText)}>
+              {parsed.type}
+            </span>
+            {parsed.userLine && (
+              <button
+                onClick={() => onLineClick?.(parsed.userLine!)}
+                className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors"
+              >
+                line {parsed.userLine}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Raw Error Content */}
+        <div className="px-4 py-3 bg-background/50">
+          <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-64 overflow-y-auto">
+            {cleanErrorMessage(parsed.rawError)}
+          </pre>
+        </div>
+      </div>
+    );
+  }
+
+  // BEGINNER MODE: Show friendly explanations and coaching hints
   return (
     <div className={cn(
       "rounded-lg border overflow-hidden font-mono text-sm",
@@ -75,7 +117,6 @@ export function ErrorDisplay({
 
       {/* Error Content */}
       <div className="px-4 py-3 space-y-3 bg-background/50">
-        {/* Error Message */}
         {parsed.isUserCodeError ? (
           <>
             {/* Primary error message - human-friendly for both syntax and runtime */}
@@ -182,13 +223,16 @@ interface CompactErrorProps {
   language: string;
   userCodeLineCount: number;
   onLineClick?: (line: number) => void;
+  errorMessageStyle?: 'beginner' | 'standard';
 }
 
 /**
  * Compact error display for inline use in test case results
+ * Supports both Beginner (friendly) and Standard (raw) modes
  */
-export function CompactError({ error, language, userCodeLineCount, onLineClick }: CompactErrorProps) {
+export function CompactError({ error, language, userCodeLineCount, onLineClick, errorMessageStyle = 'beginner' }: CompactErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
+  const isBeginnerMode = errorMessageStyle === 'beginner';
   
   if (!parsed.isUserCodeError) {
     return (
@@ -198,7 +242,33 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick }
       </div>
     );
   }
+
+  // STANDARD MODE: Raw language-native error
+  if (!isBeginnerMode) {
+    return (
+      <div className="text-xs font-mono space-y-1">
+        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+          <span className="font-bold">{parsed.type}</span>
+          {parsed.userLine && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLineClick?.(parsed.userLine!);
+              }}
+              className="text-xs px-1 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 transition-colors"
+            >
+              line {parsed.userLine}
+            </button>
+          )}
+        </div>
+        <pre className="text-foreground/70 whitespace-pre-wrap overflow-x-auto max-w-full">
+          {cleanErrorMessage(parsed.rawError)}
+        </pre>
+      </div>
+    );
+  }
   
+  // BEGINNER MODE: Friendly explanations
   return (
     <div className="text-xs font-mono space-y-1">
       {/* Error header */}
@@ -243,10 +313,12 @@ interface InlineErrorProps {
   language: string;
   userCodeLineCount: number;
   onLineClick?: (line: number) => void;
+  errorMessageStyle?: 'beginner' | 'standard';
 }
 
-export function InlineError({ error, language, userCodeLineCount, onLineClick }: InlineErrorProps) {
+export function InlineError({ error, language, userCodeLineCount, onLineClick, errorMessageStyle = 'beginner' }: InlineErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
+  const isBeginnerMode = errorMessageStyle === 'beginner';
   
   if (!parsed.isUserCodeError) {
     return (
@@ -258,7 +330,7 @@ export function InlineError({ error, language, userCodeLineCount, onLineClick }:
   
   return (
     <span className="text-red-600 dark:text-red-400 text-xs font-mono">
-      <span className="font-medium">{parsed.friendlyType}</span>
+      <span className="font-medium">{isBeginnerMode ? parsed.friendlyType : parsed.type}</span>
       {parsed.userLine && (
         <button
           onClick={(e) => {
