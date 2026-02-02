@@ -1,6 +1,5 @@
-import { AlertTriangle, XCircle, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage } from "@/lib/errorParser";
 
 interface ErrorDisplayProps {
   error: string;
@@ -20,6 +19,13 @@ interface ErrorDisplayProps {
 /**
  * Unified Error Display Component
  * Single red container for all error types across all modes
+ * ❌ No border
+ * ❌ No copy icon
+ * ✅ Red background (soft red)
+ * ✅ Rounded corners
+ * ✅ Padding inside
+ * ✅ Monospace font for code + stack traces
+ * ✅ Emoji allowed only in Beginner mode
  */
 export function ErrorDisplay({ 
   error, 
@@ -31,21 +37,11 @@ export function ErrorDisplay({
 }: ErrorDisplayProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
   
-  const getIcon = (category: ErrorCategory) => {
-    switch (category) {
-      case 'syntax': return XCircle;
-      case 'runtime': return AlertTriangle;
-      case 'internal': return Cog;
-    }
-  };
-  
-  const Icon = getIcon(parsed.category);
   const isBeginnerMode = errorMessageStyle === 'beginner';
-  const isStandardMode = errorMessageStyle === 'standard';
   const isAdvancedMode = errorMessageStyle === 'advanced';
 
   // ============================================================================
-  // ADVANCED MODE: Full raw output, no stripping, no simplification
+  // ADVANCED MODE: Full raw output, no stripping, no simplification, no emojis
   // ============================================================================
   if (isAdvancedMode) {
     return (
@@ -54,11 +50,8 @@ export function ErrorDisplay({
         className
       )}>
         {/* Title: Raw error type */}
-        <div className="flex items-center gap-2 mb-3">
-          <Icon className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <span className="font-bold text-red-600 dark:text-red-400">
-            {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
-          </span>
+        <div className="font-bold text-red-600 dark:text-red-400 mb-3">
+          {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
         </div>
 
         {/* Full raw traceback - no stripping */}
@@ -70,31 +63,20 @@ export function ErrorDisplay({
   }
 
   // ============================================================================
-  // STANDARD MODE: Real language traceback, stripped of internal paths
+  // STANDARD MODE: Real language traceback, stripped of internal paths, no emojis
   // ============================================================================
-  if (isStandardMode) {
+  if (!isBeginnerMode) {
     return (
       <div className={cn(
         "rounded-lg bg-red-500/10 p-4 font-mono text-sm",
         className
       )}>
         {/* Title */}
-        <div className="flex items-center gap-2 mb-3">
-          <Icon className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <span className="font-bold text-red-600 dark:text-red-400">
-            {parsed.type}
-          </span>
-          {parsed.userLine && (
-            <button
-              onClick={() => onLineClick?.(parsed.userLine!)}
-              className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors"
-            >
-              line {parsed.userLine}
-            </button>
-          )}
+        <div className="font-bold text-red-600 dark:text-red-400 mb-3">
+          {parsed.type}
         </div>
-
-        {/* Cleaned traceback - stripped of internal paths */}
+        
+        {/* Traceback - stripped of internal paths */}
         <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-64 overflow-y-auto">
           {cleanErrorMessage(parsed.rawError)}
         </pre>
@@ -104,52 +86,47 @@ export function ErrorDisplay({
 
   // ============================================================================
   // BEGINNER MODE: Friendly explanations, hints, emojis
+  // Layout: 1. Title → 2. Explanation → 3. Code + caret → 4. Hint
   // ============================================================================
   return (
     <div className={cn(
-      "rounded-lg bg-red-500/10 p-4 font-mono text-sm",
+      "rounded-lg bg-red-500/10 p-4 font-mono text-sm space-y-3",
       className
     )}>
       {/* 1. Error Title */}
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-        <span className="font-bold text-red-600 dark:text-red-400">
-          ❌ {parsed.friendlyType}
-        </span>
+      <div className="font-bold text-red-600 dark:text-red-400">
+        ❌ {parsed.friendlyType}
       </div>
 
       {parsed.isUserCodeError ? (
-        <div className="space-y-3">
+        <>
           {/* 2. Friendly Explanation */}
           <p className="text-sm text-red-600/90 dark:text-red-400/90">
             {parsed.friendlyMessage}
           </p>
 
-          {/* 3. Code Line with caret */}
-          {(parsed.codeLine || parsed.userLine) && (
-            <div className="space-y-1">
-              {parsed.userLine && (
-                <button
-                  onClick={() => onLineClick?.(parsed.userLine!)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
-                >
-                  Line {parsed.userLine}:
-                </button>
-              )}
-              
-              {parsed.codeLine && (
-                <div className="bg-background/50 rounded px-2 py-1.5">
-                  <pre className="text-foreground/90 whitespace-pre overflow-x-auto text-xs">
-                    {parsed.codeLine}
-                  </pre>
-                  {parsed.pointer && (
-                    <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
-                      {parsed.pointer.replace(/^\s{4}/, '')}
-                    </pre>
-                  )}
-                </div>
+          {/* 3. Code Line with caret (^) */}
+          {parsed.codeLine && (
+            <div className="bg-background/50 rounded px-2 py-1.5">
+              <pre className="text-foreground/90 whitespace-pre overflow-x-auto text-xs">
+                {parsed.codeLine}
+              </pre>
+              {parsed.pointer && (
+                <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
+                  {parsed.pointer.replace(/^\s{4}/, '')}
+                </pre>
               )}
             </div>
+          )}
+
+          {/* Line reference */}
+          {parsed.userLine && (
+            <button
+              onClick={() => onLineClick?.(parsed.userLine!)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
+            >
+              Line {parsed.userLine}
+            </button>
           )}
 
           {/* 4. Hint / Guidance */}
@@ -159,11 +136,10 @@ export function ErrorDisplay({
               <span>{parsed.fixHint}</span>
             </p>
           )}
-        </div>
+        </>
       ) : (
-        // Internal error message
         <p className="text-sm text-muted-foreground">
-          {parsed.friendlyMessage}
+          This looks like a system issue on our side. Please try again.
         </p>
       )}
     </div>
@@ -184,6 +160,7 @@ interface CompactErrorProps {
 
 /**
  * Compact error display for inline use in test case results
+ * Single red container, no borders, no icons
  */
 export function CompactError({ error, language, userCodeLineCount, onLineClick, errorMessageStyle = 'beginner' }: CompactErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
@@ -203,8 +180,8 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
   if (isAdvancedMode) {
     return (
       <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
-        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-          <span className="font-bold">{parsed.type}{parsed.message ? `: ${parsed.message}` : ''}</span>
+        <div className="font-bold text-red-600 dark:text-red-400">
+          {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
         </div>
         <pre className="text-foreground/70 whitespace-pre-wrap overflow-x-auto max-w-full max-h-48 overflow-y-auto">
           {parsed.rawError}
@@ -213,23 +190,12 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
     );
   }
 
-  // STANDARD MODE: Cleaned traceback
+  // STANDARD MODE: Cleaned traceback, no emojis
   if (!isBeginnerMode) {
     return (
       <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
-        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-          <span className="font-bold">{parsed.type}</span>
-          {parsed.userLine && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onLineClick?.(parsed.userLine!);
-              }}
-              className="text-xs px-1 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 transition-colors"
-            >
-              line {parsed.userLine}
-            </button>
-          )}
+        <div className="font-bold text-red-600 dark:text-red-400">
+          {parsed.type}
         </div>
         <pre className="text-foreground/70 whitespace-pre-wrap overflow-x-auto max-w-full">
           {cleanErrorMessage(parsed.rawError)}
@@ -238,20 +204,20 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
     );
   }
   
-  // BEGINNER MODE: Friendly explanations
+  // BEGINNER MODE: Friendly explanations with emojis
   return (
     <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
-      {/* Title */}
-      <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-        <span className="font-bold">❌ {parsed.friendlyType}</span>
+      {/* 1. Title */}
+      <div className="font-bold text-red-600 dark:text-red-400">
+        ❌ {parsed.friendlyType}
       </div>
       
-      {/* Explanation */}
+      {/* 2. Explanation */}
       <div className="text-red-600/80 dark:text-red-400/80">
         {parsed.friendlyMessage}
       </div>
       
-      {/* Code snippet with caret */}
+      {/* 3. Code snippet with caret */}
       {parsed.codeLine && (
         <div className="bg-background/50 rounded px-2 py-1">
           <pre className="text-foreground/70 whitespace-pre overflow-x-auto max-w-full">
@@ -278,7 +244,7 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
         </button>
       )}
       
-      {/* Hint */}
+      {/* 4. Hint */}
       {parsed.fixHint && (
         <p className="text-muted-foreground flex items-start gap-1.5">
           <span>💡</span>

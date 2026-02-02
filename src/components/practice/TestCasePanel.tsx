@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye, AlertTriangle, XCircle, Cog, Lightbulb } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, Eye, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, looksLikeError, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, looksLikeError } from "@/lib/errorParser";
 
 export interface TestResult {
   id: number;
@@ -139,7 +139,6 @@ export function TestCasePanel({
   
   const [selectedCase, setSelectedCase] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [showRawError, setShowRawError] = useState(false);
 
   const hasResults = results.length > 0;
   const hasError = globalError || results.some(r => r.error);
@@ -331,225 +330,102 @@ export function TestCasePanel({
                 </div>
               ) : hasResults ? (
                 <div className="space-y-4">
-                  {/* Global Error Display (LeetCode-style) */}
+                  {/* Global Error Display - Single Red Container */}
                   {globalError && (() => {
                     const parsed = parseCodeError(globalError, language, userCodeLineCount);
                     const isBeginnerMode = errorMessageStyle === 'beginner';
                     const isAdvancedMode = errorMessageStyle === 'advanced';
-                    
-                    // Determine style based on error category
-                    const getCategoryStyle = (category: ErrorCategory) => {
-                      switch (category) {
-                        case 'syntax':
-                          return {
-                            headerBg: "bg-red-500/10",
-                            headerBorder: "border-red-500/20",
-                            headerText: "text-red-600 dark:text-red-400",
-                            Icon: XCircle,
-                          };
-                        case 'runtime':
-                          return {
-                            headerBg: "bg-red-500/10",
-                            headerBorder: "border-red-500/20",
-                            headerText: "text-red-600 dark:text-red-400",
-                            Icon: AlertTriangle,
-                          };
-                        case 'internal':
-                          return {
-                            headerBg: "bg-muted",
-                            headerBorder: "border-border",
-                            headerText: "text-muted-foreground",
-                            Icon: Cog,
-                          };
-                      }
-                    };
-                    
-                    const style = getCategoryStyle(parsed.category);
-                    const { Icon } = style;
-                    
-                    // Format header text - use friendlyType from parsed error
-                    const headerText = parsed.friendlyType;
 
-                    // ADVANCED MODE: Full raw error output exactly as produced, no stripping
+                    // ============================================================
+                    // ADVANCED MODE: Full raw output, no stripping, no simplification
+                    // ============================================================
                     if (isAdvancedMode) {
                       return (
-                        <div className={cn(
-                          "rounded-lg border overflow-hidden font-mono text-sm",
-                          style.headerBg,
-                          style.headerBorder
-                        )}>
-                          {/* Error Header */}
-                          <div className="px-4 py-3 border-b border-border/30">
-                            <div className="flex items-center gap-2">
-                              <Icon className={cn("h-4 w-4", style.headerText)} />
-                              <span className={cn("font-bold text-base", style.headerText)}>
-                                {parsed.type}
-                              </span>
-                              {parsed.userLine && (
-                                <button
-                                  onClick={() => onErrorLineClick?.(parsed.userLine!)}
-                                  className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors"
-                                >
-                                  line {parsed.userLine}
-                                </button>
-                              )}
-                            </div>
+                        <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm">
+                          {/* Title: Raw error type */}
+                          <div className="font-bold text-red-600 dark:text-red-400 mb-3">
+                            {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
                           </div>
-
-                          {/* Full Raw Error Content - No stripping at all */}
-                          <div className="px-4 py-3 bg-background/50">
-                            <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-96 overflow-y-auto">
-                              {parsed.rawError}
-                            </pre>
-                          </div>
+                          {/* Full raw traceback - no stripping */}
+                          <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-96 overflow-y-auto">
+                            {parsed.rawError}
+                          </pre>
                         </div>
                       );
                     }
 
-                    // STANDARD MODE: Show raw language-native error output
+                    // ============================================================
+                    // STANDARD MODE: Real language traceback, stripped of internal paths
+                    // ============================================================
                     if (!isBeginnerMode) {
                       return (
-                        <div className={cn(
-                          "rounded-lg border overflow-hidden font-mono text-sm",
-                          style.headerBg,
-                          style.headerBorder
-                        )}>
-                          {/* Error Header */}
-                          <div className="px-4 py-3 border-b border-border/30">
-                            <div className="flex items-center gap-2">
-                              <Icon className={cn("h-4 w-4", style.headerText)} />
-                              <span className={cn("font-bold text-base", style.headerText)}>
-                                {parsed.type}
-                              </span>
-                              {parsed.userLine && (
-                                <button
-                                  onClick={() => onErrorLineClick?.(parsed.userLine!)}
-                                  className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors"
-                                >
-                                  line {parsed.userLine}
-                                </button>
-                              )}
-                            </div>
+                        <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm">
+                          {/* Title */}
+                          <div className="font-bold text-red-600 dark:text-red-400 mb-3">
+                            ❌ {parsed.type}
                           </div>
-
-                          {/* Raw Error Content - Cleaned of internal paths */}
-                          <div className="px-4 py-3 bg-background/50">
-                            <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-64 overflow-y-auto">
-                              {cleanErrorMessage(parsed.rawError)}
-                            </pre>
-                          </div>
+                          {/* Traceback header + error message + faulty line + caret */}
+                          <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-64 overflow-y-auto">
+                            {cleanErrorMessage(parsed.rawError)}
+                          </pre>
                         </div>
                       );
                     }
 
-                    // BEGINNER MODE: Show friendly explanations and coaching hints
+                    // ============================================================
+                    // BEGINNER MODE: Friendly explanations, hints, emojis
+                    // ============================================================
                     return (
-                      <div className={cn(
-                        "rounded-lg border overflow-hidden font-mono text-sm",
-                        style.headerBg,
-                        style.headerBorder
-                      )}>
-                        {/* Error Header - LeetCode style */}
-                        <div className="px-4 py-3 border-b border-border/30">
-                          <div className="flex items-center gap-2">
-                            <Icon className={cn("h-4 w-4", style.headerText)} />
-                            <span className={cn("font-bold text-base", style.headerText)}>
-                              {headerText}
-                            </span>
-                          </div>
+                      <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm space-y-3">
+                        {/* 1. Error Title */}
+                        <div className="font-bold text-red-600 dark:text-red-400">
+                          ❌ {parsed.friendlyType}
                         </div>
 
-                        {/* Error Content */}
-                        <div className="px-4 py-3 space-y-3 bg-background/50">
-                          {parsed.isUserCodeError ? (
-                            <>
-                              {/* Primary error message - friendly explanation */}
-                              <p className={cn("text-sm", style.headerText)}>
-                                {parsed.friendlyMessage}
-                              </p>
-
-                              {/* Runtime Error: Show specific error type and message */}
-                              {isRuntimeError(parsed) && (
-                                <div className="text-xs font-mono bg-muted/50 rounded px-2 py-1.5 border border-border/30">
-                                  <span className="text-red-600 dark:text-red-400 font-medium">{parsed.type}</span>
-                                  <span className="text-muted-foreground">: </span>
-                                  <span className="text-foreground/80">{parsed.message}</span>
-                                </div>
-                              )}
-
-                              {/* Fix hint - coaching guidance */}
-                              {parsed.fixHint && (
-                                <p className="text-xs text-muted-foreground italic flex items-start gap-1.5">
-                                  <span>💡</span>
-                                  <span>{parsed.fixHint}</span>
-                                </p>
-                              )}
-
-                              {/* Line reference with code snippet */}
-                              {parsed.userLine && (
-                                <div className="space-y-1">
-                                  <button
-                                    onClick={() => onErrorLineClick?.(parsed.userLine!)}
-                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
-                                  >
-                                    Line {parsed.userLine}:
-                                  </button>
-                                  
-                                  {parsed.codeLine && (
-                                    <div className="pl-0">
-                                      <pre className="text-foreground/90 whitespace-pre overflow-x-auto">
-                                        {parsed.codeLine}
-                                      </pre>
-                                      {parsed.pointer && (
-                                        <pre className={cn("whitespace-pre", style.headerText)}>
-                                          {parsed.pointer.replace(/^\s{4}/, '')}
-                                        </pre>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* If no line but we have code snippet */}
-                              {!parsed.userLine && parsed.codeLine && (
-                                <div className="space-y-1">
-                                  <pre className="text-foreground/90 whitespace-pre overflow-x-auto">
-                                    {parsed.codeLine}
-                                  </pre>
-                                  {parsed.pointer && (
-                                    <pre className={cn("whitespace-pre", style.headerText)}>
-                                      {parsed.pointer.replace(/^\s{4}/, '')}
-                                    </pre>
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            // Internal error message
-                            <p className="text-sm text-muted-foreground">
-                              This looks like a system issue on our side. Please try again.
+                        {parsed.isUserCodeError ? (
+                          <>
+                            {/* 2. Friendly Explanation */}
+                            <p className="text-sm text-red-600/90 dark:text-red-400/90">
+                              {parsed.friendlyMessage}
                             </p>
-                          )}
-                        </div>
 
-                        {/* Technical Details (Collapsible) - Raw stderr output */}
-                        <div className="border-t border-border/30">
-                          <button
-                            onClick={() => setShowRawError(!showRawError)}
-                            className="w-full flex items-center justify-between px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                          >
-                            <span>View technical details</span>
-                            {showRawError ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                          </button>
-                          
-                          {showRawError && (
-                            <div className="px-4 pb-4">
-                              <pre className="text-xs p-3 rounded bg-muted/50 overflow-x-auto whitespace-pre-wrap break-words border border-border/30 text-muted-foreground max-h-48 overflow-y-auto">
-                                {isSyntaxError(parsed) ? parsed.rawError : cleanErrorMessage(parsed.rawError)}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
+                            {/* 3. Code Line with caret (^) */}
+                            {parsed.codeLine && (
+                              <div className="bg-background/50 rounded px-2 py-1.5">
+                                <pre className="text-foreground/90 whitespace-pre overflow-x-auto text-xs">
+                                  {parsed.codeLine}
+                                </pre>
+                                {parsed.pointer && (
+                                  <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
+                                    {parsed.pointer.replace(/^\s{4}/, '')}
+                                  </pre>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Line reference */}
+                            {parsed.userLine && (
+                              <button
+                                onClick={() => onErrorLineClick?.(parsed.userLine!)}
+                                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
+                              >
+                                Line {parsed.userLine}
+                              </button>
+                            )}
+
+                            {/* 4. Hint / Guidance */}
+                            {parsed.fixHint && (
+                              <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                                <span>💡</span>
+                                <span>{parsed.fixHint}</span>
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            This looks like a system issue on our side. Please try again.
+                          </p>
+                        )}
                       </div>
                     );
                   })()}
@@ -573,14 +449,11 @@ export function TestCasePanel({
                     // If there's a runtime error, show "Runtime Error" header instead of pass count
                     if (hasAnyRuntimeError) {
                       return (
-                        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <div className="p-4 rounded-lg bg-red-500/10">
                           <div className="flex flex-col items-center gap-1 text-center">
-                            <div className="flex items-center gap-2">
-                              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                              <span className="text-lg font-semibold text-red-600 dark:text-red-400">
-                                Runtime Error
-                              </span>
-                            </div>
+                            <span className="text-lg font-semibold text-red-600 dark:text-red-400">
+                              ❌ Runtime Error
+                            </span>
                             <span className="text-sm text-red-600/80 dark:text-red-400/80">
                               Your code crashed during execution. Check the error below.
                             </span>
@@ -629,17 +502,14 @@ export function TestCasePanel({
                       <div className={cn(
                         "p-4 rounded-lg",
                         allPassed 
-                          ? "bg-green-500/10 border border-green-500/20" 
-                          : "bg-amber-500/10 border border-amber-500/20"
+                          ? "bg-green-500/10" 
+                          : "bg-amber-500/10"
                       )}>
                         <div className="flex flex-col items-center gap-1 text-center">
                           {!allPassed && (
-                            <div className="flex items-center gap-2 mb-1">
-                              <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                              <span className="text-base font-semibold text-amber-600 dark:text-amber-500">
-                                {headerText}
-                              </span>
-                            </div>
+                            <span className="text-base font-semibold text-amber-600 dark:text-amber-500 mb-1">
+                              {headerText}
+                            </span>
                           )}
                           <span className={cn(
                             "text-lg font-semibold",
@@ -725,75 +595,64 @@ export function TestCasePanel({
                           
                           {/* Runtime Error display for this specific test case */}
                           {effectiveErrorParsed && !globalError && (
-                            <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                            <div className="mb-3 p-3 rounded-lg bg-red-500/10 font-mono text-sm space-y-2">
                               {isAdvancedMode ? (
                                 // ADVANCED MODE: Full raw error output, no stripping
                                 <>
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <span className="text-red-600 dark:text-red-400 font-medium">
-                                      {effectiveErrorParsed.type}
-                                    </span>
-                                    {effectiveErrorParsed.userLine && (
-                                      <button
-                                        onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
-                                        className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
-                                      >
-                                        line {effectiveErrorParsed.userLine}
-                                      </button>
-                                    )}
+                                  <div className="font-bold text-red-600 dark:text-red-400">
+                                    {effectiveErrorParsed.type}{effectiveErrorParsed.message ? `: ${effectiveErrorParsed.message}` : ''}
                                   </div>
-                                  <pre className="text-xs text-foreground/80 mt-2 whitespace-pre-wrap break-words overflow-x-auto max-h-48 overflow-y-auto">
+                                  <pre className="text-xs text-foreground/80 whitespace-pre-wrap break-words overflow-x-auto max-h-48 overflow-y-auto">
                                     {effectiveErrorParsed.rawError}
                                   </pre>
                                 </>
                               ) : isBeginnerMode ? (
                                 // BEGINNER MODE: Friendly explanations + coaching hints
                                 <>
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <span className="text-red-600 dark:text-red-400 font-medium">
-                                      {effectiveErrorParsed.friendlyType}
-                                    </span>
-                                    {effectiveErrorParsed.userLine && (
-                                      <button
-                                        onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
-                                        className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
-                                      >
-                                        line {effectiveErrorParsed.userLine}
-                                      </button>
-                                    )}
+                                  {/* 1. Error Title */}
+                                  <div className="font-bold text-red-600 dark:text-red-400">
+                                    ❌ {effectiveErrorParsed.friendlyType}
                                   </div>
-                                  <p className="text-xs text-foreground/70 mt-1">
+                                  {/* 2. Friendly Explanation */}
+                                  <p className="text-xs text-red-600/80 dark:text-red-400/80">
                                     {effectiveErrorParsed.friendlyMessage}
                                   </p>
-                                  {/* Specific error type and message */}
-                                  <div className="text-xs font-mono bg-muted/30 rounded px-2 py-1 mt-2 border border-border/30">
-                                    <span className="text-red-600/80 dark:text-red-400/80 font-medium">{effectiveErrorParsed.type}</span>
-                                    <span className="text-muted-foreground">: </span>
-                                    <span className="text-foreground/70">{effectiveErrorParsed.message}</span>
-                                  </div>
+                                  {/* 3. Code snippet with caret */}
+                                  {effectiveErrorParsed.codeLine && (
+                                    <div className="bg-background/50 rounded px-2 py-1">
+                                      <pre className="text-foreground/70 whitespace-pre overflow-x-auto text-xs">
+                                        {effectiveErrorParsed.codeLine}
+                                      </pre>
+                                      {effectiveErrorParsed.pointer && (
+                                        <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
+                                          {effectiveErrorParsed.pointer.replace(/^\s{4}/, '')}
+                                        </pre>
+                                      )}
+                                    </div>
+                                  )}
+                                  {/* Line reference */}
+                                  {effectiveErrorParsed.userLine && (
+                                    <button
+                                      onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
+                                      className="text-xs text-muted-foreground hover:text-foreground underline decoration-dashed transition-colors"
+                                    >
+                                      Line {effectiveErrorParsed.userLine}
+                                    </button>
+                                  )}
+                                  {/* 4. Hint */}
                                   {effectiveErrorParsed.fixHint && (
-                                    <p className="text-xs text-muted-foreground mt-2 italic">
+                                    <p className="text-xs text-muted-foreground">
                                       💡 {effectiveErrorParsed.fixHint}
                                     </p>
                                   )}
                                 </>
                               ) : (
-                                // STANDARD MODE: Raw language-native error, cleaned
+                                // STANDARD MODE: Real traceback, cleaned of internal paths
                                 <>
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <span className="text-red-600 dark:text-red-400 font-medium">
-                                      {effectiveErrorParsed.type}
-                                    </span>
-                                    {effectiveErrorParsed.userLine && (
-                                      <button
-                                        onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
-                                        className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
-                                      >
-                                        line {effectiveErrorParsed.userLine}
-                                      </button>
-                                    )}
+                                  <div className="font-bold text-red-600 dark:text-red-400">
+                                    ❌ {effectiveErrorParsed.type}
                                   </div>
-                                  <pre className="text-xs text-foreground/80 mt-2 whitespace-pre-wrap break-words overflow-x-auto">
+                                  <pre className="text-xs text-foreground/80 whitespace-pre-wrap break-words overflow-x-auto">
                                     {cleanErrorMessage(effectiveErrorParsed.rawError)}
                                   </pre>
                                 </>
