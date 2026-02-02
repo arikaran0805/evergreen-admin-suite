@@ -338,14 +338,14 @@ export function TestCasePanel({
                     // Determine style based on error category
                     const getCategoryStyle = (category: ErrorCategory) => {
                       switch (category) {
-                        case 'syntax':
+                        case 'compilation':
                           return {
                             headerBg: "bg-red-500/10",
                             headerBorder: "border-red-500/20",
                             headerText: "text-red-600 dark:text-red-400",
                             Icon: XCircle,
                           };
-                        case 'runtime':
+                        case 'execution':
                           return {
                             headerBg: "bg-red-500/10",
                             headerBorder: "border-red-500/20",
@@ -365,12 +365,8 @@ export function TestCasePanel({
                     const style = getCategoryStyle(parsed.category);
                     const { Icon } = style;
                     
-                    // Format header text (LeetCode style)
-                    const headerText = parsed.category === 'internal' 
-                      ? 'Internal Error' 
-                      : parsed.category === 'syntax' 
-                        ? 'Syntax Error' 
-                        : 'Runtime Error';
+                    // Format header text (LeetCode style) - use friendlyType from parsed error
+                    const headerText = parsed.friendlyType;
 
                     return (
                       <div className={cn(

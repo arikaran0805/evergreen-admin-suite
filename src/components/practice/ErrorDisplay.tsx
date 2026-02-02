@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, AlertTriangle, XCircle, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, getPhaseDisplayText, type ParsedError, type ErrorCategory } from "@/lib/errorParser";
 
 interface ErrorDisplayProps {
   error: string;
@@ -29,14 +29,14 @@ export function ErrorDisplay({
   // Get style based on error category
   const getCategoryStyle = (category: ErrorCategory) => {
     switch (category) {
-      case 'syntax':
+      case 'compilation':
         return {
           headerBg: "bg-red-500/10",
           headerBorder: "border-red-500/20",
           headerText: "text-red-600 dark:text-red-400",
           icon: XCircle,
         };
-      case 'runtime':
+      case 'execution':
         return {
           headerBg: "bg-red-500/10",
           headerBorder: "border-red-500/20",
@@ -56,14 +56,6 @@ export function ErrorDisplay({
   const style = getCategoryStyle(parsed.category);
   const Icon = style.icon;
 
-  // Format the header text
-  const getHeaderText = () => {
-    if (parsed.category === 'internal') {
-      return 'Internal Error';
-    }
-    return parsed.category === 'syntax' ? 'Syntax Error' : 'Runtime Error';
-  };
-
   return (
     <div className={cn(
       "rounded-lg border overflow-hidden font-mono text-sm",
@@ -76,7 +68,7 @@ export function ErrorDisplay({
         <div className="flex items-center gap-2">
           <Icon className={cn("h-4 w-4", style.headerText)} />
           <span className={cn("font-bold text-base", style.headerText)}>
-            {getHeaderText()}
+            {parsed.friendlyType}
           </span>
         </div>
       </div>
@@ -133,7 +125,7 @@ export function ErrorDisplay({
         ) : (
           // Internal error message
           <p className="text-sm text-muted-foreground">
-            This looks like a system issue on our side. Please try again.
+            {parsed.friendlyMessage}
           </p>
         )}
       </div>
@@ -189,14 +181,12 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick }
       </div>
     );
   }
-
-  const categoryLabel = parsed.category === 'syntax' ? 'Syntax Error' : 'Runtime Error';
   
   return (
     <div className="text-xs font-mono space-y-1">
       {/* Error header */}
       <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-        <span className="font-bold">{categoryLabel}</span>
+        <span className="font-bold">{parsed.friendlyType}</span>
       </div>
       
       {/* Error message */}
@@ -248,12 +238,10 @@ export function InlineError({ error, language, userCodeLineCount, onLineClick }:
       </span>
     );
   }
-
-  const categoryLabel = parsed.category === 'syntax' ? 'Syntax Error' : 'Runtime Error';
   
   return (
     <span className="text-red-600 dark:text-red-400 text-xs font-mono">
-      <span className="font-medium">{categoryLabel}</span>
+      <span className="font-medium">{parsed.friendlyType}</span>
       {parsed.userLine && (
         <button
           onClick={(e) => {
