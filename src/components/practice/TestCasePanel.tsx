@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, ChevronDown, ChevronUp, Eye, AlertTriangle, XCircle, Cog, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, type ErrorCategory } from "@/lib/errorParser";
+import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, looksLikeError, type ErrorCategory } from "@/lib/errorParser";
 
 export interface TestResult {
   id: number;
@@ -495,7 +495,8 @@ export function TestCasePanel({
                     const totalCount = results.length;
                     const allPassed = passedCount === totalCount;
                     const nonePassed = passedCount === 0;
-                    const hasAnyRuntimeError = results.some(r => r.error);
+                    // Detect runtime errors in BOTH result.error AND result.actual
+                    const hasAnyRuntimeError = results.some(r => r.error || looksLikeError(r.actual));
 
                     // If there's a runtime error, show "Runtime Error" header instead of pass count
                     if (hasAnyRuntimeError) {
@@ -588,10 +589,20 @@ export function TestCasePanel({
                     }
                     
                     return sortedResults.map((result, i) => {
+                      // Check for error in result.error field
                       const errorParsed = result.error 
                         ? parseCodeError(result.error, language, userCodeLineCount) 
                         : null;
-                      const hasRuntimeError = errorParsed && isRuntimeError(errorParsed);
+                      
+                      // Also check if error appeared in result.actual (output field)
+                      const actualIsError = !result.error && looksLikeError(result.actual);
+                      const actualErrorParsed = actualIsError 
+                        ? parseCodeError(result.actual!, language, userCodeLineCount) 
+                        : null;
+                      
+                      // Use whichever error we found
+                      const effectiveErrorParsed = errorParsed || actualErrorParsed;
+                      const hasRuntimeError = effectiveErrorParsed && isRuntimeError(effectiveErrorParsed);
                       
                       // Hidden test case - show minimal info with expandable output
                       if (result.isHidden) {
@@ -626,34 +637,34 @@ export function TestCasePanel({
                           </div>
                           
                           {/* Runtime Error display for this specific test case */}
-                          {errorParsed && !globalError && (
+                          {effectiveErrorParsed && !globalError && (
                             <div className="mb-3 p-3 rounded-md bg-red-500/10 border border-red-500/20">
                               {/* Primary message: code crashed */}
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-red-600 dark:text-red-400 font-medium">
-                                  {errorParsed.friendlyType}
+                                  {effectiveErrorParsed.friendlyType}
                                 </span>
-                                {errorParsed.userLine && (
+                                {effectiveErrorParsed.userLine && (
                                   <button
-                                    onClick={() => onErrorLineClick?.(errorParsed.userLine!)}
+                                    onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
                                     className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 transition-colors font-mono"
                                   >
-                                    line {errorParsed.userLine}
+                                    line {effectiveErrorParsed.userLine}
                                   </button>
                                 )}
                               </div>
                               <p className="text-xs text-foreground/70 mt-1">
-                                {errorParsed.friendlyMessage}
+                                {effectiveErrorParsed.friendlyMessage}
                               </p>
                               {/* Specific error type and message */}
                               <div className="text-xs font-mono bg-muted/30 rounded px-2 py-1 mt-2 border border-border/30">
-                                <span className="text-red-600/80 dark:text-red-400/80 font-medium">{errorParsed.type}</span>
+                                <span className="text-red-600/80 dark:text-red-400/80 font-medium">{effectiveErrorParsed.type}</span>
                                 <span className="text-muted-foreground">: </span>
-                                <span className="text-foreground/70">{errorParsed.message}</span>
+                                <span className="text-foreground/70">{effectiveErrorParsed.message}</span>
                               </div>
-                              {errorParsed.fixHint && (
+                              {effectiveErrorParsed.fixHint && (
                                 <p className="text-xs text-muted-foreground mt-2 italic">
-                                  💡 {errorParsed.fixHint}
+                                  💡 {effectiveErrorParsed.fixHint}
                                 </p>
                               )}
                             </div>
