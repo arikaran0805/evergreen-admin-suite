@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, Eye, AlertTriangle } from "lucide-react";
+import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, Eye, AlertTriangle, Copy, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseCodeError, isSyntaxError, isRuntimeError, looksLikeError } from "@/lib/errorParser";
 
@@ -111,7 +111,71 @@ function HiddenTestCase({ result, index }: { result: TestResult; index: number }
   );
 }
 
-export function TestCasePanel({ 
+// LeetCode-style Error Box Component
+function LeetCodeErrorBox({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const lineCount = content.split('\n').length;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  return (
+    <div className="relative rounded-lg bg-red-500/10 p-4">
+      {/* Copy Button - Top Right */}
+      <button
+        onClick={handleCopy}
+        className="absolute top-3 right-3 p-1.5 rounded hover:bg-red-500/20 transition-colors text-red-400"
+        title="Copy error"
+      >
+        {copied ? (
+          <Check className="h-4 w-4" />
+        ) : (
+          <Copy className="h-4 w-4" />
+        )}
+      </button>
+
+      {/* Error Content - Monospace */}
+      <div className={cn(
+        "font-mono text-sm text-red-500 pr-10 overflow-x-auto",
+        !expanded && lineCount > 8 && "max-h-40 overflow-hidden"
+      )}>
+        <pre className="whitespace-pre-wrap break-words">
+          {content}
+        </pre>
+      </div>
+
+      {/* View Less/More Toggle */}
+      {lineCount > 8 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 mx-auto mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="h-4 w-4" />
+              View less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4" />
+              View more
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function TestCasePanel({
   testCases, 
   results, 
   isRunning, 
@@ -328,62 +392,20 @@ export function TestCasePanel({
                 </div>
               ) : hasResults ? (
                 <div className="space-y-4">
-                  {/* Global Error Display - Single Red Container */}
+                  {/* Global Error Display - LeetCode Style */}
                   {globalError && (() => {
                     const parsed = parseCodeError(globalError, language, userCodeLineCount);
+                    const formattedContent = parsed.rawError || globalError;
 
-                    // Friendly beginner mode: explanations, hints, emojis
                     return (
-                      <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm space-y-3">
-                        {/* 1. Error Title with emoji */}
-                        <div className="font-bold text-red-600 dark:text-red-400">
-                          ❌ {parsed.friendlyType}
-                        </div>
+                      <div className="space-y-3">
+                        {/* Title - Always "Runtime Error" */}
+                        <h3 className="text-xl font-semibold text-red-500">
+                          Runtime Error
+                        </h3>
 
-                        {parsed.isUserCodeError ? (
-                          <>
-                            {/* 2. Friendly Explanation */}
-                            <p className="text-sm text-red-600/90 dark:text-red-400/90">
-                              {parsed.friendlyMessage}
-                            </p>
-
-                            {/* 3. Code Line with caret (^) */}
-                            {parsed.codeLine && (
-                              <div className="bg-background/50 rounded px-2 py-1.5">
-                                <pre className="text-foreground/90 whitespace-pre overflow-x-auto text-xs">
-                                  {parsed.codeLine}
-                                </pre>
-                                {parsed.pointer && (
-                                  <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
-                                    {parsed.pointer.replace(/^\s{4}/, '')}
-                                  </pre>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Line reference */}
-                            {parsed.userLine && (
-                              <button
-                                onClick={() => onErrorLineClick?.(parsed.userLine!)}
-                                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
-                              >
-                                Line {parsed.userLine}
-                              </button>
-                            )}
-
-                            {/* 4. Hint / Guidance with emoji */}
-                            {parsed.fixHint && (
-                              <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-                                <span>💡</span>
-                                <span>{parsed.fixHint}</span>
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            This looks like a system issue on our side. Please try again.
-                          </p>
-                        )}
+                        {/* Error Container */}
+                        <LeetCodeErrorBox content={formattedContent} />
                       </div>
                     );
                   })()}
@@ -400,61 +422,20 @@ export function TestCasePanel({
                     const passedCount = results.filter(r => r.passed).length;
                     const totalCount = results.length;
                     const allPassed = passedCount === totalCount;
-                    const nonePassed = passedCount === 0;
                     // Detect runtime errors in BOTH result.error AND result.actual
                     const hasAnyRuntimeError = results.some(r => r.error || looksLikeError(r.actual));
 
-                    // If there's a runtime error, show "Runtime Error" header instead of pass count
+                    // If there's a runtime error, show "Runtime Error" header
                     if (hasAnyRuntimeError) {
                       return (
-                        <div className="p-4 rounded-lg bg-red-500/10">
-                          <div className="flex flex-col items-center gap-1 text-center">
-                            <span className="text-lg font-semibold text-red-600 dark:text-red-400">
-                              ❌ Runtime Error
-                            </span>
-                            <span className="text-sm text-red-600/80 dark:text-red-400/80">
-                              Your code crashed during execution. Check the error below.
-                            </span>
-                          </div>
-                        </div>
+                        <h3 className="text-xl font-semibold text-red-500">
+                          Runtime Error
+                        </h3>
                       );
                     }
 
                     // Logical Error state - code ran successfully but produced wrong output
-                    let primaryMessage = "";
-                    let coachingHint = "";
-                    let colorClass = "";
-                    let headerText = allPassed ? "Accepted" : "Wrong Answer";
-
-                    if (isSubmit) {
-                      // SUBMIT MODE (Sample + Hidden Tests)
-                      if (allPassed) {
-                        primaryMessage = "🎉 Great job! Your logic handled all test cases correctly.";
-                        colorClass = "text-green-600 dark:text-green-500";
-                      } else if (nonePassed) {
-                        primaryMessage = "Your code ran successfully, but the output is incorrect.";
-                        coachingHint = "Your logic may be missing a condition or edge case.";
-                        colorClass = "text-amber-600 dark:text-amber-500";
-                      } else {
-                        primaryMessage = "Your code ran successfully, but some outputs don't match.";
-                        coachingHint = "Review the failing cases — you may be close to the solution.";
-                        colorClass = "text-amber-600 dark:text-amber-500";
-                      }
-                    } else {
-                      // RUN MODE (Sample Tests Only)
-                      if (allPassed) {
-                        primaryMessage = "✅ Samples passed — try Submit to check edge cases.";
-                        colorClass = "text-green-600 dark:text-green-500";
-                      } else if (nonePassed) {
-                        primaryMessage = "Your code ran successfully, but the output is incorrect.";
-                        coachingHint = "Compare Expected vs Your Output below to find the issue.";
-                        colorClass = "text-amber-600 dark:text-amber-500";
-                      } else {
-                        primaryMessage = "Your code ran successfully, but some outputs don't match.";
-                        coachingHint = "Check the failing test cases — your logic may need a small adjustment.";
-                        colorClass = "text-amber-600 dark:text-amber-500";
-                      }
-                    }
+                    const primaryMessage = allPassed ? "Accepted" : "Wrong Answer";
 
                     return (
                       <div className={cn(
@@ -464,27 +445,18 @@ export function TestCasePanel({
                           : "bg-amber-500/10"
                       )}>
                         <div className="flex flex-col items-center gap-1 text-center">
-                          {!allPassed && (
-                            <span className="text-base font-semibold text-amber-600 dark:text-amber-500 mb-1">
-                              {headerText}
-                            </span>
-                          )}
                           <span className={cn(
-                            "text-lg font-semibold",
+                            "text-xl font-semibold",
                             allPassed ? "text-green-600 dark:text-green-500" : "text-amber-600 dark:text-amber-500"
                           )}>
-                            {passedCount} / {totalCount} Passed
-                          </span>
-                          <span className={cn("text-sm", colorClass)}>
                             {primaryMessage}
                           </span>
-                          {/* Coaching hint for logical errors */}
-                          {coachingHint && (
-                            <p className="text-xs text-muted-foreground italic mt-1 flex items-center gap-1.5">
-                              <span>💡</span>
-                              <span>{coachingHint}</span>
-                            </p>
-                          )}
+                          <span className={cn(
+                            "text-sm",
+                            allPassed ? "text-green-600/80 dark:text-green-500/80" : "text-amber-600/80 dark:text-amber-500/80"
+                          )}>
+                            {passedCount} / {totalCount} testcases passed
+                          </span>
                         </div>
                       </div>
                     );
@@ -548,46 +520,10 @@ export function TestCasePanel({
                             )}
                           </div>
                           
-                          {/* Runtime Error display for this specific test case */}
+                          {/* Runtime Error display for this specific test case - LeetCode Style */}
                           {effectiveErrorParsed && !globalError && (
-                            <div className="mb-3 p-3 rounded-lg bg-red-500/10 font-mono text-sm space-y-2">
-                              {/* Error Title with emoji */}
-                              <div className="font-bold text-red-600 dark:text-red-400">
-                                ❌ {effectiveErrorParsed.friendlyType}
-                              </div>
-                              {/* Friendly Explanation */}
-                              <p className="text-xs text-red-600/80 dark:text-red-400/80">
-                                {effectiveErrorParsed.friendlyMessage}
-                              </p>
-                              {/* Code snippet with caret */}
-                              {effectiveErrorParsed.codeLine && (
-                                <div className="bg-background/50 rounded px-2 py-1">
-                                  <pre className="text-foreground/70 whitespace-pre overflow-x-auto text-xs">
-                                    {effectiveErrorParsed.codeLine}
-                                  </pre>
-                                  {effectiveErrorParsed.pointer && (
-                                    <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
-                                      {effectiveErrorParsed.pointer.replace(/^\s{4}/, '')}
-                                    </pre>
-                                  )}
-                                </div>
-                              )}
-                              {/* Line reference */}
-                              {effectiveErrorParsed.userLine && (
-                                <button
-                                  onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
-                                  className="text-xs text-muted-foreground hover:text-foreground underline decoration-dashed transition-colors"
-                                >
-                                  Line {effectiveErrorParsed.userLine}
-                                </button>
-                              )}
-                              {/* Hint with emoji */}
-                              {effectiveErrorParsed.fixHint && (
-                                <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-                                  <span>💡</span>
-                                  <span>{effectiveErrorParsed.fixHint}</span>
-                                </p>
-                              )}
+                            <div className="mb-3">
+                              <LeetCodeErrorBox content={effectiveErrorParsed.rawError || ''} />
                             </div>
                           )}
                           

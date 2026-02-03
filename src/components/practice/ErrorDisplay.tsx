@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { parseCodeError } from "@/lib/errorParser";
+import { Copy, Check, ChevronUp, ChevronDown } from "lucide-react";
 
 interface ErrorDisplayProps {
   error: string;
@@ -10,19 +12,15 @@ interface ErrorDisplayProps {
 }
 
 /**
- * Unified Error Display Component
+ * LeetCode-style Error Display Component
  * 
- * 🔴 Global Error UI Rules (Mandatory)
- * ❌ No border
- * ❌ No copy icon
- * ✅ Red background (soft red)
- * ✅ Rounded corners
- * ✅ Padding inside container
- * ✅ Monospace font for code + stack traces
- * ✅ Emoji allowed
- * 
- * 🧱 Error Container Layout
- * Order: Title → Explanation → Code Line + caret → Hint
+ * Rules:
+ * - Title: Always "Runtime Error" (no syntax vs runtime differentiation)
+ * - Body: Monospace with ExceptionType: Message, code line, full stack trace
+ * - No emojis, no hints, no beginner messaging
+ * - Soft red background, no border, rounded corners
+ * - Copy icon at top-right
+ * - View less/more toggle when content exceeds height
  */
 export function ErrorDisplay({ 
   error, 
@@ -31,68 +29,81 @@ export function ErrorDisplay({
   className,
   onLineClick
 }: ErrorDisplayProps) {
+  const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const parsed = parseCodeError(error, language, userCodeLineCount);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(parsed.rawError || error);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // Format the error content exactly like LeetCode
+  const formattedContent = parsed.rawError || error;
+
   return (
-    <div className={cn(
-      "rounded-lg bg-red-500/10 p-4 font-mono text-sm space-y-3",
-      className
-    )}>
-      {/* 1. Error Title with emoji */}
-      <div className="font-bold text-red-600 dark:text-red-400">
-        ❌ {parsed.friendlyType}
+    <div className={cn("space-y-3", className)}>
+      {/* Title - Always "Runtime Error" */}
+      <h3 className="text-xl font-semibold text-red-500">
+        Runtime Error
+      </h3>
+
+      {/* Error Container */}
+      <div className="relative rounded-lg bg-red-500/10 p-4">
+        {/* Copy Button - Top Right */}
+        <button
+          onClick={handleCopy}
+          className="absolute top-3 right-3 p-1.5 rounded hover:bg-red-500/20 transition-colors text-red-400"
+          title="Copy error"
+        >
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </button>
+
+        {/* Error Content - Monospace */}
+        <div className={cn(
+          "font-mono text-sm text-red-500 pr-10 overflow-x-auto",
+          !expanded && "max-h-32 overflow-hidden"
+        )}>
+          <pre className="whitespace-pre-wrap break-words">
+            {formattedContent}
+          </pre>
+        </div>
+
+        {/* View Less/More Toggle */}
+        {formattedContent.split('\n').length > 5 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1 mx-auto mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                View less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                View more
+              </>
+            )}
+          </button>
+        )}
       </div>
-
-      {parsed.isUserCodeError ? (
-        <>
-          {/* 2. Friendly Explanation - simple human sentence */}
-          <p className="text-sm text-red-600/90 dark:text-red-400/90">
-            {parsed.friendlyMessage}
-          </p>
-
-          {/* 3. Code Line with caret (^) */}
-          {parsed.codeLine && (
-            <div className="bg-background/50 rounded px-2 py-1.5">
-              <pre className="text-foreground/90 whitespace-pre overflow-x-auto text-xs">
-                {parsed.codeLine}
-              </pre>
-              {parsed.pointer && (
-                <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
-                  {parsed.pointer.replace(/^\s{4}/, '')}
-                </pre>
-              )}
-            </div>
-          )}
-
-          {/* Line reference - clickable */}
-          {parsed.userLine && (
-            <button
-              onClick={() => onLineClick?.(parsed.userLine!)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed"
-            >
-              Line {parsed.userLine}
-            </button>
-          )}
-
-          {/* 4. Hint / Guidance with emoji */}
-          {parsed.fixHint && (
-            <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-              <span>💡</span>
-              <span>{parsed.fixHint}</span>
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          This looks like a system issue on our side. Please try again.
-        </p>
-      )}
     </div>
   );
 }
 
 // ============================================================================
-// Compact Error (for test case results)
+// Compact Error (for test case results) - Same LeetCode style
 // ============================================================================
 
 interface CompactErrorProps {
@@ -102,72 +113,72 @@ interface CompactErrorProps {
   onLineClick?: (line: number) => void;
 }
 
-/**
- * Compact error display for inline use in test case results
- * Single red container, no borders, no icons
- */
 export function CompactError({ 
   error, 
   language, 
   userCodeLineCount, 
   onLineClick
 }: CompactErrorProps) {
+  const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const parsed = parseCodeError(error, language, userCodeLineCount);
-  
-  if (!parsed.isUserCodeError) {
-    return (
-      <div className="text-muted-foreground text-xs font-mono bg-red-500/10 rounded-lg p-3">
-        <span className="font-medium">Internal Error</span>
-        <span className="ml-1 opacity-75">— system issue, please retry</span>
-      </div>
-    );
-  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(parsed.rawError || error);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const formattedContent = parsed.rawError || error;
+  const lineCount = formattedContent.split('\n').length;
 
   return (
-    <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
-      {/* 1. Title with emoji */}
-      <div className="font-bold text-red-600 dark:text-red-400">
-        ❌ {parsed.friendlyType}
+    <div className="relative rounded-lg bg-red-500/10 p-3">
+      {/* Copy Button */}
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 p-1 rounded hover:bg-red-500/20 transition-colors text-red-400"
+        title="Copy error"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+
+      {/* Error Content */}
+      <div className={cn(
+        "font-mono text-xs text-red-500 pr-8 overflow-x-auto",
+        !expanded && lineCount > 5 && "max-h-24 overflow-hidden"
+      )}>
+        <pre className="whitespace-pre-wrap break-words">
+          {formattedContent}
+        </pre>
       </div>
-      
-      {/* 2. Explanation */}
-      <div className="text-red-600/80 dark:text-red-400/80">
-        {parsed.friendlyMessage}
-      </div>
-      
-      {/* 3. Code snippet with caret */}
-      {parsed.codeLine && (
-        <div className="bg-background/50 rounded px-2 py-1">
-          <pre className="text-foreground/70 whitespace-pre overflow-x-auto max-w-full">
-            {parsed.codeLine}
-          </pre>
-          {parsed.pointer && (
-            <pre className="whitespace-pre text-red-600 dark:text-red-400">
-              {parsed.pointer.replace(/^\s{4}/, '')}
-            </pre>
-          )}
-        </div>
-      )}
-      
-      {/* Line reference */}
-      {parsed.userLine && (
+
+      {/* Toggle */}
+      {lineCount > 5 && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLineClick?.(parsed.userLine!);
-          }}
-          className="text-muted-foreground hover:text-foreground underline decoration-dashed transition-colors"
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 mx-auto mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          Line {parsed.userLine}
+          {expanded ? (
+            <>
+              <ChevronUp className="h-3 w-3" />
+              View less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3 w-3" />
+              View more
+            </>
+          )}
         </button>
-      )}
-      
-      {/* 4. Hint with emoji */}
-      {parsed.fixHint && (
-        <p className="text-muted-foreground flex items-start gap-1.5">
-          <span>💡</span>
-          <span>{parsed.fixHint}</span>
-        </p>
       )}
     </div>
   );
@@ -192,35 +203,11 @@ export function InlineError({
 }: InlineErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
   
-  if (!parsed.isUserCodeError) {
-    return (
-      <span className="text-muted-foreground text-xs">
-        Internal error (not your code)
-      </span>
-    );
-  }
-  
   return (
-    <span className="text-red-600 dark:text-red-400 text-xs font-mono">
+    <span className="text-red-500 text-xs font-mono">
       <span className="font-medium">
-        ❌ {parsed.friendlyType}
+        {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
       </span>
-      {parsed.userLine && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLineClick?.(parsed.userLine!);
-          }}
-          className="ml-1 underline hover:no-underline"
-        >
-          (line {parsed.userLine})
-        </button>
-      )}
-      {parsed.message && (
-        <span className="ml-1 opacity-80">
-          : {parsed.message.substring(0, 60)}{parsed.message.length > 60 ? '...' : ''}
-        </span>
-      )}
     </span>
   );
 }
