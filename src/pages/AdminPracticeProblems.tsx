@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePracticeSkill } from "@/hooks/usePracticeSkills";
 import { usePracticeProblems } from "@/hooks/usePracticeProblems";
 import { useSubTopicsBySkill, SubTopic } from "@/hooks/useSubTopics";
-import { useCreateProblemMapping, useAllGlobalProblems } from "@/hooks/useProblemMappings";
+import { useCreateProblemMapping, useAllGlobalProblems, useDeleteProblemMapping } from "@/hooks/useProblemMappings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LessonProblemsSection } from "@/components/admin/practice/LessonProblemsSection";
@@ -32,6 +32,7 @@ export default function AdminPracticeProblems() {
   const [addProblemSubTopicId, setAddProblemSubTopicId] = useState<string | null>(null);
   
   const createMapping = useCreateProblemMapping();
+  const deleteMapping = useDeleteProblemMapping();
 
   // Fetch lessons for the linked course
   const { data: lessons, isLoading: lessonsLoading } = useQuery({
@@ -92,6 +93,16 @@ export default function AdminPracticeProblems() {
     }, {} as Record<string, any[]>);
   }, [mappings]);
 
+  // Group mappings by sub-topic for unlink functionality
+  const mappingsBySubTopic = useMemo(() => {
+    if (!mappings) return {};
+    return mappings.reduce((acc, m) => {
+      if (!acc[m.sub_topic_id]) acc[m.sub_topic_id] = [];
+      acc[m.sub_topic_id].push({ id: m.id, problem_id: m.problem_id });
+      return acc;
+    }, {} as Record<string, { id: string; problem_id: string }[]>);
+  }, [mappings]);
+
   // Get mapped problem IDs for the add dialog
   const mappedProblemIds = useMemo(() => {
     if (!mappings || !addProblemSubTopicId) return new Set<string>();
@@ -120,6 +131,10 @@ export default function AdminPracticeProblems() {
 
   const handleCreateNewProblem = () => {
     navigate(`/admin/practice/skills/${skillId}/problems/new`);
+  };
+
+  const handleUnlinkProblem = async (mappingId: string, subTopicId: string, problemId: string) => {
+    await deleteMapping.mutateAsync({ id: mappingId, subTopicId, problemId });
   };
 
   const isLoading = skillLoading || problemsLoading || lessonsLoading || subTopicsLoading;
@@ -190,8 +205,10 @@ export default function AdminPracticeProblems() {
               skillId={skillId!}
               subTopics={subTopicsByLesson[lesson.id] || []}
               problemsBySubTopic={problemsBySubTopic}
+              mappingsBySubTopic={mappingsBySubTopic}
               onProblemClick={handleProblemClick}
               onAddProblem={(subTopicId) => setAddProblemSubTopicId(subTopicId)}
+              onUnlinkProblem={handleUnlinkProblem}
             />
           ))}
         </div>
