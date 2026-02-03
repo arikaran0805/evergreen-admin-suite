@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const CODE_THEMES = [
+  { value: "vscode", label: "VS Code", description: "Pure white background with VS Code syntax colors" },
   { value: "clean", label: "Clean Light", description: "Minimal white theme with colored syntax" },
   { value: "tomorrow", label: "Tomorrow Night", description: "Dark theme with muted colors" },
   { value: "okaidia", label: "Okaidia", description: "Monokai-inspired dark theme" },
@@ -15,8 +16,8 @@ export const CODE_THEMES = [
 export type CodeTheme = typeof CODE_THEMES[number]["value"];
 
 export const useCodeTheme = () => {
-  // Default to "clean" theme (gold/blue syntax highlighting)
-  const [theme, setTheme] = useState<CodeTheme>("clean");
+  // Default to "vscode" theme (pure white background with VS Code colors)
+  const [theme, setTheme] = useState<CodeTheme>("vscode");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
