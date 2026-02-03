@@ -15,11 +15,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { RotateCcw, Settings, Maximize2, AlignLeft } from "lucide-react";
+import { RotateCcw, Settings, Maximize2, AlignLeft, Loader2 } from "lucide-react";
 import { ProblemDetail } from "./problemDetailData";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
-import { registerMonacoPythonFormatter } from "@/lib/formatters/pythonFormatter";
+import { formatCode, registerMonacoFormatters, supportsFormatting } from "@/lib/formatters/codeFormatter";
+import { toast } from "sonner";
 
 interface CodeEditorProps {
   problem: ProblemDetail;
@@ -113,6 +114,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   const [code, setCode] = useState(problem.starterCode[availableLanguages[0]] || "");
   const [settings, setSettings] = useState<EditorSettings>(loadSettings);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isFormatting, setIsFormatting] = useState(false);
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<string[]>([]);
   const monacoRef = useRef<Monaco | null>(null);
@@ -220,19 +222,53 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onCodeChange?.(resetCode, language);
   };
 
-  const handleFormatCode = useCallback(() => {
-    if (editorRef.current) {
-      const editor = editorRef.current;
-      // Trigger format action
-      const action = editor.getAction('editor.action.formatDocument');
-      if (action) {
-        action.run();
-      } else {
-        // Fallback: manually trigger formatting via command
-        editor.trigger('keyboard', 'editor.action.formatDocument', null);
-      }
+  const handleFormatCode = useCallback(async () => {
+    if (!code.trim() || isFormatting) return;
+    
+    // Check if language supports formatting
+    if (!supportsFormatting(language)) {
+      toast.info("Formatting not available for this language");
+      return;
     }
-  }, []);
+
+    setIsFormatting(true);
+    const startTime = performance.now();
+
+    try {
+      const result = await formatCode(code, language, settings.tabSize);
+      const elapsed = performance.now() - startTime;
+      
+      if (result.success && result.formattedCode !== undefined) {
+        // Check if code actually changed
+        if (result.formattedCode !== code) {
+          setCode(result.formattedCode);
+          onCodeChange?.(result.formattedCode, language);
+          toast.success("✨ Code formatted successfully", {
+            duration: 2000,
+          });
+        } else {
+          toast.info("Code is already formatted", {
+            duration: 2000,
+          });
+        }
+        
+        // Log performance for debugging
+        if (elapsed > 200) {
+          console.log(`Formatting took ${elapsed.toFixed(0)}ms`);
+        }
+      } else {
+        toast.error(`❌ ${result.error || "Unable to format code"}`, {
+          duration: 4000,
+        });
+      }
+    } catch (error) {
+      toast.error("❌ Unable to format due to syntax errors. Fix errors and try again.", {
+        duration: 4000,
+      });
+    } finally {
+      setIsFormatting(false);
+    }
+  }, [code, language, settings.tabSize, isFormatting, onCodeChange]);
 
   const handleSettingChange = <K extends keyof EditorSettings>(
     key: K,
@@ -265,17 +301,12 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Enable Python formatting for Monaco's built-in Format Document action.
-    registerMonacoPythonFormatter(monaco, () => tabWidthRef.current);
+    // Register all language formatters for Monaco's built-in Format Document action
+    registerMonacoFormatters(monaco, () => tabWidthRef.current);
     
     // Add Ctrl+Enter keybinding to run code - uses refs to avoid stale closures
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRunRef.current(codeRef.current, languageRef.current);
-    });
-
-    // Add Shift+Alt+F keybinding for format
-    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () => {
-      editor.trigger('keyboard', 'editor.action.formatDocument', null);
     });
   }, []);
 
@@ -306,9 +337,14 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
             size="icon" 
             className="h-8 w-8" 
             onClick={handleFormatCode}
-            title="Format Code (Shift+Alt+F)"
+            disabled={isFormatting || !supportsFormatting(language)}
+            title={supportsFormatting(language) ? "Format Code" : "Formatting not available for this language"}
           >
-            <AlignLeft className="h-4 w-4" />
+            {isFormatting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <AlignLeft className="h-4 w-4" />
+            )}
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReset} title="Reset Code">
             <RotateCcw className="h-4 w-4" />
