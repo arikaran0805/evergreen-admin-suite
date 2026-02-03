@@ -505,17 +505,11 @@ const AdminPostEditor = () => {
               .single();
 
             if (linkedSkill) {
-              // Get the lesson title to use for the sub-topic
-              const { data: lesson } = await supabase
-                .from("course_lessons")
-                .select("title")
-                .eq("id", formData.lesson_id)
-                .single();
-
+              // Use the post title for the sub-topic name
               await supabase.from("sub_topics").insert({
                 lesson_id: formData.lesson_id,
                 skill_id: linkedSkill.id,
-                title: lesson?.title || validated.title,
+                title: validated.title,
                 display_order: 0,
                 is_default: true,
                 created_by: session.user.id,
