@@ -197,27 +197,12 @@ export function ProblemWorkspace({
   // Debounced code for auto-run
   const debouncedCode = useDebounce(code, 1500);
 
-  // Auto-run on save (debounced)
+  // Track previous code for reference
   useEffect(() => {
-    if (!settings.practiceMode.autoRunOnSave) return;
-    if (!debouncedCode) return;
-    
-    // Skip first render and when code hasn't actually changed
-    if (previousCodeRef.current === null) {
+    if (debouncedCode && previousCodeRef.current === null) {
       previousCodeRef.current = debouncedCode;
-      return;
     }
-    
-    if (previousCodeRef.current === debouncedCode) return;
-    previousCodeRef.current = debouncedCode;
-    
-    // Auto-run the code
-    testPanelRef.current?.expand();
-    testPanelRef.current?.resize(35);
-    clearErrorHighlight();
-    setHasRunOnce(true);
-    onRun(debouncedCode, language);
-  }, [debouncedCode, settings.practiceMode.autoRunOnSave, language, onRun, clearErrorHighlight]);
+  }, [debouncedCode]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
@@ -231,25 +216,6 @@ export function ProblemWorkspace({
     });
   }, []);
 
-  // Apply keyboard preset when settings change
-  useEffect(() => {
-    const editor = editorRef.current;
-    const monaco = monacoRef.current;
-    if (!editor || !monaco) return;
-
-    const { keyboardPreset } = settings.productivity;
-
-    // For Vim mode, we need to use monaco-vim package (not included by default)
-    // For now, we'll configure basic keybindings for different presets
-    if (keyboardPreset === 'vim') {
-      // Note: Full Vim emulation requires monaco-vim package
-      // These are basic Vim-like movement shortcuts
-      toast.info("Vim mode: Basic Vim keys enabled (Escape to exit insert mode)");
-    } else if (keyboardPreset === 'vscode') {
-      // VS Code is the default Monaco behavior, nothing special needed
-    }
-    // 'beginner' mode uses simplified defaults (already set)
-  }, [settings.productivity.keyboardPreset]);
 
   // Apply editor settings whenever they change
   useEffect(() => {
@@ -319,43 +285,9 @@ export function ProblemWorkspace({
     clearErrorHighlight();
     setHasRunOnce(true);
     
-    // Auto-format on submit if enabled
-    let finalCode = code;
-    if (settings.productivity.autoFormatOnSubmit && editorRef.current) {
-      const editor = editorRef.current;
-      const action = editor.getAction?.("editor.action.formatDocument");
-      const isSupported =
-        !!action && (typeof action.isSupported !== "function" || action.isSupported());
-
-      if (language === "python") {
-        try {
-          const model = editor.getModel?.();
-          if (model) {
-            finalCode = await formatPython(model.getValue(), {
-              tabWidth: settings.codeEditor.tabSize,
-            });
-            model.pushEditOperations(
-              [],
-              [{ range: model.getFullModelRange(), text: finalCode }],
-              () => null,
-            );
-          }
-        } catch {
-          // Continue with unformatted code
-        }
-      } else if (isSupported) {
-        try {
-          await action.run();
-          finalCode = editor.getValue();
-        } catch {
-          // Continue with unformatted code
-        }
-      }
-    }
-    
     // Save as last submitted code when submitting
-    saveAsLastSubmission(finalCode, language);
-    onSubmit(finalCode, language);
+    saveAsLastSubmission(code, language);
+    onSubmit(code, language);
   };
 
   const handleToggleEditorPanelCollapse = () => {
@@ -399,9 +331,9 @@ export function ProblemWorkspace({
             onErrorLineClick={highlightErrorLine}
             globalError={globalError}
             isSubmit={isSubmit}
-            showSampleTestcasesFirst={settings.practiceMode.showSampleTestcasesFirst}
-            errorMessageStyle={settings.practiceMode.errorMessageStyle}
-            revealOutputOnlyAfterRun={settings.practiceMode.revealOutputOnlyAfterRun}
+            showSampleTestcasesFirst={true}
+            errorMessageStyle={settings.advanced.errorMessageStyle}
+            revealOutputOnlyAfterRun={false}
             hasRunOnce={hasRunOnce}
           />
         </div>
@@ -817,9 +749,9 @@ export function ProblemWorkspace({
               onErrorLineClick={highlightErrorLine}
               globalError={globalError}
               isSubmit={isSubmit}
-              showSampleTestcasesFirst={settings.practiceMode.showSampleTestcasesFirst}
-              errorMessageStyle={settings.practiceMode.errorMessageStyle}
-              revealOutputOnlyAfterRun={settings.practiceMode.revealOutputOnlyAfterRun}
+              showSampleTestcasesFirst={true}
+              errorMessageStyle={settings.advanced.errorMessageStyle}
+              revealOutputOnlyAfterRun={false}
               hasRunOnce={hasRunOnce}
             />
           </div>
