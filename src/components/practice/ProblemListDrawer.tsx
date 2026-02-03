@@ -106,8 +106,8 @@ export function ProblemListDrawer({
                             {/* Status Circle */}
                             <div className="shrink-0">
                               {isSolved ? (
-                                <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                                  <Check className="h-3.5 w-3.5 text-white" />
+                                <div className="h-6 w-6 flex items-center justify-center">
+                                  <Check className="h-5 w-5 text-emerald-500" strokeWidth={2.5} />
                                 </div>
                               ) : (
                                 <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30" />

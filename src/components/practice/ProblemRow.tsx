@@ -26,8 +26,8 @@ export function ProblemRow({ problem, onClick }: ProblemRowProps) {
       {/* Status Checkbox */}
       <div className="shrink-0">
         {problem.solved ? (
-          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-            <Check className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+          <div className="w-5 h-5 flex items-center justify-center">
+            <Check className="h-5 w-5 text-emerald-500" strokeWidth={2.5} />
           </div>
         ) : (
           <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
