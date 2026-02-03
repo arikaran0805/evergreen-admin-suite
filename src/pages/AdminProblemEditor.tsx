@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Save, Loader2, Plus, X, Check, AlertCircle, Settings, FileText, FlaskConical } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, X, Check, AlertCircle, Settings, FileText, FlaskConical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,19 @@ import {
   usePracticeProblem,
   useCreatePracticeProblem,
   useUpdatePracticeProblem,
+  useDeletePracticeProblem,
 } from "@/hooks/usePracticeProblems";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   TestCasesSection,
   IOFormatSection,
@@ -78,6 +90,13 @@ export default function AdminProblemEditor() {
   const { data: problem, isLoading } = usePracticeProblem(isEditing ? problemId : undefined);
   const createMutation = useCreatePracticeProblem();
   const updateMutation = useUpdatePracticeProblem();
+  const deleteMutation = useDeletePracticeProblem();
+
+  const handleDelete = async () => {
+    if (!problemId || !skillId) return;
+    await deleteMutation.mutateAsync({ id: problemId, skillId });
+    navigate(`/admin/practice/skills/${skillId}/problems`);
+  };
 
   const [activeTab, setActiveTab] = useState<TabId>("setup");
   const [examples, setExamples] = useState<{ input: string; output: string; explanation?: string }[]>([]);
@@ -348,22 +367,55 @@ export default function AdminProblemEditor() {
             </p>
           </div>
         </div>
-        <ProblemPreviewDialog
-          title={form.watch("title")}
-          difficulty={form.watch("difficulty")}
-          description={form.watch("description") || ""}
-          inputFormat={inputFormat}
-          outputFormat={outputFormat}
-          examples={examples}
-          constraints={constraints}
-          hints={hints}
-          tags={tags}
-          testCases={testCases}
-          starterCode={starterCode}
-          selectedLanguages={selectedLanguages}
-          timeLimit={timeLimit}
-          memoryLimit={memoryLimit}
-        />
+        <div className="flex items-center gap-2">
+          {isEditing && isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Problem</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this problem? This will permanently remove the problem and all its mappings to sub-topics. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleteMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Delete"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <ProblemPreviewDialog
+            title={form.watch("title")}
+            difficulty={form.watch("difficulty")}
+            description={form.watch("description") || ""}
+            inputFormat={inputFormat}
+            outputFormat={outputFormat}
+            examples={examples}
+            constraints={constraints}
+            hints={hints}
+            tags={tags}
+            testCases={testCases}
+            starterCode={starterCode}
+            selectedLanguages={selectedLanguages}
+            timeLimit={timeLimit}
+            memoryLimit={memoryLimit}
+          />
+        </div>
       </div>
 
       <Form {...form}>
