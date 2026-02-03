@@ -55,9 +55,11 @@ export const isTipTapJSON = (content: string | JSONContent | null | undefined): 
  * Parse content - handles both HTML and JSON formats
  */
 export const parseContent = (content: string | JSONContent | null | undefined): JSONContent => {
+  const emptyDoc = { type: 'doc', content: [{ type: 'paragraph' }] } as JSONContent;
+  
   // Empty content
   if (!content) {
-    return { type: 'doc', content: [{ type: 'paragraph' }] };
+    return emptyDoc;
   }
 
   // Already a JSON object
@@ -65,55 +67,66 @@ export const parseContent = (content: string | JSONContent | null | undefined): 
     if ('type' in content && content.type === 'doc') {
       return content;
     }
-    return { type: 'doc', content: [{ type: 'paragraph' }] };
+    return emptyDoc;
   }
 
-  // Check if content contains mixed format separator (---) with JSON on either side
-  // This happens when switching from Chat/Canvas editor which may include TipTap explanation
-  if (content.includes(' --- ') || content.includes('\n---\n')) {
-    const separator = content.includes(' --- ') ? ' --- ' : '\n---\n';
-    const parts = content.split(separator);
-    
-    // Check if any part looks like non-TipTap JSON format
-    const hasNonTipTapJson = parts.some(part => {
-      const trimmed = part.trim();
-      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return false;
-      try {
-        const parsed = JSON.parse(trimmed);
-        // Canvas format
-        if (parsed?.version === 1 && Array.isArray(parsed?.blocks)) return true;
-        // Chat format array
-        if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.role !== undefined)) return true;
-        return false;
-      } catch {
-        return false;
-      }
-    });
-    
-    if (hasNonTipTapJson) {
-      return { type: 'doc', content: [{ type: 'paragraph' }] };
-    }
-  }
-
-  // Try parsing as JSON first
-  try {
-    const parsed = JSON.parse(content);
-    if (parsed && typeof parsed === 'object') {
-      // TipTap JSON format
-      if (parsed.type === 'doc') {
-        return parsed;
-      }
-      // Canvas editor format - return empty doc instead of parsing as HTML
-      if (parsed.version === 1 && Array.isArray(parsed.blocks)) {
-        return { type: 'doc', content: [{ type: 'paragraph' }] };
-      }
-      // Chat editor format - return empty doc instead of parsing as HTML
-      if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.role !== undefined)) {
-        return { type: 'doc', content: [{ type: 'paragraph' }] };
+  const trimmed = content.trim();
+  
+  // Quick check: if content looks like raw JSON that isn't TipTap format, return empty
+  // This catches Canvas/Chat JSON and prevents it from being rendered as text
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    // Check for any --- separator (with or without surrounding whitespace/newlines)
+    if (content.includes('---')) {
+      // Split on various separator formats
+      const parts = content.split(/\s*---\s*/);
+      
+      // Check if any part is non-TipTap JSON
+      const hasNonTipTapJson = parts.some(part => {
+        const p = part.trim();
+        if (!p.startsWith('{') && !p.startsWith('[')) return false;
+        try {
+          const parsed = JSON.parse(p);
+          // Canvas format
+          if (parsed?.version === 1 && Array.isArray(parsed?.blocks)) return true;
+          // Chat format array  
+          if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.role !== undefined)) return true;
+          // Empty TipTap doc (shouldn't be concatenated with ---)
+          if (parsed?.type === 'doc' && parts.length > 1) return true;
+          return false;
+        } catch {
+          return false;
+        }
+      });
+      
+      if (hasNonTipTapJson) {
+        return emptyDoc;
       }
     }
-  } catch {
-    // Not JSON, treat as HTML
+    
+    // Try parsing as JSON
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        // TipTap JSON format
+        if (parsed.type === 'doc') {
+          return parsed;
+        }
+        // Canvas editor format - return empty doc
+        if (parsed.version === 1 && Array.isArray(parsed.blocks)) {
+          return emptyDoc;
+        }
+        // Chat editor format - return empty doc
+        if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.role !== undefined)) {
+          return emptyDoc;
+        }
+      }
+    } catch {
+      // JSON-like but invalid - return empty to prevent showing raw JSON as text
+      if (trimmed.includes('"version"') || trimmed.includes('"blocks"') || 
+          trimmed.includes('"type":"doc"') || trimmed.includes('"role"')) {
+        return emptyDoc;
+      }
+    }
   }
 
   // Parse HTML to TipTap JSON
