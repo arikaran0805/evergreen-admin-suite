@@ -492,7 +492,7 @@ export default function ProblemDetail() {
                 examples={problem.examples}
                 constraints={problem.constraints}
                 hints={problem.hints}
-                problemId={persistenceProblemId}
+                problemId={problem.id}
                 isExpanded={true}
                 onToggleExpand={handleExpandDescription}
                 isCollapsed={isDescriptionCollapsed}
@@ -601,7 +601,7 @@ export default function ProblemDetail() {
                 examples={problem.examples}
                 constraints={problem.constraints}
                 hints={problem.hints}
-                problemId={persistenceProblemId}
+                problemId={problem.id}
                 isExpanded={false}
                 onToggleExpand={handleExpandDescription}
                 isCollapsed={isDescriptionCollapsed}
@@ -654,7 +654,7 @@ export default function ProblemDetail() {
                     examples={problem.examples}
                     constraints={problem.constraints}
                     hints={problem.hints}
-                    problemId={persistenceProblemId}
+                    problemId={problem.id}
                     isExpanded={false}
                     onToggleExpand={handleExpandDescription}
                     isCollapsed={isDescriptionCollapsed}
