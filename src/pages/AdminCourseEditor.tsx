@@ -416,6 +416,20 @@ const AdminCourseEditor = () => {
               change_summary: "Initial version (v0)",
               is_published: isPublishing,
             });
+
+          // Auto-create a linked practice skill for this course
+          await supabase
+            .from("practice_skills")
+            .insert({
+              name: formData.name,
+              slug: formData.slug,
+              description: formData.description ? formData.description.substring(0, 200) : null,
+              icon: formData.icon || "Code2",
+              display_order: 0,
+              status: "draft",
+              course_id: courseId,
+              created_by: session.user.id,
+            });
         }
 
         toast({ title: "Course created successfully" });
