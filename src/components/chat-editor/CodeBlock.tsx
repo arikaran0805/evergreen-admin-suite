@@ -332,7 +332,7 @@ const CodeBlock = ({
               overviewRulerBorder: false,
               contextmenu: false,
               fontSize: 14,
-              fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace",
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
               padding: { top: 8, bottom: 8 },
               wordWrap: 'on',
               automaticLayout: true,
