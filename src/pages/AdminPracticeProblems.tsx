@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePracticeSkill } from "@/hooks/usePracticeSkills";
 import { usePracticeProblems } from "@/hooks/usePracticeProblems";
 import { useSubTopicsBySkill, SubTopic } from "@/hooks/useSubTopics";
-import { useCreateProblemMapping } from "@/hooks/useProblemMappings";
+import { useCreateProblemMapping, useAllGlobalProblems } from "@/hooks/useProblemMappings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LessonProblemsSection } from "@/components/admin/practice/LessonProblemsSection";
@@ -25,7 +25,8 @@ export default function AdminPracticeProblems() {
   const { skillId } = useParams<{ skillId: string }>();
   const navigate = useNavigate();
   const { data: skill, isLoading: skillLoading } = usePracticeSkill(skillId);
-  const { data: allProblems, isLoading: problemsLoading } = usePracticeProblems(skillId);
+  const { data: skillProblems, isLoading: problemsLoading } = usePracticeProblems(skillId);
+  const { data: allGlobalProblems, isLoading: globalProblemsLoading } = useAllGlobalProblems();
   const { data: subTopics, isLoading: subTopicsLoading } = useSubTopicsBySkill(skillId);
   
   const [addProblemSubTopicId, setAddProblemSubTopicId] = useState<string | null>(null);
@@ -200,7 +201,7 @@ export default function AdminPracticeProblems() {
       <AddProblemDialog
         open={!!addProblemSubTopicId}
         onOpenChange={(open) => !open && setAddProblemSubTopicId(null)}
-        allProblems={allProblems || []}
+        allProblems={allGlobalProblems || []}
         mappedProblemIds={mappedProblemIds}
         onAddProblems={handleAddProblems}
         onCreateNew={handleCreateNewProblem}
