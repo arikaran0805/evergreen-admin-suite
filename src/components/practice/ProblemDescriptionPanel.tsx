@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import ShareDialog from "@/components/ShareDialog";
+import ShareTooltip from "@/components/ShareTooltip";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 import { useProblemReactions } from "@/hooks/useProblemReactions";
 import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
@@ -83,7 +83,6 @@ export function ProblemDescriptionPanel({
   const [isHovered, setIsHovered] = useState(false);
 
   // Dialog states
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   // Database-backed reactions, bookmarks, and comments
@@ -114,9 +113,7 @@ export function ProblemDescriptionPanel({
     if (!disliked) toast.success("Thanks for the feedback!");
   }, [react, disliked, reactionsAuth]);
 
-  const handleShare = useCallback(() => {
-    setShareDialogOpen(true);
-  }, []);
+  // Share is handled by ShareTooltip directly
 
   const handleComment = useCallback(() => {
     setActiveTab("discuss");
@@ -625,22 +622,19 @@ export function ProblemDescriptionPanel({
                 </TooltipContent>
               </Tooltip>
 
-              {/* Share */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={handleShare}
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>Share</p>
-                </TooltipContent>
-              </Tooltip>
+              {/* Share - with ShareTooltip */}
+              <ShareTooltip
+                title={title}
+                url={window.location.href}
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </ShareTooltip>
             </div>
 
             <div className="flex items-center gap-1">
@@ -684,14 +678,6 @@ export function ProblemDescriptionPanel({
           </div>
         </TooltipProvider>
       </div>
-
-      {/* Share Dialog */}
-      <ShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        title={title}
-        url={window.location.href}
-      />
 
       {/* Report Dialog */}
       <ReportSuggestDialog
