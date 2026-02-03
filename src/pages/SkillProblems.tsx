@@ -8,6 +8,8 @@ import { ProblemFilters } from "@/components/practice/ProblemFilters";
 import { LessonProblemSection } from "@/components/practice/LessonProblemSection";
 import { usePublishedPracticeProblems, ProblemWithMapping } from "@/hooks/usePracticeProblems";
 import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
+import { useLearnerProgress } from "@/hooks/useLearnerProblemProgress";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -41,6 +43,17 @@ export default function SkillProblems() {
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   
   const { isBookmarked, isAuthenticated } = useProblemBookmarks();
+  const { user } = useAuth();
+  const { data: progressData } = useLearnerProgress(user?.id);
+
+  // Create a lookup set for solved problems
+  const solvedProblems = useMemo(() => {
+    return new Set(
+      (progressData || [])
+        .filter((p) => p.status === "solved")
+        .map((p) => p.problem_id)
+    );
+  }, [progressData]);
 
   // Fetch skill info
   const { data: skill, isLoading: skillLoading } = useQuery({
@@ -69,7 +82,7 @@ export default function SkillProblems() {
       id: p.id,
       title: p.title,
       difficulty: p.difficulty,
-      solved: false, // TODO: Track user progress
+      solved: solvedProblems.has(p.id),
       locked: p.is_premium,
       subTopic: p.sub_topic,
       hasSolution: !!p.solution,
@@ -79,7 +92,7 @@ export default function SkillProblems() {
       subTopicId: p.sub_topic_id,
       subTopicTitle: p.sub_topic_title,
     }));
-  }, [problems]);
+  }, [problems, solvedProblems]);
 
   // Filter problems
   const filteredProblems = useMemo(() => {
@@ -131,18 +144,6 @@ export default function SkillProblems() {
       return;
     }
     navigate(`/practice/${skillId}/problem/${problem.slug}`);
-  };
-
-  const handleSolutionClick = (problem: DisplayProblem) => {
-    if (problem.locked) {
-      toast.info("Upgrade to view solutions", {
-        description: "Premium members can access all solutions.",
-      });
-      return;
-    }
-    toast.info(`Solution: ${problem.title}`, {
-      description: "Solution view coming soon!",
-    });
   };
 
   const isLoading = skillLoading || problemsLoading;
@@ -220,7 +221,6 @@ export default function SkillProblems() {
                   problems,
                 }))}
                 onProblemClick={handleProblemClick}
-                onSolutionClick={handleSolutionClick}
               />
             ))
           ) : filteredProblems.length === 0 && displayProblems.length > 0 ? (
