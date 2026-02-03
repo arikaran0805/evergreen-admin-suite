@@ -1,4 +1,4 @@
-import { Check, Lock } from "lucide-react";
+import { CheckCircle, Circle, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Problem } from "./types";
 
@@ -26,11 +26,9 @@ export function ProblemRow({ problem, onClick }: ProblemRowProps) {
       {/* Status Checkbox */}
       <div className="shrink-0">
         {problem.solved ? (
-          <div className="w-5 h-5 flex items-center justify-center">
-            <Check className="h-5 w-5 text-emerald-500" strokeWidth={2.5} />
-          </div>
+          <CheckCircle className="h-4 w-4 text-sidebar-primary" />
         ) : (
-          <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
+          <Circle className="h-4 w-4 text-muted-foreground/50" />
         )}
       </div>
 
