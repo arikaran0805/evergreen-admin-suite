@@ -308,27 +308,6 @@ function AdvancedSection({
     <div className="space-y-6">
       <div className="space-y-1">
         <SettingRow
-          label="Error Message Style"
-          description="Controls how error messages are displayed"
-        >
-          <Select
-            value={advanced.errorMessageStyle}
-            onValueChange={(v: "beginner" | "standard" | "advanced") =>
-              updateCategory("advanced", { errorMessageStyle: v })
-            }
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="standard">Standard</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
-            </SelectContent>
-          </Select>
-        </SettingRow>
-
-        <SettingRow
           label="Minimap"
           description="Shows code overview on the right side"
         >

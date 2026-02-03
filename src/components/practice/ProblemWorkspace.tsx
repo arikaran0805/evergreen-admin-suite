@@ -332,7 +332,6 @@ export function ProblemWorkspace({
             globalError={globalError}
             isSubmit={isSubmit}
             showSampleTestcasesFirst={true}
-            errorMessageStyle={settings.advanced.errorMessageStyle}
             revealOutputOnlyAfterRun={false}
             hasRunOnce={hasRunOnce}
           />
@@ -750,7 +749,6 @@ export function ProblemWorkspace({
               globalError={globalError}
               isSubmit={isSubmit}
               showSampleTestcasesFirst={true}
-              errorMessageStyle={settings.advanced.errorMessageStyle}
               revealOutputOnlyAfterRun={false}
               hasRunOnce={hasRunOnce}
             />
