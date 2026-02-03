@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check } from "lucide-react";
+import { CheckCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProblemWithMapping } from "@/hooks/usePracticeProblems";
 import { useLearnerProgress } from "@/hooks/useLearnerProblemProgress";
@@ -106,11 +106,9 @@ export function ProblemListDrawer({
                             {/* Status Circle */}
                             <div className="shrink-0">
                               {isSolved ? (
-                                <div className="h-6 w-6 flex items-center justify-center">
-                                  <Check className="h-5 w-5 text-emerald-500" strokeWidth={2.5} />
-                                </div>
+                                <CheckCircle className="h-4 w-4 text-sidebar-primary" />
                               ) : (
-                                <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30" />
+                                <Circle className="h-4 w-4 text-muted-foreground/50" />
                               )}
                             </div>
                             
