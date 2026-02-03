@@ -266,7 +266,7 @@ const MonacoCodeBlock = ({
   };
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full min-w-0", className)}>
       {/* Main code container */}
       <div className={cn(
         "rounded-xl border overflow-hidden shadow-sm",
