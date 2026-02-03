@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lightbulb, ChevronDown, ChevronUp, FileText, BookOpen, History, ThumbsUp, ThumbsDown, Share2, MessageSquare, Flag, Bookmark, Expand, Shrink, PanelLeftClose, Check, X, Clock } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,6 +10,10 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ShareDialog from "@/components/ShareDialog";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
+import { useProblemReactions } from "@/hooks/useProblemReactions";
+import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
+import { useProblemComments } from "@/hooks/useProblemComments";
+import { ProblemCommentsSection } from "./ProblemCommentsSection";
 
 interface Example {
   id: number;
@@ -54,67 +58,6 @@ const difficultyColors: Record<string, string> = {
   hard: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
 };
 
-// Storage keys
-const PROBLEM_REACTIONS_KEY = "unlockmemory-problem-reactions";
-const PROBLEM_BOOKMARKS_KEY = "unlockmemory-problem-bookmarks";
-
-// Helper to get/set localStorage
-function getProblemReaction(problemId: string): "like" | "dislike" | null {
-  try {
-    const stored = localStorage.getItem(PROBLEM_REACTIONS_KEY);
-    if (!stored) return null;
-    const reactions = JSON.parse(stored);
-    return reactions[problemId] || null;
-  } catch {
-    return null;
-  }
-}
-
-function setProblemReaction(problemId: string, reaction: "like" | "dislike" | null) {
-  try {
-    const stored = localStorage.getItem(PROBLEM_REACTIONS_KEY);
-    const reactions = stored ? JSON.parse(stored) : {};
-    if (reaction === null) {
-      delete reactions[problemId];
-    } else {
-      reactions[problemId] = reaction;
-    }
-    localStorage.setItem(PROBLEM_REACTIONS_KEY, JSON.stringify(reactions));
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-function isProblemBookmarked(problemId: string): boolean {
-  try {
-    const stored = localStorage.getItem(PROBLEM_BOOKMARKS_KEY);
-    if (!stored) return false;
-    const bookmarks = JSON.parse(stored);
-    return bookmarks.includes(problemId);
-  } catch {
-    return false;
-  }
-}
-
-function toggleProblemBookmark(problemId: string): boolean {
-  try {
-    const stored = localStorage.getItem(PROBLEM_BOOKMARKS_KEY);
-    const bookmarks: string[] = stored ? JSON.parse(stored) : [];
-    const index = bookmarks.indexOf(problemId);
-    if (index >= 0) {
-      bookmarks.splice(index, 1);
-      localStorage.setItem(PROBLEM_BOOKMARKS_KEY, JSON.stringify(bookmarks));
-      return false;
-    } else {
-      bookmarks.push(problemId);
-      localStorage.setItem(PROBLEM_BOOKMARKS_KEY, JSON.stringify(bookmarks));
-      return true;
-    }
-  } catch {
-    return false;
-  }
-}
-
 export function ProblemDescriptionPanel({
   title,
   difficulty,
@@ -143,78 +86,58 @@ export function ProblemDescriptionPanel({
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
-  // Reaction/bookmark state - initialized from localStorage
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [likeCount, setLikeCount] = useState(1234);
-  const [dislikeCount, setDislikeCount] = useState(56);
+  // Database-backed reactions, bookmarks, and comments
+  const { likes, dislikes, userReaction, react, isAuthenticated: reactionsAuth } = useProblemReactions(problemId || undefined);
+  const { isBookmarked, toggleBookmark, isAuthenticated: bookmarksAuth } = useProblemBookmarks();
+  const { commentCount } = useProblemComments(problemId || undefined);
 
-  // Load persisted state from localStorage
-  useEffect(() => {
-    if (!problemId) return;
-    const reaction = getProblemReaction(problemId);
-    setLiked(reaction === "like");
-    setDisliked(reaction === "dislike");
-    setSaved(isProblemBookmarked(problemId));
-  }, [problemId]);
+  const saved = problemId ? isBookmarked(problemId) : false;
+  const liked = userReaction === "like";
+  const disliked = userReaction === "dislike";
 
   // Handlers - must be defined before early return
   const handleLike = useCallback(() => {
-    if (liked) {
-      setLiked(false);
-      setLikeCount(prev => prev - 1);
-      if (problemId) setProblemReaction(problemId, null);
-    } else {
-      setLiked(true);
-      setLikeCount(prev => prev + 1);
-      if (problemId) setProblemReaction(problemId, "like");
-      if (disliked) {
-        setDisliked(false);
-        setDislikeCount(prev => prev - 1);
-      }
-      toast.success("Thanks for the feedback!");
+    if (!reactionsAuth) {
+      toast.error("Please sign in to react");
+      return;
     }
-  }, [liked, disliked, problemId]);
+    react("like");
+    if (!liked) toast.success("Thanks for the feedback!");
+  }, [react, liked, reactionsAuth]);
 
   const handleDislike = useCallback(() => {
-    if (disliked) {
-      setDisliked(false);
-      setDislikeCount(prev => prev - 1);
-      if (problemId) setProblemReaction(problemId, null);
-    } else {
-      setDisliked(true);
-      setDislikeCount(prev => prev + 1);
-      if (problemId) setProblemReaction(problemId, "dislike");
-      if (liked) {
-        setLiked(false);
-        setLikeCount(prev => prev - 1);
-      }
-      toast.success("Thanks for the feedback!");
+    if (!reactionsAuth) {
+      toast.error("Please sign in to react");
+      return;
     }
-  }, [liked, disliked, problemId]);
+    react("dislike");
+    if (!disliked) toast.success("Thanks for the feedback!");
+  }, [react, disliked, reactionsAuth]);
 
   const handleShare = useCallback(() => {
     setShareDialogOpen(true);
   }, []);
 
   const handleComment = useCallback(() => {
-    toast.info("Comments feature coming soon!");
-  }, []);
+    setActiveTab("discuss");
+  }, [setActiveTab]);
 
   const handleFeedback = useCallback(() => {
     setReportDialogOpen(true);
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!problemId) {
       toast.error("Cannot save - no problem ID");
       return;
     }
-    const newSaved = toggleProblemBookmark(problemId);
-    setSaved(newSaved);
+    if (!bookmarksAuth) {
+      toast.error("Please sign in to save problems");
+      return;
+    }
+    const newSaved = await toggleBookmark(problemId);
     toast.success(newSaved ? "Saved to your collection" : "Removed from saved");
-  }, [problemId]);
+  }, [problemId, toggleBookmark, bookmarksAuth]);
 
   // Collapsed state: vertical tabs layout like LeetCode
   if (isCollapsed && !isExpanded) {
@@ -335,6 +258,16 @@ export function ProblemDescriptionPanel({
               >
                 <BookOpen className="h-4 w-4" />
                 Editorial
+              </TabsTrigger>
+              <TabsTrigger 
+                value="discuss" 
+                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Discuss
+                {commentCount > 0 && (
+                  <span className="text-xs text-muted-foreground">({commentCount})</span>
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="submissions" 
@@ -513,6 +446,19 @@ export function ProblemDescriptionPanel({
           </div>
         )}
 
+        {activeTab === "discuss" && problemId && (
+          <ProblemCommentsSection problemId={problemId} />
+        )}
+
+        {activeTab === "discuss" && !problemId && (
+          <div className="p-4">
+            <div className="text-center py-12 text-muted-foreground">
+              <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Comments unavailable</p>
+            </div>
+          </div>
+        )}
+
         {activeTab === "submissions" && (
           <div className="p-0">
             {submissions.length === 0 ? (
@@ -627,7 +573,7 @@ export function ProblemDescriptionPanel({
                     onClick={handleLike}
                   >
                     <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
-                    <span className="text-xs">{likeCount}</span>
+                    <span className="text-xs">{likes}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
@@ -648,7 +594,7 @@ export function ProblemDescriptionPanel({
                     onClick={handleDislike}
                   >
                     <ThumbsDown className={cn("h-4 w-4", disliked && "fill-current")} />
-                    <span className="text-xs">{dislikeCount}</span>
+                    <span className="text-xs">{dislikes}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
@@ -747,7 +693,7 @@ export function ProblemDescriptionPanel({
       <ReportSuggestDialog
         open={reportDialogOpen}
         onOpenChange={setReportDialogOpen}
-        contentType="post"
+        contentType="problem"
         contentId={problemId}
         contentTitle={title}
         type="report"

@@ -18,7 +18,7 @@ import { LightEditor, type LightEditorRef } from "@/components/tiptap/LightEdito
 interface ReportSuggestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contentType: "post" | "course" | "comment";
+  contentType: "post" | "course" | "comment" | "problem";
   contentId: string;
   contentTitle?: string;
   type: "report" | "suggestion";
