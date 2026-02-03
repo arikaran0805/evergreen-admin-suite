@@ -316,7 +316,7 @@ const CodeBlock = ({
               readOnly: !isEditMode,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
-              lineNumbers: 'on',
+              lineNumbers: 'off',
               lineNumbersMinChars: 2,
               lineDecorationsWidth: 8,
               folding: false,
