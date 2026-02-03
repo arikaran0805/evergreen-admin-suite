@@ -160,13 +160,23 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
           title,
           lesson_id,
           display_order,
-          course_lessons!inner(id, title, lesson_rank)
+          course_lessons!inner(id, title, lesson_rank, lesson_order)
         `)
         .eq("skill_id", skill.id)
         .order("display_order", { ascending: true });
+      
+      // Sort sub-topics by lesson_order then by sub-topic display_order
+      const sortedSubTopics = (subTopics || []).sort((a, b) => {
+        const lessonA = a.course_lessons as any;
+        const lessonB = b.course_lessons as any;
+        const orderA = lessonA?.lesson_order ?? 0;
+        const orderB = lessonB?.lesson_order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.display_order || 0) - (b.display_order || 0);
+      });
 
       // Get problem mappings for these sub-topics
-      const subTopicIds = (subTopics || []).map(st => st.id);
+      const subTopicIds = sortedSubTopics.map(st => st.id);
       
       let problemsWithMappings: ProblemWithMapping[] = [];
       
@@ -183,14 +193,24 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
           .eq("practice_problems.status", "published")
           .order("display_order", { ascending: true });
         
-        if (mappings && subTopics) {
-          // Create a map of sub-topic info
-          const subTopicMap = new Map(subTopics.map(st => [st.id, st]));
+        if (mappings && sortedSubTopics) {
+          // Create a map of sub-topic info with lesson order for sorting
+          const subTopicMap = new Map(sortedSubTopics.map((st, index) => [st.id, { ...st, sortIndex: index }]));
           
+          // Group mappings by sub-topic, preserving lesson order
+          const problemsBySubTopic = new Map<string, typeof mappings>();
           for (const mapping of mappings) {
-            const subTopic = subTopicMap.get(mapping.sub_topic_id);
-            if (subTopic) {
-              const lesson = subTopic.course_lessons as any;
+            const existing = problemsBySubTopic.get(mapping.sub_topic_id) || [];
+            existing.push(mapping);
+            problemsBySubTopic.set(mapping.sub_topic_id, existing);
+          }
+          
+          // Iterate through sorted sub-topics to maintain lesson order
+          for (const subTopic of sortedSubTopics) {
+            const subTopicMappings = problemsBySubTopic.get(subTopic.id) || [];
+            const lesson = subTopic.course_lessons as any;
+            
+            for (const mapping of subTopicMappings) {
               problemsWithMappings.push({
                 ...transformProblem(mapping.practice_problems),
                 lesson_id: subTopic.lesson_id,
