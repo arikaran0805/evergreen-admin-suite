@@ -15,6 +15,7 @@ import { TestResult } from "@/components/practice/TestCasePanel";
 import { usePublishedPracticeProblem, usePublishedPracticeProblems } from "@/hooks/usePracticeProblems";
 import { useCodeJudge, convertTestCasesToJudgeFormat, getVerdictDisplay } from "@/hooks/useCodeJudge";
 import { useProblemSubmissions, Submission } from "@/hooks/useProblemSubmissions";
+import { useUpdateLearnerProgress } from "@/hooks/useLearnerProblemProgress";
 import { useQuery } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
@@ -78,6 +79,7 @@ export default function ProblemDetail() {
   const [testCaseActiveTab, setTestCaseActiveTab] = useState("testcase");
   
   const { judge } = useCodeJudge();
+  const updateProgress = useUpdateLearnerProgress();
   
   // Submissions hook
   const { submissions, addSubmission } = useProblemSubmissions(
@@ -347,6 +349,15 @@ export default function ProblemDetail() {
       setDescriptionActiveTab("submissions");
 
       if (judgeResult.verdict === 'accepted') {
+        // Update learner progress when problem is solved
+        if (dbProblem?.id) {
+          updateProgress.mutate({
+            problem_id: dbProblem.id,
+            status: "solved",
+            best_runtime_ms: judgeResult.total_runtime_ms,
+          });
+        }
+        
         toast.success("🎉 Congratulations! All test cases passed!", {
           description: `You solved this problem in ${judgeResult.total_runtime_ms}ms. Great job!`,
           duration: 5000,
@@ -355,10 +366,31 @@ export default function ProblemDetail() {
       } else if (judgeResult.verdict === 'compilation_error') {
         toast.error("Compilation Error", { description: "Fix errors before submitting" });
       } else if (judgeResult.verdict === 'runtime_error') {
+        // Update progress to attempted
+        if (dbProblem?.id) {
+          updateProgress.mutate({
+            problem_id: dbProblem.id,
+            status: "attempted",
+          });
+        }
         toast.error("Runtime Error", { description: judgeResult.error?.substring(0, 100) });
       } else if (judgeResult.verdict === 'time_limit_exceeded') {
+        // Update progress to attempted
+        if (dbProblem?.id) {
+          updateProgress.mutate({
+            problem_id: dbProblem.id,
+            status: "attempted",
+          });
+        }
         toast.error("Time Limit Exceeded");
       } else {
+        // Update progress to attempted for wrong answers
+        if (dbProblem?.id) {
+          updateProgress.mutate({
+            problem_id: dbProblem.id,
+            status: "attempted",
+          });
+        }
         const failedIndex = judgeResult.test_results.findIndex(tr => !tr.passed);
         const failedIsHidden = failedIndex >= 0 && !judgeResult.test_results[failedIndex].is_visible;
         toast.error("Wrong Answer", {
