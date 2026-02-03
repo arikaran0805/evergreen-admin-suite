@@ -555,7 +555,7 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
       const maxOrder = lessons.reduce((max, l) => Math.max(max, l.lesson_order || 0), 0);
       const newOrder = maxOrder + 1;
 
-      const { error } = await supabase.from("course_lessons").insert({
+      const { data: newLesson, error } = await supabase.from("course_lessons").insert({
         course_id: courseId,
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -563,9 +563,30 @@ const LessonManager = ({ courseId, basePath = "/admin" }: LessonManagerProps) =>
         lesson_order: newOrder,
         is_published: false,
         created_by: session.user.id,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Auto-create a default sub_topic for this lesson if a practice_skill is linked to the course
+      if (newLesson) {
+        const { data: linkedSkill } = await supabase
+          .from("practice_skills")
+          .select("id")
+          .eq("course_id", courseId)
+          .single();
+
+        if (linkedSkill) {
+          await supabase.from("sub_topics").insert({
+            lesson_id: newLesson.id,
+            skill_id: linkedSkill.id,
+            title: formData.title.trim(),
+            description: formData.description.trim() || null,
+            display_order: 0,
+            is_default: true,
+            created_by: session.user.id,
+          });
+        }
+      }
 
       toast({ title: "Lesson created" });
       setShowAddDialog(false);
