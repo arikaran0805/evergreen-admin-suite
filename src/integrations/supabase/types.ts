@@ -2124,7 +2124,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "posts_course_id_fkey"
+            foreignKeyName: "posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "courses"
