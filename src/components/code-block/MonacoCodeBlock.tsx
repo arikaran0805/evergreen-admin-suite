@@ -41,14 +41,6 @@ export interface MonacoCodeBlockProps {
   showLanguageLabel?: boolean;
   className?: string;
   minHeight?: number;
-  /** Blue-tinted theme for mentor chat bubbles */
-  isMentorBubble?: boolean;
-  /** @deprecated - themes are now auto-selected based on isMentorBubble */
-  overrideTheme?: string;
-  /** Show toolbar buttons always (not just on hover) */
-  showToolbarAlways?: boolean;
-  /** Alias for onCodeChange for backward compatibility */
-  onEdit?: (code: string) => void;
 }
 
 const MonacoCodeBlock = ({
@@ -59,10 +51,6 @@ const MonacoCodeBlock = ({
   showLanguageLabel = true,
   className,
   minHeight = 80,
-  isMentorBubble = false,
-  overrideTheme,
-  showToolbarAlways = false,
-  onEdit,
 }: MonacoCodeBlockProps) => {
   const [currentCode, setCurrentCode] = useState(code);
   const [originalCode, setOriginalCode] = useState(code); // Store original for cancel
@@ -119,30 +107,7 @@ const MonacoCodeBlock = ({
       },
     });
     
-    // Theme for mentor bubble (emerald tint)
-    monaco.editor.defineTheme('codeblock-mentor', {
-      base: 'vs',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: '047857' },
-        { token: 'string', foreground: '991B1B' },
-        { token: 'number', foreground: 'B45309' },
-        { token: 'comment', foreground: '166534', fontStyle: 'italic' },
-        { token: 'function', foreground: '065F46' },
-        { token: 'variable', foreground: '064E3B' },
-      ],
-      colors: {
-        'editor.background': '#D1FAE5',
-        'editor.foreground': '#064E3B',
-        'editor.lineHighlightBackground': '#A7F3D0',
-        'editorLineNumber.foreground': '#059669',
-        'editorLineNumber.activeForeground': '#047857',
-        'editor.selectionBackground': '#6EE7B7',
-        'editorCursor.foreground': '#047857',
-      },
-    });
-    
-    monaco.editor.setTheme(isMentorBubble ? 'codeblock-mentor' : 'codeblock-light');
+    monaco.editor.setTheme('codeblock-light');
     
     // Configure editor options
     editor.updateOptions({
@@ -177,8 +142,7 @@ const MonacoCodeBlock = ({
     const newCode = value || '';
     setCurrentCode(newCode);
     onCodeChange?.(newCode);
-    onEdit?.(newCode);
-  }, [onCodeChange, onEdit]);
+  }, [onCodeChange]);
 
   const handleEditToggle = () => {
     if (!isEditMode) {
@@ -214,7 +178,6 @@ const MonacoCodeBlock = ({
         editorRef.current.setValue(originalCode);
       }
       onCodeChange?.(originalCode);
-      onEdit?.(originalCode);
     }
   };
 
@@ -266,22 +229,14 @@ const MonacoCodeBlock = ({
   };
 
   return (
-    <div className={cn("w-full min-w-0", className)}>
-      {/* Main code container */}
-      <div className={cn(
-        "rounded-xl border overflow-hidden shadow-sm",
-        isMentorBubble 
-          ? "bg-emerald-100 border-emerald-300/60" 
-          : "bg-white border-border/60"
-      )}>
+    <div className={cn("w-full", className)}>
+      {/* Main code container - white background like VS Code */}
+      <div className="rounded-xl border border-border/60 bg-white overflow-hidden shadow-sm">
         {/* Header row */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           {/* Language label */}
           {showLanguageLabel && (
-            <span className={cn(
-              "text-xs uppercase tracking-wider font-medium",
-              isMentorBubble ? "text-emerald-700" : "text-muted-foreground"
-            )}>
+            <span className="text-xs uppercase tracking-wider font-medium text-muted-foreground">
               {language}
             </span>
           )}
@@ -293,13 +248,8 @@ const MonacoCodeBlock = ({
                 variant="ghost"
                 size="icon"
                 onClick={handleEditToggle}
-                className={cn(
-                  "h-7 w-7 hover:bg-transparent",
-                  isMentorBubble 
-                    ? "text-emerald-600 hover:text-emerald-800" 
-                    : "text-muted-foreground/60 hover:text-foreground"
-                )}
-                title={isEditMode ? "Cancel edit" : "Edit code"}
+                className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
+                title={isEditMode ? "Exit edit mode" : "Edit code"}
               >
                 {isEditMode ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
               </Button>
@@ -311,12 +261,7 @@ const MonacoCodeBlock = ({
                 size="icon"
                 onClick={handleRun}
                 disabled={isRunning}
-                className={cn(
-                  "h-7 w-7 hover:bg-transparent",
-                  isMentorBubble 
-                    ? "text-emerald-600 hover:text-emerald-800" 
-                    : "text-muted-foreground/60 hover:text-primary"
-                )}
+                className="h-7 w-7 text-muted-foreground/60 hover:text-primary hover:bg-transparent"
                 title="Run code"
               >
                 {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
@@ -327,12 +272,7 @@ const MonacoCodeBlock = ({
               variant="ghost"
               size="icon"
               onClick={handleCopy}
-              className={cn(
-                "h-7 w-7 hover:bg-transparent",
-                isMentorBubble 
-                  ? "text-emerald-600 hover:text-emerald-800" 
-                  : "text-muted-foreground/60 hover:text-foreground"
-              )}
+              className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
               title="Copy code"
             >
               {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
@@ -374,7 +314,7 @@ const MonacoCodeBlock = ({
               wordWrap: 'on',
               automaticLayout: true,
             }}
-            theme={isMentorBubble ? "codeblock-mentor" : "codeblock-light"}
+            theme="codeblock-light"
             loading={
               <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
                 Loading editor...
@@ -386,12 +326,7 @@ const MonacoCodeBlock = ({
 
       {/* Output panel - collapsible */}
       {showOutput && (
-        <div className={cn(
-          "mt-2 rounded-xl border overflow-hidden",
-          isMentorBubble 
-            ? "bg-emerald-50 border-emerald-300/60" 
-            : "bg-muted/50 border-border/60"
-        )}>
+        <div className="mt-2 rounded-xl border border-border/60 bg-muted/50 overflow-hidden">
           {/* Output header */}
           <button
             onClick={() => setOutputExpanded(!outputExpanded)}
