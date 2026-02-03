@@ -20,7 +20,6 @@ export interface CodeEditorSettings {
 }
 
 export interface AdvancedSettings {
-  experimentalFeatures: boolean;
   performanceMode: boolean;
   minimap: boolean;
 }
@@ -51,7 +50,6 @@ export const DEFAULT_CODE_EDITOR: CodeEditorSettings = {
 };
 
 export const DEFAULT_ADVANCED: AdvancedSettings = {
-  experimentalFeatures: false,
   performanceMode: false,
   minimap: false,
 };

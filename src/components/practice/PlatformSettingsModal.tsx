@@ -320,18 +320,6 @@ function AdvancedSection({
         </SettingRow>
 
         <SettingRow
-          label="Experimental Features"
-          description="Try new features before they're fully released"
-        >
-          <Switch
-            checked={advanced.experimentalFeatures}
-            onCheckedChange={(v) =>
-              updateCategory("advanced", { experimentalFeatures: v })
-            }
-          />
-        </SettingRow>
-
-        <SettingRow
           label="Performance Mode"
           description="Disable visual effects for better performance"
         >
