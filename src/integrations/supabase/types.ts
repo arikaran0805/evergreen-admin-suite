@@ -2277,6 +2277,83 @@ export type Database = {
           },
         ]
       }
+      problem_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          problem_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          problem_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          problem_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_bookmarks_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          problem_id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          problem_id: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          problem_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "problem_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "problem_comments_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       problem_mappings: {
         Row: {
           context_note: string | null
@@ -2318,6 +2395,38 @@ export type Database = {
             columns: ["sub_topic_id"]
             isOneToOne: false
             referencedRelation: "sub_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          problem_id: string
+          reaction_type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          problem_id: string
+          reaction_type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          problem_id?: string
+          reaction_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_reactions_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
             referencedColumns: ["id"]
           },
         ]
