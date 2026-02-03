@@ -68,6 +68,33 @@ export const parseContent = (content: string | JSONContent | null | undefined): 
     return { type: 'doc', content: [{ type: 'paragraph' }] };
   }
 
+  // Check if content contains mixed format separator (---) with JSON on either side
+  // This happens when switching from Chat/Canvas editor which may include TipTap explanation
+  if (content.includes(' --- ') || content.includes('\n---\n')) {
+    const separator = content.includes(' --- ') ? ' --- ' : '\n---\n';
+    const parts = content.split(separator);
+    
+    // Check if any part looks like non-TipTap JSON format
+    const hasNonTipTapJson = parts.some(part => {
+      const trimmed = part.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return false;
+      try {
+        const parsed = JSON.parse(trimmed);
+        // Canvas format
+        if (parsed?.version === 1 && Array.isArray(parsed?.blocks)) return true;
+        // Chat format array
+        if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.role !== undefined)) return true;
+        return false;
+      } catch {
+        return false;
+      }
+    });
+    
+    if (hasNonTipTapJson) {
+      return { type: 'doc', content: [{ type: 'paragraph' }] };
+    }
+  }
+
   // Try parsing as JSON first
   try {
     const parsed = JSON.parse(content);
