@@ -1,14 +1,13 @@
 /**
  * ExecutableCodeBlockView - TipTap NodeView for interactive code blocks
  * 
- * Renders an editable, executable code block with language selection,
- * matching chat bubble code blocks exactly.
- * 
- * ROLES: All users can edit and execute code (editing code ≠ editing content)
+ * Uses Monaco Editor for syntax highlighting, line numbers, and editing.
+ * Supports code execution for Python, JavaScript, TypeScript.
  */
 
 import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
+import Editor, { type Monaco, type OnMount } from '@monaco-editor/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { 
@@ -23,8 +22,6 @@ import {
   ChevronUp, ChevronDown 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import Prism from '@/lib/prism';
-import { useCodeTheme } from '@/hooks/useCodeTheme';
 import { useCodeEdit } from '@/contexts/CodeEditContext';
 
 // Supported languages for execution
@@ -48,14 +45,15 @@ const LANGUAGES = [
   { value: 'plaintext', label: 'Plain Text' },
 ];
 
-const LANGUAGE_MAP: Record<string, string> = {
+// Monaco language mapping
+const MONACO_LANGUAGE_MAP: Record<string, string> = {
   js: 'javascript',
   ts: 'typescript',
   py: 'python',
-  html: 'markup',
-  xml: 'markup',
-  shell: 'bash',
-  sh: 'bash',
+  bash: 'shell',
+  sh: 'shell',
+  plaintext: 'plaintext',
+  cpp: 'cpp',
 };
 
 const ExecutableCodeBlockView = ({ 
@@ -65,7 +63,6 @@ const ExecutableCodeBlockView = ({
   deleteNode,
 }: NodeViewProps) => {
   const { language = 'python', code = '' } = node.attrs;
-  const { theme: codeTheme } = useCodeTheme();
   
   // Generate stable ID for this code block instance
   const instanceId = useId();
@@ -75,11 +72,11 @@ const ExecutableCodeBlockView = ({
   try {
     codeEditContext = useCodeEdit();
   } catch {
-    // Context not available - that's okay, we just won't track edits
+    // Context not available
   }
   
-  const [editedCode, setEditedCode] = useState(code);
-  const [isEditingCode, setIsEditingCode] = useState(false); // Toggle between view/edit
+  const [currentCode, setCurrentCode] = useState(code);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
@@ -87,49 +84,66 @@ const ExecutableCodeBlockView = ({
   const [showOutput, setShowOutput] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(true);
   
-  // Store original code for comparison (code edit context tracking)
+  // Store original code for tracking
   const [originalCode] = useState(code);
   
-  // Store code snapshot when entering edit mode (for cancel/revert)
-  const [codeBeforeEdit, setCodeBeforeEdit] = useState(code);
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const codeRef = useRef<HTMLElement>(null);
-  
-  const normalizedLang = LANGUAGE_MAP[language?.toLowerCase()] || language?.toLowerCase() || 'plaintext';
+  const normalizedLang = MONACO_LANGUAGE_MAP[language?.toLowerCase()] || language?.toLowerCase() || 'plaintext';
   const canExecute = EXECUTABLE_LANGUAGES.includes(normalizedLang);
   const isEditable = editor?.isEditable ?? true;
+  
+  // Calculate editor height based on line count
+  const lineCount = currentCode.split('\n').length;
+  const editorHeight = Math.max(60, lineCount * 19 + 20);
 
   // Sync code when node attrs change externally
   useEffect(() => {
-    setEditedCode(code);
+    setCurrentCode(code);
   }, [code]);
   
   // Report code edits to context
   useEffect(() => {
     if (codeEditContext) {
-      codeEditContext.reportCodeEdit(instanceId, editedCode, originalCode, language);
+      codeEditContext.reportCodeEdit(instanceId, currentCode, originalCode, language);
     }
-  }, [editedCode, originalCode, language, instanceId, codeEditContext]);
+  }, [currentCode, originalCode, language, instanceId, codeEditContext]);
 
-  // Apply syntax highlighting when not editing code
-  useEffect(() => {
-    if (codeRef.current && !isEditingCode) {
-      Prism.highlightElement(codeRef.current);
-    }
-  }, [editedCode, normalizedLang, isEditingCode]);
+  const handleEditorMount: OnMount = (editorInstance, monaco) => {
+    editorRef.current = editorInstance;
+    monacoRef.current = monaco;
+    
+    // Configure Monaco theme for a clean light look
+    monaco.editor.defineTheme('codeblock-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '0000FF' },
+        { token: 'string', foreground: 'A31515' },
+        { token: 'number', foreground: 'C67F00' },
+        { token: 'comment', foreground: '008000', fontStyle: 'italic' },
+        { token: 'function', foreground: '795E26' },
+        { token: 'variable', foreground: '001080' },
+        { token: 'type', foreground: '267F99' },
+      ],
+      colors: {
+        'editor.background': '#FAFAFA',
+        'editor.foreground': '#1F2937',
+        'editor.lineHighlightBackground': '#F3F4F6',
+        'editorLineNumber.foreground': '#9CA3AF',
+        'editorLineNumber.activeForeground': '#6B7280',
+        'editor.selectionBackground': '#BFDBFE',
+        'editorCursor.foreground': '#3B82F6',
+      },
+    });
+    
+    monaco.editor.setTheme('codeblock-light');
+  };
 
-  // Auto-resize textarea when editing
-  useEffect(() => {
-    if (textareaRef.current && isEditingCode) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [editedCode, isEditingCode]);
-
-  const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newCode = e.target.value;
-    setEditedCode(newCode);
+  const handleCodeChange = useCallback((value: string | undefined) => {
+    const newCode = value || '';
+    setCurrentCode(newCode);
     updateAttributes({ code: newCode });
   }, [updateAttributes]);
 
@@ -138,36 +152,40 @@ const ExecutableCodeBlockView = ({
   }, [updateAttributes]);
 
   const handleEditToggle = () => {
-    if (!isEditingCode) {
-      // Entering edit mode - snapshot current code for potential revert
-      setCodeBeforeEdit(code);
-      setIsEditingCode(true);
-      // Focus textarea and place cursor at end of code
+    if (!isEditMode) {
+      // Enter edit mode
+      setIsEditMode(true);
       setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          const len = textareaRef.current.value.length;
-          textareaRef.current.setSelectionRange(len, len);
+        if (editorRef.current) {
+          editorRef.current.updateOptions({ 
+            readOnly: false,
+            renderLineHighlight: 'line',
+          });
+          editorRef.current.focus();
+          // Move cursor to end
+          const model = editorRef.current.getModel();
+          if (model) {
+            const lastLine = model.getLineCount();
+            const lastCol = model.getLineMaxColumn(lastLine);
+            editorRef.current.setPosition({ lineNumber: lastLine, column: lastCol });
+          }
         }
       }, 0);
     } else {
-      // Exiting via toggle (X button) - revert to snapshot
-      setEditedCode(codeBeforeEdit);
-      updateAttributes({ code: codeBeforeEdit });
-      setIsEditingCode(false);
+      // Exit edit mode - keep edited code (no rollback per spec)
+      setIsEditMode(false);
+      if (editorRef.current) {
+        editorRef.current.updateOptions({ 
+          readOnly: true,
+          renderLineHighlight: 'none',
+        });
+      }
     }
-  };
-
-  const handleCancelEdit = () => {
-    // Revert to code snapshot from before editing started
-    setEditedCode(codeBeforeEdit);
-    updateAttributes({ code: codeBeforeEdit });
-    setIsEditingCode(false);
   };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(editedCode);
+      await navigator.clipboard.writeText(currentCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -186,7 +204,7 @@ const ExecutableCodeBlockView = ({
 
     try {
       const { data, error } = await supabase.functions.invoke('execute-code', {
-        body: { code: editedCode, language: normalizedLang },
+        body: { code: currentCode, language: normalizedLang },
       });
 
       if (error) {
@@ -209,27 +227,6 @@ const ExecutableCodeBlockView = ({
 
   const handleCloseOutput = () => {
     setShowOutput(false);
-    setOutput(null);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Tab key for indentation
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newCode = editedCode.substring(0, start) + '  ' + editedCode.substring(end);
-      setEditedCode(newCode);
-      updateAttributes({ code: newCode });
-      // Reset cursor position after state update
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 0);
-    }
-    
-    // Prevent TipTap from capturing arrow keys and other navigation
-    e.stopPropagation();
   };
 
   return (
@@ -248,14 +245,14 @@ const ExecutableCodeBlockView = ({
           </Button>
         )}
 
-        {/* Single flat container - no nested inner box */}
-        <div className={cn("rounded-lg border border-border/50 bg-muted/20 overflow-hidden", `code-theme-${codeTheme}`)}>
+        {/* Main container */}
+        <div className="rounded-xl border border-border/40 bg-[#FAFAFA] overflow-hidden">
           {/* Header row */}
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            {/* Language Label */}
+          <div className="flex items-center justify-between px-4 pt-3 pb-1">
+            {/* Language selector/label */}
             {isEditable ? (
               <Select value={language} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="h-5 w-auto gap-0.5 px-0 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
+                <SelectTrigger className="h-5 w-auto gap-0.5 px-0 text-[11px] uppercase tracking-wider font-medium text-muted-foreground/70 border-none bg-transparent shadow-none focus:ring-0 hover:text-foreground">
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
@@ -267,7 +264,7 @@ const ExecutableCodeBlockView = ({
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+              <span className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground/70">
                 {language}
               </span>
             )}
@@ -277,11 +274,11 @@ const ExecutableCodeBlockView = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={isEditingCode ? handleCancelEdit : handleEditToggle}
+                onClick={handleEditToggle}
                 className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
-                title={isEditingCode ? "Cancel edit" : "Edit code"}
+                title={isEditMode ? "Exit edit mode" : "Edit code"}
               >
-                {isEditingCode ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                {isEditMode ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
               </Button>
 
               {canExecute && (
@@ -309,45 +306,59 @@ const ExecutableCodeBlockView = ({
             </div>
           </div>
 
-          {/* Code content - directly in container, no inner box */}
-          <div className="px-4 pb-4">
-            {isEditingCode ? (
-              <textarea
-                ref={textareaRef}
-                value={editedCode}
-                onChange={handleCodeChange}
-                onKeyDown={handleKeyDown}
-                className={cn(
-                  "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed",
-                  "min-h-[1.5em] overflow-hidden",
-                  "text-foreground placeholder:text-muted-foreground/60"
-                )}
-                placeholder="// Write your code here..."
-                spellCheck={false}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-              />
-            ) : (
-              <pre className="text-sm font-mono leading-relaxed overflow-x-auto w-full m-0 bg-transparent">
-                <code ref={codeRef} className={`language-${normalizedLang}`}>
-                  {editedCode || '// Write your code here...'}
-                </code>
-              </pre>
-            )}
+          {/* Monaco Editor */}
+          <div className="px-1">
+            <Editor
+              height={editorHeight}
+              language={normalizedLang}
+              value={currentCode}
+              onChange={handleCodeChange}
+              onMount={handleEditorMount}
+              options={{
+                readOnly: !isEditMode,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                lineNumbers: 'on',
+                lineNumbersMinChars: 2,
+                lineDecorationsWidth: 8,
+                folding: false,
+                glyphMargin: false,
+                renderLineHighlight: isEditMode ? 'line' : 'none',
+                scrollbar: {
+                  vertical: 'hidden',
+                  horizontal: 'auto',
+                  horizontalScrollbarSize: 6,
+                },
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+                overviewRulerBorder: false,
+                contextmenu: false,
+                fontSize: 14,
+                fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace",
+                padding: { top: 8, bottom: 8 },
+                wordWrap: 'on',
+                automaticLayout: true,
+              }}
+              theme="codeblock-light"
+              loading={
+                <div className="flex items-center justify-center h-16 text-muted-foreground text-sm">
+                  Loading...
+                </div>
+              }
+            />
           </div>
         </div>
 
-        {/* Output panel - matches chat bubble CodeBlock styling */}
+        {/* Output panel */}
         {showOutput && (
-          <div className="mt-0.5 rounded-t-none rounded-b-xl border border-t-0 border-border/50 bg-muted/50 overflow-hidden">
-            {/* Header row */}
+          <div className="mt-0.5 rounded-xl border border-border/40 bg-[#F5F5F5] overflow-hidden">
+            {/* Header */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
-              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-black/5 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted/60">
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-black/5">
                   {outputExpanded ? (
                     <ChevronUp className="w-3 h-3 text-muted-foreground" />
                   ) : (
@@ -374,7 +385,7 @@ const ExecutableCodeBlockView = ({
               </Button>
             </button>
 
-            {/* Content area - flat text, no inner box */}
+            {/* Content */}
             <div className={cn(
               "grid transition-all duration-200 ease-out",
               outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
