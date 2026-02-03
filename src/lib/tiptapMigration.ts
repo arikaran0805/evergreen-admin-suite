@@ -71,8 +71,19 @@ export const parseContent = (content: string | JSONContent | null | undefined): 
   // Try parsing as JSON first
   try {
     const parsed = JSON.parse(content);
-    if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
-      return parsed;
+    if (parsed && typeof parsed === 'object') {
+      // TipTap JSON format
+      if (parsed.type === 'doc') {
+        return parsed;
+      }
+      // Canvas editor format - return empty doc instead of parsing as HTML
+      if (parsed.version === 1 && Array.isArray(parsed.blocks)) {
+        return { type: 'doc', content: [{ type: 'paragraph' }] };
+      }
+      // Chat editor format - return empty doc instead of parsing as HTML
+      if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.role !== undefined)) {
+        return { type: 'doc', content: [{ type: 'paragraph' }] };
+      }
     }
   } catch {
     // Not JSON, treat as HTML
