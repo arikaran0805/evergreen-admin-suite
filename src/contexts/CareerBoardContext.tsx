@@ -128,7 +128,7 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
     setIsReady(true);
   }, [careerId, careersLoading, careers.length, getCareerBySlug, refetchCareers]);
 
-  // Redirect non-Pro users away from Career Board
+  // Redirect non-Pro users away from Career Board to Arcade (career roadmap)
   // CRITICAL: Wait for BOTH authChecked AND userStateLoading to complete
   // This matches CourseDetail's pattern of waiting for authReady
   useEffect(() => {
@@ -138,9 +138,9 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
     // Then wait for user state (subscription check) to complete
     if (userStateLoading) return;
     
-    // Only redirect if confirmed not Pro
+    // Only redirect if confirmed not Pro - send to Arcade (career roadmap) not /courses
     if (!isPro) {
-      navigate("/courses", { replace: true });
+      navigate("/arcade", { replace: true });
     }
   }, [authChecked, isPro, userStateLoading, navigate]);
 
