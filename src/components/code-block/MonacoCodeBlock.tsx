@@ -231,7 +231,10 @@ const MonacoCodeBlock = ({
   return (
     <div className={cn("w-full", className)}>
       {/* Main code container - white background like VS Code */}
-      <div className="rounded-xl border border-border/60 bg-white overflow-hidden shadow-sm">
+      <div className={cn(
+        "border border-border/60 bg-white overflow-hidden shadow-sm",
+        showOutput ? "rounded-t-xl rounded-b-none" : "rounded-xl"
+      )}>
         {/* Header row */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           {/* Language label */}
@@ -326,7 +329,7 @@ const MonacoCodeBlock = ({
 
       {/* Output panel - collapsible */}
       {showOutput && (
-        <div className="mt-2 rounded-xl border border-border/60 bg-muted/50 overflow-hidden">
+        <div className="border border-t-0 border-border/60 bg-muted/50 overflow-hidden rounded-t-none rounded-b-xl">
           {/* Output header */}
           <button
             onClick={() => setOutputExpanded(!outputExpanded)}
