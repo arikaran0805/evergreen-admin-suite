@@ -53,6 +53,7 @@ const MonacoCodeBlock = ({
   minHeight = 80,
 }: MonacoCodeBlockProps) => {
   const [currentCode, setCurrentCode] = useState(code);
+  const [originalCode, setOriginalCode] = useState(code); // Store original for cancel
   const [isEditMode, setIsEditMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -75,13 +76,14 @@ const MonacoCodeBlock = ({
   // Sync code when prop changes externally
   useEffect(() => {
     setCurrentCode(code);
+    setOriginalCode(code);
   }, [code]);
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
     
-    // Configure Monaco theme for a clean look
+    // Configure Monaco theme for a clean look - pure white background like VS Code
     monaco.editor.defineTheme('codeblock-light', {
       base: 'vs',
       inherit: true,
@@ -95,19 +97,19 @@ const MonacoCodeBlock = ({
         { token: 'type', foreground: '267F99' },
       ],
       colors: {
-        'editor.background': '#FAFAFA',
+        'editor.background': '#FFFFFF',
         'editor.foreground': '#1F2937',
-        'editor.lineHighlightBackground': '#F3F4F6',
-        'editorLineNumber.foreground': '#9CA3AF',
-        'editorLineNumber.activeForeground': '#6B7280',
-        'editor.selectionBackground': '#BFDBFE',
-        'editorCursor.foreground': '#3B82F6',
+        'editor.lineHighlightBackground': '#F5F5F5',
+        'editorLineNumber.foreground': '#6B7280',
+        'editorLineNumber.activeForeground': '#374151',
+        'editor.selectionBackground': '#ADD6FF',
+        'editorCursor.foreground': '#000000',
       },
     });
     
     monaco.editor.setTheme('codeblock-light');
     
-    // Disable unnecessary features for clean appearance
+    // Configure editor options
     editor.updateOptions({
       readOnly: !isEditMode,
       minimap: { enabled: false },
@@ -115,7 +117,8 @@ const MonacoCodeBlock = ({
       lineNumbers: 'on',
       lineNumbersMinChars: 2,
       lineDecorationsWidth: 8,
-      folding: false,
+      folding: true,
+      showFoldingControls: 'always',
       glyphMargin: false,
       renderLineHighlight: isEditMode ? 'line' : 'none',
       scrollbar: {
@@ -143,7 +146,8 @@ const MonacoCodeBlock = ({
 
   const handleEditToggle = () => {
     if (!isEditMode) {
-      // Enter edit mode
+      // Enter edit mode - store current code as original for potential cancel
+      setOriginalCode(currentCode);
       setIsEditMode(true);
       setTimeout(() => {
         if (editorRef.current) {
@@ -162,14 +166,18 @@ const MonacoCodeBlock = ({
         }
       }, 0);
     } else {
-      // Exit edit mode - keep edited code (no rollback)
+      // Exit edit mode - revert to original code
+      setCurrentCode(originalCode);
       setIsEditMode(false);
       if (editorRef.current) {
         editorRef.current.updateOptions({ 
           readOnly: true,
           renderLineHighlight: 'none',
         });
+        // Update editor content to original
+        editorRef.current.setValue(originalCode);
       }
+      onCodeChange?.(originalCode);
     }
   };
 
@@ -222,13 +230,13 @@ const MonacoCodeBlock = ({
 
   return (
     <div className={cn("w-full", className)}>
-      {/* Main code container */}
-      <div className="rounded-xl border border-border/40 bg-[#FAFAFA] overflow-hidden">
+      {/* Main code container - white background like VS Code */}
+      <div className="rounded-xl border border-border/60 bg-white overflow-hidden shadow-sm">
         {/* Header row */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           {/* Language label */}
           {showLanguageLabel && (
-            <span className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground/70">
+            <span className="text-xs uppercase tracking-wider font-medium text-muted-foreground">
               {language}
             </span>
           )}
@@ -287,7 +295,8 @@ const MonacoCodeBlock = ({
               lineNumbers: 'on',
               lineNumbersMinChars: 2,
               lineDecorationsWidth: 8,
-              folding: false,
+              folding: true,
+              showFoldingControls: 'always',
               glyphMargin: false,
               renderLineHighlight: isEditMode ? 'line' : 'none',
               scrollbar: {
@@ -317,7 +326,7 @@ const MonacoCodeBlock = ({
 
       {/* Output panel - collapsible */}
       {showOutput && (
-        <div className="mt-0.5 rounded-xl border border-border/40 bg-[#F5F5F5] overflow-hidden">
+        <div className="mt-2 rounded-xl border border-border/60 bg-muted/50 overflow-hidden">
           {/* Output header */}
           <button
             onClick={() => setOutputExpanded(!outputExpanded)}
