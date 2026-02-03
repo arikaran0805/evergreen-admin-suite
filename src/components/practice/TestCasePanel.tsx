@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, Eye, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, cleanErrorMessage, isSyntaxError, isRuntimeError, looksLikeError } from "@/lib/errorParser";
+import { parseCodeError, isSyntaxError, isRuntimeError, looksLikeError } from "@/lib/errorParser";
 
 export interface TestResult {
   id: number;
@@ -35,7 +35,6 @@ interface TestCasePanelProps {
   isSubmit?: boolean;
   // New settings-driven props
   showSampleTestcasesFirst?: boolean;
-  errorMessageStyle?: 'beginner' | 'standard' | 'advanced';
   revealOutputOnlyAfterRun?: boolean;
   hasRunOnce?: boolean;
 }
@@ -129,7 +128,6 @@ export function TestCasePanel({
   globalError,
   isSubmit = false,
   showSampleTestcasesFirst = true,
-  errorMessageStyle = 'beginner',
   revealOutputOnlyAfterRun = false,
   hasRunOnce = false,
 }: TestCasePanelProps) {
@@ -333,53 +331,8 @@ export function TestCasePanel({
                   {/* Global Error Display - Single Red Container */}
                   {globalError && (() => {
                     const parsed = parseCodeError(globalError, language, userCodeLineCount);
-                    const isBeginnerMode = errorMessageStyle === 'beginner';
-                    const isStandardMode = errorMessageStyle === 'standard';
-                    const isAdvancedMode = errorMessageStyle === 'advanced';
 
-                    // ============================================================
-                    // 🔴 ADVANCED MODE: Full raw output, no stripping, no emoji
-                    // Purpose: Mirror real competitive programming / production debugging
-                    // ============================================================
-                    if (isAdvancedMode) {
-                      return (
-                        <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm">
-                          {/* Title: Raw error type with message - NO emoji */}
-                          <div className="font-bold text-red-600 dark:text-red-400 mb-3">
-                            {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
-                          </div>
-                          {/* Full raw traceback - no stripping */}
-                          <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-96 overflow-y-auto">
-                            {parsed.rawError}
-                          </pre>
-                        </div>
-                      );
-                    }
-
-                    // ============================================================
-                    // 🟡 STANDARD MODE: Real language traceback, stripped of internal paths
-                    // Purpose: Bridge learning → real Python behavior
-                    // NO emoji, NO hints
-                    // ============================================================
-                    if (isStandardMode) {
-                      return (
-                        <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm">
-                          {/* Title: Error type - NO emoji */}
-                          <div className="font-bold text-red-600 dark:text-red-400 mb-3">
-                            {parsed.type}
-                          </div>
-                          {/* Traceback header + error message + faulty line + caret */}
-                          <pre className="text-xs whitespace-pre-wrap break-words text-foreground/90 overflow-x-auto max-h-64 overflow-y-auto">
-                            {cleanErrorMessage(parsed.rawError)}
-                          </pre>
-                        </div>
-                      );
-                    }
-
-                    // ============================================================
-                    // 🟢 BEGINNER MODE: Friendly explanations, hints, emojis
-                    // Purpose: Help learners understand what went wrong without fear
-                    // ============================================================
+                    // Friendly beginner mode: explanations, hints, emojis
                     return (
                       <div className="rounded-lg bg-red-500/10 p-4 font-mono text-sm space-y-3">
                         {/* 1. Error Title with emoji */}
@@ -453,18 +406,15 @@ export function TestCasePanel({
 
                     // If there's a runtime error, show "Runtime Error" header instead of pass count
                     if (hasAnyRuntimeError) {
-                      const isBeginnerMode = errorMessageStyle === 'beginner';
                       return (
                         <div className="p-4 rounded-lg bg-red-500/10">
                           <div className="flex flex-col items-center gap-1 text-center">
                             <span className="text-lg font-semibold text-red-600 dark:text-red-400">
-                              {isBeginnerMode ? '❌ Runtime Error' : 'Runtime Error'}
+                              ❌ Runtime Error
                             </span>
-                            {isBeginnerMode && (
-                              <span className="text-sm text-red-600/80 dark:text-red-400/80">
-                                Your code crashed during execution. Check the error below.
-                              </span>
-                            )}
+                            <span className="text-sm text-red-600/80 dark:text-red-400/80">
+                              Your code crashed during execution. Check the error below.
+                            </span>
                           </div>
                         </div>
                       );
@@ -550,10 +500,6 @@ export function TestCasePanel({
                       }
                     }
                     
-                    const isBeginnerMode = errorMessageStyle === 'beginner';
-                    const isStandardMode = errorMessageStyle === 'standard';
-                    const isAdvancedMode = errorMessageStyle === 'advanced';
-                    
                     return sortedResults.map((result, i) => {
                       // Check for error in result.error field
                       const errorParsed = result.error 
@@ -605,67 +551,42 @@ export function TestCasePanel({
                           {/* Runtime Error display for this specific test case */}
                           {effectiveErrorParsed && !globalError && (
                             <div className="mb-3 p-3 rounded-lg bg-red-500/10 font-mono text-sm space-y-2">
-                              {isAdvancedMode ? (
-                                // 🔴 ADVANCED MODE: Full raw error output, no stripping, NO emoji
-                                <>
-                                  <div className="font-bold text-red-600 dark:text-red-400">
-                                    {effectiveErrorParsed.type}{effectiveErrorParsed.message ? `: ${effectiveErrorParsed.message}` : ''}
-                                  </div>
-                                  <pre className="text-xs text-foreground/80 whitespace-pre-wrap break-words overflow-x-auto max-h-48 overflow-y-auto">
-                                    {effectiveErrorParsed.rawError}
+                              {/* Error Title with emoji */}
+                              <div className="font-bold text-red-600 dark:text-red-400">
+                                ❌ {effectiveErrorParsed.friendlyType}
+                              </div>
+                              {/* Friendly Explanation */}
+                              <p className="text-xs text-red-600/80 dark:text-red-400/80">
+                                {effectiveErrorParsed.friendlyMessage}
+                              </p>
+                              {/* Code snippet with caret */}
+                              {effectiveErrorParsed.codeLine && (
+                                <div className="bg-background/50 rounded px-2 py-1">
+                                  <pre className="text-foreground/70 whitespace-pre overflow-x-auto text-xs">
+                                    {effectiveErrorParsed.codeLine}
                                   </pre>
-                                </>
-                              ) : isStandardMode ? (
-                                // 🟡 STANDARD MODE: Real traceback, cleaned of internal paths, NO emoji
-                                <>
-                                  <div className="font-bold text-red-600 dark:text-red-400">
-                                    {effectiveErrorParsed.type}
-                                  </div>
-                                  <pre className="text-xs text-foreground/80 whitespace-pre-wrap break-words overflow-x-auto">
-                                    {cleanErrorMessage(effectiveErrorParsed.rawError)}
-                                  </pre>
-                                </>
-                              ) : (
-                                // 🟢 BEGINNER MODE: Friendly explanations + coaching hints + emojis
-                                <>
-                                  {/* 1. Error Title with emoji */}
-                                  <div className="font-bold text-red-600 dark:text-red-400">
-                                    ❌ {effectiveErrorParsed.friendlyType}
-                                  </div>
-                                  {/* 2. Friendly Explanation */}
-                                  <p className="text-xs text-red-600/80 dark:text-red-400/80">
-                                    {effectiveErrorParsed.friendlyMessage}
-                                  </p>
-                                  {/* 3. Code snippet with caret */}
-                                  {effectiveErrorParsed.codeLine && (
-                                    <div className="bg-background/50 rounded px-2 py-1">
-                                      <pre className="text-foreground/70 whitespace-pre overflow-x-auto text-xs">
-                                        {effectiveErrorParsed.codeLine}
-                                      </pre>
-                                      {effectiveErrorParsed.pointer && (
-                                        <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
-                                          {effectiveErrorParsed.pointer.replace(/^\s{4}/, '')}
-                                        </pre>
-                                      )}
-                                    </div>
+                                  {effectiveErrorParsed.pointer && (
+                                    <pre className="whitespace-pre text-red-600 dark:text-red-400 text-xs">
+                                      {effectiveErrorParsed.pointer.replace(/^\s{4}/, '')}
+                                    </pre>
                                   )}
-                                  {/* Line reference */}
-                                  {effectiveErrorParsed.userLine && (
-                                    <button
-                                      onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
-                                      className="text-xs text-muted-foreground hover:text-foreground underline decoration-dashed transition-colors"
-                                    >
-                                      Line {effectiveErrorParsed.userLine}
-                                    </button>
-                                  )}
-                                  {/* 4. Hint with emoji */}
-                                  {effectiveErrorParsed.fixHint && (
-                                    <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-                                      <span>💡</span>
-                                      <span>{effectiveErrorParsed.fixHint}</span>
-                                    </p>
-                                  )}
-                                </>
+                                </div>
+                              )}
+                              {/* Line reference */}
+                              {effectiveErrorParsed.userLine && (
+                                <button
+                                  onClick={() => onErrorLineClick?.(effectiveErrorParsed.userLine!)}
+                                  className="text-xs text-muted-foreground hover:text-foreground underline decoration-dashed transition-colors"
+                                >
+                                  Line {effectiveErrorParsed.userLine}
+                                </button>
+                              )}
+                              {/* Hint with emoji */}
+                              {effectiveErrorParsed.fixHint && (
+                                <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                                  <span>💡</span>
+                                  <span>{effectiveErrorParsed.fixHint}</span>
+                                </p>
                               )}
                             </div>
                           )}

@@ -22,13 +22,6 @@ export interface CodeEditorSettings {
 export interface AdvancedSettings {
   experimentalFeatures: boolean;
   performanceMode: boolean;
-  /**
-   * Error message style:
-   * - 'beginner': Friendly explanations, coaching hints, simplified wording
-   * - 'standard': Raw language-native error output, stripped of internal paths
-   * - 'advanced': Full raw error output exactly as produced, no stripping
-   */
-  errorMessageStyle: "beginner" | "standard" | "advanced";
   minimap: boolean;
 }
 
@@ -60,7 +53,6 @@ export const DEFAULT_CODE_EDITOR: CodeEditorSettings = {
 export const DEFAULT_ADVANCED: AdvancedSettings = {
   experimentalFeatures: false,
   performanceMode: false,
-  errorMessageStyle: "beginner",
   minimap: false,
 };
 
