@@ -43,7 +43,7 @@ export function ProblemListDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[40vw] min-w-[400px] max-w-[600px] p-0">
+      <SheetContent side="left" className="w-[50vw] min-w-[500px] max-w-[800px] p-0">
         <SheetHeader className="px-6 py-4 border-b border-border/50">
           <SheetTitle className="text-left">{skillName}</SheetTitle>
           <p className="text-sm text-muted-foreground text-left">
