@@ -9,23 +9,27 @@ interface ErrorDisplayProps {
   onLineClick?: (line: number) => void;
   /** 
    * Error message style:
-   * - 'beginner': Friendly explanations, coaching hints, simplified wording
-   * - 'standard': Real Python/language traceback, stripped of internal paths
-   * - 'advanced': Full raw error output exactly as produced, no stripping
+   * - 'beginner': Friendly explanations, coaching hints, simplified wording, emojis allowed
+   * - 'standard': Real Python/language traceback, stripped of internal paths, no hints
+   * - 'advanced': Full raw error output exactly as produced, no stripping, no emojis
    */
   errorMessageStyle?: 'beginner' | 'standard' | 'advanced';
 }
 
 /**
  * Unified Error Display Component
- * Single red container for all error types across all modes
+ * 
+ * 🔴 Global Error UI Rules (Mandatory)
  * ❌ No border
  * ❌ No copy icon
  * ✅ Red background (soft red)
  * ✅ Rounded corners
- * ✅ Padding inside
+ * ✅ Padding inside container
  * ✅ Monospace font for code + stack traces
  * ✅ Emoji allowed only in Beginner mode
+ * 
+ * 🧱 Error Container Layout (Same for All Modes)
+ * Order: Title → Explanation → Code Line + caret → Hint → Technical Details
  */
 export function ErrorDisplay({ 
   error, 
@@ -38,10 +42,16 @@ export function ErrorDisplay({
   const parsed = parseCodeError(error, language, userCodeLineCount);
   
   const isBeginnerMode = errorMessageStyle === 'beginner';
+  const isStandardMode = errorMessageStyle === 'standard';
   const isAdvancedMode = errorMessageStyle === 'advanced';
 
   // ============================================================================
-  // ADVANCED MODE: Full raw output, no stripping, no simplification, no emojis
+  // 🔴 ADVANCED MODE
+  // Purpose: Mirror real competitive programming / production debugging
+  // - Full raw traceback
+  // - Internal loader + compiler stack
+  // - Exact file names and line numbers
+  // - NO simplification, NO emojis, NO explanations
   // ============================================================================
   if (isAdvancedMode) {
     return (
@@ -49,7 +59,7 @@ export function ErrorDisplay({
         "rounded-lg bg-red-500/10 p-4 font-mono text-sm",
         className
       )}>
-        {/* Title: Raw error type */}
+        {/* Title: Raw error type with message */}
         <div className="font-bold text-red-600 dark:text-red-400 mb-3">
           {parsed.type}{parsed.message ? `: ${parsed.message}` : ''}
         </div>
@@ -63,15 +73,20 @@ export function ErrorDisplay({
   }
 
   // ============================================================================
-  // STANDARD MODE: Real language traceback, stripped of internal paths, no emojis
+  // 🟡 STANDARD MODE  
+  // Purpose: Bridge learning → real Python behavior
+  // - Full Python traceback header (short)
+  // - Error message from Python
+  // - Faulty line + caret
+  // - NO emojis, NO internal loader details
   // ============================================================================
-  if (!isBeginnerMode) {
+  if (isStandardMode) {
     return (
       <div className={cn(
         "rounded-lg bg-red-500/10 p-4 font-mono text-sm",
         className
       )}>
-        {/* Title */}
+        {/* Title: Error type (no emoji in standard mode per spec) */}
         <div className="font-bold text-red-600 dark:text-red-400 mb-3">
           {parsed.type}
         </div>
@@ -85,22 +100,26 @@ export function ErrorDisplay({
   }
 
   // ============================================================================
-  // BEGINNER MODE: Friendly explanations, hints, emojis
+  // 🟢 BEGINNER MODE (Default)
+  // Purpose: Help learners understand what went wrong without fear
   // Layout: 1. Title → 2. Explanation → 3. Code + caret → 4. Hint
+  // - Emoji ❌ and 💡 allowed
+  // - Simple, human sentences
+  // - No Python internals
   // ============================================================================
   return (
     <div className={cn(
       "rounded-lg bg-red-500/10 p-4 font-mono text-sm space-y-3",
       className
     )}>
-      {/* 1. Error Title */}
+      {/* 1. Error Title with emoji */}
       <div className="font-bold text-red-600 dark:text-red-400">
         ❌ {parsed.friendlyType}
       </div>
 
       {parsed.isUserCodeError ? (
         <>
-          {/* 2. Friendly Explanation */}
+          {/* 2. Friendly Explanation - simple human sentence */}
           <p className="text-sm text-red-600/90 dark:text-red-400/90">
             {parsed.friendlyMessage}
           </p>
@@ -119,7 +138,7 @@ export function ErrorDisplay({
             </div>
           )}
 
-          {/* Line reference */}
+          {/* Line reference - clickable */}
           {parsed.userLine && (
             <button
               onClick={() => onLineClick?.(parsed.userLine!)}
@@ -129,7 +148,7 @@ export function ErrorDisplay({
             </button>
           )}
 
-          {/* 4. Hint / Guidance */}
+          {/* 4. Hint / Guidance with emoji */}
           {parsed.fixHint && (
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
               <span>💡</span>
@@ -148,6 +167,7 @@ export function ErrorDisplay({
 
 // ============================================================================
 // Compact Error (for test case results)
+// Same rules apply: single red container, mode-specific content
 // ============================================================================
 
 interface CompactErrorProps {
@@ -162,9 +182,16 @@ interface CompactErrorProps {
  * Compact error display for inline use in test case results
  * Single red container, no borders, no icons
  */
-export function CompactError({ error, language, userCodeLineCount, onLineClick, errorMessageStyle = 'beginner' }: CompactErrorProps) {
+export function CompactError({ 
+  error, 
+  language, 
+  userCodeLineCount, 
+  onLineClick, 
+  errorMessageStyle = 'beginner' 
+}: CompactErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
   const isBeginnerMode = errorMessageStyle === 'beginner';
+  const isStandardMode = errorMessageStyle === 'standard';
   const isAdvancedMode = errorMessageStyle === 'advanced';
   
   if (!parsed.isUserCodeError) {
@@ -176,7 +203,7 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
     );
   }
 
-  // ADVANCED MODE: Full raw error output
+  // ADVANCED MODE: Full raw error output, no emoji
   if (isAdvancedMode) {
     return (
       <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
@@ -190,8 +217,8 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
     );
   }
 
-  // STANDARD MODE: Cleaned traceback, no emojis
-  if (!isBeginnerMode) {
+  // STANDARD MODE: Cleaned traceback, no emoji
+  if (isStandardMode) {
     return (
       <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
         <div className="font-bold text-red-600 dark:text-red-400">
@@ -207,7 +234,7 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
   // BEGINNER MODE: Friendly explanations with emojis
   return (
     <div className="text-xs font-mono bg-red-500/10 rounded-lg p-3 space-y-2">
-      {/* 1. Title */}
+      {/* 1. Title with emoji */}
       <div className="font-bold text-red-600 dark:text-red-400">
         ❌ {parsed.friendlyType}
       </div>
@@ -244,7 +271,7 @@ export function CompactError({ error, language, userCodeLineCount, onLineClick, 
         </button>
       )}
       
-      {/* 4. Hint */}
+      {/* 4. Hint with emoji */}
       {parsed.fixHint && (
         <p className="text-muted-foreground flex items-start gap-1.5">
           <span>💡</span>
@@ -267,7 +294,13 @@ interface InlineErrorProps {
   errorMessageStyle?: 'beginner' | 'standard' | 'advanced';
 }
 
-export function InlineError({ error, language, userCodeLineCount, onLineClick, errorMessageStyle = 'beginner' }: InlineErrorProps) {
+export function InlineError({ 
+  error, 
+  language, 
+  userCodeLineCount, 
+  onLineClick, 
+  errorMessageStyle = 'beginner' 
+}: InlineErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
   const isBeginnerMode = errorMessageStyle === 'beginner';
   
@@ -282,6 +315,7 @@ export function InlineError({ error, language, userCodeLineCount, onLineClick, e
   return (
     <span className="text-red-600 dark:text-red-400 text-xs font-mono">
       <span className="font-medium">
+        {/* Only beginner mode gets emoji */}
         {isBeginnerMode ? `❌ ${parsed.friendlyType}` : parsed.type}
       </span>
       {parsed.userLine && (
