@@ -1,41 +1,34 @@
-import { useEffect, useRef, useState } from "react";
-import Prism from "@/lib/prism";
+/**
+ * CodeBlock - Monaco Editor-based interactive code block for chat
+ * 
+ * Features:
+ * - Monaco Editor with syntax highlighting and line numbers
+ * - Read-only by default, toggle to edit mode
+ * - Code execution for supported languages
+ * - Collapsible output panel
+ */
+
+import { useState, useRef, useCallback, useEffect } from "react";
+import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
 import { cn } from "@/lib/utils";
 import { Copy, Check, Play, Pencil, Loader2, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import useCodeTheme from "@/hooks/useCodeTheme";
 import { supabase } from "@/integrations/supabase/client";
-// Import tiptap CSS for clean theme syntax highlighting
-import "@/styles/tiptap.css";
 
-// Dynamic theme imports
-const loadTheme = async (theme: string) => {
-  switch (theme) {
-    case "okaidia":
-      await import("prismjs/themes/prism-okaidia.css");
-      break;
-    case "solarizedlight":
-      await import("prismjs/themes/prism-solarizedlight.css");
-      break;
-    case "coy":
-      await import("prismjs/themes/prism-coy.css");
-      break;
-    case "twilight":
-      await import("prismjs/themes/prism-twilight.css");
-      break;
-    case "funky":
-      await import("prismjs/themes/prism-funky.css");
-      break;
-    case "gray":
-      // Gray theme uses custom inline styles applied via className
-      await import("prismjs/themes/prism.css");
-      break;
-    case "tomorrow":
-    default:
-      await import("prismjs/themes/prism-tomorrow.css");
-      break;
-  }
+// Monaco language mapping
+const MONACO_LANGUAGE_MAP: Record<string, string> = {
+  js: "javascript",
+  ts: "typescript",
+  py: "python",
+  bash: "shell",
+  sh: "shell",
+  cs: "csharp",
+  plaintext: "plaintext",
+  text: "plaintext",
 };
+
+// Languages that support execution
+const EXECUTABLE_LANGUAGES = ["python", "javascript", "typescript"];
 
 interface CodeBlockProps {
   code: string;
@@ -47,20 +40,6 @@ interface CodeBlockProps {
   showToolbarAlways?: boolean;
 }
 
-const LANGUAGE_MAP: Record<string, string> = {
-  js: "javascript",
-  ts: "typescript",
-  py: "python",
-  html: "markup",
-  xml: "markup",
-  shell: "bash",
-  sh: "bash",
-  cs: "csharp",
-};
-
-// Languages that support execution
-const EXECUTABLE_LANGUAGES = ["python", "javascript", "typescript"];
-
 const CodeBlock = ({ 
   code, 
   language = "", 
@@ -70,49 +49,92 @@ const CodeBlock = ({
   editable = false,
   showToolbarAlways = false,
 }: CodeBlockProps) => {
-  const codeRef = useRef<HTMLElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [currentCode, setCurrentCode] = useState(code);
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedCode, setEditedCode] = useState(code);
-  const [lineCount, setLineCount] = useState(code.split('\n').length);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputError, setOutputError] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(true);
-  const { theme: globalTheme } = useCodeTheme();
   
-  // Use override theme if provided, otherwise fall back to global theme
-  const theme = overrideTheme || globalTheme;
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   
-  // Check theme types
-  const isGrayTheme = theme === "gray";
-  const isCleanTheme = theme === "clean";
-  const isCustomTheme = isGrayTheme || isCleanTheme;
-  
-  const normalizedLang = LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
+  const normalizedLang = MONACO_LANGUAGE_MAP[language.toLowerCase()] || language.toLowerCase() || "plaintext";
   const canExecute = EXECUTABLE_LANGUAGES.includes(normalizedLang);
 
-  // Load theme dynamically - skip for custom themes that use CSS overrides
-  useEffect(() => {
-    // Clean and gray themes use custom CSS in tiptap.css, no Prism theme needed
-    if (isCustomTheme) {
-      // Don't load any Prism theme - our CSS handles it
-      return;
-    }
-    loadTheme(theme);
-  }, [theme, isCustomTheme]);
+  // Calculate editor height based on line count
+  const lineCount = currentCode.split('\n').length;
+  const editorHeight = Math.max(60, lineCount * 19 + 20);
 
+  // Sync code when prop changes
   useEffect(() => {
-    if (codeRef.current && !isEditing) {
-      Prism.highlightElement(codeRef.current);
-    }
-  }, [code, editedCode, normalizedLang, theme, isEditing]);
+    setCurrentCode(code);
+  }, [code]);
+
+  const handleEditorMount: OnMount = (editorInstance, monaco) => {
+    editorRef.current = editorInstance;
+    monacoRef.current = monaco;
+    
+    // Configure Monaco theme for a clean light look
+    monaco.editor.defineTheme('codeblock-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '0000FF' },
+        { token: 'string', foreground: 'A31515' },
+        { token: 'number', foreground: 'C67F00' },
+        { token: 'comment', foreground: '008000', fontStyle: 'italic' },
+        { token: 'function', foreground: '795E26' },
+        { token: 'variable', foreground: '001080' },
+        { token: 'type', foreground: '267F99' },
+      ],
+      colors: {
+        'editor.background': '#FAFAFA',
+        'editor.foreground': '#1F2937',
+        'editor.lineHighlightBackground': '#F3F4F6',
+        'editorLineNumber.foreground': '#9CA3AF',
+        'editorLineNumber.activeForeground': '#6B7280',
+        'editor.selectionBackground': '#BFDBFE',
+        'editorCursor.foreground': '#3B82F6',
+      },
+    });
+    
+    // Theme for mentor bubble (blue tint)
+    monaco.editor.defineTheme('codeblock-mentor', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '1E40AF' },
+        { token: 'string', foreground: '991B1B' },
+        { token: 'number', foreground: 'B45309' },
+        { token: 'comment', foreground: '166534', fontStyle: 'italic' },
+        { token: 'function', foreground: '6B21A8' },
+      ],
+      colors: {
+        'editor.background': '#1E40AF20',
+        'editor.foreground': '#1E3A8A',
+        'editor.lineHighlightBackground': '#1E40AF30',
+        'editorLineNumber.foreground': '#3B82F680',
+        'editorLineNumber.activeForeground': '#2563EB',
+        'editor.selectionBackground': '#93C5FD',
+        'editorCursor.foreground': '#2563EB',
+      },
+    });
+    
+    monaco.editor.setTheme(isMentorBubble ? 'codeblock-mentor' : 'codeblock-light');
+  };
+
+  const handleCodeChange = useCallback((value: string | undefined) => {
+    const newCode = value || '';
+    setCurrentCode(newCode);
+    onEdit?.(newCode);
+  }, [onEdit]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(isEditing ? editedCode : code);
+      await navigator.clipboard.writeText(currentCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -120,25 +142,35 @@ const CodeBlock = ({
     }
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-    setEditedCode(code);
-    setLineCount(code.split('\n').length);
-    setTimeout(() => textareaRef.current?.focus(), 0);
-  };
-
-  const handleSaveEdit = () => {
-    setIsEditing(false);
-    if (onEdit) {
-      onEdit(editedCode);
+  const handleEditToggle = () => {
+    if (!isEditMode) {
+      // Enter edit mode
+      setIsEditMode(true);
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.updateOptions({ 
+            readOnly: false,
+            renderLineHighlight: 'line',
+          });
+          editorRef.current.focus();
+          const model = editorRef.current.getModel();
+          if (model) {
+            const lastLine = model.getLineCount();
+            const lastCol = model.getLineMaxColumn(lastLine);
+            editorRef.current.setPosition({ lineNumber: lastLine, column: lastCol });
+          }
+        }
+      }, 0);
+    } else {
+      // Exit edit mode - keep changes
+      setIsEditMode(false);
+      if (editorRef.current) {
+        editorRef.current.updateOptions({ 
+          readOnly: true,
+          renderLineHighlight: 'none',
+        });
+      }
     }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedCode(code);
-    setShowOutput(false);
-    setOutput(null);
   };
 
   const handleRun = async () => {
@@ -153,7 +185,7 @@ const CodeBlock = ({
     try {
       const { data, error } = await supabase.functions.invoke('execute-code', {
         body: { 
-          code: isEditing ? editedCode : code, 
+          code: currentCode, 
           language: normalizedLang 
         },
       });
@@ -178,114 +210,46 @@ const CodeBlock = ({
 
   const handleCloseOutput = () => {
     setShowOutput(false);
-    setOutput(null);
   };
-
-  const handleToggleOutput = () => {
-    setOutputExpanded(!outputExpanded);
-  };
-
-  // Calculate line height for textarea
-  const lineHeight = 24; // Approximate line height in pixels
-
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    setEditedCode(newValue);
-    // Update line count based on content
-    setLineCount(newValue.split('\n').length);
-  };
-
-  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Shift+Enter adds a new line - expand by one line
-    if (e.key === 'Enter' && e.shiftKey) {
-      setLineCount(prev => prev + 1);
-    }
-    // Backspace at the start of a line might reduce lines
-    if (e.key === 'Backspace') {
-      const textarea = e.currentTarget;
-      const cursorPos = textarea.selectionStart;
-      const textBefore = editedCode.substring(0, cursorPos);
-      // If cursor is at the start of a line (after a newline)
-      if (textBefore.endsWith('\n') || cursorPos === 0) {
-        const newLineCount = editedCode.split('\n').length - 1;
-        if (newLineCount >= 1) {
-          setTimeout(() => setLineCount(editedCode.split('\n').length), 0);
-        }
-      }
-    }
-  };
-
-  // Get the appropriate theme class
-  const getThemeClass = () => {
-    if (isCleanTheme) return "code-theme-clean";
-    if (isGrayTheme) return "code-theme-gray";
-    return "";
-  };
-
-  // Get background/border styles based on theme
-  const getPreStyles = () => {
-    if (isMentorBubble) {
-      return "bg-blue-600/20 border-blue-400/30";
-    }
-    if (isCleanTheme) {
-      return "bg-white border-gray-200 shadow-sm";
-    }
-    if (isGrayTheme) {
-      return "bg-[#3a3a3a] border-[#555]";
-    }
-    return "bg-[#1d1f21] border-border/50";
-  };
-
-  const displayCode = isEditing ? editedCode : code;
 
   // Visibility class for toolbar buttons
   const toolbarVisibility = showToolbarAlways ? "opacity-100" : "opacity-0 group-hover:opacity-100";
 
   return (
-    <div 
-      className={cn(
-        "relative group mt-3 w-full",
-        !showToolbarAlways && "min-w-[450px]",
-        getThemeClass()
-      )}
-    >
-      <pre
-        className={cn(
-          "p-4 rounded-xl text-sm font-mono overflow-x-auto w-full",
-          "border",
-          getPreStyles()
-        )}
-      >
+    <div className={cn("relative group mt-3 w-full", !showToolbarAlways && "min-w-[450px]")}>
+      {/* Main container */}
+      <div className={cn(
+        "rounded-xl border overflow-hidden",
+        isMentorBubble 
+          ? "bg-blue-600/20 border-blue-400/30"
+          : "bg-[#FAFAFA] border-border/40"
+      )}>
         {/* Header with language and action buttons */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
           {language && (
             <span className={cn(
-              "text-[10px] uppercase tracking-wider opacity-50",
-              isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+              "text-[11px] uppercase tracking-wider font-medium",
+              isMentorBubble ? "text-blue-200/70" : "text-muted-foreground/70"
             )}>
               {language}
             </span>
           )}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 ml-auto">
             {/* Edit/Cancel button */}
             {editable && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={isEditing ? handleCancelEdit : handleEdit}
+                onClick={handleEditToggle}
                 className={cn(
-                  "h-7 w-7 rounded-full transition-opacity",
+                  "h-7 w-7 transition-opacity",
                   toolbarVisibility,
-                  isCleanTheme
-                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  isMentorBubble
+                    ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
                 )}
               >
-                {isEditing ? (
-                  <X className="w-3.5 h-3.5" />
-                ) : (
-                  <Pencil className="w-3.5 h-3.5" />
-                )}
+                {isEditMode ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
               </Button>
             )}
             
@@ -297,17 +261,17 @@ const CodeBlock = ({
                 onClick={handleRun}
                 disabled={isRunning}
                 className={cn(
-                  "h-7 w-7 rounded-full transition-opacity",
+                  "h-7 w-7 transition-opacity",
                   toolbarVisibility,
-                  isCleanTheme
-                    ? "text-gray-400 hover:text-green-600 hover:bg-green-50"
-                    : "text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
+                  isMentorBubble
+                    ? "text-blue-100 hover:text-green-300 hover:bg-green-500/20"
+                    : "text-muted-foreground/60 hover:text-primary hover:bg-transparent"
                 )}
               >
                 {isRunning ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-4 h-4" />
                 )}
               </Button>
             )}
@@ -318,91 +282,105 @@ const CodeBlock = ({
               size="icon"
               onClick={handleCopy}
               className={cn(
-                "h-7 w-7 rounded-full transition-opacity",
+                "h-7 w-7 transition-opacity",
                 toolbarVisibility,
                 isMentorBubble 
                   ? "text-blue-100 hover:text-white hover:bg-blue-500/30"
-                  : isCleanTheme
-                    ? "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "text-muted-foreground/60 hover:text-foreground hover:bg-transparent"
               )}
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-green-500" />
+                <Check className="w-4 h-4 text-green-500" />
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-4 h-4" />
               )}
             </Button>
           </div>
         </div>
         
-        {/* Code content or editor */}
-        {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={editedCode}
-            onChange={handleTextareaChange}
-            onKeyDown={handleTextareaKeyDown}
-            style={{ height: `${lineCount * lineHeight}px` }}
-            className={cn(
-              "w-full bg-transparent resize-none outline-none text-sm font-mono leading-relaxed overflow-hidden transition-[height] duration-150",
-              isCleanTheme ? "text-gray-800" : "text-gray-100"
-            )}
-            spellCheck={false}
+        {/* Monaco Editor */}
+        <div className="px-1">
+          <Editor
+            height={editorHeight}
+            language={normalizedLang}
+            value={currentCode}
+            onChange={handleCodeChange}
+            onMount={handleEditorMount}
+            options={{
+              readOnly: !isEditMode,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              lineNumbers: 'on',
+              lineNumbersMinChars: 2,
+              lineDecorationsWidth: 8,
+              folding: false,
+              glyphMargin: false,
+              renderLineHighlight: isEditMode ? 'line' : 'none',
+              scrollbar: {
+                vertical: 'hidden',
+                horizontal: 'auto',
+                horizontalScrollbarSize: 6,
+              },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              contextmenu: false,
+              fontSize: 14,
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace",
+              padding: { top: 8, bottom: 8 },
+              wordWrap: 'on',
+              automaticLayout: true,
+            }}
+            theme={isMentorBubble ? 'codeblock-mentor' : 'codeblock-light'}
+            loading={
+              <div className="flex items-center justify-center h-16 text-muted-foreground text-sm">
+                Loading...
+              </div>
+            }
           />
-        ) : (
-          <code
-            ref={codeRef}
-            className={cn(
-              `language-${normalizedLang} leading-relaxed`,
-              isCleanTheme && "text-gray-800"
-            )}
-          >
-            {displayCode}
-          </code>
-        )}
-      </pre>
+        </div>
+      </div>
       
-      {/* Collapsible Output section - sharp top, rounded bottom, small gap */}
+      {/* Collapsible Output section */}
       {showOutput && output !== null && (
         <div className={cn(
-          "mt-0.5 rounded-t-none rounded-b-xl border border-t-0 overflow-hidden",
-          isCleanTheme 
-            ? "bg-gray-100 border-gray-200" 
-            : "bg-muted/50 border-border/50"
+          "mt-0.5 rounded-xl border overflow-hidden",
+          isMentorBubble 
+            ? "bg-blue-800/20 border-blue-400/30" 
+            : "bg-[#F5F5F5] border-border/40"
         )}>
           {/* Header - clickable to toggle */}
           <button
-            onClick={handleToggleOutput}
+            onClick={() => setOutputExpanded(!outputExpanded)}
             className={cn(
-              "w-full flex items-center justify-between px-3 py-2 transition-colors",
-              isCleanTheme ? "hover:bg-gray-200/50" : "hover:bg-muted"
+              "w-full flex items-center justify-between px-4 py-2.5 transition-colors",
+              isMentorBubble ? "hover:bg-blue-500/10" : "hover:bg-black/5"
             )}
           >
             <div className="flex items-center gap-2">
               <div className={cn(
-                "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-transform duration-200",
-                isCleanTheme ? "bg-gray-200" : "bg-muted"
+                "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center",
+                isMentorBubble ? "bg-blue-500/20" : "bg-black/5"
               )}>
                 {outputExpanded ? (
                   <ChevronUp className={cn(
                     "w-3 h-3",
-                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                    isMentorBubble ? "text-blue-200" : "text-muted-foreground"
                   )} />
                 ) : (
                   <ChevronDown className={cn(
                     "w-3 h-3",
-                    isCleanTheme ? "text-gray-500" : "text-muted-foreground"
+                    isMentorBubble ? "text-blue-200" : "text-muted-foreground"
                   )} />
                 )}
               </div>
               <span className={cn(
-                "text-xs font-medium",
+                "text-sm font-medium",
                 outputError 
                   ? "text-red-500" 
-                  : isCleanTheme 
-                    ? "text-gray-600" 
-                    : "text-muted-foreground"
+                  : isMentorBubble 
+                    ? "text-blue-100" 
+                    : "text-foreground"
               )}>
                 {outputError ? "Error" : "Output"}
               </span>
@@ -415,13 +393,13 @@ const CodeBlock = ({
                 handleCloseOutput();
               }}
               className={cn(
-                "h-5 w-5 rounded-full",
-                isCleanTheme
-                  ? "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                "h-6 w-6",
+                isMentorBubble
+                  ? "text-blue-200 hover:text-white hover:bg-blue-500/30"
+                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
               )}
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
             </Button>
           </button>
           
@@ -433,13 +411,13 @@ const CodeBlock = ({
             )}
           >
             <div className="overflow-hidden">
-              <div className="px-3 pb-3">
+              <div className="px-4 pb-4">
                 <pre className={cn(
-                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto",
+                  "text-sm font-mono whitespace-pre-wrap overflow-x-auto m-0",
                   outputError 
                     ? "text-red-500" 
-                    : isCleanTheme 
-                      ? "text-gray-800" 
+                    : isMentorBubble 
+                      ? "text-blue-100" 
                       : "text-foreground"
                 )}>
                   {output}
@@ -452,7 +430,7 @@ const CodeBlock = ({
       
       {/* Copied tooltip */}
       {copied && (
-        <div className="absolute top-2 right-16 px-2 py-1 text-xs bg-green-500 text-white rounded shadow-lg animate-in fade-in-0 zoom-in-95">
+        <div className="absolute top-2 right-16 px-2 py-1 text-xs bg-primary text-primary-foreground rounded shadow-lg animate-in fade-in-0 zoom-in-95 z-10">
           Copied!
         </div>
       )}
