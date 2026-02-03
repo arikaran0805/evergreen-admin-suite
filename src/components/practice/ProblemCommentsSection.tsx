@@ -1,16 +1,52 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Trash2, Reply, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useProblemComments, ProblemComment } from "@/hooks/useProblemComments";
 import { toast } from "sonner";
+import { LightEditor } from "@/components/tiptap";
 
 interface ProblemCommentsSectionProps {
   problemId: string;
+}
+
+// Helper to extract text from TipTap JSON or plain text
+function extractTextContent(content: string): string {
+  if (!content) return "";
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed?.content) {
+      return parsed.content
+        .map((node: any) => {
+          if (node.type === "paragraph" && node.content) {
+            return node.content.map((c: any) => c.text || "").join("");
+          }
+          return "";
+        })
+        .filter(Boolean)
+        .join("\n");
+    }
+    return content;
+  } catch {
+    return content;
+  }
+}
+
+// Helper to check if content is empty
+function isContentEmpty(content: string): boolean {
+  if (!content || !content.trim()) return true;
+  try {
+    const parsed = JSON.parse(content);
+    if (!parsed?.content) return true;
+    return !parsed.content.some((node: any) =>
+      node.content?.some((c: any) => c.text?.trim())
+    );
+  } catch {
+    return !content.trim();
+  }
 }
 
 function CommentItem({
@@ -28,6 +64,7 @@ function CommentItem({
 }) {
   const isOwner = currentUserId && comment.user_id === currentUserId;
   const maxDepth = 3;
+  const displayContent = extractTextContent(comment.content);
 
   return (
     <div className={cn("space-y-3", depth > 0 && "ml-8 pl-4 border-l border-border/50")}>
@@ -48,7 +85,7 @@ function CommentItem({
             </span>
           </div>
           <p className="text-sm text-foreground/90 mt-1 whitespace-pre-wrap">
-            {comment.content}
+            {displayContent}
           </p>
           <div className="flex items-center gap-2 mt-2">
             {depth < maxDepth && (
@@ -103,24 +140,27 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
     submitting,
     addComment,
     deleteComment,
-    commentCount,
     isAuthenticated,
   } = useProblemComments(problemId);
 
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const editorKeyRef = useRef(0);
+  const replyEditorKeyRef = useRef(0);
 
   const handleSubmit = async () => {
-    if (!newComment.trim()) return;
+    if (isContentEmpty(newComment)) return;
     if (!isAuthenticated) {
       toast.error("Please sign in to comment");
       return;
     }
 
+    // Store the content as JSON for TipTap
     const result = await addComment(newComment);
     if (result) {
       setNewComment("");
+      editorKeyRef.current += 1; // Force re-mount to clear editor
       toast.success("Comment added");
     } else {
       toast.error("Failed to add comment");
@@ -128,7 +168,7 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
   };
 
   const handleReply = async () => {
-    if (!replyContent.trim() || !replyingTo) return;
+    if (isContentEmpty(replyContent) || !replyingTo) return;
     if (!isAuthenticated) {
       toast.error("Please sign in to reply");
       return;
@@ -138,6 +178,7 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
     if (result) {
       setReplyContent("");
       setReplyingTo(null);
+      replyEditorKeyRef.current += 1;
       toast.success("Reply added");
     } else {
       toast.error("Failed to add reply");
@@ -163,21 +204,24 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
 
   return (
     <div className="flex flex-col h-full">
-      {/* Comment input */}
+      {/* Comment input with LightEditor */}
       <div className="p-4 border-b border-border/50">
         <div className="space-y-3">
-          <Textarea
-            placeholder={isAuthenticated ? "Share your thoughts..." : "Sign in to comment"}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="min-h-[80px] resize-none"
-            disabled={!isAuthenticated || submitting}
-          />
+          <div className="rounded-lg border border-input bg-background overflow-hidden">
+            <LightEditor
+              key={editorKeyRef.current}
+              value={newComment}
+              onChange={setNewComment}
+              placeholder={isAuthenticated ? "Share your thoughts..." : "Sign in to comment"}
+              disabled={!isAuthenticated || submitting}
+              minHeight="80px"
+            />
+          </div>
           <div className="flex justify-end">
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={!newComment.trim() || !isAuthenticated || submitting}
+              disabled={isContentEmpty(newComment) || !isAuthenticated || submitting}
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -207,6 +251,7 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
                 onReply={(parentId) => {
                   setReplyingTo(parentId);
                   setReplyContent("");
+                  replyEditorKeyRef.current += 1;
                 }}
                 onDelete={handleDelete}
                 currentUserId={isAuthenticated ? undefined : undefined}
@@ -216,7 +261,7 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
         </div>
       </ScrollArea>
 
-      {/* Reply modal/inline */}
+      {/* Reply with LightEditor */}
       {replyingTo && (
         <div className="p-4 border-t border-border/50 bg-muted/30">
           <div className="space-y-3">
@@ -230,18 +275,22 @@ export function ProblemCommentsSection({ problemId }: ProblemCommentsSectionProp
                 Cancel
               </Button>
             </div>
-            <Textarea
-              placeholder="Write your reply..."
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              className="min-h-[60px] resize-none"
-              autoFocus
-            />
+            <div className="rounded-lg border border-input bg-background overflow-hidden">
+              <LightEditor
+                key={replyEditorKeyRef.current}
+                value={replyContent}
+                onChange={setReplyContent}
+                placeholder="Write your reply..."
+                disabled={submitting}
+                minHeight="60px"
+                autoFocus
+              />
+            </div>
             <div className="flex justify-end">
               <Button
                 size="sm"
                 onClick={handleReply}
-                disabled={!replyContent.trim() || submitting}
+                disabled={isContentEmpty(replyContent) || submitting}
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
