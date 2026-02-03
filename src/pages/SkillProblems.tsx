@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Toggle } from "@/components/ui/toggle";
 import { ProblemFilters } from "@/components/practice/ProblemFilters";
 import { LessonProblemSection } from "@/components/practice/LessonProblemSection";
 import { usePublishedPracticeProblems, ProblemWithMapping } from "@/hooks/usePracticeProblems";
+import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -36,6 +38,9 @@ export default function SkillProblems() {
   const [difficulty, setDifficulty] = useState<DifficultyFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
+  const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
+  
+  const { isBookmarked, isAuthenticated } = useProblemBookmarks();
 
   // Fetch skill info
   const { data: skill, isLoading: skillLoading } = useQuery({
@@ -83,9 +88,10 @@ export default function SkillProblems() {
       if (status === 'solved' && !p.solved) return false;
       if (status === 'unsolved' && p.solved) return false;
       if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (showBookmarkedOnly && !isBookmarked(p.id)) return false;
       return true;
     });
-  }, [displayProblems, difficulty, status, search]);
+  }, [displayProblems, difficulty, status, search, showBookmarkedOnly, isBookmarked]);
 
   // Group problems by lesson > sub-topic hierarchy
   const groupedByLesson = useMemo(() => {
@@ -173,14 +179,28 @@ export default function SkillProblems() {
         </div>
 
         {/* Filters */}
-        <ProblemFilters
-          difficulty={difficulty}
-          status={status}
-          search={search}
-          onDifficultyChange={setDifficulty}
-          onStatusChange={setStatus}
-          onSearchChange={setSearch}
-        />
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <ProblemFilters
+              difficulty={difficulty}
+              status={status}
+              search={search}
+              onDifficultyChange={setDifficulty}
+              onStatusChange={setStatus}
+              onSearchChange={setSearch}
+            />
+          </div>
+          {isAuthenticated && (
+            <Toggle
+              pressed={showBookmarkedOnly}
+              onPressedChange={setShowBookmarkedOnly}
+              aria-label="Show bookmarked only"
+              className="data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+            >
+              <Bookmark className={`h-4 w-4 ${showBookmarkedOnly ? 'fill-current' : ''}`} />
+            </Toggle>
+          )}
+        </div>
 
         {/* Problem Sections - Grouped by Lesson > Sub-Topic */}
         <div className="mt-6 space-y-6">
@@ -212,6 +232,7 @@ export default function SkillProblems() {
                   setDifficulty('all');
                   setStatus('all');
                   setSearch('');
+                  setShowBookmarkedOnly(false);
                 }}
                 className="mt-2"
               >

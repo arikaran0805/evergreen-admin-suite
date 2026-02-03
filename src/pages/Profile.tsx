@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
 import { CourseProgressDisplay } from "@/components/CourseProgressDisplay";
 import { useCareers } from "@/hooks/useCareers";
 import { CareerReadinessCard } from "@/components/CareerReadinessCard";
@@ -455,6 +456,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
+  const { bookmarks: problemBookmarks, loading: problemBookmarksLoading, toggleBookmark: toggleProblemBookmark } = useProblemBookmarks();
   const { getCareerBySlug, getCareerCourseSlugs, getCareerSkills, getSkillContributionsForCourse, getCourseForSkill, loading: careersLoading } = useCareers();
   const { isAdmin, isModerator } = useUserRole();
   const { navigateToCourse, navigateToCourseInCareerBoard, handleResume } = useCourseNavigation();
@@ -1749,19 +1751,21 @@ const Profile = () => {
   const renderBookmarks = () => {
     const courseBookmarks = bookmarks.filter(b => b.course_id);
     const lessonBookmarks = bookmarks.filter(b => b.post_id);
+    const totalBookmarks = bookmarks.length + problemBookmarks.length;
+    const isLoading = bookmarksLoading || problemBookmarksLoading;
 
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Bookmarks</h2>
-          <Badge variant="secondary">{bookmarks.length} Saved</Badge>
+          <Badge variant="secondary">{totalBookmarks} Saved</Badge>
         </div>
         
-        {bookmarksLoading ? (
+        {isLoading ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading bookmarks...</p>
           </div>
-        ) : bookmarks.length > 0 ? (
+        ) : totalBookmarks > 0 ? (
           <div className="space-y-6">
             {/* Course Bookmarks */}
             {courseBookmarks.length > 0 && (
@@ -1862,13 +1866,64 @@ const Profile = () => {
                 </div>
               </div>
             )}
+
+            {/* Problem Bookmarks */}
+            {problemBookmarks.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <Code className="h-5 w-5 text-orange-500" />
+                  Saved Problems ({problemBookmarks.length})
+                </h3>
+                <div className="grid gap-4">
+                  {problemBookmarks.map((bookmark) => {
+                    const problem = bookmark.problem;
+                    const difficultyColor = 
+                      problem?.difficulty === 'Easy' ? 'text-green-500' :
+                      problem?.difficulty === 'Medium' ? 'text-yellow-500' : 'text-red-500';
+                    
+                    return (
+                      <Card 
+                        key={bookmark.id}
+                        className="card-premium hover:scale-[1.01] transition-transform"
+                      >
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <div 
+                            className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-500/5 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                            onClick={() => problem?.skill_id && navigate(`/practice/${problem.skill_id}/problem/${problem.slug}`)}
+                          >
+                            <Code className="h-6 w-6 text-orange-500" />
+                          </div>
+                          <div 
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => problem?.skill_id && navigate(`/practice/${problem.skill_id}/problem/${problem.slug}`)}
+                          >
+                            <h4 className="font-semibold truncate">{problem?.title || 'Unknown Problem'}</h4>
+                            <span className={`text-sm font-medium ${difficultyColor}`}>
+                              {problem?.difficulty || 'Unknown'}
+                            </span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => toggleProblemBookmark(bookmark.problem_id)}
+                            className="flex-shrink-0"
+                          >
+                            <BookmarkX className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <Card>
             <CardContent className="text-center py-12">
               <Bookmark className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No bookmarks yet</h3>
-              <p className="text-muted-foreground mb-4">Save lessons and courses for quick access.</p>
+              <p className="text-muted-foreground mb-4">Save lessons, courses, and problems for quick access.</p>
               <Button onClick={() => navigate('/courses')}>Browse Courses</Button>
             </CardContent>
           </Card>
