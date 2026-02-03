@@ -50,6 +50,7 @@ const CodeBlock = ({
   showToolbarAlways = false,
 }: CodeBlockProps) => {
   const [currentCode, setCurrentCode] = useState(code);
+  const [originalCode, setOriginalCode] = useState(code); // Store original for cancel
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -71,33 +72,34 @@ const CodeBlock = ({
   // Sync code when prop changes
   useEffect(() => {
     setCurrentCode(code);
+    setOriginalCode(code);
   }, [code]);
 
   const handleEditorMount: OnMount = (editorInstance, monaco) => {
     editorRef.current = editorInstance;
     monacoRef.current = monaco;
     
-    // Configure Monaco theme for a clean light look
+    // Configure Monaco theme - pure white VS Code style
     monaco.editor.defineTheme('codeblock-light', {
       base: 'vs',
       inherit: true,
       rules: [
         { token: 'keyword', foreground: '0000FF' },
         { token: 'string', foreground: 'A31515' },
-        { token: 'number', foreground: 'C67F00' },
+        { token: 'number', foreground: '098658' },
         { token: 'comment', foreground: '008000', fontStyle: 'italic' },
         { token: 'function', foreground: '795E26' },
         { token: 'variable', foreground: '001080' },
         { token: 'type', foreground: '267F99' },
       ],
       colors: {
-        'editor.background': '#FAFAFA',
+        'editor.background': '#FFFFFF',
         'editor.foreground': '#1F2937',
-        'editor.lineHighlightBackground': '#F3F4F6',
-        'editorLineNumber.foreground': '#9CA3AF',
-        'editorLineNumber.activeForeground': '#6B7280',
-        'editor.selectionBackground': '#BFDBFE',
-        'editorCursor.foreground': '#3B82F6',
+        'editor.lineHighlightBackground': '#F5F5F5',
+        'editorLineNumber.foreground': '#6B7280',
+        'editorLineNumber.activeForeground': '#374151',
+        'editor.selectionBackground': '#ADD6FF',
+        'editorCursor.foreground': '#000000',
       },
     });
     
@@ -144,7 +146,8 @@ const CodeBlock = ({
 
   const handleEditToggle = () => {
     if (!isEditMode) {
-      // Enter edit mode
+      // Enter edit mode - store current code for cancel
+      setOriginalCode(currentCode);
       setIsEditMode(true);
       setTimeout(() => {
         if (editorRef.current) {
@@ -162,14 +165,17 @@ const CodeBlock = ({
         }
       }, 0);
     } else {
-      // Exit edit mode - keep changes
+      // Exit edit mode - revert to original code
+      setCurrentCode(originalCode);
       setIsEditMode(false);
       if (editorRef.current) {
         editorRef.current.updateOptions({ 
           readOnly: true,
           renderLineHighlight: 'none',
         });
+        editorRef.current.setValue(originalCode);
       }
+      onEdit?.(originalCode);
     }
   };
 
@@ -219,17 +225,17 @@ const CodeBlock = ({
     <div className={cn("relative group mt-3 w-full", !showToolbarAlways && "min-w-[450px]")}>
       {/* Main container */}
       <div className={cn(
-        "rounded-xl border overflow-hidden",
+        "rounded-xl border overflow-hidden shadow-sm",
         isMentorBubble 
           ? "bg-blue-600/20 border-blue-400/30"
-          : "bg-[#FAFAFA] border-border/40"
+          : "bg-white border-border/60"
       )}>
         {/* Header with language and action buttons */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           {language && (
             <span className={cn(
-              "text-[11px] uppercase tracking-wider font-medium",
-              isMentorBubble ? "text-blue-200/70" : "text-muted-foreground/70"
+              "text-xs uppercase tracking-wider font-medium",
+              isMentorBubble ? "text-blue-200/70" : "text-muted-foreground"
             )}>
               {language}
             </span>
