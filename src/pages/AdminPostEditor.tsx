@@ -477,6 +477,54 @@ const AdminPostEditor = () => {
         await savePostTags(postId);
       }
 
+      // Auto-create sub_topic for the lesson when post is assigned to a lesson
+      if (formData.lesson_id && postId) {
+        // Get the course_id from the lesson
+        const { data: lessonData } = await supabase
+          .from("course_lessons")
+          .select("course_id")
+          .eq("id", formData.lesson_id)
+          .single();
+
+        if (lessonData?.course_id) {
+          // Check if a sub_topic already exists for this lesson
+          const { data: existingSubTopic } = await supabase
+            .from("sub_topics")
+            .select("id")
+            .eq("lesson_id", formData.lesson_id)
+            .limit(1)
+            .single();
+
+          // Only create if no sub_topic exists for this lesson
+          if (!existingSubTopic) {
+            // Get the linked practice skill for this course
+            const { data: linkedSkill } = await supabase
+              .from("practice_skills")
+              .select("id")
+              .eq("course_id", lessonData.course_id)
+              .single();
+
+            if (linkedSkill) {
+              // Get the lesson title to use for the sub-topic
+              const { data: lesson } = await supabase
+                .from("course_lessons")
+                .select("title")
+                .eq("id", formData.lesson_id)
+                .single();
+
+              await supabase.from("sub_topics").insert({
+                lesson_id: formData.lesson_id,
+                skill_id: linkedSkill.id,
+                title: lesson?.title || validated.title,
+                display_order: 0,
+                is_default: true,
+                created_by: session.user.id,
+              });
+            }
+          }
+        }
+      }
+
       // Record approval history if submitting for approval
       if (submitForApproval && postId) {
         await supabase.from("approval_history").insert({
