@@ -11,13 +11,20 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PracticeProblem } from "@/hooks/usePracticeProblems";
 import { cn } from "@/lib/utils";
+
+interface AddProblemDialogProblem {
+  id: string;
+  title: string;
+  difficulty: string;
+  status: string;
+  sub_topic?: string | null;
+}
 
 interface AddProblemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  allProblems: PracticeProblem[];
+  allProblems: AddProblemDialogProblem[];
   mappedProblemIds: Set<string>;
   onAddProblems: (problemIds: string[]) => void;
   onCreateNew: () => void;
