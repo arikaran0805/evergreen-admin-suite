@@ -1,8 +1,10 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, FileText } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProblemWithMapping } from "@/hooks/usePracticeProblems";
+import { useLearnerProgress } from "@/hooks/useLearnerProblemProgress";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProblemListDrawerProps {
   open: boolean;
@@ -27,6 +29,16 @@ export function ProblemListDrawer({
   currentProblemSlug,
   onSelectProblem,
 }: ProblemListDrawerProps) {
+  const { user } = useAuth();
+  const { data: progressData } = useLearnerProgress(user?.id);
+
+  // Create a lookup map for solved problems
+  const solvedProblems = new Set(
+    (progressData || [])
+      .filter((p) => p.status === "solved")
+      .map((p) => p.problem_id)
+  );
+
   // Group problems by lesson, then by sub-topic
   const groupedByLesson = problems.reduce((acc, problem) => {
     const lessonTitle = problem.lesson_title || "General";
@@ -73,7 +85,7 @@ export function ProblemListDrawer({
                       {/* Problem Rows */}
                       {subTopicProblems.map((problem, problemIdx) => {
                         const isActive = problem.slug === currentProblemSlug;
-                        const isSolved = false; // TODO: integrate with user progress
+                        const isSolved = solvedProblems.has(problem.id);
                         const isLast = problemIdx === subTopicProblems.length - 1 && 
                                        subIdx === Object.keys(subTopics).length - 1;
                         
@@ -94,8 +106,8 @@ export function ProblemListDrawer({
                             {/* Status Circle */}
                             <div className="shrink-0">
                               {isSolved ? (
-                                <div className="h-6 w-6 rounded-full border-2 border-emerald-500 flex items-center justify-center">
-                                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                                  <Check className="h-3.5 w-3.5 text-white" />
                                 </div>
                               ) : (
                                 <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30" />
@@ -105,16 +117,11 @@ export function ProblemListDrawer({
                             {/* Problem Title */}
                             <span className={cn(
                               "flex-1 text-sm",
-                              isActive ? "font-medium" : "font-normal"
+                              isActive ? "font-medium" : "font-normal",
+                              isSolved && "text-muted-foreground"
                             )}>
                               {problem.title}
                             </span>
-                            
-                            {/* Solution Link */}
-                            <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground shrink-0">
-                              <FileText className="h-4 w-4" />
-                              <span className="text-sm">Solution</span>
-                            </div>
                             
                             {/* Difficulty Badge */}
                             <span className={cn(
