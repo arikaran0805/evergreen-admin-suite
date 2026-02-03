@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ChevronDown,
-  Check,
+  CheckCircle,
   Circle,
   BookOpen,
   Home,
@@ -418,7 +418,7 @@ export const CourseSidebar = ({
                           {/* Module Status Icon - Only show progress for authenticated users */}
                           {isAuthenticated ? (
                             lessonProgress.isComplete ? (
-                              <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+                              <CheckCircle className="h-4 w-4 text-sidebar-primary flex-shrink-0" />
                             ) : lessonProgress.completedPosts > 0 ? (
                               <div className="h-4 w-4 rounded-full border-2 border-sidebar-primary flex items-center justify-center flex-shrink-0">
                                 <div className="h-1.5 w-1.5 rounded-full bg-sidebar-primary/60" />
@@ -488,12 +488,11 @@ export const CourseSidebar = ({
                                   {/* Lesson Status - Only show for authenticated users */}
                                   {isAuthenticated ? (
                                     isCompleted ? (
-                                      <Check
+                                      <CheckCircle
                                         className={cn(
                                           "h-3.5 w-3.5 flex-shrink-0",
-                                          isActive ? "text-sidebar-primary-foreground" : "text-emerald-500"
+                                          isActive ? "text-sidebar-primary-foreground" : "text-sidebar-primary"
                                         )}
-                                        strokeWidth={2.5}
                                       />
                                     ) : (
                                       <Circle
