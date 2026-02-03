@@ -10,14 +10,13 @@ interface LessonProblemSectionProps {
   lessonTitle: string;
   subTopics: SubTopicGroup[];
   onProblemClick: (problem: Problem) => void;
-  onSolutionClick: (problem: Problem) => void;
+  onSolutionClick?: (problem: Problem) => void;
 }
 
 export function LessonProblemSection({ 
   lessonTitle, 
   subTopics, 
-  onProblemClick, 
-  onSolutionClick 
+  onProblemClick
 }: LessonProblemSectionProps) {
   const totalProblems = subTopics.reduce((sum, st) => sum + st.problems.length, 0);
   
@@ -48,7 +47,6 @@ export function LessonProblemSection({
                   key={problem.id}
                   problem={problem}
                   onClick={() => onProblemClick(problem)}
-                  onSolutionClick={() => onSolutionClick(problem)}
                 />
               ))}
             </div>
