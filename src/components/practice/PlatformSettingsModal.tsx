@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -10,26 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import {
-  X,
-  BookOpen,
-  Code2,
-  Target,
-  Timer,
-  Zap,
-  Cog,
-  AlertTriangle,
-  RotateCcw,
-} from "lucide-react";
+import { X, BookOpen, Code2, Cog, RotateCcw } from "lucide-react";
 import {
   usePlatformSettings,
   DEFAULT_LEARNING_EXPERIENCE,
   DEFAULT_CODE_EDITOR,
-  DEFAULT_PRACTICE_MODE,
-  DEFAULT_INTERVIEW_MODE,
-  DEFAULT_PRODUCTIVITY,
   DEFAULT_ADVANCED,
 } from "@/hooks/usePlatformSettings";
 import {
@@ -47,13 +33,7 @@ import {
 // Types
 // ============================================================================
 
-type SettingsCategory =
-  | "learning"
-  | "editor"
-  | "practice"
-  | "interview"
-  | "productivity"
-  | "advanced";
+type SettingsCategory = "learning" | "editor" | "advanced";
 
 interface PlatformSettingsModalProps {
   open: boolean;
@@ -83,24 +63,6 @@ const categories: {
     description: "Configure your coding environment",
   },
   {
-    id: "practice",
-    label: "Practice Mode",
-    icon: Target,
-    description: "Customize your daily problem-solving workflow",
-  },
-  {
-    id: "interview",
-    label: "Interview Mode",
-    icon: Timer,
-    description: "Simulate real interview conditions",
-  },
-  {
-    id: "productivity",
-    label: "Productivity",
-    icon: Zap,
-    description: "Speed up your coding workflow",
-  },
-  {
     id: "advanced",
     label: "Advanced",
     icon: Cog,
@@ -116,17 +78,11 @@ interface SettingRowProps {
   label: string;
   description?: string;
   children: React.ReactNode;
-  disabled?: boolean;
 }
 
-function SettingRow({ label, description, children, disabled }: SettingRowProps) {
+function SettingRow({ label, description, children }: SettingRowProps) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between py-3 border-b border-border/50 last:border-0",
-        disabled && "opacity-50 pointer-events-none"
-      )}
-    >
+    <div className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
       <div className="flex-1 pr-4">
         <Label className="text-sm font-medium">{label}</Label>
         {description && (
@@ -145,11 +101,9 @@ function SettingRow({ label, description, children, disabled }: SettingRowProps)
 function LearningExperienceSection({
   settings,
   updateCategory,
-  disabled,
 }: {
   settings: ReturnType<typeof usePlatformSettings>["settings"];
   updateCategory: ReturnType<typeof usePlatformSettings>["updateCategory"];
-  disabled?: boolean;
 }) {
   const { learningExperience } = settings;
 
@@ -158,14 +112,12 @@ function LearningExperienceSection({
       <SettingRow
         label="Font Size"
         description="Larger text reduces eye strain during long sessions"
-        disabled={disabled}
       >
         <Select
           value={String(learningExperience.fontSize)}
           onValueChange={(v) =>
             updateCategory("learningExperience", { fontSize: Number(v) })
           }
-          disabled={disabled}
         >
           <SelectTrigger className="w-24">
             <SelectValue />
@@ -182,56 +134,48 @@ function LearningExperienceSection({
       <SettingRow
         label="Word Wrap"
         description="Prevent horizontal scrolling on long lines"
-        disabled={disabled}
       >
         <Switch
           checked={learningExperience.wordWrap}
           onCheckedChange={(v) =>
             updateCategory("learningExperience", { wordWrap: v })
           }
-          disabled={disabled}
         />
       </SettingRow>
 
       <SettingRow
         label="Show Line Numbers"
         description="Helps with debugging and code references"
-        disabled={disabled}
       >
         <Switch
           checked={learningExperience.showLineNumbers}
           onCheckedChange={(v) =>
             updateCategory("learningExperience", { showLineNumbers: v })
           }
-          disabled={disabled}
         />
       </SettingRow>
 
       <SettingRow
         label="Highlight Active Line"
         description="Keep track of your cursor position"
-        disabled={disabled}
       >
         <Switch
           checked={learningExperience.highlightActiveLine}
           onCheckedChange={(v) =>
             updateCategory("learningExperience", { highlightActiveLine: v })
           }
-          disabled={disabled}
         />
       </SettingRow>
 
       <SettingRow
         label="Show Matching Brackets"
         description="Easier to track nested code blocks"
-        disabled={disabled}
       >
         <Switch
           checked={learningExperience.showMatchingBrackets}
           onCheckedChange={(v) =>
             updateCategory("learningExperience", { showMatchingBrackets: v })
           }
-          disabled={disabled}
         />
       </SettingRow>
     </div>
@@ -326,240 +270,6 @@ function CodeEditorSection({
   );
 }
 
-function PracticeModeSection({
-  settings,
-  updateCategory,
-}: {
-  settings: ReturnType<typeof usePlatformSettings>["settings"];
-  updateCategory: ReturnType<typeof usePlatformSettings>["updateCategory"];
-}) {
-  const { practiceMode } = settings;
-
-  return (
-    <div className="space-y-1">
-      <SettingRow
-        label="Auto-run on Save"
-        description="Automatically run tests when you save (Ctrl+S)"
-      >
-        <Switch
-          checked={practiceMode.autoRunOnSave}
-          onCheckedChange={(v) =>
-            updateCategory("practiceMode", { autoRunOnSave: v })
-          }
-        />
-      </SettingRow>
-
-      <SettingRow
-        label="Show Sample Test Cases First"
-        description="Display example inputs before your custom tests"
-      >
-        <Switch
-          checked={practiceMode.showSampleTestcasesFirst}
-          onCheckedChange={(v) =>
-            updateCategory("practiceMode", { showSampleTestcasesFirst: v })
-          }
-        />
-      </SettingRow>
-
-      <SettingRow
-        label="Error Message Style"
-        description="Controls how error messages are displayed"
-      >
-        <Select
-          value={practiceMode.errorMessageStyle}
-          onValueChange={(v: "beginner" | "standard" | "advanced") =>
-            updateCategory("practiceMode", { errorMessageStyle: v })
-          }
-        >
-          <SelectTrigger className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="beginner">Beginner</SelectItem>
-            <SelectItem value="standard">Standard</SelectItem>
-            <SelectItem value="advanced">Advanced</SelectItem>
-          </SelectContent>
-        </Select>
-      </SettingRow>
-
-      <SettingRow
-        label="Reveal Output Only After Run"
-        description="Hide expected output until you run your code"
-      >
-        <Switch
-          checked={practiceMode.revealOutputOnlyAfterRun}
-          onCheckedChange={(v) =>
-            updateCategory("practiceMode", { revealOutputOnlyAfterRun: v })
-          }
-        />
-      </SettingRow>
-    </div>
-  );
-}
-
-function InterviewModeSection({
-  settings,
-  toggleInterviewMode,
-}: {
-  settings: ReturnType<typeof usePlatformSettings>["settings"];
-  toggleInterviewMode: () => void;
-}) {
-  const { interviewMode } = settings;
-
-  return (
-    <div className="space-y-4">
-      {/* Master Toggle */}
-      <div
-        className={cn(
-          "p-4 rounded-lg border-2 transition-colors",
-          interviewMode.enabled
-            ? "border-orange-500/50 bg-orange-500/5"
-            : "border-border bg-muted/30"
-        )}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <Timer
-                className={cn(
-                  "h-5 w-5",
-                  interviewMode.enabled
-                    ? "text-orange-500"
-                    : "text-muted-foreground"
-                )}
-              />
-              <span className="font-semibold">Enable Interview Mode</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Simulate real interview conditions with constraints
-            </p>
-          </div>
-          <Switch
-            checked={interviewMode.enabled}
-            onCheckedChange={toggleInterviewMode}
-          />
-        </div>
-      </div>
-
-      {/* Interview Mode Features */}
-      <div className="space-y-3">
-        <h4 className="text-sm font-medium text-muted-foreground">
-          When enabled, the following will apply:
-        </h4>
-        <div className="space-y-2 text-sm">
-          {[
-            "Hints and solutions are hidden",
-            "Minimap is disabled",
-            "Font size is locked to 14px",
-            "Timer is enabled automatically",
-            "Error messages are simplified",
-          ].map((feature, i) => (
-            <div key={i} className="flex items-center gap-2 text-muted-foreground">
-              <div
-                className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  interviewMode.enabled ? "bg-orange-500" : "bg-muted-foreground/50"
-                )}
-              />
-              <span>{feature}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {interviewMode.enabled && (
-        <div className="flex items-center gap-2 p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
-          <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />
-          <span className="text-sm text-orange-700 dark:text-orange-400">
-            Interview Mode is active. Good luck!
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProductivitySection({
-  settings,
-  updateCategory,
-  disabled,
-}: {
-  settings: ReturnType<typeof usePlatformSettings>["settings"];
-  updateCategory: ReturnType<typeof usePlatformSettings>["updateCategory"];
-  disabled?: boolean;
-}) {
-  const { productivity } = settings;
-
-  return (
-    <div className="space-y-1">
-      <SettingRow
-        label="Keyboard Preset"
-        description="Choose familiar shortcuts for faster coding"
-        disabled={disabled}
-      >
-        <Select
-          value={productivity.keyboardPreset}
-          onValueChange={(v: "beginner" | "vscode" | "vim") =>
-            updateCategory("productivity", { keyboardPreset: v })
-          }
-          disabled={disabled}
-        >
-          <SelectTrigger className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="beginner">Beginner</SelectItem>
-            <SelectItem value="vscode">VS Code</SelectItem>
-            <SelectItem value="vim">Vim</SelectItem>
-          </SelectContent>
-        </Select>
-      </SettingRow>
-
-      <SettingRow
-        label="Relative Line Numbers"
-        description="Shows distance from cursor for Vim-style navigation"
-        disabled={disabled}
-      >
-        <Switch
-          checked={productivity.relativeLineNumbers}
-          onCheckedChange={(v) =>
-            updateCategory("productivity", { relativeLineNumbers: v })
-          }
-          disabled={disabled}
-        />
-      </SettingRow>
-
-      <SettingRow
-        label="Minimap"
-        description="Shows code overview on the right side"
-        disabled={disabled}
-      >
-        <Switch
-          checked={productivity.minimap}
-          onCheckedChange={(v) =>
-            updateCategory("productivity", { minimap: v })
-          }
-          disabled={disabled}
-        />
-      </SettingRow>
-
-      <SettingRow
-        label="Auto-format on Submit"
-        description="Automatically format code before submission"
-        disabled={disabled}
-      >
-        <Switch
-          checked={productivity.autoFormatOnSubmit}
-          onCheckedChange={(v) =>
-            updateCategory("productivity", { autoFormatOnSubmit: v })
-          }
-          disabled={disabled}
-        />
-      </SettingRow>
-    </div>
-  );
-}
-
 function AdvancedSection({
   settings,
   updateCategory,
@@ -597,6 +307,39 @@ function AdvancedSection({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
+        <SettingRow
+          label="Error Message Style"
+          description="Controls how error messages are displayed"
+        >
+          <Select
+            value={advanced.errorMessageStyle}
+            onValueChange={(v: "beginner" | "standard" | "advanced") =>
+              updateCategory("advanced", { errorMessageStyle: v })
+            }
+          >
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="beginner">Beginner</SelectItem>
+              <SelectItem value="standard">Standard</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingRow>
+
+        <SettingRow
+          label="Minimap"
+          description="Shows code overview on the right side"
+        >
+          <Switch
+            checked={advanced.minimap}
+            onCheckedChange={(v) =>
+              updateCategory("advanced", { minimap: v })
+            }
+          />
+        </SettingRow>
+
         <SettingRow
           label="Experimental Features"
           description="Try new features before they're fully released"
@@ -636,13 +379,7 @@ function AdvancedSection({
                   handleResetSection(
                     cat.id === "learning"
                       ? "learningExperience"
-                      : cat.id === "editor"
-                      ? "codeEditor"
-                      : cat.id === "practice"
-                      ? "practiceMode"
-                      : cat.id === "interview"
-                      ? "interviewMode"
-                      : "productivity"
+                      : "codeEditor"
                   )
                 }
                 className="text-xs"
@@ -720,13 +457,11 @@ export function PlatformSettingsModal({
   const {
     settings,
     updateCategory,
-    toggleInterviewMode,
     resetSection,
     resetAll,
   } = usePlatformSettings();
 
   const activeCategoryData = categories.find((c) => c.id === activeCategory);
-  const isInterviewMode = settings.interviewMode.enabled;
 
   // Handle ESC key
   useEffect(() => {
@@ -746,7 +481,6 @@ export function PlatformSettingsModal({
           <LearningExperienceSection
             settings={settings}
             updateCategory={updateCategory}
-            disabled={isInterviewMode}
           />
         );
       case "editor":
@@ -754,28 +488,6 @@ export function PlatformSettingsModal({
           <CodeEditorSection
             settings={settings}
             updateCategory={updateCategory}
-          />
-        );
-      case "practice":
-        return (
-          <PracticeModeSection
-            settings={settings}
-            updateCategory={updateCategory}
-          />
-        );
-      case "interview":
-        return (
-          <InterviewModeSection
-            settings={settings}
-            toggleInterviewMode={toggleInterviewMode}
-          />
-        );
-      case "productivity":
-        return (
-          <ProductivitySection
-            settings={settings}
-            updateCategory={updateCategory}
-            disabled={isInterviewMode}
           />
         );
       case "advanced":
@@ -812,16 +524,6 @@ export function PlatformSettingsModal({
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Interview Mode Banner */}
-        {isInterviewMode && (
-          <div className="flex items-center gap-2 px-6 py-2 bg-orange-500/10 border-b border-orange-500/30">
-            <Timer className="h-4 w-4 text-orange-500" />
-            <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
-              Interview Mode is ON — Some settings are locked
-            </span>
-          </div>
-        )}
 
         {/* Body */}
         <div className="flex h-[500px]">
