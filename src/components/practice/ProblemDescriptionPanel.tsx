@@ -135,8 +135,12 @@ export function ProblemDescriptionPanel({
       toast.error("Please sign in to save problems");
       return;
     }
-    const newSaved = await toggleBookmark(problemId);
-    toast.success(newSaved ? "Saved to your collection" : "Removed from saved");
+    try {
+      const newSaved = await toggleBookmark(problemId);
+      toast.success(newSaved ? "Saved to your collection" : "Removed from saved");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save problem");
+    }
   }, [problemId, toggleBookmark, bookmarksAuth]);
 
   // Collapsed state: vertical tabs layout like LeetCode

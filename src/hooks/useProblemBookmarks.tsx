@@ -132,7 +132,7 @@ export function useProblemBookmarks() {
           ]);
           return true;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error toggling problem bookmark:", err);
         // Rollback on error
         setBookmarkedIds((prev) => {
@@ -144,7 +144,8 @@ export function useProblemBookmarks() {
           }
           return next;
         });
-        return wasBookmarked;
+        // Throw the error so the calling component can handle it
+        throw new Error(err?.message || "Failed to save problem");
       }
     },
     [user, bookmarkedIds]
