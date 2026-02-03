@@ -323,7 +323,7 @@ const CodeBlock = ({
               wordWrap: 'on',
               automaticLayout: true,
             }}
-            theme={isMentorBubble ? 'codeblock-mentor' : 'codeblock-light'}
+            theme="codeblock-light"
             loading={
               <div className="flex items-center justify-center h-16 text-muted-foreground text-sm">
                 Loading...
