@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { SubTopic, useCreateSubTopic, useDeleteSubTopic, useUpdateSubTopic } from "@/hooks/useSubTopics";
 import { PracticeProblem } from "@/hooks/usePracticeProblems";
 import { cn } from "@/lib/utils";
@@ -35,8 +40,10 @@ interface LessonProblemsSectionProps {
   skillId: string;
   subTopics: SubTopic[];
   problemsBySubTopic: Record<string, PracticeProblem[]>;
+  mappingsBySubTopic?: Record<string, { id: string; problem_id: string }[]>;
   onProblemClick: (problemId: string) => void;
   onAddProblem: (subTopicId: string) => void;
+  onUnlinkProblem?: (mappingId: string, subTopicId: string, problemId: string) => void;
 }
 
 export function LessonProblemsSection({
@@ -44,8 +51,10 @@ export function LessonProblemsSection({
   skillId,
   subTopics,
   problemsBySubTopic,
+  mappingsBySubTopic,
   onProblemClick,
   onAddProblem,
+  onUnlinkProblem,
 }: LessonProblemsSectionProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -161,15 +170,17 @@ export function LessonProblemsSection({
                   </Button>
                 </div>
               ) : (
-                subTopics.map((subTopic) => (
+              subTopics.map((subTopic) => (
                   <SubTopicSection
                     key={subTopic.id}
                     subTopic={subTopic}
                     problems={problemsBySubTopic[subTopic.id] || []}
+                    mappings={mappingsBySubTopic?.[subTopic.id] || []}
                     onProblemClick={onProblemClick}
                     onAddProblem={() => onAddProblem(subTopic.id)}
                     onRename={() => openRenameDialog(subTopic)}
                     onDelete={() => setDeleteSubTopicId(subTopic.id)}
+                    onUnlinkProblem={onUnlinkProblem}
                     getDifficultyBadge={getDifficultyBadge}
                   />
                 ))
@@ -258,20 +269,24 @@ export function LessonProblemsSection({
 interface SubTopicSectionProps {
   subTopic: SubTopic;
   problems: PracticeProblem[];
+  mappings: { id: string; problem_id: string }[];
   onProblemClick: (problemId: string) => void;
   onAddProblem: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onUnlinkProblem?: (mappingId: string, subTopicId: string, problemId: string) => void;
   getDifficultyBadge: (difficulty: string) => React.ReactNode;
 }
 
 function SubTopicSection({
   subTopic,
   problems,
+  mappings,
   onProblemClick,
   onAddProblem,
   onRename,
   onDelete,
+  onUnlinkProblem,
   getDifficultyBadge,
 }: SubTopicSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -339,20 +354,41 @@ function SubTopicSection({
               No problems mapped yet.
             </div>
           ) : (
-            problems.map((problem) => (
-              <div
-                key={problem.id}
-                className="flex items-center gap-3 px-4 py-2.5 pl-14 hover:bg-muted/30 cursor-pointer transition-colors"
-                onClick={() => onProblemClick(problem.id)}
-              >
-                <GripVertical className="h-4 w-4 text-muted-foreground/50" />
-                <span className="flex-1 text-sm">{problem.title}</span>
-                {getDifficultyBadge(problem.difficulty)}
-                <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
-                  {problem.status}
-                </Badge>
-              </div>
-            ))
+            problems.map((problem) => {
+              const mapping = mappings.find(m => m.problem_id === problem.id);
+              return (
+                <div
+                  key={problem.id}
+                  className="flex items-center gap-3 px-4 py-2.5 pl-14 hover:bg-muted/30 cursor-pointer transition-colors group"
+                  onClick={() => onProblemClick(problem.id)}
+                >
+                  <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+                  <span className="flex-1 text-sm">{problem.title}</span>
+                  {getDifficultyBadge(problem.difficulty)}
+                  <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
+                    {problem.status}
+                  </Badge>
+                  {onUnlinkProblem && mapping && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUnlinkProblem(mapping.id, subTopic.id, problem.id);
+                          }}
+                        >
+                          <Unlink className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Unlink from sub-topic</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
