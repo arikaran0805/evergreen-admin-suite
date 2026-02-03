@@ -225,7 +225,8 @@ const CodeBlock = ({
     <div className={cn("relative group mt-3 w-full", !showToolbarAlways && "min-w-[450px]")}>
       {/* Main container */}
       <div className={cn(
-        "rounded-xl border overflow-hidden shadow-sm",
+        "border overflow-hidden shadow-sm",
+        showOutput && output !== null ? "rounded-t-xl rounded-b-none" : "rounded-xl",
         isMentorBubble 
           ? "bg-blue-600/20 border-blue-400/30"
           : "bg-white border-border/60"
@@ -350,10 +351,10 @@ const CodeBlock = ({
       {/* Collapsible Output section */}
       {showOutput && output !== null && (
         <div className={cn(
-          "mt-0.5 rounded-xl border overflow-hidden",
+          "border border-t-0 overflow-hidden rounded-t-none rounded-b-xl",
           isMentorBubble 
             ? "bg-blue-800/20 border-blue-400/30" 
-            : "bg-[#F5F5F5] border-border/40"
+            : "bg-muted/50 border-border/60"
         )}>
           {/* Header - clickable to toggle */}
           <button
