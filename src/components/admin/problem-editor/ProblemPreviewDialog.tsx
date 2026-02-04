@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { TestCase } from "./TestCasesSection";
 import type { SupportedLanguage } from "./SupportedLanguagesSection";
+import { RichTextRenderer } from "@/components/tiptap/RichTextRenderer";
 
 interface ProblemPreviewDialogProps {
   title: string;
@@ -100,7 +101,11 @@ export function ProblemPreviewDialog({
             <div>
               <h3 className="font-semibold mb-2">Description</h3>
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                {description || <span className="text-muted-foreground">No description provided.</span>}
+                {description ? (
+                  <RichTextRenderer content={description} emptyPlaceholder="" />
+                ) : (
+                  <span className="text-muted-foreground">No description provided.</span>
+                )}
               </div>
             </div>
 
@@ -112,16 +117,16 @@ export function ProblemPreviewDialog({
                   {inputFormat && (
                     <div>
                       <h4 className="font-medium text-sm mb-1">Input Format</h4>
-                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {inputFormat}
+                      <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
+                        <RichTextRenderer content={inputFormat} emptyPlaceholder="" />
                       </div>
                     </div>
                   )}
                   {outputFormat && (
                     <div>
                       <h4 className="font-medium text-sm mb-1">Output Format</h4>
-                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {outputFormat}
+                      <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
+                        <RichTextRenderer content={outputFormat} emptyPlaceholder="" />
                       </div>
                     </div>
                   )}

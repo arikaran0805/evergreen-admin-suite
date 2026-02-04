@@ -48,7 +48,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   TestCasesSection,
-  IOFormatSection,
   LimitsSection,
   SupportedLanguagesSection,
   FunctionSignatureSection,
@@ -62,6 +61,9 @@ import {
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { FullEditor } from "@/components/tiptap/FullEditor";
+import { LightEditor } from "@/components/tiptap/LightEditor";
+import { Label } from "@/components/ui/label";
 
 const problemSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -649,7 +651,7 @@ export default function AdminProblemEditor() {
               <Card>
                 <CardHeader>
                   <CardTitle>Problem Description</CardTitle>
-                  <CardDescription>Describe the problem for learners</CardDescription>
+                  <CardDescription>Describe the problem for learners using the rich text editor</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -657,9 +659,15 @@ export default function AdminProblemEditor() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (Markdown supported)</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Describe the problem..." rows={10} className="font-mono" />
+                          <div className="border rounded-md min-h-[300px]">
+                            <FullEditor
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                              placeholder="Describe the problem..."
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -669,13 +677,36 @@ export default function AdminProblemEditor() {
               </Card>
 
               {/* Input/Output Format */}
-              <IOFormatSection
-                inputFormat={inputFormat}
-                outputFormat={outputFormat}
-                onInputFormatChange={setInputFormat}
-                onOutputFormatChange={setOutputFormat}
-                disabled={isViewOnly}
-              />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Input / Output Format</CardTitle>
+                  <CardDescription>Defines how input is received and output is returned</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Input Format</Label>
+                    <div className="mt-1 border rounded-md min-h-[120px]">
+                      <LightEditor
+                        value={inputFormat}
+                        onChange={setInputFormat}
+                        placeholder="The first line contains an integer n — the number of elements..."
+                        disabled={isViewOnly}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Output Format</Label>
+                    <div className="mt-1 border rounded-md min-h-[120px]">
+                      <LightEditor
+                        value={outputFormat}
+                        onChange={setOutputFormat}
+                        placeholder="Return a single integer — the sum of all elements..."
+                        disabled={isViewOnly}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Examples */}
               <Card>
