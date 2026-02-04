@@ -87,7 +87,7 @@ export interface ChatEditorRef {
 const getChatEditorExtensions = (placeholder?: string) => [
   StarterKit.configure({
     heading: { levels: [2] },
-    codeBlock: false, // We handle code blocks specially for markdown
+    // Leave codeBlock enabled (default) so markdown extension can properly parse/serialize code blocks
   }),
   Link.configure({
     openOnClick: false,
