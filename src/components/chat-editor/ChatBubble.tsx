@@ -131,6 +131,9 @@ const ChatBubble = ({
       // Not JSON, continue with markdown parsing
     }
     
+    // Fix escaped newlines (literal \n) to actual newlines
+    processedContent = processedContent.replace(/\\n/g, '\n');
+    
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
     const parts: { type: string; language?: string; content: string }[] = [];
     let lastIndex = 0;
