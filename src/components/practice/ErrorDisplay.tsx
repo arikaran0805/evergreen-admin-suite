@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { parseCodeError, hasInternalFrames, getInternalFramesForDisplay } from "@/lib/errorParser";
-import { Copy, Check, ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react";
+import { parseCodeError, hasInternalFrames, getInternalFramesForDisplay, isInputContractErrorResult } from "@/lib/errorParser";
+import { Copy, Check, ChevronUp, ChevronDown, Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 interface ErrorDisplayProps {
   error: string;
@@ -15,11 +15,12 @@ interface ErrorDisplayProps {
  * Student-First Error Display Component
  * 
  * Design:
- * - Clean error card with soft red background
+ * - Clean error card with soft red background (or amber for input contract errors)
  * - Shows user-relevant error info by default
  * - Internal system frames hidden behind "View More" toggle
  * - Supportive coaching hints
  * - Copy icon at top-right
+ * - Input Contract Errors: LeetCode-style neutral messaging, no blame
  */
 export function ErrorDisplay({ 
   error, 
@@ -31,6 +32,9 @@ export function ErrorDisplay({
   const [copied, setCopied] = useState(false);
   const [showInternals, setShowInternals] = useState(false);
   const parsed = parseCodeError(error, language, userCodeLineCount);
+  
+  // Check if this is an input contract error (platform issue, not user's fault)
+  const isContractError = isInputContractErrorResult(parsed);
 
   const handleCopy = async () => {
     try {
@@ -48,6 +52,44 @@ export function ErrorDisplay({
     }
   };
 
+  // Input Contract Error: Special LeetCode-style UI
+  if (isContractError) {
+    return (
+      <div className={cn("space-y-3", className)}>
+        {/* Title - Amber/Orange for platform issues */}
+        <h3 className="text-xl font-semibold text-amber-500 flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5" />
+          {parsed.friendlyType}
+        </h3>
+
+        {/* Error Container - Amber background, calm styling */}
+        <div className="relative rounded-lg bg-amber-500/10 p-4">
+          {/* Main Message - No raw error type shown */}
+          <div className="space-y-3">
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              {parsed.friendlyMessage}
+            </p>
+            
+            {/* Coach Hint - Supportive tone */}
+            {parsed.coachHint && (
+              <div className="text-sm text-muted-foreground bg-muted/30 rounded-md p-3">
+                {parsed.coachHint}
+              </div>
+            )}
+
+            {/* Fix Hint */}
+            {parsed.fixHint && (
+              <p className="text-xs text-muted-foreground">
+                {parsed.fixHint}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Standard Error Display (user errors)
   return (
     <div className={cn("space-y-3", className)}>
       {/* Title */}
@@ -167,6 +209,9 @@ export function CompactError({
   const [copied, setCopied] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const parsed = parseCodeError(error, language, userCodeLineCount);
+  
+  // Check if this is an input contract error
+  const isContractError = isInputContractErrorResult(parsed);
 
   const handleCopy = async () => {
     try {
@@ -184,6 +229,26 @@ export function CompactError({
     }
   };
 
+  // Input Contract Error: Compact amber UI
+  if (isContractError) {
+    return (
+      <div className="relative rounded-lg bg-amber-500/10 p-3">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+              {parsed.friendlyType}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {parsed.friendlyMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Standard compact error display
   return (
     <div className="relative rounded-lg bg-red-500/10 p-3">
       {/* Copy Button */}
@@ -285,6 +350,16 @@ export function InlineError({
   onLineClick
 }: InlineErrorProps) {
   const parsed = parseCodeError(error, language, userCodeLineCount);
+  const isContractError = isInputContractErrorResult(parsed);
+  
+  // Input contract errors show amber with friendly message
+  if (isContractError) {
+    return (
+      <span className="text-amber-500 text-xs">
+        <span className="font-medium">{parsed.friendlyType}</span>
+      </span>
+    );
+  }
   
   return (
     <span className="text-red-500 text-xs font-mono">

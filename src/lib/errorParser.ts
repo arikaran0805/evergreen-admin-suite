@@ -35,8 +35,9 @@ const USER_FILE_NAMES: Record<string, string[]> = {
 // Types
 // ============================================================================
 
-export type ErrorCategory = 'syntax' | 'runtime' | 'internal';
+export type ErrorCategory = 'syntax' | 'runtime' | 'internal' | 'input_contract';
 export type ExecutionPhase = 'parse' | 'execution' | 'system';
+export type ErrorType = string | 'InputContractError';
 
 export interface ParsedError {
   /** Original error type from the error message (e.g., "SyntaxError", "NameError") */
@@ -403,6 +404,207 @@ const INTERNAL_ERROR_PATTERNS = [
 
 function isInternalError(errorText: string): boolean {
   return INTERNAL_ERROR_PATTERNS.some(pattern => pattern.test(errorText));
+}
+
+// ============================================================================
+// Input Contract Error Detection (LeetCode-style)
+// ============================================================================
+
+/**
+ * Patterns that indicate the platform passed malformed or mismatched input
+ * to an otherwise correct user solution. These are NOT the learner's fault.
+ * 
+ * Examples:
+ * - Python: "not all arguments converted during string formatting"
+ * - JavaScript: "num % 2 is not a function"
+ * 
+ * This happens when the platform passes string instead of array, wrong type, etc.
+ */
+const INPUT_CONTRACT_ERROR_PATTERNS: Record<string, RegExp[]> = {
+  python: [
+    // String formatting errors when platform passes wrong type
+    /not all arguments converted during string formatting/i,
+    /unsupported operand type\(s\)/i,
+    /% not supported between instances of/i,
+    /can't multiply sequence by non-int of type/i,
+    // Iteration errors when platform passes non-iterable
+    /object is not iterable/i,
+    /is not iterable/i,
+    // Type mismatch on function entry
+    /argument .* must be .*, not/i,
+    /expected .* instance, .* found/i,
+    // Subscription errors
+    /object is not subscriptable/i,
+    /is not subscriptable/i,
+    // Callable errors when input is not what was expected
+    /object is not callable/i,
+    /is not callable/i,
+    // Unpacking errors from wrong input shape
+    /not enough values to unpack/i,
+    /too many values to unpack/i,
+    /cannot unpack non-iterable/i,
+  ],
+  javascript: [
+    // Iteration/callable errors
+    /is not iterable/i,
+    /is not a function/i,
+    /is not an object/i,
+    // Property access on wrong type
+    /Cannot read properties? of (undefined|null)/i,
+    /Cannot read property .* of (undefined|null)/i,
+    // Type coercion failures
+    /Cannot convert .* to .*/i,
+    // Spread/rest errors
+    /Invalid attempt to spread non-iterable/i,
+    /Invalid attempt to destructure non-iterable/i,
+  ],
+  typescript: [
+    // Same as JavaScript
+    /is not iterable/i,
+    /is not a function/i,
+    /is not an object/i,
+    /Cannot read properties? of (undefined|null)/i,
+    /Cannot read property .* of (undefined|null)/i,
+    /Cannot convert .* to .*/i,
+    /Invalid attempt to spread non-iterable/i,
+    /Invalid attempt to destructure non-iterable/i,
+  ],
+  java: [
+    // Class cast errors from wrong input type
+    /ClassCastException/i,
+    /cannot be cast to/i,
+    // Array type mismatch
+    /ArrayStoreException/i,
+    // Incompatible argument types
+    /incompatible types:/i,
+    /cannot be converted to/i,
+    // Method invocation on wrong type
+    /cannot find symbol.*method/i,
+  ],
+  cpp: [
+    // Type mismatch crashes
+    /no matching function for call/i,
+    /cannot convert/i,
+    /invalid conversion from/i,
+    // Immediate segfault from bad input (heuristic)
+    /segmentation fault/i,
+    /bus error/i,
+    // Bad alloc from unexpected input size
+    /bad_alloc/i,
+    /terminate called/i,
+  ],
+  c: [
+    /segmentation fault/i,
+    /bus error/i,
+    /incompatible pointer type/i,
+    /incompatible integer to pointer conversion/i,
+  ],
+};
+
+/**
+ * Additional context patterns that strengthen the input contract error diagnosis
+ * These help distinguish platform input errors from genuine user logic bugs
+ */
+const INPUT_CONTRACT_CONTEXT_PATTERNS = [
+  // Error occurs at function entry or very early
+  /line 1[:\s]/i,
+  /at line 1\b/i,
+  // Error in argument processing
+  /argument\s*\d*/i,
+  /parameter/i,
+  // Error mentions the solution function
+  /in (solve|solution|run|main|twoSum|addTwoNumbers)/i,
+];
+
+/**
+ * Patterns that indicate this is a genuine user error, NOT an input contract error
+ * Used to avoid false positives
+ */
+const USER_ERROR_INDICATORS = [
+  // User defined variables/functions
+  /undefined variable/i,
+  /is not defined/i,
+  // User logic errors
+  /division by zero/i,
+  /index out of (range|bounds)/i,
+  // Recursion issues
+  /maximum recursion depth/i,
+  /stack overflow/i,
+  // User's syntax errors
+  /syntax error/i,
+  /unexpected token/i,
+];
+
+/**
+ * Detect if an error is an Input Contract Error (platform passed bad input)
+ * 
+ * This is conservative to avoid false positives:
+ * 1. Check if error matches input contract patterns
+ * 2. Check if NOT a clear user error
+ * 3. Optionally check for context patterns that strengthen diagnosis
+ * 
+ * @param errorText - Raw error text from execution
+ * @param language - Programming language
+ * @returns true if this is likely an input contract error
+ */
+export function isInputContractError(errorText: string, language: string): boolean {
+  if (!errorText || typeof errorText !== 'string') return false;
+  
+  const normalizedLang = language.toLowerCase();
+  const patterns = INPUT_CONTRACT_ERROR_PATTERNS[normalizedLang] || [];
+  
+  // Check if error matches any input contract pattern
+  const matchesContractPattern = patterns.some(pattern => pattern.test(errorText));
+  if (!matchesContractPattern) return false;
+  
+  // Check if this is clearly a user error (avoid false positives)
+  const isUserError = USER_ERROR_INDICATORS.some(pattern => pattern.test(errorText));
+  if (isUserError) return false;
+  
+  // For segmentation faults (C/C++), be more conservative
+  // Only treat as input contract error if it happens very early
+  if (/segmentation fault|bus error/i.test(errorText)) {
+    const hasEarlyContext = INPUT_CONTRACT_CONTEXT_PATTERNS.some(p => p.test(errorText));
+    // Without early context, we can't be sure it's an input issue
+    // So we'll still classify it as input contract for C/C++ since these often indicate bad input
+    if (normalizedLang === 'cpp' || normalizedLang === 'c') {
+      return true; // C/C++ segfaults are often input issues in judge context
+    }
+    return hasEarlyContext;
+  }
+  
+  return true;
+}
+
+/**
+ * Create an Input Contract Error result
+ * This follows LeetCode's UX principles:
+ * - No raw stack traces
+ * - No line highlights
+ * - Neutral, calm, instructional tone
+ * - Never blames the learner
+ */
+function createInputContractError(errorText: string): ParsedError {
+  return {
+    type: 'InputContractError',
+    message: 'Input format mismatch',
+    category: 'input_contract',
+    executionPhase: 'system',
+    isUserCodeError: false,
+    friendlyType: 'Input Format Error',
+    friendlyMessage: "Your code looks correct, but the input was passed in an unexpected format.",
+    coachHint: "💡 This usually happens when the platform input format doesn't match the function signature. This is not your fault!",
+    fixHint: "Check that the problem input format matches the function parameters. The test may need adjustment.",
+    // No line highlights for input contract errors
+    userLine: undefined,
+    codeLine: undefined,
+    pointer: undefined,
+    // Keep internal traceback for debugging but don't show to user
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: '',
+    rawError: errorText,
+  };
 }
 
 // ============================================================================
@@ -973,7 +1175,7 @@ function createInternalError(errorText: string): ParsedError {
 
 /**
  * Parse error output from code execution and map to user's visible lines
- * Implements student-first error normalization
+ * Implements student-first error normalization with LeetCode-style error ownership
  */
 export function parseCodeError(
   errorText: string,
@@ -985,9 +1187,15 @@ export function parseCodeError(
     return createInternalError(errorText || '');
   }
 
-  // Check for internal/platform errors first
+  // Check for internal/platform errors first (TLE, OOM, crashes, etc.)
   if (isInternalError(errorText)) {
     return createInternalError(errorText);
+  }
+
+  // LeetCode-style: Check for Input Contract Errors BEFORE normal parsing
+  // These are platform input mismatches, NOT user errors
+  if (isInputContractError(errorText, language)) {
+    return createInputContractError(errorText);
   }
 
   const normalizedLang = language.toLowerCase();
@@ -1116,7 +1324,11 @@ export function getErrorLineDecorations(
 // ============================================================================
 
 export function isUserActionableError(parsed: ParsedError): boolean {
-  return parsed.isUserCodeError && parsed.category !== 'internal';
+  return parsed.isUserCodeError && parsed.category !== 'internal' && parsed.category !== 'input_contract';
+}
+
+export function isInputContractErrorResult(parsed: ParsedError): boolean {
+  return parsed.category === 'input_contract' || parsed.type === 'InputContractError';
 }
 
 export function getPhaseDisplayText(phase: ExecutionPhase): string {
