@@ -403,6 +403,11 @@ const AdminPosts = () => {
                     <TableCell>
                       <div className="space-y-1">
                         <span className="font-medium">{post.title}</span>
+                        {post.courses?.slug && (
+                          <div className="text-xs text-muted-foreground">
+                            in <span className="font-medium">{post.courses.slug}</span>
+                          </div>
+                        )}
                         {assignee && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <UserCog className="h-3 w-3" />
