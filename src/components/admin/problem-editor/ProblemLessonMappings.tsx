@@ -236,6 +236,7 @@ export function ProblemLessonMappings({ problemId, disabled }: ProblemLessonMapp
             Lesson Mappings
           </CardTitle>
           <Button
+            type="button"
             size="sm"
             variant="outline"
             onClick={() => setIsAddDialogOpen(true)}
@@ -280,6 +281,7 @@ export function ProblemLessonMappings({ problemId, disabled }: ProblemLessonMapp
                     )}
                   </div>
                   <Button
+                    type="button"
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
@@ -384,10 +386,11 @@ export function ProblemLessonMappings({ problemId, disabled }: ProblemLessonMapp
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               Cancel
             </Button>
             <Button
+              type="button"
               onClick={handleAttach}
               disabled={!selectedSubTopicId || createMapping.isPending}
             >
