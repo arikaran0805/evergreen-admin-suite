@@ -68,10 +68,12 @@ interface CourseSidebarProps {
   isAuthenticated: boolean;
   /** Whether this sidebar is in the Career Board shell (different header heights) */
   isCareerBoard?: boolean;
-  /** Practice skill ID for linking to problems */
-  practiceSkillId?: string | null;
+  /** Practice skill slug for linking to problems */
+  practiceSkillSlug?: string | null;
   /** Map of lessonId -> problem count */
   lessonProblemCounts?: Map<string, number>;
+  /** Map of lessonId -> all problems completed */
+  lessonProblemsCompleted?: Map<string, boolean>;
   getPostsForLesson: (lessonId: string) => Post[];
   getLessonProgress: (lessonId: string) => LessonProgress;
   isLessonCompleted: (postId: string) => boolean;
@@ -92,8 +94,9 @@ export const CourseSidebar = ({
   showAnnouncement,
   isAuthenticated,
   isCareerBoard = false,
-  practiceSkillId,
+  practiceSkillSlug,
   lessonProblemCounts,
+  lessonProblemsCompleted,
   getPostsForLesson,
   getLessonProgress,
   isLessonCompleted,
@@ -588,9 +591,9 @@ export const CourseSidebar = ({
                                         )}
                                         
                                         {/* Practice Problems Link */}
-                                        {practiceSkillId && lessonProblemCounts && lessonProblemCounts.get(lesson.id) ? (
+                                        {practiceSkillSlug && lessonProblemCounts && lessonProblemCounts.get(lesson.id) ? (
                                           <Link
-                                            to={`/practice/${practiceSkillId}?lesson=${lesson.id}`}
+                                            to={`/practice/${practiceSkillSlug}?lesson=${lesson.id}`}
                                             className={cn(
                                               "flex items-center gap-2 px-3 py-2 mt-1 rounded-md",
                                               "text-xs text-muted-foreground",
@@ -599,13 +602,12 @@ export const CourseSidebar = ({
                                             )}
                                             onClick={(e) => e.stopPropagation()}
                                           >
-                                            <Dumbbell className="h-3.5 w-3.5" />
-                                            <span>
-                                              Practice Problems
-                                              <span className="ml-1.5 text-muted-foreground/70">
-                                                ({lessonProblemCounts.get(lesson.id)})
-                                              </span>
-                                            </span>
+                                            {isAuthenticated && lessonProblemsCompleted?.get(lesson.id) ? (
+                                              <CheckCircle className="h-3.5 w-3.5 text-sidebar-primary" />
+                                            ) : (
+                                              <Dumbbell className="h-3.5 w-3.5" />
+                                            )}
+                                            <span>Practice Problems</span>
                                           </Link>
                                         ) : null}
                                       </div>
