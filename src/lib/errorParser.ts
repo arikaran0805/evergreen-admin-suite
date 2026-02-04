@@ -28,6 +28,10 @@ export interface ParsedError {
   isUserCodeError: boolean;
   /** Raw stderr for internal logging */
   rawError: string;
+  /** User-relevant stack frames (cleaned, normalized) */
+  userTraceback: string[];
+  /** Internal/system frames (hidden by default) */
+  internalTraceback: string[];
 }
 
 // ============================================================================
@@ -42,6 +46,231 @@ export const USER_CODE_START_LINES: Record<string, number> = {
   cpp: 15,
   c: 12,
 };
+
+// ============================================================================
+// File Name Normalization (LeetCode-style)
+// ============================================================================
+
+/**
+ * Get the normalized filename for a language.
+ */
+function getSolutionFileName(language: string): string {
+  const lang = language.toLowerCase();
+  switch (lang) {
+    case 'python':
+    case 'python3':
+      return 'Solution.py';
+    case 'javascript':
+    case 'js':
+    case 'typescript':
+    case 'ts':
+      return 'Solution.js';
+    case 'java':
+      return 'Solution.java';
+    case 'cpp':
+    case 'c++':
+      return 'solution.cpp';
+    case 'c':
+      return 'solution.c';
+    default:
+      return 'Solution.py';
+  }
+}
+
+/**
+ * Normalize all file references to LeetCode-style "Solution.ext".
+ * Replaces internal paths, <string>, <anonymous>, etc.
+ */
+function normalizeFileNames(text: string, language: string): string {
+  const solutionFile = getSolutionFileName(language);
+  
+  // Replace various file patterns with normalized name
+  let result = text;
+  
+  // Python patterns
+  result = result.replace(/File "<string>"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "<stdin>"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "<module>"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "\/piston\/[^"]+"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "\/tmp\/[^"]+"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "\/home\/[^"]+"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "run\.py"/gi, `File "${solutionFile}"`);
+  result = result.replace(/File "code\.py"/gi, `File "${solutionFile}"`);
+  
+  // JavaScript patterns
+  result = result.replace(/at <anonymous>/gi, `at ${solutionFile}`);
+  result = result.replace(/at Object\.<anonymous>/gi, `at ${solutionFile}`);
+  result = result.replace(/\(\/piston\/[^)]+\)/gi, `(${solutionFile})`);
+  result = result.replace(/\(\/tmp\/[^)]+\)/gi, `(${solutionFile})`);
+  result = result.replace(/at .*\/piston\/[^\s]+/gi, `at ${solutionFile}`);
+  result = result.replace(/at evalmachine\.<anonymous>/gi, `at ${solutionFile}`);
+  
+  // Java patterns
+  result = result.replace(/at Main\./gi, `at ${solutionFile.replace('.java', '')}\.`);
+  result = result.replace(/at Solution\./gi, `at Solution\.`);
+  
+  // C/C++ patterns - strip absolute paths
+  result = result.replace(/\/piston\/[^\s:]+/gi, solutionFile);
+  result = result.replace(/\/tmp\/[^\s:]+/gi, solutionFile);
+  
+  return result;
+}
+
+// ============================================================================
+// Internal Frame Detection & Stripping
+// ============================================================================
+
+/**
+ * Check if a stack frame line is internal (should be hidden).
+ */
+function isInternalFrame(line: string, language: string): boolean {
+  const lineLower = line.toLowerCase();
+  
+  // Universal internal patterns
+  const internalPatterns = [
+    '/piston/',
+    '/tmp/runner',
+    'supabase/functions',
+    '<frozen importlib',
+    '<frozen runpy',
+    'node:internal',
+    'node:vm',
+    'internal/modules',
+    'timers.js',
+    'bootstrap_node.js',
+    'run_tests',
+    'runTests',
+    '_run_code',
+    '_run_module',
+    '__bootstrap__',
+    'importlib._bootstrap',
+    'exec(compile',
+    'evalmachine',
+    '_convert_json',
+    '_compare_outputs',
+  ];
+  
+  for (const pattern of internalPatterns) {
+    if (lineLower.includes(pattern.toLowerCase())) {
+      return true;
+    }
+  }
+  
+  // Language-specific internal frames
+  const lang = language.toLowerCase();
+  
+  if (lang === 'python') {
+    // Python internal modules
+    if (lineLower.includes('module __main__')) return true;
+    if (lineLower.includes('in <module>') && lineLower.includes('piston')) return true;
+  }
+  
+  if (lang === 'javascript' || lang === 'typescript') {
+    // Node.js internals
+    if (lineLower.includes('at module._compile')) return true;
+    if (lineLower.includes('at object.module._extensions')) return true;
+    if (lineLower.includes('at module.load')) return true;
+    if (lineLower.includes('at function.module._load')) return true;
+    if (lineLower.includes('at require')) return true;
+  }
+  
+  if (lang === 'java') {
+    // Java system classes
+    if (lineLower.includes('at java.')) return true;
+    if (lineLower.includes('at sun.')) return true;
+    if (lineLower.includes('at jdk.')) return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Strip internal frames from stack trace, keeping only user-relevant lines.
+ * Returns [userFrames, internalFrames].
+ */
+function stripInternalFrames(lines: string[], language: string): [string[], string[]] {
+  const userFrames: string[] = [];
+  const internalFrames: string[] = [];
+  
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    
+    if (isInternalFrame(line, language)) {
+      internalFrames.push(line);
+    } else {
+      userFrames.push(line);
+    }
+  }
+  
+  return [userFrames, internalFrames];
+}
+
+/**
+ * Parse traceback/stack trace into individual frames.
+ */
+function parseStackLines(errorText: string, language: string): string[] {
+  const lines = errorText.split('\n');
+  const stackLines: string[] = [];
+  const lang = language.toLowerCase();
+  
+  if (lang === 'python') {
+    // Python: "  File "..." or "    ..." continuation
+    let inTraceback = false;
+    for (const line of lines) {
+      if (line.includes('Traceback (most recent call last)')) {
+        inTraceback = true;
+        continue;
+      }
+      if (inTraceback) {
+        if (line.startsWith('  File ') || line.startsWith('    ')) {
+          stackLines.push(line.trim());
+        } else if (line.match(/^\w+Error:|^\w+Exception:/)) {
+          // Error line itself - stop
+          break;
+        }
+      }
+    }
+  } else if (lang === 'javascript' || lang === 'typescript') {
+    // JavaScript: "    at ..." lines
+    for (const line of lines) {
+      if (line.trim().startsWith('at ')) {
+        stackLines.push(line.trim());
+      }
+    }
+  } else if (lang === 'java') {
+    // Java: "	at ..." lines
+    for (const line of lines) {
+      if (line.trim().startsWith('at ')) {
+        stackLines.push(line.trim());
+      }
+    }
+  } else {
+    // C/C++: various formats, look for file:line patterns
+    for (const line of lines) {
+      if (line.match(/\.(c|cpp|h|hpp):\d+/) || line.includes('at 0x')) {
+        stackLines.push(line.trim());
+      }
+    }
+  }
+  
+  return stackLines;
+}
+
+/**
+ * Build clean user traceback from raw error.
+ */
+function buildUserTraceback(errorText: string, language: string): [string[], string[]] {
+  // Parse stack lines
+  const stackLines = parseStackLines(errorText, language);
+  
+  // Strip internal frames
+  const [userFrames, internalFrames] = stripInternalFrames(stackLines, language);
+  
+  // Normalize file names in user frames
+  const normalizedUserFrames = userFrames.map(frame => normalizeFileNames(frame, language));
+  
+  return [normalizedUserFrames, internalFrames];
+}
 
 // ============================================================================
 // Input Contract Error Detection
@@ -245,6 +474,25 @@ function extractErrorType(errorText: string, language: string): string {
   return 'Error';
 }
 
+/**
+ * Extract the error message line (after error type).
+ */
+function extractErrorMessage(errorText: string, errorType: string): string {
+  // Look for "ErrorType: message" pattern
+  const regex = new RegExp(`${errorType}:\\s*(.+?)(?:\\n|$)`, 'i');
+  const match = errorText.match(regex);
+  
+  if (match && match[1]) {
+    let msg = match[1].trim();
+    // Clean up any remaining path fragments
+    msg = msg.replace(/File "[^"]+",?\s*/g, '');
+    msg = msg.replace(/line \d+,?\s*/gi, '');
+    return msg;
+  }
+  
+  return '';
+}
+
 // ============================================================================
 // Main Parser
 // ============================================================================
@@ -272,8 +520,13 @@ export function parseCodeError(
       executionPhase: 'execution',
       isUserCodeError: true,
       rawError,
+      userTraceback: [],
+      internalTraceback: [],
     };
   }
+
+  // Build traceback arrays
+  const [userTraceback, internalTraceback] = buildUserTraceback(rawError, language);
 
   // =========================================================================
   // 1. Check for Input Contract Errors (FIRST - short-circuits everything)
@@ -289,6 +542,8 @@ export function parseCodeError(
       executionPhase: 'system',
       isUserCodeError: false,
       rawError,
+      userTraceback: [],
+      internalTraceback: internalTraceback,
     };
   }
 
@@ -303,6 +558,8 @@ export function parseCodeError(
       executionPhase: 'system',
       isUserCodeError: false,
       rawError,
+      userTraceback: [],
+      internalTraceback: internalTraceback,
     };
   }
 
@@ -310,13 +567,18 @@ export function parseCodeError(
   // 3. Check for Syntax Errors
   // =========================================================================
   if (detectSyntaxError(rawError, language)) {
+    const errorType = extractErrorType(rawError, language) || 'SyntaxError';
+    const errorMessage = extractErrorMessage(rawError, errorType) || 'Invalid syntax.';
+    
     return {
-      type: 'Syntax Error',
-      message: 'Invalid syntax.',
+      type: errorType,
+      message: normalizeFileNames(errorMessage, language),
       category: 'syntax',
       executionPhase: 'parse',
       isUserCodeError: true,
       rawError,
+      userTraceback: userTraceback,
+      internalTraceback: internalTraceback,
     };
   }
 
@@ -324,7 +586,10 @@ export function parseCodeError(
   // 4. Runtime Errors (User Logic Errors)
   // =========================================================================
   const errorType = extractErrorType(rawError, language);
-  const normalizedMessage = normalizeRuntimeMessage(rawError, errorType);
+  const rawMessage = extractErrorMessage(rawError, errorType);
+  const normalizedMessage = rawMessage 
+    ? normalizeFileNames(rawMessage, language)
+    : normalizeRuntimeMessage(rawError, errorType);
   
   return {
     type: errorType,
@@ -333,6 +598,8 @@ export function parseCodeError(
     executionPhase: 'execution',
     isUserCodeError: true,
     rawError,
+    userTraceback: userTraceback,
+    internalTraceback: internalTraceback,
   };
 }
 
@@ -396,17 +663,48 @@ export function isInputContractErrorResult(parsed: ParsedError): boolean {
 }
 
 /**
- * Check if there are internal frames (always false in minimal mode).
+ * Check if there are internal frames available for "View More".
  */
 export function hasInternalFrames(parsed: ParsedError): boolean {
-  return false;
+  return parsed.internalTraceback.length > 0;
 }
 
 /**
- * Get internal frames for display (empty in minimal mode).
+ * Get internal frames formatted for display.
  */
 export function getInternalFramesForDisplay(parsed: ParsedError): string {
-  return '';
+  if (parsed.internalTraceback.length === 0) return '';
+  return parsed.internalTraceback.join('\n');
+}
+
+/**
+ * Get user traceback formatted for display.
+ */
+export function getUserTracebackForDisplay(parsed: ParsedError): string {
+  if (parsed.userTraceback.length === 0) return '';
+  return parsed.userTraceback.join('\n');
+}
+
+/**
+ * Format full error output (type + message + user traceback).
+ */
+export function formatErrorOutput(parsed: ParsedError): string {
+  const parts: string[] = [];
+  
+  // Error type and message on first line (LeetCode style)
+  if (parsed.message) {
+    parts.push(`${parsed.type}: ${parsed.message}`);
+  } else {
+    parts.push(parsed.type);
+  }
+  
+  // Add user traceback if present
+  if (parsed.userTraceback.length > 0) {
+    parts.push('');
+    parts.push(...parsed.userTraceback);
+  }
+  
+  return parts.join('\n');
 }
 
 // ============================================================================
