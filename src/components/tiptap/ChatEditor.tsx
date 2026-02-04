@@ -157,8 +157,11 @@ export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
     if (!editor) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Enter saves (without shift)
-      if (event.key === 'Enter' && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
+      // Check if cursor is inside a code block - if so, allow normal Enter behavior
+      const isInCodeBlock = editor.isActive('codeBlock');
+      
+      // Enter saves (without shift) - but NOT inside code blocks
+      if (event.key === 'Enter' && !event.shiftKey && !event.metaKey && !event.ctrlKey && !isInCodeBlock) {
         event.preventDefault();
         const md = getMarkdownFromEditor(editor);
         onSave?.(md);
