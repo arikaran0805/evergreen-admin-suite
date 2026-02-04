@@ -1,22 +1,14 @@
 /**
- * LeetCode-style Error Parser
- * Transforms raw execution errors into clean, learner-friendly messages
+ * UnlockMemory Universal Error Parser - "Student-First" Engine
+ * Transforms scary raw system traces into clean, structured error cards
+ * that prioritize the learner's code over system internals.
  * 
- * RESPONSIBILITY: This parser handles ONLY:
- * - Syntax Errors (syntax, indentation, parse failures - occur BEFORE execution)
- * - Runtime Errors (crashes during execution - IndexError, TypeError, etc.)
- * - Internal Errors (platform/infrastructure failures - never blame the learner)
- * 
- * This parser does NOT handle:
- * - Logical Errors (wrong output comparison - Expected vs Your Output)
- * - Test case counts or pass/fail ratios
- * - Wrong Answer verdicts
- * These belong in a separate Result Evaluator that runs AFTER successful execution.
- * 
- * THREE LEARNER-FACING ERROR TYPES:
- * 1. Syntax Error - Code couldn't be parsed/compiled. No test results shown.
- * 2. Runtime Error - Code crashed during execution. Shows which test case crashed.
- * 3. Logical Error - Code ran but produced wrong output. (NOT handled here)
+ * FEATURES:
+ * 1. Path-Blind Privacy: Strips all server paths and replaces with generic names
+ * 2. Smart Multi-Language Mapping: Detects user frames across Python/Java/C++/JS
+ * 3. Internal Frame Segregation: Separates system traces for "View More" toggle
+ * 4. Coach Persona: Supportive, peer-to-peer error explanations
+ * 5. Visual Precision: Extracts code snippets and caret pointers
  */
 
 // Line offsets for different languages (where user code starts in wrapped template)
@@ -26,21 +18,24 @@ export const USER_CODE_START_LINES: Record<string, number> = {
   typescript: 3,
   java: 10,
   cpp: 15,
+  c: 12,
+};
+
+// User solution file names per language
+const USER_FILE_NAMES: Record<string, string[]> = {
+  python: ['Solution.py', 'solution.py', '<your_code>'],
+  javascript: ['Solution.js', 'solution.js', '<anonymous>'],
+  typescript: ['Solution.ts', 'solution.ts', '<anonymous>'],
+  java: ['Solution.java', 'solution.java'],
+  cpp: ['solution.cpp', 'Solution.cpp'],
+  c: ['solution.c', 'Solution.c'],
 };
 
 // ============================================================================
 // Types
 // ============================================================================
 
-/** 
- * Error categories for internal classification
- * - 'syntax': Parse/compile-time errors (SyntaxError, IndentationError)
- * - 'runtime': Execution crashes (NameError, TypeError, IndexError, etc.)
- * - 'internal': Platform/infrastructure failures (never user's fault)
- */
 export type ErrorCategory = 'syntax' | 'runtime' | 'internal';
-
-/** Execution phase where the error occurred */
 export type ExecutionPhase = 'parse' | 'execution' | 'system';
 
 export interface ParsedError {
@@ -62,12 +57,20 @@ export interface ParsedError {
   friendlyType: string;
   /** Combined message: friendly explanation + specific error */
   friendlyMessage: string;
+  /** Supportive coaching hint */
+  coachHint?: string;
   /** Guidance on what kind of fix is required */
   fixHint?: string;
   /** The actual code line that caused the error */
   codeLine?: string;
   /** Caret pointer position (e.g., "       ^") */
   pointer?: string;
+  /** Internal/system stack frames (for "View More" toggle) */
+  internalTraceback: string[];
+  /** User-relevant stack frames only */
+  userTraceback: string[];
+  /** Cleaned error output for display (paths stripped) */
+  cleanedOutput: string;
   /** Full raw stderr for technical details */
   rawError: string;
   /** Legacy: code snippet (for backward compatibility) */
@@ -75,12 +78,13 @@ export interface ParsedError {
 }
 
 // ============================================================================
-// Error Explanations with Category Mapping
+// Coach-Persona Error Explanations (Supportive, peer-to-peer tone)
 // ============================================================================
 
 interface ErrorInfo {
   friendlyType: string;
   explanation: string;
+  coachHint: string;
   fixHint: string;
   category: ErrorCategory;
   phase: ExecutionPhase;
@@ -88,25 +92,28 @@ interface ErrorInfo {
 
 const ERROR_EXPLANATIONS: Record<string, ErrorInfo> = {
   // =========================================================================
-  // Syntax Errors (parse/compile-time - code couldn't even start running)
+  // Syntax Errors (parse/compile-time)
   // =========================================================================
   SyntaxError: {
     friendlyType: 'Syntax Error',
-    explanation: 'There is a typo or invalid syntax in your code.',
+    explanation: "Hmm, Python couldn't understand your code. There might be a small typo somewhere!",
+    coachHint: "💡 Look for missing brackets, colons, or quotes near the highlighted line. These are easy fixes once you spot them!",
     fixHint: 'Check for missing brackets, colons, or quotes near the indicated line.',
     category: 'syntax',
     phase: 'parse',
   },
   IndentationError: {
     friendlyType: 'Syntax Error',
-    explanation: 'Check your spacing — Python requires consistent indentation.',
+    explanation: "Python is picky about spacing! Your indentation seems a bit off.",
+    coachHint: "💡 In Python, consistent spacing is key. Make sure all code in the same block uses the same number of spaces.",
     fixHint: 'Make sure all code blocks use the same number of spaces.',
     category: 'syntax',
     phase: 'parse',
   },
   TabError: {
     friendlyType: 'Syntax Error',
-    explanation: 'Inconsistent use of tabs and spaces for indentation.',
+    explanation: "You're mixing tabs and spaces—Python gets confused by that!",
+    coachHint: "💡 Stick to one or the other. Most editors let you convert tabs to spaces automatically.",
     fixHint: 'Use only spaces (recommended) or only tabs, not both.',
     category: 'syntax',
     phase: 'parse',
@@ -117,92 +124,137 @@ const ERROR_EXPLANATIONS: Record<string, ErrorInfo> = {
   // =========================================================================
   NameError: {
     friendlyType: 'Runtime Error',
-    explanation: 'You used a variable or function that was never defined.',
+    explanation: "Oops! You're trying to use something that doesn't exist yet.",
+    coachHint: "💡 Check the spelling of your variable names. Did you define it before using it?",
     fixHint: 'Check spelling and make sure the variable is defined before use.',
     category: 'runtime',
     phase: 'execution',
   },
   TypeError: {
     friendlyType: 'Runtime Error',
-    explanation: 'Operation applied to incompatible types.',
+    explanation: "You're trying to do something with the wrong type of data.",
+    coachHint: "💡 For example, you can't add a number to a string directly. Check what types your variables are!",
     fixHint: 'Check the types of your variables and convert if needed.',
     category: 'runtime',
     phase: 'execution',
   },
   ValueError: {
     friendlyType: 'Runtime Error',
-    explanation: 'The value is invalid for this operation.',
+    explanation: "The value you're using doesn't quite fit what's expected.",
+    coachHint: "💡 Double-check the input values. Maybe a conversion is needed?",
     fixHint: 'Check the input values being passed to the function.',
     category: 'runtime',
     phase: 'execution',
   },
   IndexError: {
     friendlyType: 'Runtime Error',
-    explanation: 'You tried to access an index that doesn\'t exist.',
+    explanation: "It looks like you're reaching for an item that isn't there!",
+    coachHint: "💡 Double-check your loop boundaries—remember that lists start at index 0, so the last item is at length-1.",
     fixHint: 'Check array/list bounds and ensure index is within range.',
     category: 'runtime',
     phase: 'execution',
   },
   KeyError: {
     friendlyType: 'Runtime Error',
-    explanation: 'The key doesn\'t exist in the dictionary.',
+    explanation: "That key doesn't exist in your dictionary.",
+    coachHint: "💡 Try using .get() instead, or check if the key exists first with 'if key in dict:'",
     fixHint: 'Check if the key exists before accessing, or use .get() method.',
     category: 'runtime',
     phase: 'execution',
   },
   AttributeError: {
     friendlyType: 'Runtime Error',
-    explanation: 'The object doesn\'t have this attribute or method.',
+    explanation: "You're calling a method or property that this object doesn't have.",
+    coachHint: "💡 Make sure you're using the right method name. You can use dir(object) to see what's available!",
     fixHint: 'Check the object type and available methods.',
     category: 'runtime',
     phase: 'execution',
   },
   ZeroDivisionError: {
     friendlyType: 'Runtime Error',
-    explanation: 'You tried to divide by zero.',
+    explanation: "Whoops! You tried to divide by zero—that's mathematically undefined.",
+    coachHint: "💡 Add a quick check: if divisor != 0: before dividing. Edge cases matter!",
     fixHint: 'Add a check to ensure the divisor is not zero.',
     category: 'runtime',
     phase: 'execution',
   },
   RecursionError: {
     friendlyType: 'Runtime Error',
-    explanation: 'Too many recursive calls — check your base case.',
+    explanation: "Your function is calling itself too many times without stopping!",
+    coachHint: "💡 Every recursive function needs a base case—a condition where it stops calling itself.",
     fixHint: 'Ensure your recursion has a proper base case that terminates.',
     category: 'runtime',
     phase: 'execution',
   },
   MemoryError: {
     friendlyType: 'Runtime Error',
-    explanation: 'Your code ran out of memory — optimize your solution.',
+    explanation: "Your solution ran out of memory—it might be storing too much data.",
+    coachHint: "💡 Think about optimizing: can you use less space? Sometimes a different approach is more efficient.",
     fixHint: 'Look for ways to reduce memory usage or use a more efficient algorithm.',
     category: 'runtime',
     phase: 'execution',
   },
   StopIteration: {
     friendlyType: 'Runtime Error',
-    explanation: 'Attempted to get next item from empty iterator.',
+    explanation: "You tried to get the next item from an empty iterator.",
+    coachHint: "💡 Before calling next(), make sure there are still items left to iterate over.",
     fixHint: 'Check if the iterator has items before calling next().',
     category: 'runtime',
     phase: 'execution',
   },
   UnboundLocalError: {
     friendlyType: 'Runtime Error',
-    explanation: 'Variable referenced before assignment in local scope.',
+    explanation: "You're using a variable before it has a value in this scope.",
+    coachHint: "💡 Either initialize it first, or if it's from outside the function, use the 'global' keyword.",
     fixHint: 'Initialize the variable before using it, or use "global" keyword.',
     category: 'runtime',
     phase: 'execution',
   },
   RuntimeError: {
     friendlyType: 'Runtime Error',
-    explanation: 'An error occurred while running your code.',
+    explanation: "Something unexpected happened while running your code.",
+    coachHint: "💡 Check the specific error message below for clues about what went wrong.",
     fixHint: 'Review the error message for specific guidance.',
     category: 'runtime',
     phase: 'execution',
   },
   Exception: {
     friendlyType: 'Runtime Error',
-    explanation: 'An exception was raised during execution.',
+    explanation: "An exception was raised during execution.",
+    coachHint: "💡 The error message should tell you exactly what happened. Let's fix it!",
     fixHint: 'Check the error message for details on what went wrong.',
+    category: 'runtime',
+    phase: 'execution',
+  },
+  AssertionError: {
+    friendlyType: 'Runtime Error',
+    explanation: "An assertion in your code failed.",
+    coachHint: "💡 Check your assert statements—the condition evaluated to False.",
+    fixHint: 'Verify the condition in your assert statement.',
+    category: 'runtime',
+    phase: 'execution',
+  },
+  OverflowError: {
+    friendlyType: 'Runtime Error',
+    explanation: "A number got too big for Python to handle!",
+    coachHint: "💡 This is rare in Python, but can happen with certain math operations. Try a different approach.",
+    fixHint: 'Use a different data type or algorithm to handle large numbers.',
+    category: 'runtime',
+    phase: 'execution',
+  },
+  ImportError: {
+    friendlyType: 'Runtime Error',
+    explanation: "Python couldn't import the module you requested.",
+    coachHint: "💡 Double-check the module name. Is it installed? Is the spelling correct?",
+    fixHint: 'Check the module name and ensure it is available.',
+    category: 'runtime',
+    phase: 'execution',
+  },
+  ModuleNotFoundError: {
+    friendlyType: 'Runtime Error',
+    explanation: "The module you're trying to import doesn't exist.",
+    coachHint: "💡 Check the spelling, or use only the standard library modules available in this environment.",
+    fixHint: 'Use only available standard library modules.',
     category: 'runtime',
     phase: 'execution',
   },
@@ -210,15 +262,35 @@ const ERROR_EXPLANATIONS: Record<string, ErrorInfo> = {
   // JavaScript errors
   ReferenceError: {
     friendlyType: 'Runtime Error',
-    explanation: 'You used a variable that was never defined.',
+    explanation: "You're using a variable that was never declared.",
+    coachHint: "💡 Did you forget to declare it with let, const, or var? Check the spelling too!",
     fixHint: 'Check spelling and make sure the variable is declared.',
     category: 'runtime',
     phase: 'execution',
   },
   RangeError: {
     friendlyType: 'Runtime Error',
-    explanation: 'A value is not in the expected range.',
+    explanation: "A value is outside the acceptable range.",
+    coachHint: "💡 This often happens with array sizes or recursive calls. Check your numbers!",
     fixHint: 'Check array sizes and numeric values.',
+    category: 'runtime',
+    phase: 'execution',
+  },
+
+  // Java/C++ errors
+  NullPointerException: {
+    friendlyType: 'Runtime Error',
+    explanation: "You tried to use something that's null (doesn't exist).",
+    coachHint: "💡 Before using an object, make sure it's been initialized. Add a null check!",
+    fixHint: 'Check for null before accessing object members.',
+    category: 'runtime',
+    phase: 'execution',
+  },
+  ArrayIndexOutOfBoundsException: {
+    friendlyType: 'Runtime Error',
+    explanation: "You're accessing an array index that doesn't exist.",
+    coachHint: "💡 Arrays are 0-indexed, so an array of size n has indices 0 to n-1.",
+    fixHint: 'Ensure array index is within bounds.',
     category: 'runtime',
     phase: 'execution',
   },
@@ -226,7 +298,8 @@ const ERROR_EXPLANATIONS: Record<string, ErrorInfo> = {
   // Generic fallback
   Error: {
     friendlyType: 'Runtime Error',
-    explanation: 'An unexpected error occurred.',
+    explanation: "An unexpected error occurred in your code.",
+    coachHint: "💡 Check the error message for clues. You've got this!",
     fixHint: 'Review the error message for specific guidance.',
     category: 'runtime',
     phase: 'execution',
@@ -234,24 +307,73 @@ const ERROR_EXPLANATIONS: Record<string, ErrorInfo> = {
 };
 
 // ============================================================================
-// Internal Path Patterns to Strip
+// Path-Blind Privacy Rule - Language-Agnostic Path Stripping
 // ============================================================================
 
-const INTERNAL_PATH_PATTERNS = [
-  /\/usr\/lib\/python/i,
-  /\/piston\/jobs\//i,
+const SERVER_PATH_PATTERNS = [
+  /\/piston\/jobs\/[a-zA-Z0-9\-_\/]+/g,
+  /\/usr\/lib\/[a-zA-Z0-9\-_\/\.]+/g,
+  /\/usr\/local\/[a-zA-Z0-9\-_\/\.]+/g,
+  /\/home\/[a-zA-Z0-9\-_\/\.]+/g,
+  /\/tmp\/[a-zA-Z0-9\-_\/\.]+/g,
+  /\/var\/[a-zA-Z0-9\-_\/\.]+/g,
+  /node:internal\/[a-zA-Z0-9\-_\/]+/g,
+  /C:\\[a-zA-Z0-9\-_\\\.]+/g,
+  /<frozen\s+[^>]+>/g,
+];
+
+function stripServerPaths(text: string, language: string): string {
+  let result = text;
+  
+  // Replace all server paths with generic name
+  for (const pattern of SERVER_PATH_PATTERNS) {
+    result = result.replace(pattern, '<system>');
+  }
+  
+  // Replace file references based on language
+  const langLower = language.toLowerCase();
+  const userFileName = langLower === 'python' ? 'Solution.py' 
+    : langLower === 'java' ? 'Solution.java'
+    : langLower === 'cpp' || langLower === 'c++' ? 'solution.cpp'
+    : langLower === 'c' ? 'solution.c'
+    : langLower === 'javascript' || langLower === 'typescript' ? 'Solution.js'
+    : '<your_code>';
+  
+  // Normalize various file references to user-friendly name
+  result = result
+    .replace(/File "\/piston\/jobs\/[^"]+"/g, `File "${userFileName}"`)
+    .replace(/File "<string>"/g, `File "${userFileName}"`)
+    .replace(/File "<module>"/g, `File "${userFileName}"`)
+    .replace(/<anonymous>/g, userFileName);
+  
+  return result;
+}
+
+// ============================================================================
+// Internal Frame Detection Patterns
+// ============================================================================
+
+const INTERNAL_FRAME_PATTERNS = [
   /importlib/i,
   /_bootstrap/i,
   /_driver\.py/i,
   /site-packages/i,
   /<frozen/i,
   /runpy\.py/i,
-  /code\.py/i,
   /__pycache__/i,
+  /node:internal/i,
+  /node_modules/i,
+  /\.m2\/repository/i,  // Java maven
+  /jdk.*internal/i,
+  /java\.base\//i,
+  /reflect\.Method/i,
+  /libstdc\+\+/i,  // C++ stdlib
+  /libc\+\+/i,
+  /__libc_start/i,
 ];
 
 function isInternalFrame(line: string): boolean {
-  return INTERNAL_PATH_PATTERNS.some(pattern => pattern.test(line));
+  return INTERNAL_FRAME_PATTERNS.some(pattern => pattern.test(line));
 }
 
 // ============================================================================
@@ -284,7 +406,7 @@ function isInternalError(errorText: string): boolean {
 }
 
 // ============================================================================
-// Syntax Error Detection (parse-time errors)
+// Syntax Error Detection
 // ============================================================================
 
 const SYNTAX_ERROR_TYPES = [
@@ -298,7 +420,7 @@ function isSyntaxErrorType(errorType: string): boolean {
 }
 
 // ============================================================================
-// Runtime Error Detection (execution-time crashes)
+// Runtime Error Detection
 // ============================================================================
 
 const RUNTIME_ERROR_TYPES = [
@@ -325,6 +447,16 @@ const RUNTIME_ERROR_TYPES = [
   'RangeError',
   'URIError',
   'EvalError',
+  // Java
+  'NullPointerException',
+  'ArrayIndexOutOfBoundsException',
+  'ClassCastException',
+  'NumberFormatException',
+  'IllegalArgumentException',
+  // C++
+  'std::out_of_range',
+  'std::runtime_error',
+  'std::logic_error',
 ];
 
 function isRuntimeErrorType(errorType: string): boolean {
@@ -332,39 +464,65 @@ function isRuntimeErrorType(errorType: string): boolean {
 }
 
 // ============================================================================
-// Caret/Pointer Detection (improved for indented pointers)
+// Caret/Pointer Detection and Generation
 // ============================================================================
 
-/**
- * Detect caret pointer lines, supporting indented pointers
- * Matches: "^", "    ^", "        ^^^", etc.
- */
 function isCaretLine(line: string): boolean {
   return /^\s*\^+\s*$/.test(line);
 }
 
 /**
- * Extract code line and caret pointer from Python error output
- * Handles both standard and indented caret formats
+ * Generate a caret pointer if column number is provided but no caret exists
+ */
+function generatePointer(column: number, leadingSpaces: number = 0): string {
+  const spaces = ' '.repeat(leadingSpaces + column - 1);
+  return `${spaces}^`;
+}
+
+/**
+ * Extract column number from error message (various formats)
+ */
+function extractColumnNumber(errorText: string): number | undefined {
+  // Python: "column X" or ":X" at end
+  const colMatch = errorText.match(/column\s*(\d+)/i) 
+    || errorText.match(/:\s*line\s*\d+,\s*column\s*(\d+)/i)
+    || errorText.match(/\(at column (\d+)\)/i);
+  
+  if (colMatch) {
+    return parseInt(colMatch[1], 10);
+  }
+  
+  // Java/C++: "^" position or column in parentheses
+  const javaColMatch = errorText.match(/\^/);
+  if (javaColMatch && javaColMatch.index !== undefined) {
+    return javaColMatch.index + 1;
+  }
+  
+  return undefined;
+}
+
+/**
+ * Extract code line and caret pointer from error output
  */
 function extractCodeAndPointer(
   lines: string[],
   startIndex: number
-): { codeLine?: string; pointer?: string } {
+): { codeLine?: string; pointer?: string; column?: number } {
   let codeLine: string | undefined;
   let pointer: string | undefined;
+  let column: number | undefined;
 
-  for (let i = startIndex; i < Math.min(startIndex + 3, lines.length); i++) {
+  for (let i = startIndex; i < Math.min(startIndex + 4, lines.length); i++) {
     const line = lines[i];
     
-    // Skip empty lines and error type lines
     if (!line.trim()) continue;
     if (/^(\w+Error|\w+Exception):/.test(line.trim())) continue;
     if (/^File\s/.test(line.trim())) continue;
     
-    // Check for caret pointer (supports indented pointers)
+    // Check for caret pointer
     if (isCaretLine(line)) {
       pointer = line;
+      column = line.indexOf('^') + 1;
       break;
     }
     
@@ -374,28 +532,92 @@ function extractCodeAndPointer(
     }
   }
 
-  return { codeLine, pointer };
+  return { codeLine, pointer, column };
 }
 
 // ============================================================================
-// Combine Friendly Explanation with Specific Error Message
+// Frame Segregation - Separate user frames from internal frames
 // ============================================================================
 
-function buildFriendlyMessage(explanation: string, specificMessage: string): string {
-  if (!specificMessage || specificMessage === explanation) {
-    return explanation;
+interface SegregatedFrames {
+  userFrames: string[];
+  internalFrames: string[];
+  userLine?: number;
+  codeLine?: string;
+  pointer?: string;
+}
+
+function segregateFrames(
+  errorText: string,
+  language: string,
+  userCodeLineCount: number
+): SegregatedFrames {
+  const lines = errorText.split('\n');
+  const userFrames: string[] = [];
+  const internalFrames: string[] = [];
+  let userLine: number | undefined;
+  let codeLine: string | undefined;
+  let pointer: string | undefined;
+  
+  const langLower = language.toLowerCase();
+  const userFileNames = USER_FILE_NAMES[langLower] || ['<your_code>'];
+  const userCodeOffset = USER_CODE_START_LINES[langLower] || 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    
+    // Skip empty lines
+    if (!trimmedLine) continue;
+    
+    // Check if this is an internal frame
+    if (isInternalFrame(line)) {
+      internalFrames.push(line);
+      continue;
+    }
+    
+    // Check for user file reference
+    const isUserFrame = userFileNames.some(name => 
+      line.toLowerCase().includes(name.toLowerCase())
+    ) || line.includes('<string>') || line.includes('<module>');
+    
+    if (isUserFrame) {
+      // Extract line number
+      const lineMatch = line.match(/line\s*(\d+)/i);
+      if (lineMatch) {
+        const rawLine = parseInt(lineMatch[1], 10);
+        const mappedLine = rawLine - userCodeOffset + 1;
+        
+        if (mappedLine >= 1 && mappedLine <= userCodeLineCount) {
+          userLine = mappedLine;
+        }
+      }
+      
+      // Extract code and pointer from subsequent lines
+      const extracted = extractCodeAndPointer(lines, i + 1);
+      if (extracted.codeLine) codeLine = extracted.codeLine;
+      if (extracted.pointer) pointer = extracted.pointer;
+      
+      userFrames.push(line);
+    } else if (/^(\w+Error|\w+Exception):/.test(trimmedLine)) {
+      // Error type line - goes to user frames
+      userFrames.push(line);
+    } else if (isCaretLine(line)) {
+      // Caret pointer - associate with user frames
+      pointer = line;
+      userFrames.push(line);
+    } else if (!line.startsWith(' ') && !line.includes('Traceback')) {
+      // Code snippet lines typically aren't indented with "at" or "File"
+      userFrames.push(line);
+    } else {
+      // Default to user frames if not clearly internal
+      if (!line.includes('Traceback')) {
+        userFrames.push(line);
+      }
+    }
   }
   
-  // Clean up the specific message
-  const cleanMessage = specificMessage.trim();
-  
-  // If explanation already contains the essence of the message, don't duplicate
-  if (explanation.toLowerCase().includes(cleanMessage.toLowerCase())) {
-    return explanation;
-  }
-  
-  // Combine: friendly explanation + specific error
-  return `${explanation} ${cleanMessage}`;
+  return { userFrames, internalFrames, userLine, codeLine, pointer };
 }
 
 // ============================================================================
@@ -414,27 +636,37 @@ function parsePythonError(
     isUserCodeError: true,
     friendlyType: 'Runtime Error',
     friendlyMessage: 'An error occurred',
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: '',
     rawError: errorText,
   };
 
   const lines = errorText.split('\n');
+  
+  // Segregate frames
+  const segregated = segregateFrames(errorText, 'python', userCodeLineCount);
+  result.internalTraceback = segregated.internalFrames;
+  result.userTraceback = segregated.userFrames;
+  result.userLine = segregated.userLine;
+  result.codeLine = segregated.codeLine;
+  result.codeSnippet = segregated.codeLine;
+  result.pointer = segregated.pointer;
 
-  // 1. Extract error type and message from the last error line
-  let errorTypeLineIndex = -1;
+  // Extract error type and message from the last error line
   for (let i = lines.length - 1; i >= 0; i--) {
     const match = lines[i].match(/^(\w+(?:Error|Exception)):\s*(.*)$/);
     if (match) {
       result.type = match[1];
       result.message = match[2].trim();
-      errorTypeLineIndex = i;
       break;
     }
   }
 
-  // 2. Handle SyntaxError with detailed messages (Python 3.10+)
+  // Handle SyntaxError with detailed messages (Python 3.10+)
   if (result.type === 'SyntaxError' && !result.message) {
-    for (let i = 0; i < lines.length; i++) {
-      const syntaxMatch = lines[i].match(/^\s*(?:SyntaxError:\s*)?(.+(?:was never closed|unexpected EOF|invalid syntax|expected).*)$/i);
+    for (const line of lines) {
+      const syntaxMatch = line.match(/^\s*(?:SyntaxError:\s*)?(.+(?:was never closed|unexpected EOF|invalid syntax|expected).*)$/i);
       if (syntaxMatch) {
         result.message = syntaxMatch[1].trim();
         break;
@@ -442,99 +674,33 @@ function parsePythonError(
     }
   }
 
-  // 3. Extract line number - find the LAST user-code relevant line reference
-  let relevantLineNumber: number | undefined;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Skip internal frames
-    if (isInternalFrame(line)) continue;
-
-    // Match: File "...", line X or File "<string>", line X
-    const fileLineMatch = line.match(/File\s*"([^"]*)",\s*line\s*(\d+)/i);
-    if (fileLineMatch) {
-      const fileName = fileLineMatch[1];
-      const lineNum = parseInt(fileLineMatch[2], 10);
-      
-      // Skip if it's clearly an internal file
-      if (!isInternalFrame(fileName)) {
-        relevantLineNumber = lineNum;
-        
-        // Extract code line and pointer from subsequent lines
-        const { codeLine, pointer } = extractCodeAndPointer(lines, i + 1);
-        if (codeLine) {
-          result.codeLine = codeLine;
-          result.codeSnippet = codeLine;
-        }
-        if (pointer) {
-          result.pointer = pointer;
-        }
-      }
-    }
-  }
-
-  // 4. For SyntaxError, also scan for standalone code + pointer blocks
-  if (isSyntaxErrorType(result.type)) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Look for caret pointer line (supports indented pointers)
-      if (isCaretLine(line) && i > 0) {
-        // Previous non-empty line should be the code
-        for (let j = i - 1; j >= 0; j--) {
-          const prevLine = lines[j];
-          if (prevLine.trim() && !prevLine.match(/File\s/) && !prevLine.match(/^(\w+Error|\w+Exception):/)) {
-            result.codeLine = prevLine.replace(/^\s+/, '');
-            result.codeSnippet = result.codeLine;
-            result.pointer = line;
-            break;
-          }
-        }
-        break;
-      }
-    }
-  }
-
-  // 5. Map line number to user's visible code
-  if (relevantLineNumber !== undefined) {
-    result.originalLine = relevantLineNumber;
-    const userCodeStartLine = USER_CODE_START_LINES.python;
-    const mappedLine = relevantLineNumber - userCodeStartLine + 1;
-    
-    if (mappedLine >= 1 && mappedLine <= userCodeLineCount) {
-      result.userLine = mappedLine;
-      result.isUserCodeError = true;
-    } else if (mappedLine < 1) {
-      result.isUserCodeError = false;
-    }
-  }
-
-  // 6. Determine category and phase based on error type
+  // Determine category and phase
   const errorInfo = ERROR_EXPLANATIONS[result.type] || ERROR_EXPLANATIONS.Error;
   
   if (isSyntaxErrorType(result.type)) {
     result.category = 'syntax';
     result.executionPhase = 'parse';
     result.friendlyType = 'Syntax Error';
-    // For syntax errors: Keep ONLY the human-friendly explanation
-    // Raw compiler messages go in "View technical details" via rawError
     result.friendlyMessage = errorInfo.explanation;
+    result.coachHint = errorInfo.coachHint;
   } else if (isRuntimeErrorType(result.type)) {
     result.category = 'runtime';
     result.executionPhase = 'execution';
     result.friendlyType = 'Runtime Error';
-    // For runtime errors: Primary message explains code crashed
-    // Specific error details shown separately in UI
-    result.friendlyMessage = 'Your code started running but crashed during execution.';
-    result.fixHint = errorInfo.fixHint || 'This often happens due to invalid indexing, division by zero, or accessing missing values.';
+    result.friendlyMessage = errorInfo.explanation;
+    result.coachHint = errorInfo.coachHint;
   } else {
     result.category = errorInfo.category;
     result.executionPhase = errorInfo.phase;
     result.friendlyType = errorInfo.friendlyType;
-    result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
-    result.fixHint = errorInfo.fixHint;
+    result.friendlyMessage = errorInfo.explanation;
+    result.coachHint = errorInfo.coachHint;
   }
+  
+  result.fixHint = errorInfo.fixHint;
+  
+  // Generate cleaned output (paths stripped, internal frames removed)
+  result.cleanedOutput = buildCleanedOutput(result, 'python');
 
   return result;
 }
@@ -555,8 +721,16 @@ function parseJavaScriptError(
     isUserCodeError: true,
     friendlyType: 'Runtime Error',
     friendlyMessage: 'An error occurred',
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: '',
     rawError: errorText,
   };
+
+  // Segregate frames
+  const segregated = segregateFrames(errorText, 'javascript', userCodeLineCount);
+  result.internalTraceback = segregated.internalFrames;
+  result.userTraceback = segregated.userFrames;
 
   // Extract error type and message
   const errorTypeMatch = errorText.match(/^(\w+Error):\s*(.*)$/m);
@@ -565,7 +739,7 @@ function parseJavaScriptError(
     result.message = errorTypeMatch[2].trim();
   }
 
-  // Check for SyntaxError (syntax category)
+  // Check for SyntaxError
   if (result.type === 'SyntaxError') {
     result.category = 'syntax';
     result.executionPhase = 'parse';
@@ -576,6 +750,7 @@ function parseJavaScriptError(
   const lineMatches = [
     ...errorText.matchAll(/<anonymous>:(\d+):\d+/g),
     ...errorText.matchAll(/at\s+.*:(\d+):\d+/g),
+    ...errorText.matchAll(/Solution\.js:(\d+):\d+/g),
   ];
 
   if (lineMatches.length > 0) {
@@ -593,17 +768,181 @@ function parseJavaScriptError(
     }
   }
 
-  // Get friendly error info and build combined message
+  // Get friendly error info
   const errorInfo = ERROR_EXPLANATIONS[result.type] || ERROR_EXPLANATIONS.Error;
   if (result.category !== 'syntax') {
     result.category = errorInfo.category;
     result.executionPhase = errorInfo.phase;
     result.friendlyType = errorInfo.friendlyType;
   }
-  result.friendlyMessage = buildFriendlyMessage(errorInfo.explanation, result.message);
+  result.friendlyMessage = errorInfo.explanation;
+  result.coachHint = errorInfo.coachHint;
   result.fixHint = errorInfo.fixHint;
+  
+  // Generate cleaned output
+  result.cleanedOutput = buildCleanedOutput(result, 'javascript');
 
   return result;
+}
+
+// ============================================================================
+// Java Error Parser
+// ============================================================================
+
+function parseJavaError(
+  errorText: string,
+  userCodeLineCount: number
+): ParsedError {
+  const result: ParsedError = {
+    type: 'Error',
+    message: '',
+    category: 'runtime',
+    executionPhase: 'execution',
+    isUserCodeError: true,
+    friendlyType: 'Runtime Error',
+    friendlyMessage: 'An error occurred',
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: '',
+    rawError: errorText,
+  };
+
+  // Segregate frames
+  const segregated = segregateFrames(errorText, 'java', userCodeLineCount);
+  result.internalTraceback = segregated.internalFrames;
+  result.userTraceback = segregated.userFrames;
+
+  // Extract Java exception type and message
+  const exceptionMatch = errorText.match(/^([\w.]+(?:Exception|Error)):\s*(.*)$/m);
+  if (exceptionMatch) {
+    result.type = exceptionMatch[1].split('.').pop() || exceptionMatch[1];
+    result.message = exceptionMatch[2].trim();
+  }
+
+  // Look for line number in stack trace
+  const lineMatch = errorText.match(/Solution\.java:(\d+)/i);
+  if (lineMatch) {
+    const originalLine = parseInt(lineMatch[1], 10);
+    result.originalLine = originalLine;
+    
+    const userCodeStartLine = USER_CODE_START_LINES.java;
+    const mappedLine = originalLine - userCodeStartLine + 1;
+    
+    if (mappedLine >= 1 && mappedLine <= userCodeLineCount) {
+      result.userLine = mappedLine;
+      result.isUserCodeError = true;
+    }
+  }
+
+  // Get friendly error info
+  const errorInfo = ERROR_EXPLANATIONS[result.type] || ERROR_EXPLANATIONS.Error;
+  result.friendlyMessage = errorInfo.explanation;
+  result.coachHint = errorInfo.coachHint;
+  result.fixHint = errorInfo.fixHint;
+  
+  // Generate cleaned output
+  result.cleanedOutput = buildCleanedOutput(result, 'java');
+
+  return result;
+}
+
+// ============================================================================
+// C++ Error Parser
+// ============================================================================
+
+function parseCppError(
+  errorText: string,
+  userCodeLineCount: number
+): ParsedError {
+  const result: ParsedError = {
+    type: 'Error',
+    message: '',
+    category: 'runtime',
+    executionPhase: 'execution',
+    isUserCodeError: true,
+    friendlyType: 'Runtime Error',
+    friendlyMessage: 'An error occurred',
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: '',
+    rawError: errorText,
+  };
+
+  // Segregate frames
+  const segregated = segregateFrames(errorText, 'cpp', userCodeLineCount);
+  result.internalTraceback = segregated.internalFrames;
+  result.userTraceback = segregated.userFrames;
+
+  // Extract C++ error type
+  const errorMatch = errorText.match(/^(std::[\w_]+|error:)\s*(.*)$/mi);
+  if (errorMatch) {
+    result.type = errorMatch[1];
+    result.message = errorMatch[2].trim();
+  }
+
+  // Look for line number in compiler output (solution.cpp:X:Y)
+  const lineMatch = errorText.match(/solution\.cpp:(\d+)(?::(\d+))?/i);
+  if (lineMatch) {
+    const originalLine = parseInt(lineMatch[1], 10);
+    result.originalLine = originalLine;
+    
+    const userCodeStartLine = USER_CODE_START_LINES.cpp;
+    const mappedLine = originalLine - userCodeStartLine + 1;
+    
+    if (mappedLine >= 1 && mappedLine <= userCodeLineCount) {
+      result.userLine = mappedLine;
+      result.isUserCodeError = true;
+      
+      // Generate pointer if column is available
+      if (lineMatch[2]) {
+        const column = parseInt(lineMatch[2], 10);
+        result.pointer = generatePointer(column);
+      }
+    }
+  }
+
+  // Get friendly error info
+  const errorInfo = ERROR_EXPLANATIONS[result.type] || ERROR_EXPLANATIONS.Error;
+  result.friendlyMessage = errorInfo.explanation;
+  result.coachHint = errorInfo.coachHint;
+  result.fixHint = errorInfo.fixHint;
+  
+  // Generate cleaned output
+  result.cleanedOutput = buildCleanedOutput(result, 'cpp');
+
+  return result;
+}
+
+// ============================================================================
+// Build Cleaned Output (for UI display)
+// ============================================================================
+
+function buildCleanedOutput(parsed: ParsedError, language: string): string {
+  const lines: string[] = [];
+  
+  // Add error type and message
+  if (parsed.type && parsed.message) {
+    lines.push(`${parsed.type}: ${parsed.message}`);
+  } else if (parsed.type) {
+    lines.push(parsed.type);
+  }
+  
+  // Add code line if available
+  if (parsed.codeLine) {
+    lines.push('');
+    lines.push(`    ${parsed.codeLine}`);
+    if (parsed.pointer) {
+      lines.push(parsed.pointer);
+    }
+  }
+  
+  // Add user line reference
+  if (parsed.userLine) {
+    lines.push(`Line ${parsed.userLine}  (${language === 'python' ? 'Solution.py' : language === 'java' ? 'Solution.java' : 'solution.cpp'})`);
+  }
+  
+  // Strip server paths from the output
+  return stripServerPaths(lines.join('\n'), language);
 }
 
 // ============================================================================
@@ -618,8 +957,12 @@ function createInternalError(errorText: string): ParsedError {
     executionPhase: 'system',
     isUserCodeError: false,
     friendlyType: 'Internal Error',
-    friendlyMessage: 'This looks like a system issue on our side. Please try again.',
+    friendlyMessage: "Hmm, this looks like a hiccup on our end, not your code!",
+    coachHint: "💡 Try running your code again. If it keeps happening, let us know!",
     fixHint: 'This is not your fault. Please try running your code again.',
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: errorText,
     rawError: errorText,
   };
 }
@@ -630,10 +973,7 @@ function createInternalError(errorText: string): ParsedError {
 
 /**
  * Parse error output from code execution and map to user's visible lines
- * Implements LeetCode-style error normalization
- * 
- * RESPONSIBILITY: Handles ONLY Syntax Errors, Runtime Errors, and Internal Errors.
- * Does NOT handle Logical Errors (output comparison, test case results, Wrong Answer).
+ * Implements student-first error normalization
  */
 export function parseCodeError(
   errorText: string,
@@ -645,8 +985,7 @@ export function parseCodeError(
     return createInternalError(errorText || '');
   }
 
-  // Check for internal/platform errors first (timeouts, signals, infrastructure)
-  // These should NEVER blame the learner
+  // Check for internal/platform errors first
   if (isInternalError(errorText)) {
     return createInternalError(errorText);
   }
@@ -661,7 +1000,15 @@ export function parseCodeError(
     return parseJavaScriptError(errorText, userCodeLineCount);
   }
 
-  // Generic fallback for unsupported languages
+  if (normalizedLang === 'java') {
+    return parseJavaError(errorText, userCodeLineCount);
+  }
+
+  if (normalizedLang === 'cpp' || normalizedLang === 'c++' || normalizedLang === 'c') {
+    return parseCppError(errorText, userCodeLineCount);
+  }
+
+  // Generic fallback
   return {
     type: 'Error',
     message: errorText,
@@ -669,7 +1016,11 @@ export function parseCodeError(
     executionPhase: 'execution',
     isUserCodeError: true,
     friendlyType: 'Runtime Error',
-    friendlyMessage: 'An error occurred during execution.',
+    friendlyMessage: "Something went wrong while running your code.",
+    coachHint: "💡 Check the error message for clues!",
+    internalTraceback: [],
+    userTraceback: [],
+    cleanedOutput: stripServerPaths(errorText, language),
     rawError: errorText,
   };
 }
@@ -680,11 +1031,15 @@ export function parseCodeError(
 
 export function formatErrorForDisplay(parsed: ParsedError): string {
   if (!parsed.isUserCodeError) {
-    return `Internal Error\n\nThis looks like a system issue on our side. Please try again.`;
+    return `Internal Error\n\n${parsed.friendlyMessage}`;
   }
 
   let formatted = `${parsed.friendlyType}\n\n`;
   formatted += `${parsed.friendlyMessage}`;
+  
+  if (parsed.coachHint) {
+    formatted += `\n\n${parsed.coachHint}`;
+  }
   
   if (parsed.userLine && parsed.codeLine) {
     formatted += `\n\nLine ${parsed.userLine}:\n${parsed.codeLine}`;
@@ -697,7 +1052,32 @@ export function formatErrorForDisplay(parsed: ParsedError): string {
 }
 
 // ============================================================================
-// Monaco Editor Decorations (Preserved)
+// Clean Error Message (Strip paths and internal details)
+// ============================================================================
+
+export function cleanErrorMessage(errorText: string, language: string = 'python'): string {
+  const lines = errorText.split('\n');
+  const cleanedLines: string[] = [];
+  
+  for (const line of lines) {
+    // Skip internal stack frames
+    if (isInternalFrame(line)) continue;
+    
+    // Skip "Traceback (most recent call last):" header
+    if (line.includes('Traceback (most recent call last)')) continue;
+    
+    // Skip "During handling of the above exception" messages
+    if (line.includes('During handling of')) continue;
+    
+    cleanedLines.push(line);
+  }
+  
+  // Strip server paths from the result
+  return stripServerPaths(cleanedLines.join('\n').trim(), language);
+}
+
+// ============================================================================
+// Monaco Editor Decorations
 // ============================================================================
 
 export function getErrorLineDecorations(
@@ -732,45 +1112,12 @@ export function getErrorLineDecorations(
 }
 
 // ============================================================================
-// Clean Error Message (Strip paths and internal details)
-// ============================================================================
-
-export function cleanErrorMessage(errorText: string): string {
-  const lines = errorText.split('\n');
-  const cleanedLines: string[] = [];
-  
-  for (const line of lines) {
-    // Skip internal stack frames
-    if (isInternalFrame(line)) continue;
-    
-    // Skip "Traceback (most recent call last):" header
-    if (line.includes('Traceback (most recent call last)')) continue;
-    
-    // Skip "During handling of the above exception" messages
-    if (line.includes('During handling of')) continue;
-    
-    // Clean file paths
-    let cleanedLine = line
-      .replace(/File "\/piston\/jobs\/[^"]+"/g, 'File "<your code>"')
-      .replace(/File "<string>"/g, 'File "<your code>"');
-    
-    cleanedLines.push(cleanedLine);
-  }
-  
-  return cleanedLines.join('\n').trim();
-}
-
-// ============================================================================
-// Utility: Check if error is user-actionable
+// Utility Functions
 // ============================================================================
 
 export function isUserActionableError(parsed: ParsedError): boolean {
   return parsed.isUserCodeError && parsed.category !== 'internal';
 }
-
-// ============================================================================
-// Utility: Get phase display text
-// ============================================================================
 
 export function getPhaseDisplayText(phase: ExecutionPhase): string {
   switch (phase) {
@@ -785,25 +1132,16 @@ export function getPhaseDisplayText(phase: ExecutionPhase): string {
   }
 }
 
-// ============================================================================
-// Utility: Check if this is a syntax error (no test results should be shown)
-// ============================================================================
-
 export function isSyntaxError(parsed: ParsedError): boolean {
   return parsed.category === 'syntax';
 }
-
-// ============================================================================
-// Utility: Check if this is a runtime error (show failing test case only)
-// ============================================================================
 
 export function isRuntimeError(parsed: ParsedError): boolean {
   return parsed.category === 'runtime';
 }
 
 // ============================================================================
-// Utility: Detect runtime error pattern in raw output string
-// Used when error might appear in result.actual instead of result.error
+// Pattern Detection for Raw Output
 // ============================================================================
 
 const RUNTIME_ERROR_PATTERN = new RegExp(
@@ -811,31 +1149,31 @@ const RUNTIME_ERROR_PATTERN = new RegExp(
   'i'
 );
 
-/**
- * Check if a raw string contains a runtime/syntax error pattern
- * This is used to detect errors that appear in output instead of error field
- */
 export function containsErrorPattern(text: string | undefined | null): boolean {
   if (!text) return false;
   return RUNTIME_ERROR_PATTERN.test(text.trim());
 }
 
-/**
- * Detect if text looks like a Python/JS exception output
- * More permissive check for edge cases
- */
 export function looksLikeError(text: string | undefined | null): boolean {
   if (!text) return false;
   const trimmed = text.trim();
   
-  // Check for standard error format: "ErrorType: message"
   if (RUNTIME_ERROR_PATTERN.test(trimmed)) return true;
-  
-  // Check for Traceback format
   if (/^Traceback \(most recent call last\)/i.test(trimmed)) return true;
-  
-  // Check for "Error:" anywhere at start of line
   if (/^[A-Z][a-zA-Z]*Error:/m.test(trimmed)) return true;
   
   return false;
+}
+
+// ============================================================================
+// Get Internal Frames for "View More" Toggle
+// ============================================================================
+
+export function getInternalFramesForDisplay(parsed: ParsedError): string {
+  if (parsed.internalTraceback.length === 0) return '';
+  return parsed.internalTraceback.join('\n');
+}
+
+export function hasInternalFrames(parsed: ParsedError): boolean {
+  return parsed.internalTraceback.length > 0;
 }
