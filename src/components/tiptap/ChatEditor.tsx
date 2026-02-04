@@ -182,12 +182,11 @@ export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
     localStorage.setItem('chatEditorViewMode', mode);
   }, []);
 
-  // Insert code block as markdown
+  // Insert code block as TipTap node
   const insertCodeBlock = useCallback((language: string) => {
     if (!editor) return;
-    const { from, to } = editor.state.selection;
-    const codeBlock = `\n\`\`\`${language}\n# Your code here\n\`\`\`\n`;
-    editor.chain().focus().deleteRange({ from, to }).insertContent(codeBlock).run();
+    // Use TipTap's setCodeBlock command to properly insert a codeBlock node
+    editor.chain().focus().setCodeBlock({ language }).insertContent('# Your code here').run();
   }, [editor]);
 
   // Insert link

@@ -43,6 +43,37 @@
   min-height: 60px;
 }
 
+/* Code blocks in chat editor - styled like the rest */
+.tiptap-chat-editor .ProseMirror pre {
+  background: hsl(142 20% 95%);
+  color: hsl(142 30% 25%);
+  border: 1px solid hsl(142 20% 88%);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin: 0.5em 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tiptap-chat-editor .ProseMirror pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+/* Dark mode chat editor code blocks */
+.dark .tiptap-chat-editor .ProseMirror pre {
+  background: hsl(142 20% 12%);
+  color: hsl(142 30% 80%);
+  border-color: hsl(142 20% 20%);
+}
+
 /* Placeholder */
 .tiptap-editor .ProseMirror p.tiptap-empty:first-child::before,
 .tiptap-light-editor .ProseMirror p.tiptap-empty:first-child::before,
