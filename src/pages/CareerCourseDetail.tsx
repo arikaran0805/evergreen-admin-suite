@@ -33,6 +33,7 @@ import { useLessonTimeTracking } from "@/hooks/useLessonTimeTracking";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserState } from "@/hooks/useUserState";
 import { useCareerBoard } from "@/contexts/CareerBoardContext";
+import { usePracticeSkillByCourse, useLessonProblemCounts } from "@/hooks/useLessonProblems";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotesTabOpener } from "@/hooks/useNotesTabManager";
@@ -259,6 +260,10 @@ const CareerCourseDetail = () => {
   // Course progress hook
   const { progress, markLessonViewed, markLessonCompleted, isLessonCompleted, refetch: refetchProgress } = useCourseProgress(course?.id);
   const [markingComplete, setMarkingComplete] = useState(false);
+
+  // Practice problems linking hooks
+  const { data: practiceSkill } = usePracticeSkillByCourse(course?.id);
+  const { data: lessonProblemCounts } = useLessonProblemCounts(course?.id);
 
   // Time tracking hook
   useLessonTimeTracking({ lessonId: selectedPost?.id, courseId: course?.id });
@@ -1293,6 +1298,8 @@ const CareerCourseDetail = () => {
           showAnnouncement={showAnnouncement}
           isAuthenticated={!!user}
           isCareerBoard={true}
+          practiceSkillId={practiceSkill?.id}
+          lessonProblemCounts={lessonProblemCounts}
           getPostsForLesson={getPostsForLesson}
           getLessonProgress={getLessonProgress}
           isLessonCompleted={isLessonCompleted}
