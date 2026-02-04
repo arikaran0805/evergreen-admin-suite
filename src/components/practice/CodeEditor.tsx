@@ -21,6 +21,7 @@ import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { formatCode, registerMonacoFormatters, supportsFormatting } from "@/lib/formatters/codeFormatter";
 import { toast } from "sonner";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 interface CodeEditorProps {
   problem: ProblemDetail;
@@ -107,6 +108,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   ref
 ) {
   const { theme } = useTheme();
+  const { settings: platformSettings } = usePlatformSettings();
   const availableLanguages = supportedLanguages && supportedLanguages.length > 0 
     ? supportedLanguages 
     : Object.keys(problem.starterCode);
@@ -153,6 +155,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     },
     getLineCount: () => code.split('\n').length,
     highlightErrorLine: (line: number) => {
+      // Respect the highlightErrorLines setting
+      if (!platformSettings.advanced.highlightErrorLines) return;
+      
       if (editorRef.current && monacoRef.current) {
         const monaco = monacoRef.current;
         decorationsRef.current = editorRef.current.deltaDecorations(
@@ -180,10 +185,21 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
         );
       }
     },
-  }), [code, language, problem.starterCode]);
+  }), [code, language, problem.starterCode, platformSettings.advanced.highlightErrorLines]);
 
-  // Handle external error line changes
+  // Handle external error line changes - respects highlightErrorLines setting
   useEffect(() => {
+    if (!platformSettings.advanced.highlightErrorLines) {
+      // Clear any existing highlights if setting is disabled
+      if (editorRef.current) {
+        decorationsRef.current = editorRef.current.deltaDecorations(
+          decorationsRef.current,
+          []
+        );
+      }
+      return;
+    }
+    
     if (errorLine && editorRef.current && monacoRef.current) {
       const monaco = monacoRef.current;
       decorationsRef.current = editorRef.current.deltaDecorations(
@@ -207,7 +223,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
         []
       );
     }
-  }, [errorLine]);
+  }, [errorLine, platformSettings.advanced.highlightErrorLines]);
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
