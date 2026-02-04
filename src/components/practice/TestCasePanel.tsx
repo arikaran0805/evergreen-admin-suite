@@ -205,14 +205,9 @@ export function TestCasePanel({
   const hasResults = results.length > 0;
   const hasError = globalError || results.some(r => r.error);
 
-  // Auto-highlight error line when globalError changes
+  // Auto-highlight error line when globalError changes (disabled in minimal mode)
   useEffect(() => {
-    if (globalError && onErrorLineClick) {
-      const parsed = parseCodeError(globalError, language, userCodeLineCount);
-      if (parsed.userLine && parsed.userLine > 0) {
-        onErrorLineClick(parsed.userLine);
-      }
-    }
+    // Minimal parser doesn't extract line numbers - no-op
   }, [globalError, language, userCodeLineCount, onErrorLineClick]);
 
   // Sort results: show sample (visible) test cases first if setting is enabled
