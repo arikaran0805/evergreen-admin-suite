@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, X, Clock, Terminal, Expand, Shrink, PanelBottomClose, PanelBottomOpen, Eye, AlertTriangle, Copy, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseCodeError, isSyntaxError, isRuntimeError, looksLikeError } from "@/lib/errorParser";
+import type { Verdict } from "@/hooks/useCodeJudge";
 
 export interface TestResult {
   id: number;
@@ -32,15 +33,18 @@ interface TestCasePanelProps {
   userCodeLineCount?: number;
   onErrorLineClick?: (line: number) => void;
   globalError?: string;
+  /** Whether this is a submit (true) or run (false) */
   isSubmit?: boolean;
-  // New settings-driven props
+  /** Verdict from judge (for submit mode display) */
+  verdict?: Verdict;
+  // Settings-driven props
   showSampleTestcasesFirst?: boolean;
   revealOutputOnlyAfterRun?: boolean;
   hasRunOnce?: boolean;
 }
 
 // Hidden Test Case Component with expandable output
-function HiddenTestCase({ result, index }: { result: TestResult; index: number }) {
+function HiddenTestCase({ result, index, isSubmit }: { result: TestResult; index: number; isSubmit: boolean }) {
   const [showOutput, setShowOutput] = useState(false);
   
   const inputValue = (result.input ?? "").toString();
@@ -48,8 +52,6 @@ function HiddenTestCase({ result, index }: { result: TestResult; index: number }
 
   const hasInput = inputValue.trim().length > 0;
   const hasExpected = expectedValue.trim().length > 0;
-
-  // But we should always show the user's actual output
   const actualOutput = result.actual?.toString().trim();
   const hasActualOutput = actualOutput && actualOutput.length > 0;
   
@@ -66,18 +68,21 @@ function HiddenTestCase({ result, index }: { result: TestResult; index: number }
         {result.runtime && (
           <span className="text-xs text-muted-foreground">{result.runtime}</span>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs gap-1 ml-auto shrink-0"
-          onClick={() => setShowOutput(!showOutput)}
-        >
-          <Eye className="h-3 w-3" />
-          {showOutput ? "Hide" : "Show Output"}
-        </Button>
+        {/* In submit mode, don't allow showing hidden test details */}
+        {!isSubmit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs gap-1 ml-auto shrink-0"
+            onClick={() => setShowOutput(!showOutput)}
+          >
+            <Eye className="h-3 w-3" />
+            {showOutput ? "Hide" : "Show Output"}
+          </Button>
+        )}
       </div>
       
-      {showOutput && (
+      {showOutput && !isSubmit && (
         <div className="mt-3 space-y-2 text-sm font-mono border-t border-border/50 pt-3">
           <div>
             <span className="text-muted-foreground">Input: </span>
@@ -129,7 +134,6 @@ function LeetCodeErrorBox({ content }: { content: string }) {
 
   return (
     <div className="relative rounded-lg bg-red-500/10 p-4">
-      {/* Copy Button - Top Right */}
       <button
         onClick={handleCopy}
         className="absolute top-3 right-3 p-1.5 rounded hover:bg-red-500/20 transition-colors text-red-400"
@@ -142,7 +146,6 @@ function LeetCodeErrorBox({ content }: { content: string }) {
         )}
       </button>
 
-      {/* Error Content - Monospace */}
       <div className={cn(
         "font-mono text-sm text-red-500 pr-10 overflow-x-auto",
         !expanded && lineCount > 8 && "max-h-40 overflow-hidden"
@@ -152,7 +155,6 @@ function LeetCodeErrorBox({ content }: { content: string }) {
         </pre>
       </div>
 
-      {/* View Less/More Toggle */}
       {lineCount > 8 && (
         <button
           onClick={() => setExpanded(!expanded)}
@@ -175,6 +177,53 @@ function LeetCodeErrorBox({ content }: { content: string }) {
   );
 }
 
+// Submit mode verdict banner
+function SubmitVerdictBanner({ 
+  verdict, 
+  passedCount, 
+  totalCount,
+  globalError 
+}: { 
+  verdict?: Verdict; 
+  passedCount: number; 
+  totalCount: number;
+  globalError?: string;
+}) {
+  const allPassed = verdict === 'accepted';
+  
+  // Determine display based on verdict
+  let title = 'Wrong Answer';
+  let bgColor = 'bg-red-500/10';
+  let textColor = 'text-red-500';
+  
+  if (verdict === 'accepted') {
+    title = 'Accepted';
+    bgColor = 'bg-green-500/10';
+    textColor = 'text-green-600 dark:text-green-500';
+  } else if (verdict === 'compilation_error') {
+    title = 'Compilation Error';
+  } else if (verdict === 'runtime_error') {
+    title = 'Runtime Error';
+  } else if (verdict === 'time_limit_exceeded') {
+    title = 'Time Limit Exceeded';
+    bgColor = 'bg-amber-500/10';
+    textColor = 'text-amber-600 dark:text-amber-500';
+  }
+  
+  return (
+    <div className={cn("p-4 rounded-lg", bgColor)}>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <span className={cn("text-xl font-semibold", textColor)}>
+          {title}
+        </span>
+        <span className={cn("text-sm", allPassed ? "text-green-600/80 dark:text-green-500/80" : "text-muted-foreground")}>
+          {passedCount} / {totalCount} testcases passed
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function TestCasePanel({
   testCases, 
   results, 
@@ -191,6 +240,7 @@ export function TestCasePanel({
   onErrorLineClick,
   globalError,
   isSubmit = false,
+  verdict,
   showSampleTestcasesFirst = true,
   revealOutputOnlyAfterRun = false,
   hasRunOnce = false,
@@ -205,7 +255,7 @@ export function TestCasePanel({
   const hasResults = results.length > 0;
   const hasError = globalError || results.some(r => r.error);
 
-  // Auto-highlight error line when globalError changes (disabled in minimal mode)
+  // Auto-highlight error line when globalError changes
   useEffect(() => {
     // Minimal parser doesn't extract line numbers - no-op
   }, [globalError, language, userCodeLineCount, onErrorLineClick]);
@@ -213,14 +263,20 @@ export function TestCasePanel({
   // Sort results: show sample (visible) test cases first if setting is enabled
   const sortedResults = showSampleTestcasesFirst 
     ? [...results].sort((a, b) => {
-        // Non-hidden (sample) cases come first
         if (!a.isHidden && b.isHidden) return -1;
         if (a.isHidden && !b.isHidden) return 1;
         return 0;
       })
     : results;
 
-  // Collapsed state: keep a visible header bar so the reopen icon is always reachable.
+  // For submit mode: find first failing visible test
+  const firstFailingVisibleTest = sortedResults.find(r => !r.passed && !r.isHidden);
+  
+  // Calculate pass counts
+  const passedCount = results.filter(r => r.passed).length;
+  const totalCount = results.length;
+
+  // Collapsed state
   if (isCollapsed && !isExpanded) {
     return (
       <div
@@ -306,7 +362,6 @@ export function TestCasePanel({
               </TabsTrigger>
             </TabsList>
             
-            {/* Collapse & Expand Buttons - Show on hover */}
             <div className={cn(
               "flex items-center gap-0.5 shrink-0 transition-opacity",
               isHovered || isExpanded || isCollapsed ? "opacity-100" : "opacity-0"
@@ -348,7 +403,6 @@ export function TestCasePanel({
         <TabsContent value="testcase" className="flex-1 min-h-0 overflow-hidden m-0">
           <ScrollArea className="h-full w-full">
             <div className="p-4">
-              {/* Test Case Tabs */}
               <div className="flex gap-2 mb-4 flex-wrap">
                 {testCases.map((_, i) => (
                   <button
@@ -366,7 +420,6 @@ export function TestCasePanel({
                 ))}
               </div>
 
-              {/* Selected Test Case */}
               {testCases[selectedCase] && (
                 <div className="space-y-4">
                   <div>
@@ -397,171 +450,203 @@ export function TestCasePanel({
                 </div>
               ) : hasResults ? (
                 <div className="space-y-4">
-                  {/* Global Error Display - LeetCode Style */}
-                  {globalError && (() => {
-                    const parsed = parseCodeError(globalError, language, userCodeLineCount);
-                    const formattedContent = parsed.rawError || globalError;
-
-                    return (
-                      <div className="space-y-3">
-                        {/* Title - Always "Runtime Error" */}
-                        <h3 className="text-xl font-semibold text-red-500">
-                          Runtime Error
-                        </h3>
-
-                        {/* Error Container */}
-                        <LeetCodeErrorBox content={formattedContent} />
-                      </div>
-                    );
-                  })()}
-                  
-                  {/* 
-                    ERROR STATE HANDLING:
-                    1. Syntax Error (globalError with syntax category): Show error ONLY, NO test results
-                    2. Runtime Error: Show which test case crashed, NO expected vs output
-                    3. Logical Error (no error, wrong output): Show pass count + Expected vs Output
-                  */}
-                  
-                  {/* Summary - Show for Logical Errors (when code ran but produced wrong output) */}
-                  {!globalError && (() => {
-                    const passedCount = results.filter(r => r.passed).length;
-                    const totalCount = results.length;
-                    const allPassed = passedCount === totalCount;
-                    // Detect runtime errors in BOTH result.error AND result.actual
-                    const hasAnyRuntimeError = results.some(r => r.error || looksLikeError(r.actual));
-
-                    // If there's a runtime error, show "Runtime Error" header
-                    if (hasAnyRuntimeError) {
-                      return (
-                        <h3 className="text-xl font-semibold text-red-500">
-                          Runtime Error
-                        </h3>
-                      );
-                    }
-
-                    // Logical Error state - code ran successfully but produced wrong output
-                    const primaryMessage = allPassed ? "Accepted" : "Wrong Answer";
-
-                    return (
-                      <div className={cn(
-                        "p-4 rounded-lg",
-                        allPassed 
-                          ? "bg-green-500/10" 
-                          : "bg-amber-500/10"
-                      )}>
-                        <div className="flex flex-col items-center gap-1 text-center">
-                          <span className={cn(
-                            "text-xl font-semibold",
-                            allPassed ? "text-green-600 dark:text-green-500" : "text-amber-600 dark:text-amber-500"
-                          )}>
-                            {primaryMessage}
-                          </span>
-                          <span className={cn(
-                            "text-sm",
-                            allPassed ? "text-green-600/80 dark:text-green-500/80" : "text-amber-600/80 dark:text-amber-500/80"
-                          )}>
-                            {passedCount} / {totalCount} testcases passed
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Individual Results - Only show if NOT a syntax error */}
-                  {(() => {
-                    // For Syntax Errors: Don't show any test results
-                    if (globalError) {
-                      const parsed = parseCodeError(globalError, language, userCodeLineCount);
-                      if (isSyntaxError(parsed)) {
-                        return null; // Syntax errors: NO test results shown
-                      }
-                    }
-                    
-                    return sortedResults.map((result, i) => {
-                      // Check for error in result.error field
-                      const errorParsed = result.error 
-                        ? parseCodeError(result.error, language, userCodeLineCount) 
-                        : null;
+                  {/* ============================================ */}
+                  {/* SUBMIT MODE: Show verdict summary only */}
+                  {/* ============================================ */}
+                  {isSubmit ? (
+                    <>
+                      {/* Verdict Banner */}
+                      <SubmitVerdictBanner 
+                        verdict={verdict}
+                        passedCount={passedCount}
+                        totalCount={totalCount}
+                        globalError={globalError}
+                      />
                       
-                      // Also check if error appeared in result.actual (output field)
-                      const actualIsError = !result.error && looksLikeError(result.actual);
-                      const actualErrorParsed = actualIsError 
-                        ? parseCodeError(result.actual!, language, userCodeLineCount) 
-                        : null;
+                      {/* Global Error Display (compilation/runtime) */}
+                      {globalError && (
+                        <LeetCodeErrorBox content={parseCodeError(globalError, language, userCodeLineCount).rawError || globalError} />
+                      )}
                       
-                      // Use whichever error we found
-                      const effectiveErrorParsed = errorParsed || actualErrorParsed;
-                      const hasRuntimeError = effectiveErrorParsed && isRuntimeError(effectiveErrorParsed);
-                      
-                      // Hidden test case - show minimal info with expandable output
-                      if (result.isHidden) {
-                        return (
-                          <HiddenTestCase 
-                            key={result.id ?? i}
-                            result={result}
-                            index={i}
-                          />
-                        );
-                      }
-                      
-                      return (
-                        <div key={result.id ?? i} className="border border-border/50 rounded-lg p-4">
+                      {/* Show first failing VISIBLE test only (LeetCode style) */}
+                      {!globalError && verdict !== 'accepted' && firstFailingVisibleTest && (
+                        <div className="border border-border/50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            {result.passed ? (
-                              <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
-                            ) : hasRuntimeError ? (
-                              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-500" />
-                            ) : (
-                              <X className="h-4 w-4 text-red-600 dark:text-red-500" />
-                            )}
+                            <X className="h-4 w-4 text-red-600 dark:text-red-500" />
                             <span className="font-medium text-sm">
-                              Test Case {result.id ?? i + 1}
-                              {hasRuntimeError && (
-                                <span className="ml-2 text-xs text-red-600 dark:text-red-400">(crashed)</span>
-                              )}
+                              Test Case {firstFailingVisibleTest.id}
                             </span>
-                            {result.runtime && !hasRuntimeError && (
-                              <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
-                            )}
                           </div>
-                          
-                          {/* Runtime Error display for this specific test case - LeetCode Style */}
-                          {effectiveErrorParsed && !globalError && (
-                            <div className="mb-3">
-                              <LeetCodeErrorBox content={effectiveErrorParsed.rawError || ''} />
-                            </div>
-                          )}
-                          
-                          {/* Test case details */}
                           <div className="space-y-2 text-sm font-mono">
                             <div>
                               <span className="text-muted-foreground">Input: </span>
-                              <span>{result.input}</span>
+                              <span>{firstFailingVisibleTest.input}</span>
                             </div>
-                            
-                            {/* For Runtime Errors: DON'T show Expected vs Output (code crashed) */}
-                            {/* For Logical Errors: Show Expected vs Your Output */}
-                            {!hasRuntimeError && (
-                              <>
-                                <div>
-                                  <span className="text-muted-foreground">Expected: </span>
-                                  <span>{result.expected}</span>
-                                </div>
-                                {result.actual && (
-                                  <div>
-                                    <span className="text-muted-foreground">Your Output: </span>
-                                    <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
-                                      {result.actual}
-                                    </span>
-                                  </div>
-                                )}
-                              </>
+                            <div>
+                              <span className="text-muted-foreground">Expected: </span>
+                              <span>{firstFailingVisibleTest.expected}</span>
+                            </div>
+                            {firstFailingVisibleTest.actual && (
+                              <div>
+                                <span className="text-muted-foreground">Your Output: </span>
+                                <span className="text-red-600 dark:text-red-500">
+                                  {firstFailingVisibleTest.actual}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </div>
-                      );
-                    });
-                  })()}
+                      )}
+                    </>
+                  ) : (
+                    /* ============================================ */
+                    /* RUN MODE: Show detailed per-test results */
+                    /* ============================================ */
+                    <>
+                      {/* Global Error Display - LeetCode Style */}
+                      {globalError && (() => {
+                        const parsed = parseCodeError(globalError, language, userCodeLineCount);
+                        const formattedContent = parsed.rawError || globalError;
+
+                        return (
+                          <div className="space-y-3">
+                            <h3 className="text-xl font-semibold text-red-500">
+                              Runtime Error
+                            </h3>
+                            <LeetCodeErrorBox content={formattedContent} />
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Summary - Show for Logical Errors */}
+                      {!globalError && (() => {
+                        const allPassed = passedCount === totalCount;
+                        const hasAnyRuntimeError = results.some(r => r.error || looksLikeError(r.actual));
+
+                        if (hasAnyRuntimeError) {
+                          return (
+                            <h3 className="text-xl font-semibold text-red-500">
+                              Runtime Error
+                            </h3>
+                          );
+                        }
+
+                        const primaryMessage = allPassed ? "Accepted" : "Wrong Answer";
+
+                        return (
+                          <div className={cn(
+                            "p-4 rounded-lg",
+                            allPassed 
+                              ? "bg-green-500/10" 
+                              : "bg-amber-500/10"
+                          )}>
+                            <div className="flex flex-col items-center gap-1 text-center">
+                              <span className={cn(
+                                "text-xl font-semibold",
+                                allPassed ? "text-green-600 dark:text-green-500" : "text-amber-600 dark:text-amber-500"
+                              )}>
+                                {primaryMessage}
+                              </span>
+                              <span className={cn(
+                                "text-sm",
+                                allPassed ? "text-green-600/80 dark:text-green-500/80" : "text-amber-600/80 dark:text-amber-500/80"
+                              )}>
+                                {passedCount} / {totalCount} testcases passed
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Individual Results - Only show if NOT a syntax error */}
+                      {(() => {
+                        if (globalError) {
+                          const parsed = parseCodeError(globalError, language, userCodeLineCount);
+                          if (isSyntaxError(parsed)) {
+                            return null;
+                          }
+                        }
+                        
+                        return sortedResults.map((result, i) => {
+                          const errorParsed = result.error 
+                            ? parseCodeError(result.error, language, userCodeLineCount) 
+                            : null;
+                          
+                          const actualIsError = !result.error && looksLikeError(result.actual);
+                          const actualErrorParsed = actualIsError 
+                            ? parseCodeError(result.actual!, language, userCodeLineCount) 
+                            : null;
+                          
+                          const effectiveErrorParsed = errorParsed || actualErrorParsed;
+                          const hasRuntimeError = effectiveErrorParsed && isRuntimeError(effectiveErrorParsed);
+                          
+                          if (result.isHidden) {
+                            return (
+                              <HiddenTestCase 
+                                key={result.id ?? i}
+                                result={result}
+                                index={i}
+                                isSubmit={isSubmit}
+                              />
+                            );
+                          }
+                          
+                          return (
+                            <div key={result.id ?? i} className="border border-border/50 rounded-lg p-4">
+                              <div className="flex items-center gap-2 mb-3">
+                                {result.passed ? (
+                                  <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                                ) : hasRuntimeError ? (
+                                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-500" />
+                                ) : (
+                                  <X className="h-4 w-4 text-red-600 dark:text-red-500" />
+                                )}
+                                <span className="font-medium text-sm">
+                                  Test Case {result.id ?? i + 1}
+                                  {hasRuntimeError && (
+                                    <span className="ml-2 text-xs text-red-600 dark:text-red-400">(crashed)</span>
+                                  )}
+                                </span>
+                                {result.runtime && !hasRuntimeError && (
+                                  <span className="text-xs text-muted-foreground ml-auto">{result.runtime}</span>
+                                )}
+                              </div>
+                              
+                              {effectiveErrorParsed && !globalError && (
+                                <div className="mb-3">
+                                  <LeetCodeErrorBox content={effectiveErrorParsed.rawError || ''} />
+                                </div>
+                              )}
+                              
+                              <div className="space-y-2 text-sm font-mono">
+                                <div>
+                                  <span className="text-muted-foreground">Input: </span>
+                                  <span>{result.input}</span>
+                                </div>
+                                
+                                {!hasRuntimeError && (
+                                  <>
+                                    <div>
+                                      <span className="text-muted-foreground">Expected: </span>
+                                      <span>{result.expected}</span>
+                                    </div>
+                                    {result.actual && (
+                                      <div>
+                                        <span className="text-muted-foreground">Your Output: </span>
+                                        <span className={result.passed ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
+                                          {result.actual}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
