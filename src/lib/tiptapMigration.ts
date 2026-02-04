@@ -72,6 +72,33 @@ export const parseContent = (content: string | JSONContent | null | undefined): 
 
   const trimmed = content.trim();
   
+  // Check for --- separator anywhere in content (corrupted drafts)
+  // This catches cases like "--- {...}" or concatenated content
+  if (trimmed.includes('---')) {
+    const parts = trimmed.split(/\s*---\s*/);
+    
+    // Check if any part looks like JSON (TipTap, Canvas, or Chat format)
+    const hasJsonPart = parts.some(part => {
+      const p = part.trim();
+      if (!p) return false;
+      if (!p.startsWith('{') && !p.startsWith('[')) return false;
+      try {
+        const parsed = JSON.parse(p);
+        // Any JSON structure in a --- separated content is corrupted
+        if (parsed && typeof parsed === 'object') return true;
+        return false;
+      } catch {
+        // Check for JSON-like patterns even if malformed
+        return p.includes('"type"') || p.includes('"content"') || 
+               p.includes('"version"') || p.includes('"blocks"');
+      }
+    });
+    
+    if (hasJsonPart) {
+      return emptyDoc;
+    }
+  }
+  
   // Quick check: if content looks like raw JSON that isn't TipTap format, return empty
   // This catches Canvas/Chat JSON and prevents it from being rendered as text
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
