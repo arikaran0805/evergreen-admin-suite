@@ -97,13 +97,9 @@ const getChatEditorExtensions = (
     
     addKeyboardShortcuts() {
       return {
-        // Enter saves - but only when NOT in a code block
+        // Enter saves the message
         'Enter': ({ editor }) => {
-          // If in code block, let TipTap handle it normally (add new line)
-          if (editor.isActive('codeBlock')) {
-            return false; // Don't handle, let default behavior happen
-          }
-          // Otherwise, save the content
+          // Save the content
           if (onSaveRef?.current && getMarkdownRef?.current) {
             const md = getMarkdownRef.current(editor);
             onSaveRef.current(md);
@@ -124,7 +120,9 @@ const getChatEditorExtensions = (
   return [
     StarterKit.configure({
       heading: { levels: [2] },
-      // Leave codeBlock enabled (default) so markdown extension can properly parse/serialize code blocks
+      // Disable codeBlock so users can type raw markdown code fences (```python ... ```)
+      // The preview will parse and render them nicely
+      codeBlock: false,
     }),
     Link.configure({
       openOnClick: false,
@@ -213,11 +211,12 @@ export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
     localStorage.setItem('chatEditorViewMode', mode);
   }, []);
 
-  // Insert code block as TipTap node
+  // Insert code block as raw markdown text
   const insertCodeBlock = useCallback((language: string) => {
     if (!editor) return;
-    // Use TipTap's setCodeBlock command to properly insert a codeBlock node
-    editor.chain().focus().setCodeBlock({ language }).insertContent('# Your code here').run();
+    // Insert raw markdown code fence so user can easily edit it
+    const codeBlock = `\n\`\`\`${language}\n# Your code here\n\`\`\`\n`;
+    editor.chain().focus().insertContent(codeBlock).run();
   }, [editor]);
 
   // Insert link
