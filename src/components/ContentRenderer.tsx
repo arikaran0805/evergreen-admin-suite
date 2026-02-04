@@ -64,18 +64,30 @@ const ContentRenderer = ({
   courseType = "python",
   codeTheme,
 }: ContentRendererProps) => {
-  const isCanvas = useMemo(() => isCanvasContent(htmlContent), [htmlContent]);
-  const isChat = useMemo(() => !isCanvas && isChatTranscript(htmlContent), [htmlContent, isCanvas]);
-  const isTipTap = useMemo(() => !isCanvas && isTipTapJSON(htmlContent), [htmlContent, isCanvas]);
+  // Check for corrupted/partial TipTap JSON that should be suppressed
+  const isCorruptedJson = useMemo(() => {
+    if (!htmlContent) return false;
+    const trimmed = htmlContent.trim();
+    // Detect corrupted JSON fragments like `"doc","content":[...]` 
+    return (
+      trimmed.includes('"doc","content"') ||
+      trimmed.includes('"type":"paragraph"') && !trimmed.startsWith('{') ||
+      trimmed.includes('"type":"doc"') && !trimmed.startsWith('{')
+    );
+  }, [htmlContent]);
+
+  const isCanvas = useMemo(() => !isCorruptedJson && isCanvasContent(htmlContent), [htmlContent, isCorruptedJson]);
+  const isChat = useMemo(() => !isCanvas && !isCorruptedJson && isChatTranscript(htmlContent), [htmlContent, isCanvas, isCorruptedJson]);
+  const isTipTap = useMemo(() => !isCanvas && !isCorruptedJson && isTipTapJSON(htmlContent), [htmlContent, isCanvas, isCorruptedJson]);
   const [editedCodes, setEditedCodes] = useState<Record<number, string>>({});
 
   // Extract code blocks and get processed HTML (only for legacy HTML content)
   const { processedHtml, codeBlocks } = useMemo(() => {
-    if (isTipTap || isChat) {
+    if (isTipTap || isChat || isCorruptedJson) {
       return { processedHtml: '', codeBlocks: [] };
     }
     return extractCodeBlocks(htmlContent);
-  }, [htmlContent, isTipTap, isChat]);
+  }, [htmlContent, isTipTap, isChat, isCorruptedJson]);
 
   const handleCodeEdit = (index: number, newCode: string) => {
     setEditedCodes(prev => ({ ...prev, [index]: newCode }));
@@ -86,6 +98,15 @@ const ContentRenderer = ({
     return (
       <div className="prose prose-lg max-w-none">
         <CanvasRenderer content={htmlContent} codeTheme={codeTheme} />
+      </div>
+    );
+  }
+
+  // Suppress corrupted JSON fragments - don't render garbage
+  if (isCorruptedJson) {
+    return (
+      <div className="prose prose-lg max-w-none text-muted-foreground italic">
+        Content unavailable
       </div>
     );
   }
