@@ -131,8 +131,11 @@ export function ProblemWorkspace({
 
   const userCodeLineCount = code.split('\n').length;
 
-  // Error line highlighting helper
+  // Error line highlighting helper - respects highlightErrorLines setting
   const highlightErrorLine = useCallback((line: number) => {
+    // Check if error line highlighting is enabled in settings
+    if (!settings.advanced.highlightErrorLines) return;
+    
     setErrorLine(line);
     if (editorRef.current && monacoRef.current) {
       const monaco = monacoRef.current;
@@ -152,7 +155,7 @@ export function ProblemWorkspace({
       );
       editorRef.current.revealLineInCenter(line);
     }
-  }, []);
+  }, [settings.advanced.highlightErrorLines]);
 
   const clearErrorHighlight = useCallback(() => {
     setErrorLine(undefined);
