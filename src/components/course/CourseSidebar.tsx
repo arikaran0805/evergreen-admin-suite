@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +16,7 @@ import {
   Award,
   Link2,
   Clock,
+  Dumbbell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -66,6 +68,10 @@ interface CourseSidebarProps {
   isAuthenticated: boolean;
   /** Whether this sidebar is in the Career Board shell (different header heights) */
   isCareerBoard?: boolean;
+  /** Practice skill ID for linking to problems */
+  practiceSkillId?: string | null;
+  /** Map of lessonId -> problem count */
+  lessonProblemCounts?: Map<string, number>;
   getPostsForLesson: (lessonId: string) => Post[];
   getLessonProgress: (lessonId: string) => LessonProgress;
   isLessonCompleted: (postId: string) => boolean;
@@ -86,6 +92,8 @@ export const CourseSidebar = ({
   showAnnouncement,
   isAuthenticated,
   isCareerBoard = false,
+  practiceSkillId,
+  lessonProblemCounts,
   getPostsForLesson,
   getLessonProgress,
   isLessonCompleted,
@@ -572,18 +580,40 @@ export const CourseSidebar = ({
                                 </div>
                               </button>
                             );
-                          })
-                        ) : (
-                          <div className="px-3 py-3 text-xs text-muted-foreground/60 italic">
-                            Content coming soon…
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              </div>
+                                          })
+                                        ) : (
+                                          <div className="px-3 py-3 text-xs text-muted-foreground/60 italic">
+                                            Content coming soon…
+                                          </div>
+                                        )}
+                                        
+                                        {/* Practice Problems Link */}
+                                        {practiceSkillId && lessonProblemCounts && lessonProblemCounts.get(lesson.id) ? (
+                                          <Link
+                                            to={`/practice/${practiceSkillId}?lesson=${lesson.id}`}
+                                            className={cn(
+                                              "flex items-center gap-2 px-3 py-2 mt-1 rounded-md",
+                                              "text-xs text-muted-foreground",
+                                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                              "transition-colors duration-200"
+                                            )}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <Dumbbell className="h-3.5 w-3.5" />
+                                            <span>
+                                              Practice Problems
+                                              <span className="ml-1.5 text-muted-foreground/70">
+                                                ({lessonProblemCounts.get(lesson.id)})
+                                              </span>
+                                            </span>
+                                          </Link>
+                                        ) : null}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              </div>
             ) : (
               /* Empty State: No Lessons */
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
