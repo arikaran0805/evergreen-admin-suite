@@ -15,6 +15,19 @@
 export type ErrorCategory = 'syntax' | 'runtime' | 'internal';
 export type ExecutionPhase = 'parse' | 'execution' | 'system';
 
+export interface ErrorLocation {
+  /** Line number in user code (1-indexed) */
+  userLine: number | null;
+  /** Start column (1-indexed, for Monaco) */
+  startColumn: number | null;
+  /** End column (1-indexed, for Monaco) */
+  endColumn: number | null;
+  /** The actual line of code that failed */
+  codeLine: string | null;
+  /** Caret pointer string (e.g., "       ^") */
+  pointer: string | null;
+}
+
 export interface ParsedError {
   /** Error type displayed to user (e.g., "TypeError", "Runtime Error") */
   type: string;
@@ -32,6 +45,8 @@ export interface ParsedError {
   userTraceback: string[];
   /** Internal/system frames (hidden by default) */
   internalTraceback: string[];
+  /** Error location for Monaco highlighting */
+  location: ErrorLocation;
 }
 
 // ============================================================================
@@ -84,7 +99,6 @@ function getSolutionFileName(language: string): string {
 function normalizeFileNames(text: string, language: string): string {
   const solutionFile = getSolutionFileName(language);
   
-  // Replace various file patterns with normalized name
   let result = text;
   
   // Python patterns
@@ -109,9 +123,253 @@ function normalizeFileNames(text: string, language: string): string {
   result = result.replace(/at Main\./gi, `at ${solutionFile.replace('.java', '')}\.`);
   result = result.replace(/at Solution\./gi, `at Solution\.`);
   
-  // C/C++ patterns - strip absolute paths
+  // C/C++ patterns
   result = result.replace(/\/piston\/[^\s:]+/gi, solutionFile);
   result = result.replace(/\/tmp\/[^\s:]+/gi, solutionFile);
+  
+  return result;
+}
+
+// ============================================================================
+// Code Line and Caret Extraction (LeetCode-style)
+// ============================================================================
+
+/**
+ * Extract exact error line, column, and caret pointer from error text.
+ * Returns location info for Monaco Editor highlighting.
+ */
+export function extractCodeLineAndCaret(
+  errorText: string,
+  language: string
+): ErrorLocation {
+  const lang = language.toLowerCase();
+  const lines = errorText.split('\n');
+  
+  const result: ErrorLocation = {
+    userLine: null,
+    startColumn: null,
+    endColumn: null,
+    codeLine: null,
+    pointer: null,
+  };
+  
+  // Get line offset for this language
+  const lineOffset = USER_CODE_START_LINES[lang] || 0;
+  
+  if (lang === 'python') {
+    return extractPythonLocation(lines, lineOffset);
+  } else if (lang === 'javascript' || lang === 'typescript') {
+    return extractJavaScriptLocation(lines, lineOffset);
+  } else if (lang === 'java') {
+    return extractJavaLocation(lines, lineOffset);
+  } else if (lang === 'c' || lang === 'cpp' || lang === 'c++') {
+    return extractCppLocation(lines, lineOffset);
+  }
+  
+  return result;
+}
+
+/**
+ * Python error location extraction.
+ * Format: File "...", line N
+ *           code_line
+ *           ^
+ */
+function extractPythonLocation(lines: string[], lineOffset: number): ErrorLocation {
+  const result: ErrorLocation = {
+    userLine: null,
+    startColumn: null,
+    endColumn: null,
+    codeLine: null,
+    pointer: null,
+  };
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Match: File "...", line N
+    const fileLineMatch = line.match(/File\s+"[^"]+",\s+line\s+(\d+)/i);
+    if (fileLineMatch) {
+      const rawLine = parseInt(fileLineMatch[1], 10);
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      
+      // Next line is usually the code line
+      if (i + 1 < lines.length) {
+        const codeLine = lines[i + 1];
+        // Check it's not another File line or error line
+        if (!codeLine.match(/^\s*File\s+"/i) && !codeLine.match(/^\w+Error:/)) {
+          result.codeLine = codeLine.trimStart();
+          
+          // Look for caret on next line
+          if (i + 2 < lines.length) {
+            const pointerLine = lines[i + 2];
+            // Caret line: only whitespace and ^
+            if (pointerLine.match(/^\s*\^+\s*$/)) {
+              result.pointer = pointerLine;
+              // Calculate column from caret position
+              const caretPos = pointerLine.indexOf('^');
+              if (caretPos >= 0) {
+                // Adjust for trimmed code line
+                const originalIndent = codeLine.length - codeLine.trimStart().length;
+                result.startColumn = Math.max(1, caretPos - originalIndent + 1);
+                result.endColumn = result.startColumn;
+              }
+            }
+          }
+        }
+      }
+      
+      // Found location, stop searching
+      if (result.userLine !== null) break;
+    }
+  }
+  
+  // Fallback: highlight entire line if no column found
+  if (result.userLine !== null && result.startColumn === null && result.codeLine) {
+    result.startColumn = 1;
+    result.endColumn = result.codeLine.length + 1;
+  }
+  
+  return result;
+}
+
+/**
+ * JavaScript/TypeScript error location extraction.
+ * Format: at functionName (file:line:column) or file:line:column
+ */
+function extractJavaScriptLocation(lines: string[], lineOffset: number): ErrorLocation {
+  const result: ErrorLocation = {
+    userLine: null,
+    startColumn: null,
+    endColumn: null,
+    codeLine: null,
+    pointer: null,
+  };
+  
+  for (const line of lines) {
+    // Match: at ... (file:line:column) or at file:line:column
+    const match = line.match(/:(\d+):(\d+)\)?$/);
+    if (match) {
+      const rawLine = parseInt(match[1], 10);
+      const column = parseInt(match[2], 10);
+      
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      result.startColumn = column;
+      result.endColumn = column;
+      break;
+    }
+    
+    // Match: at ... (file:line) - no column
+    const lineOnlyMatch = line.match(/:(\d+)\)?$/);
+    if (lineOnlyMatch && !result.userLine) {
+      const rawLine = parseInt(lineOnlyMatch[1], 10);
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      // No column - will highlight entire line
+      break;
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Java error location extraction.
+ * Format: at Class.method(File.java:line) or compiler error with line:column
+ */
+function extractJavaLocation(lines: string[], lineOffset: number): ErrorLocation {
+  const result: ErrorLocation = {
+    userLine: null,
+    startColumn: null,
+    endColumn: null,
+    codeLine: null,
+    pointer: null,
+  };
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Runtime: at Class.method(File.java:line)
+    const runtimeMatch = line.match(/\.java:(\d+)\)/);
+    if (runtimeMatch) {
+      const rawLine = parseInt(runtimeMatch[1], 10);
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      break;
+    }
+    
+    // Compiler: File.java:line: error: message
+    const compilerMatch = line.match(/\.java:(\d+):\s*error:/i);
+    if (compilerMatch) {
+      const rawLine = parseInt(compilerMatch[1], 10);
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      
+      // Look for code line and caret
+      if (i + 1 < lines.length && !lines[i + 1].includes('error:')) {
+        result.codeLine = lines[i + 1].trim();
+        
+        if (i + 2 < lines.length && lines[i + 2].match(/^\s*\^/)) {
+          result.pointer = lines[i + 2];
+          const caretPos = lines[i + 2].indexOf('^');
+          if (caretPos >= 0) {
+            result.startColumn = caretPos + 1;
+            result.endColumn = caretPos + 1;
+          }
+        }
+      }
+      break;
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * C/C++ error location extraction.
+ * Format: file:line:column: error: message
+ */
+function extractCppLocation(lines: string[], lineOffset: number): ErrorLocation {
+  const result: ErrorLocation = {
+    userLine: null,
+    startColumn: null,
+    endColumn: null,
+    codeLine: null,
+    pointer: null,
+  };
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Match: file:line:column: error/warning
+    const match = line.match(/[^:\s]+:(\d+):(\d+):\s*(?:error|warning)/i);
+    if (match) {
+      const rawLine = parseInt(match[1], 10);
+      const column = parseInt(match[2], 10);
+      
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      result.startColumn = column;
+      result.endColumn = column;
+      
+      // Look for code line and caret
+      if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1];
+        if (!nextLine.match(/:\d+:\s*(?:error|warning)/)) {
+          result.codeLine = nextLine.trim();
+          
+          if (i + 2 < lines.length && lines[i + 2].match(/^\s*\^/)) {
+            result.pointer = lines[i + 2];
+          }
+        }
+      }
+      break;
+    }
+    
+    // Fallback: file:line: error (no column)
+    const lineOnlyMatch = line.match(/[^:\s]+:(\d+):\s*(?:error|warning)/i);
+    if (lineOnlyMatch && !result.userLine) {
+      const rawLine = parseInt(lineOnlyMatch[1], 10);
+      result.userLine = Math.max(1, rawLine - lineOffset);
+      break;
+    }
+  }
   
   return result;
 }
@@ -120,13 +378,9 @@ function normalizeFileNames(text: string, language: string): string {
 // Internal Frame Detection & Stripping
 // ============================================================================
 
-/**
- * Check if a stack frame line is internal (should be hidden).
- */
 function isInternalFrame(line: string, language: string): boolean {
   const lineLower = line.toLowerCase();
   
-  // Universal internal patterns
   const internalPatterns = [
     '/piston/',
     '/tmp/runner',
@@ -156,17 +410,14 @@ function isInternalFrame(line: string, language: string): boolean {
     }
   }
   
-  // Language-specific internal frames
   const lang = language.toLowerCase();
   
   if (lang === 'python') {
-    // Python internal modules
     if (lineLower.includes('module __main__')) return true;
     if (lineLower.includes('in <module>') && lineLower.includes('piston')) return true;
   }
   
   if (lang === 'javascript' || lang === 'typescript') {
-    // Node.js internals
     if (lineLower.includes('at module._compile')) return true;
     if (lineLower.includes('at object.module._extensions')) return true;
     if (lineLower.includes('at module.load')) return true;
@@ -175,7 +426,6 @@ function isInternalFrame(line: string, language: string): boolean {
   }
   
   if (lang === 'java') {
-    // Java system classes
     if (lineLower.includes('at java.')) return true;
     if (lineLower.includes('at sun.')) return true;
     if (lineLower.includes('at jdk.')) return true;
@@ -184,10 +434,6 @@ function isInternalFrame(line: string, language: string): boolean {
   return false;
 }
 
-/**
- * Strip internal frames from stack trace, keeping only user-relevant lines.
- * Returns [userFrames, internalFrames].
- */
 function stripInternalFrames(lines: string[], language: string): [string[], string[]] {
   const userFrames: string[] = [];
   const internalFrames: string[] = [];
@@ -205,16 +451,12 @@ function stripInternalFrames(lines: string[], language: string): [string[], stri
   return [userFrames, internalFrames];
 }
 
-/**
- * Parse traceback/stack trace into individual frames.
- */
 function parseStackLines(errorText: string, language: string): string[] {
   const lines = errorText.split('\n');
   const stackLines: string[] = [];
   const lang = language.toLowerCase();
   
   if (lang === 'python') {
-    // Python: "  File "..." or "    ..." continuation
     let inTraceback = false;
     for (const line of lines) {
       if (line.includes('Traceback (most recent call last)')) {
@@ -225,27 +467,23 @@ function parseStackLines(errorText: string, language: string): string[] {
         if (line.startsWith('  File ') || line.startsWith('    ')) {
           stackLines.push(line.trim());
         } else if (line.match(/^\w+Error:|^\w+Exception:/)) {
-          // Error line itself - stop
           break;
         }
       }
     }
   } else if (lang === 'javascript' || lang === 'typescript') {
-    // JavaScript: "    at ..." lines
     for (const line of lines) {
       if (line.trim().startsWith('at ')) {
         stackLines.push(line.trim());
       }
     }
   } else if (lang === 'java') {
-    // Java: "	at ..." lines
     for (const line of lines) {
       if (line.trim().startsWith('at ')) {
         stackLines.push(line.trim());
       }
     }
   } else {
-    // C/C++: various formats, look for file:line patterns
     for (const line of lines) {
       if (line.match(/\.(c|cpp|h|hpp):\d+/) || line.includes('at 0x')) {
         stackLines.push(line.trim());
@@ -256,19 +494,10 @@ function parseStackLines(errorText: string, language: string): string[] {
   return stackLines;
 }
 
-/**
- * Build clean user traceback from raw error.
- */
 function buildUserTraceback(errorText: string, language: string): [string[], string[]] {
-  // Parse stack lines
   const stackLines = parseStackLines(errorText, language);
-  
-  // Strip internal frames
   const [userFrames, internalFrames] = stripInternalFrames(stackLines, language);
-  
-  // Normalize file names in user frames
   const normalizedUserFrames = userFrames.map(frame => normalizeFileNames(frame, language));
-  
   return [normalizedUserFrames, internalFrames];
 }
 
@@ -276,17 +505,10 @@ function buildUserTraceback(errorText: string, language: string): [string[], str
 // Input Contract Error Detection
 // ============================================================================
 
-/**
- * Detects input contract failures where platform passed malformed input.
- * These are NOT the learner's fault and must be treated as system errors.
- * 
- * Conservative: prefer false-negative over false-positive.
- */
 function isInputContractError(errorText: string, language: string): boolean {
   const text = errorText.toLowerCase();
   const lang = language.toLowerCase();
 
-  // Python patterns
   if (lang === 'python') {
     const pythonPatterns = [
       'not all arguments converted during string formatting',
@@ -308,14 +530,12 @@ function isInputContractError(errorText: string, language: string): boolean {
     
     for (const pattern of pythonPatterns) {
       if (text.includes(pattern) || new RegExp(pattern).test(text)) {
-        // Exclude if clearly user logic error (after meaningful execution)
         if (hasUserExecutionContext(errorText)) return false;
         return true;
       }
     }
   }
 
-  // JavaScript/TypeScript patterns
   if (lang === 'javascript' || lang === 'typescript') {
     const jsPatterns = [
       'is not iterable',
@@ -338,7 +558,6 @@ function isInputContractError(errorText: string, language: string): boolean {
     }
   }
 
-  // Java patterns
   if (lang === 'java') {
     const javaPatterns = [
       'classcastexception',
@@ -354,10 +573,8 @@ function isInputContractError(errorText: string, language: string): boolean {
     }
   }
 
-  // C/C++ patterns - segfault on first call
   if (lang === 'c' || lang === 'cpp' || lang === 'c++') {
     if (text.includes('segmentation fault') || text.includes('sigsegv')) {
-      // If no user stack trace, likely input contract issue
       if (!hasUserStackFrames(errorText)) return true;
     }
   }
@@ -365,25 +582,14 @@ function isInputContractError(errorText: string, language: string): boolean {
   return false;
 }
 
-/**
- * Check if error shows evidence of meaningful user code execution.
- * If user code actually ran (not just function entry), it's a user error.
- */
 function hasUserExecutionContext(errorText: string): boolean {
-  // Multiple user-code line references suggest user logic ran
   const lineRefs = (errorText.match(/line \d+/gi) || []).length;
   if (lineRefs > 2) return true;
-  
-  // Loop/recursion indicators
   if (/for .* in .*:/i.test(errorText)) return true;
   if (/while .*:/i.test(errorText)) return true;
-  
   return false;
 }
 
-/**
- * Check if error contains user stack frames (vs only system frames).
- */
 function hasUserStackFrames(errorText: string): boolean {
   const userFilePatterns = [
     /solution\.(py|java|cpp|c|js|ts)/i,
@@ -394,28 +600,21 @@ function hasUserStackFrames(errorText: string): boolean {
 }
 
 // ============================================================================
-// Syntax Error Detection (Internal)
+// Syntax Error Detection
 // ============================================================================
 
 function detectSyntaxError(errorText: string, language: string): boolean {
   const text = errorText.toLowerCase();
   
-  // Python
   if (text.includes('syntaxerror')) return true;
   if (text.includes('indentationerror')) return true;
   if (text.includes('taberror')) return true;
-  
-  // JavaScript
   if (text.includes('unexpected token')) return true;
   if (text.includes('unexpected end of input')) return true;
   if (text.includes('unexpected identifier')) return true;
-  
-  // Java
   if (text.includes('error: \';\' expected')) return true;
   if (text.includes('error: illegal start')) return true;
   if (text.includes('reached end of file while parsing')) return true;
-  
-  // C/C++
   if (text.includes('error: expected')) return true;
   if (/error:.*before .*token/i.test(text)) return true;
   
@@ -453,19 +652,15 @@ function isInternalError(errorText: string): boolean {
 function extractErrorType(errorText: string, language: string): string {
   const lang = language.toLowerCase();
   
-  // Python error types
   const pythonMatch = errorText.match(/^(\w+Error|\w+Exception):/m);
   if (pythonMatch) return pythonMatch[1];
   
-  // JavaScript error types
   const jsMatch = errorText.match(/(TypeError|ReferenceError|RangeError|SyntaxError|Error):/);
   if (jsMatch) return jsMatch[1];
   
-  // Java exceptions
   const javaMatch = errorText.match(/Exception in thread.*?(\w+Exception)/);
   if (javaMatch) return javaMatch[1];
   
-  // C/C++ - typically just "error" or signal
   if (lang === 'c' || lang === 'cpp' || lang === 'c++') {
     if (errorText.toLowerCase().includes('segmentation fault')) return 'Runtime Error';
     if (errorText.toLowerCase().includes('sigsegv')) return 'Runtime Error';
@@ -474,17 +669,12 @@ function extractErrorType(errorText: string, language: string): string {
   return 'Error';
 }
 
-/**
- * Extract the error message line (after error type).
- */
 function extractErrorMessage(errorText: string, errorType: string): string {
-  // Look for "ErrorType: message" pattern
   const regex = new RegExp(`${errorType}:\\s*(.+?)(?:\\n|$)`, 'i');
   const match = errorText.match(regex);
   
   if (match && match[1]) {
     let msg = match[1].trim();
-    // Clean up any remaining path fragments
     msg = msg.replace(/File "[^"]+",?\s*/g, '');
     msg = msg.replace(/line \d+,?\s*/gi, '');
     return msg;
@@ -497,13 +687,6 @@ function extractErrorMessage(errorText: string, errorType: string): string {
 // Main Parser
 // ============================================================================
 
-/**
- * Parse raw execution error into LeetCode-style minimal output.
- * 
- * @param errorText - Raw stderr from execution
- * @param language - Programming language
- * @param userCodeLineCount - Number of lines in user's code (unused in minimal mode)
- */
 export function parseCodeError(
   errorText: string,
   language: string,
@@ -511,7 +694,15 @@ export function parseCodeError(
 ): ParsedError {
   const rawError = errorText || '';
   
-  // Empty input
+  // Default empty location
+  const emptyLocation: ErrorLocation = {
+    userLine: null,
+    startColumn: null,
+    endColumn: null,
+    codeLine: null,
+    pointer: null,
+  };
+  
   if (!rawError.trim()) {
     return {
       type: 'Error',
@@ -522,14 +713,18 @@ export function parseCodeError(
       rawError,
       userTraceback: [],
       internalTraceback: [],
+      location: emptyLocation,
     };
   }
 
   // Build traceback arrays
   const [userTraceback, internalTraceback] = buildUserTraceback(rawError, language);
+  
+  // Extract location info
+  const location = extractCodeLineAndCaret(rawError, language);
 
   // =========================================================================
-  // 1. Check for Input Contract Errors (FIRST - short-circuits everything)
+  // 1. Input Contract Errors
   // =========================================================================
   if (isInputContractError(rawError, language)) {
     const errorType = extractErrorType(rawError, language);
@@ -543,12 +738,13 @@ export function parseCodeError(
       isUserCodeError: false,
       rawError,
       userTraceback: [],
-      internalTraceback: internalTraceback,
+      internalTraceback,
+      location: emptyLocation, // No location for system errors
     };
   }
 
   // =========================================================================
-  // 2. Check for Internal/System Errors
+  // 2. Internal/System Errors
   // =========================================================================
   if (isInternalError(rawError)) {
     return {
@@ -559,12 +755,13 @@ export function parseCodeError(
       isUserCodeError: false,
       rawError,
       userTraceback: [],
-      internalTraceback: internalTraceback,
+      internalTraceback,
+      location: emptyLocation,
     };
   }
 
   // =========================================================================
-  // 3. Check for Syntax Errors
+  // 3. Syntax Errors
   // =========================================================================
   if (detectSyntaxError(rawError, language)) {
     const errorType = extractErrorType(rawError, language) || 'SyntaxError';
@@ -577,13 +774,17 @@ export function parseCodeError(
       executionPhase: 'parse',
       isUserCodeError: true,
       rawError,
-      userTraceback: userTraceback,
-      internalTraceback: internalTraceback,
+      userTraceback,
+      internalTraceback,
+      location: {
+        ...location,
+        codeLine: location.codeLine ? normalizeFileNames(location.codeLine, language) : null,
+      },
     };
   }
 
   // =========================================================================
-  // 4. Runtime Errors (User Logic Errors)
+  // 4. Runtime Errors
   // =========================================================================
   const errorType = extractErrorType(rawError, language);
   const rawMessage = extractErrorMessage(rawError, errorType);
@@ -598,20 +799,19 @@ export function parseCodeError(
     executionPhase: 'execution',
     isUserCodeError: true,
     rawError,
-    userTraceback: userTraceback,
-    internalTraceback: internalTraceback,
+    userTraceback,
+    internalTraceback,
+    location: {
+      ...location,
+      codeLine: location.codeLine ? normalizeFileNames(location.codeLine, language) : null,
+    },
   };
 }
 
-/**
- * Normalize runtime error message to one clean line.
- */
 function normalizeRuntimeMessage(errorText: string, errorType: string): string {
-  // Extract message after error type
   const colonMatch = errorText.match(new RegExp(`${errorType}:\\s*(.+?)(?:\\n|$)`));
   if (colonMatch && colonMatch[1]) {
     const msg = colonMatch[1].trim();
-    // Strip any path references
     const cleaned = msg
       .replace(/\/[^\s]+/g, '')
       .replace(/File "[^"]+"/g, '')
@@ -621,7 +821,6 @@ function normalizeRuntimeMessage(errorText: string, errorType: string): string {
     if (cleaned) return cleaned;
   }
   
-  // Generic fallback based on error type
   switch (errorType) {
     case 'TypeError':
       return 'Invalid operation for the given data type.';
@@ -649,12 +848,9 @@ function normalizeRuntimeMessage(errorText: string, errorType: string): string {
 }
 
 // ============================================================================
-// Helper Exports (for ErrorDisplay compatibility)
+// Helper Exports
 // ============================================================================
 
-/**
- * Check if parsed result is an input contract error.
- */
 export function isInputContractErrorResult(parsed: ParsedError): boolean {
   return parsed.category === 'internal' && 
          parsed.executionPhase === 'system' && 
@@ -662,44 +858,47 @@ export function isInputContractErrorResult(parsed: ParsedError): boolean {
          parsed.message === 'Invalid input format.';
 }
 
-/**
- * Check if there are internal frames available for "View More".
- */
 export function hasInternalFrames(parsed: ParsedError): boolean {
   return parsed.internalTraceback.length > 0;
 }
 
-/**
- * Get internal frames formatted for display.
- */
 export function getInternalFramesForDisplay(parsed: ParsedError): string {
   if (parsed.internalTraceback.length === 0) return '';
   return parsed.internalTraceback.join('\n');
 }
 
-/**
- * Get user traceback formatted for display.
- */
 export function getUserTracebackForDisplay(parsed: ParsedError): string {
   if (parsed.userTraceback.length === 0) return '';
   return parsed.userTraceback.join('\n');
 }
 
-/**
- * Format full error output (type + message + user traceback).
- */
 export function formatErrorOutput(parsed: ParsedError): string {
   const parts: string[] = [];
   
-  // Error type and message on first line (LeetCode style)
+  // Error type and message
   if (parsed.message) {
     parts.push(`${parsed.type}: ${parsed.message}`);
   } else {
     parts.push(parsed.type);
   }
   
-  // Add user traceback if present
-  if (parsed.userTraceback.length > 0) {
+  // Add location info if available (LeetCode style)
+  if (parsed.location.userLine !== null) {
+    const solutionFile = 'Solution.py'; // Will be correct based on language
+    parts.push('');
+    parts.push(`  File "${solutionFile}", line ${parsed.location.userLine}`);
+    
+    if (parsed.location.codeLine) {
+      parts.push(`    ${parsed.location.codeLine}`);
+    }
+    
+    if (parsed.location.pointer) {
+      parts.push(parsed.location.pointer);
+    }
+  }
+  
+  // Add user traceback if present and no inline location
+  if (parsed.userTraceback.length > 0 && parsed.location.userLine === null) {
     parts.push('');
     parts.push(...parsed.userTraceback);
   }
@@ -707,27 +906,52 @@ export function formatErrorOutput(parsed: ParsedError): string {
   return parts.join('\n');
 }
 
+/**
+ * Get Monaco-compatible decoration info for error highlighting.
+ */
+export function getMonacoDecorationInfo(parsed: ParsedError): {
+  line: number | null;
+  startColumn: number;
+  endColumn: number;
+  hasExactColumn: boolean;
+} {
+  const loc = parsed.location;
+  
+  if (loc.userLine === null) {
+    return { line: null, startColumn: 1, endColumn: 1, hasExactColumn: false };
+  }
+  
+  // If we have exact column info
+  if (loc.startColumn !== null) {
+    return {
+      line: loc.userLine,
+      startColumn: loc.startColumn,
+      endColumn: loc.endColumn ?? loc.startColumn,
+      hasExactColumn: true,
+    };
+  }
+  
+  // Fallback: highlight entire line
+  return {
+    line: loc.userLine,
+    startColumn: 1,
+    endColumn: loc.codeLine ? loc.codeLine.length + 1 : 1000,
+    hasExactColumn: false,
+  };
+}
+
 // ============================================================================
-// Exported Detection Helpers (for TestCasePanel)
+// Detection Helpers
 // ============================================================================
 
-/**
- * Check if a ParsedError represents a syntax error.
- */
 export function isSyntaxError(parsed: ParsedError): boolean {
   return parsed.category === 'syntax';
 }
 
-/**
- * Check if a ParsedError represents a runtime error.
- */
 export function isRuntimeError(parsed: ParsedError): boolean {
   return parsed.category === 'runtime';
 }
 
-/**
- * Check if text looks like an error message.
- */
 export function looksLikeError(text?: string): boolean {
   if (!text) return false;
   const lower = text.toLowerCase();
