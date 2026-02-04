@@ -7,8 +7,9 @@
  * ROLES: Admin, Super Moderator, Senior Moderator, Moderator (assigned only)
  */
 
-import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState } from 'react';
+import { forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import { Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -84,26 +85,64 @@ export interface ChatEditorRef {
 }
 
 // Get extensions for chat editor
-const getChatEditorExtensions = (placeholder?: string) => [
-  StarterKit.configure({
-    heading: { levels: [2] },
-    // Leave codeBlock enabled (default) so markdown extension can properly parse/serialize code blocks
-  }),
-  Link.configure({
-    openOnClick: false,
-    HTMLAttributes: { class: 'tiptap-link' },
-  }),
-  Placeholder.configure({
-    placeholder: placeholder || 'Type your message...',
-    emptyEditorClass: 'is-editor-empty',
-  }),
-  CharacterCount,
-  Markdown.configure({
-    html: false,
-    transformCopiedText: true,
-    transformPastedText: true,
-  }),
-];
+const getChatEditorExtensions = (
+  placeholder?: string,
+  onSaveRef?: React.RefObject<((md: string) => void) | undefined>,
+  onCancelRef?: React.RefObject<(() => void) | undefined>,
+  getMarkdownRef?: React.RefObject<((ed: Editor) => string) | undefined>
+) => {
+  // Custom extension for chat-specific keyboard shortcuts
+  const ChatKeyboardShortcuts = Extension.create({
+    name: 'chatKeyboardShortcuts',
+    
+    addKeyboardShortcuts() {
+      return {
+        // Enter saves - but only when NOT in a code block
+        'Enter': ({ editor }) => {
+          // If in code block, let TipTap handle it normally (add new line)
+          if (editor.isActive('codeBlock')) {
+            return false; // Don't handle, let default behavior happen
+          }
+          // Otherwise, save the content
+          if (onSaveRef?.current && getMarkdownRef?.current) {
+            const md = getMarkdownRef.current(editor);
+            onSaveRef.current(md);
+          }
+          return true; // We handled it
+        },
+        // Escape cancels
+        'Escape': () => {
+          if (onCancelRef?.current) {
+            onCancelRef.current();
+          }
+          return true;
+        },
+      };
+    },
+  });
+
+  return [
+    StarterKit.configure({
+      heading: { levels: [2] },
+      // Leave codeBlock enabled (default) so markdown extension can properly parse/serialize code blocks
+    }),
+    Link.configure({
+      openOnClick: false,
+      HTMLAttributes: { class: 'tiptap-link' },
+    }),
+    Placeholder.configure({
+      placeholder: placeholder || 'Type your message...',
+      emptyEditorClass: 'is-editor-empty',
+    }),
+    CharacterCount,
+    Markdown.configure({
+      html: false,
+      transformCopiedText: true,
+      transformPastedText: true,
+    }),
+    ChatKeyboardShortcuts,
+  ];
+};
 
 export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
   value,
@@ -122,15 +161,31 @@ export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
     return (saved === 'edit' || saved === 'preview' || saved === 'split') ? saved : 'edit';
   });
 
-  // Extensions
-  const extensions = useMemo(() => getChatEditorExtensions(placeholder), [placeholder]);
-
+  // Refs to pass callbacks to extensions (avoids recreating extensions on callback changes)
+  const onSaveRef = useRef(onSave);
+  const onCancelRef = useRef(onCancel);
+  
   // Helper to get markdown from editor
   const getMarkdownFromEditor = useCallback((ed: Editor): string => {
     // tiptap-markdown stores getMarkdown on the editor instance via extension
     const storage = ed.storage as { markdown?: { getMarkdown: () => string } };
     return storage.markdown?.getMarkdown?.() || ed.getText() || '';
   }, []);
+  
+  const getMarkdownRef = useRef(getMarkdownFromEditor);
+  
+  // Keep refs updated
+  useEffect(() => {
+    onSaveRef.current = onSave;
+    onCancelRef.current = onCancel;
+    getMarkdownRef.current = getMarkdownFromEditor;
+  }, [onSave, onCancel, getMarkdownFromEditor]);
+
+  // Extensions - use refs so we don't recreate on callback changes
+  const extensions = useMemo(
+    () => getChatEditorExtensions(placeholder, onSaveRef, onCancelRef, getMarkdownRef),
+    [placeholder]
+  );
 
   // Editor instance
   const editor = useEditor({
@@ -151,33 +206,6 @@ export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
       editor.commands.setContent(value);
     }
   }, [value, editor, getMarkdownFromEditor]);
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    if (!editor) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check if cursor is inside a code block - if so, allow normal Enter behavior
-      const isInCodeBlock = editor.isActive('codeBlock');
-      
-      // Enter saves (without shift) - but NOT inside code blocks
-      if (event.key === 'Enter' && !event.shiftKey && !event.metaKey && !event.ctrlKey && !isInCodeBlock) {
-        event.preventDefault();
-        const md = getMarkdownFromEditor(editor);
-        onSave?.(md);
-        return;
-      }
-      // Escape cancels
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCancel?.();
-      }
-    };
-
-    const editorDOM = editor.view.dom;
-    editorDOM.addEventListener('keydown', handleKeyDown);
-    return () => editorDOM.removeEventListener('keydown', handleKeyDown);
-  }, [editor, onSave, onCancel, getMarkdownFromEditor]);
 
   // View mode handler
   const handleViewModeChange = useCallback((mode: ViewMode) => {
