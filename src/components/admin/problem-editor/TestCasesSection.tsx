@@ -140,7 +140,7 @@ export function TestCasesSection({ testCases, onChange, disabled = false }: Test
                   className="font-mono text-sm"
                   placeholder={`[1,2,3]|||6\n---\n[4,5]|||9`}
                 />
-                <Button onClick={handleBulkPaste} className="w-full">
+                <Button type="button" onClick={handleBulkPaste} className="w-full">
                   Import Test Cases
                 </Button>
               </div>
@@ -171,7 +171,7 @@ export function TestCasesSection({ testCases, onChange, disabled = false }: Test
   {"input": "[4,5]", "expected_output": "9"}
 ]`}
                 />
-                <Button onClick={handleJsonUpload} className="w-full">
+                <Button type="button" onClick={handleJsonUpload} className="w-full">
                   Import from JSON
                 </Button>
               </div>
