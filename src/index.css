@@ -509,3 +509,12 @@ All colors MUST be HSL.
 .error-line-highlight-animated {
   animation: error-pulse 1.5s ease-in-out infinite;
 }
+
+/* Column-specific error highlight (LeetCode-style: subtle, no underline) */
+.error-column-highlight {
+  background-color: hsl(0 84% 60% / 0.25) !important;
+}
+
+.dark .error-column-highlight {
+  background-color: hsl(0 62% 50% / 0.3) !important;
+}

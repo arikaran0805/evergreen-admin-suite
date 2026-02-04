@@ -23,13 +23,28 @@ import { formatCode, registerMonacoFormatters, supportsFormatting } from "@/lib/
 import { toast } from "sonner";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
+// LeetCode-style error location for Monaco highlighting
+export interface ErrorLocation {
+  /** Line number in user code (1-indexed) */
+  line: number;
+  /** Start column (1-indexed, optional) */
+  startColumn?: number;
+  /** End column (1-indexed, optional) */
+  endColumn?: number;
+  /** Error type for gutter hover (e.g., "TypeError", "SyntaxError") */
+  errorType?: string;
+}
+
 interface CodeEditorProps {
   problem: ProblemDetail;
   supportedLanguages?: string[];
   onRun: (code: string, language: string) => void;
   onSubmit: (code: string, language: string) => void;
   readOnly?: boolean;
+  /** @deprecated Use errorLocation instead */
   errorLine?: number;
+  /** LeetCode-style error location with optional column info */
+  errorLocation?: ErrorLocation | null;
   onCodeChange?: (code: string, language: string) => void;
 }
 
@@ -39,7 +54,10 @@ export interface CodeEditorRef {
   setCode: (code: string) => void;
   setLanguage: (language: string) => void;
   getLineCount: () => number;
+  /** @deprecated Use highlightError instead */
   highlightErrorLine: (line: number) => void;
+  /** Highlight error with full location info */
+  highlightError: (location: ErrorLocation) => void;
   clearErrorHighlight: () => void;
 }
 
@@ -104,7 +122,7 @@ const saveSettings = (settings: EditorSettings) => {
 };
 
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function CodeEditor(
-  { problem, supportedLanguages, onRun, onSubmit, readOnly = false, errorLine, onCodeChange },
+  { problem, supportedLanguages, onRun, onSubmit, readOnly = false, errorLine, errorLocation, onCodeChange },
   ref
 ) {
   const { theme } = useTheme();
@@ -144,6 +162,80 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     tabWidthRef.current = settings.tabSize;
   }, [settings.tabSize]);
 
+  /**
+   * Apply Monaco decoration for error highlighting.
+   * LeetCode-style: red gutter marker + subtle line/column highlight.
+   */
+  const applyErrorDecoration = useCallback((location: ErrorLocation) => {
+    if (!editorRef.current || !monacoRef.current) return;
+    if (!platformSettings.advanced.highlightErrorLines) return;
+    
+    const monaco = monacoRef.current;
+    const editor = editorRef.current;
+    const model = editor.getModel();
+    
+    if (!model) return;
+    
+    const { line, startColumn, endColumn, errorType } = location;
+    
+    // Validate line number
+    const lineCount = model.getLineCount();
+    if (line < 1 || line > lineCount) return;
+    
+    // Determine highlight range
+    let rangeStartCol = 1;
+    let rangeEndCol = model.getLineMaxColumn(line);
+    let isFullLine = true;
+    
+    // If we have specific column info, use it
+    if (startColumn !== undefined && startColumn > 0) {
+      rangeStartCol = startColumn;
+      rangeEndCol = endColumn !== undefined && endColumn > 0 ? endColumn : startColumn + 1;
+      isFullLine = false;
+    }
+    
+    const decorations: any[] = [];
+    
+    // Full line background highlight (subtle red)
+    decorations.push({
+      range: new monaco.Range(line, 1, line, 1),
+      options: {
+        isWholeLine: true,
+        className: 'error-line-highlight',
+        // Gutter marker with hover text showing error type
+        glyphMarginClassName: 'error-line-glyph',
+        glyphMarginHoverMessage: errorType ? { value: errorType } : undefined,
+      },
+    });
+    
+    // If we have column info, add inline decoration (optional squiggle/underline)
+    // LeetCode doesn't use underlines, so we keep this minimal
+    if (!isFullLine) {
+      decorations.push({
+        range: new monaco.Range(line, rangeStartCol, line, rangeEndCol),
+        options: {
+          className: 'error-column-highlight',
+          // No inline message - LeetCode style is minimal
+        },
+      });
+    }
+    
+    // Apply decorations
+    decorationsRef.current = editor.deltaDecorations(decorationsRef.current, decorations);
+    
+    // Scroll to error line (centered, not aggressive)
+    editor.revealLineInCenter(line);
+  }, [platformSettings.advanced.highlightErrorLines]);
+
+  /**
+   * Clear all error decorations.
+   */
+  const clearDecorations = useCallback(() => {
+    if (editorRef.current) {
+      decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, []);
+    }
+  }, []);
+
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     getCode: () => code,
@@ -154,76 +246,33 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       setCode(problem.starterCode[newLang] || '');
     },
     getLineCount: () => code.split('\n').length,
+    // Legacy support
     highlightErrorLine: (line: number) => {
-      // Respect the highlightErrorLines setting
-      if (!platformSettings.advanced.highlightErrorLines) return;
-      
-      if (editorRef.current && monacoRef.current) {
-        const monaco = monacoRef.current;
-        decorationsRef.current = editorRef.current.deltaDecorations(
-          decorationsRef.current,
-          [
-            {
-              range: new monaco.Range(line, 1, line, 1),
-              options: {
-                isWholeLine: true,
-                className: 'error-line-highlight',
-                glyphMarginClassName: 'error-line-glyph',
-                linesDecorationsClassName: 'error-line-decoration',
-              },
-            },
-          ]
-        );
-        editorRef.current.revealLineInCenter(line);
-      }
+      applyErrorDecoration({ line });
     },
-    clearErrorHighlight: () => {
-      if (editorRef.current) {
-        decorationsRef.current = editorRef.current.deltaDecorations(
-          decorationsRef.current,
-          []
-        );
-      }
+    // New enhanced method
+    highlightError: (location: ErrorLocation) => {
+      applyErrorDecoration(location);
     },
-  }), [code, language, problem.starterCode, platformSettings.advanced.highlightErrorLines]);
+    clearErrorHighlight: clearDecorations,
+  }), [code, language, problem.starterCode, applyErrorDecoration, clearDecorations]);
 
-  // Handle external error line changes - respects highlightErrorLines setting
+  // Handle errorLocation prop changes
   useEffect(() => {
     if (!platformSettings.advanced.highlightErrorLines) {
-      // Clear any existing highlights if setting is disabled
-      if (editorRef.current) {
-        decorationsRef.current = editorRef.current.deltaDecorations(
-          decorationsRef.current,
-          []
-        );
-      }
+      clearDecorations();
       return;
     }
     
-    if (errorLine && editorRef.current && monacoRef.current) {
-      const monaco = monacoRef.current;
-      decorationsRef.current = editorRef.current.deltaDecorations(
-        decorationsRef.current,
-        [
-          {
-            range: new monaco.Range(errorLine, 1, errorLine, 1),
-            options: {
-              isWholeLine: true,
-              className: 'error-line-highlight',
-              glyphMarginClassName: 'error-line-glyph',
-              linesDecorationsClassName: 'error-line-decoration',
-            },
-          },
-        ]
-      );
-      editorRef.current.revealLineInCenter(errorLine);
-    } else if (!errorLine && editorRef.current) {
-      decorationsRef.current = editorRef.current.deltaDecorations(
-        decorationsRef.current,
-        []
-      );
+    if (errorLocation) {
+      applyErrorDecoration(errorLocation);
+    } else if (errorLine) {
+      // Legacy support for errorLine prop
+      applyErrorDecoration({ line: errorLine });
+    } else {
+      clearDecorations();
     }
-  }, [errorLine, platformSettings.advanced.highlightErrorLines]);
+  }, [errorLocation, errorLine, applyErrorDecoration, clearDecorations, platformSettings.advanced.highlightErrorLines]);
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
@@ -311,7 +360,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     const newCode = value || '';
     setCode(newCode);
     onCodeChange?.(newCode, language);
-  }, [language, onCodeChange]);
+    // Clear error highlighting when user edits code
+    clearDecorations();
+  }, [language, onCodeChange, clearDecorations]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
