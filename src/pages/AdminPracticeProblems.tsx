@@ -170,19 +170,71 @@ export default function AdminPracticeProblems() {
           ))}
         </div>
       ) : !hasLinkedCourse ? (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            This skill is not linked to a course. Problems can still be created but won't be organized by lessons.
-            <Button
-              variant="link"
-              className="ml-2 p-0 h-auto"
-              onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
-            >
-              Create a standalone problem
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              This skill is not linked to a course. Problems can still be created but won't be organized by lessons.
+              <Button
+                variant="link"
+                className="ml-2 p-0 h-auto"
+                onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
+              >
+                Create a standalone problem
+              </Button>
+            </AlertDescription>
+          </Alert>
+          
+          {/* Show standalone problems */}
+          {skillProblems && skillProblems.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Standalone Problems</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {skillProblems.map((problem) => (
+                    <div
+                      key={problem.id}
+                      onClick={() => handleProblemClick(problem.id)}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                          problem.difficulty === "Easy" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                          problem.difficulty === "Medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                        }`}>
+                          {problem.difficulty}
+                        </span>
+                        <span className="font-medium">{problem.title}</span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        problem.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {problem.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Problems Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first problem for this custom collection.
+                </p>
+                <Button onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Problem
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       ) : lessons && lessons.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
