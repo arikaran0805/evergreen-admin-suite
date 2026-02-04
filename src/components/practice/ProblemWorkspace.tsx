@@ -44,6 +44,7 @@ interface ProblemWorkspaceProps {
   onTestCaseTabChange?: (tab: string) => void;
   globalError?: string;
   isSubmit?: boolean;
+  verdict?: 'accepted' | 'wrong_answer' | 'runtime_error' | 'time_limit_exceeded' | 'compilation_error';
 }
 
 const languageLabels: Record<string, string> = {
@@ -84,6 +85,7 @@ export function ProblemWorkspace({
   onTestCaseTabChange,
   globalError,
   isSubmit = false,
+  verdict,
 }: ProblemWorkspaceProps) {
   const { theme } = useTheme();
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
@@ -334,6 +336,7 @@ export function ProblemWorkspace({
             onErrorLineClick={highlightErrorLine}
             globalError={globalError}
             isSubmit={isSubmit}
+            verdict={verdict}
             showSampleTestcasesFirst={true}
             revealOutputOnlyAfterRun={false}
             hasRunOnce={hasRunOnce}
@@ -751,6 +754,7 @@ export function ProblemWorkspace({
               onErrorLineClick={highlightErrorLine}
               globalError={globalError}
               isSubmit={isSubmit}
+              verdict={verdict}
               showSampleTestcasesFirst={true}
               revealOutputOnlyAfterRun={false}
               hasRunOnce={hasRunOnce}

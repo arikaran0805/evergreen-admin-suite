@@ -4,6 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 // Verdict types matching the edge function
 export type Verdict = 'accepted' | 'wrong_answer' | 'runtime_error' | 'time_limit_exceeded' | 'compilation_error';
 
+// Execution mode: run (debug) vs submit (evaluation)
+export type ExecutionMode = 'run' | 'submit';
+
 export interface TestCaseInput {
   id: string | number;
   inputs: Record<string, unknown>;
@@ -36,20 +39,29 @@ interface JudgeRequest {
   function_name: string;
   parameter_names: string[];
   test_cases: TestCaseInput[];
+  mode?: ExecutionMode;
   time_limit_ms?: number;
 }
 
 export function useCodeJudge() {
   const [isJudging, setIsJudging] = useState(false);
   const [result, setResult] = useState<JudgeResponse | null>(null);
+  const [lastMode, setLastMode] = useState<ExecutionMode>('run');
 
   const judge = async (request: JudgeRequest): Promise<JudgeResponse> => {
     setIsJudging(true);
     setResult(null);
+    
+    const mode = request.mode || 'run';
+    setLastMode(mode);
 
     try {
+      // Pass mode to backend
       const { data, error } = await supabase.functions.invoke('judge-code', {
-        body: request
+        body: {
+          ...request,
+          mode, // Include mode in request
+        }
       });
 
       if (error) {
@@ -103,6 +115,7 @@ export function useCodeJudge() {
     judge,
     isJudging,
     result,
+    lastMode,
     reset
   };
 }
