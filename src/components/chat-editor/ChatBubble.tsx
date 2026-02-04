@@ -104,18 +104,45 @@ const ChatBubble = ({
 
   // Render content with code blocks
   const renderContent = (content: string) => {
+    // Check if content is TipTap JSON and extract plain text if so
+    let processedContent = content;
+    try {
+      const trimmed = content.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('"')) {
+        // Try to parse as JSON
+        const parsed = JSON.parse(trimmed.startsWith('"') ? trimmed : trimmed);
+        if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
+          // Extract text from TipTap JSON
+          const extractText = (node: any): string => {
+            if (node.text) return node.text;
+            if (node.content) return node.content.map(extractText).join('\n');
+            return '';
+          };
+          processedContent = extractText(parsed).trim();
+          // If empty doc, show nothing
+          if (!processedContent) return null;
+        }
+      }
+      // Also handle partial JSON that got corrupted (like `"doc","content":...`)
+      if (trimmed.includes('"type":"doc"') || trimmed.includes('"type":"paragraph"')) {
+        return null; // Don't render corrupted JSON
+      }
+    } catch {
+      // Not JSON, continue with markdown parsing
+    }
+    
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
     const parts: { type: string; language?: string; content: string }[] = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = codeBlockRegex.exec(content)) !== null) {
-      if (match.index > lastIndex) parts.push({ type: "text", content: content.slice(lastIndex, match.index) });
+    while ((match = codeBlockRegex.exec(processedContent)) !== null) {
+      if (match.index > lastIndex) parts.push({ type: "text", content: processedContent.slice(lastIndex, match.index) });
       parts.push({ type: "code", language: match[1] || "", content: match[2].trim() });
       lastIndex = match.index + match[0].length;
     }
-    if (lastIndex < content.length) parts.push({ type: "text", content: content.slice(lastIndex) });
-    if (parts.length === 0) parts.push({ type: "text", content });
+    if (lastIndex < processedContent.length) parts.push({ type: "text", content: processedContent.slice(lastIndex) });
+    if (parts.length === 0) parts.push({ type: "text", content: processedContent });
 
     return parts.map((part, idx) => {
       if (part.type === "code") {
