@@ -125,6 +125,8 @@ export default function ProblemDetail() {
     title: dbProblem.title,
     difficulty: dbProblem.difficulty,
     description: dbProblem.description || "",
+    inputFormat: (dbProblem as any).input_format || "",
+    outputFormat: (dbProblem as any).output_format || "",
     examples: (dbProblem.examples || []).map((ex: any, i: number) => ({
       id: i + 1,
       input: ex.input || "",
@@ -521,6 +523,8 @@ export default function ProblemDetail() {
                 title={problem.title}
                 difficulty={problem.difficulty}
                 description={problem.description}
+                inputFormat={problem.inputFormat}
+                outputFormat={problem.outputFormat}
                 examples={problem.examples}
                 constraints={problem.constraints}
                 hints={problem.hints}
@@ -630,6 +634,8 @@ export default function ProblemDetail() {
                 title={problem.title}
                 difficulty={problem.difficulty}
                 description={problem.description}
+                inputFormat={problem.inputFormat}
+                outputFormat={problem.outputFormat}
                 examples={problem.examples}
                 constraints={problem.constraints}
                 hints={problem.hints}
@@ -683,6 +689,8 @@ export default function ProblemDetail() {
                     title={problem.title}
                     difficulty={problem.difficulty}
                     description={problem.description}
+                    inputFormat={problem.inputFormat}
+                    outputFormat={problem.outputFormat}
                     examples={problem.examples}
                     constraints={problem.constraints}
                     hints={problem.hints}

@@ -14,6 +14,7 @@ import { useProblemReactions } from "@/hooks/useProblemReactions";
 import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
 import { useProblemComments } from "@/hooks/useProblemComments";
 import { ProblemCommentsSection } from "./ProblemCommentsSection";
+import { RichTextRenderer } from "@/components/tiptap/RichTextRenderer";
 
 interface Example {
   id: number;
@@ -37,6 +38,8 @@ interface ProblemDescriptionPanelProps {
   title: string;
   difficulty: string;
   description: string;
+  inputFormat?: string;
+  outputFormat?: string;
   examples: Example[];
   constraints: string[];
   hints?: string[];
@@ -62,6 +65,8 @@ export function ProblemDescriptionPanel({
   title,
   difficulty,
   description,
+  inputFormat,
+  outputFormat,
   examples,
   constraints,
   hints = [],
@@ -346,11 +351,31 @@ export function ProblemDescriptionPanel({
 
             {/* Description */}
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <div 
-                className="text-sm leading-relaxed text-foreground/90"
-                dangerouslySetInnerHTML={{ __html: description.replace(/\n/g, '<br/>') }}
+              <RichTextRenderer 
+                content={description} 
+                emptyPlaceholder=""
               />
             </div>
+
+            {/* Input Format */}
+            {inputFormat && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Input Format:</h3>
+                <div className="bg-muted/30 rounded-lg p-3 prose prose-sm dark:prose-invert max-w-none">
+                  <RichTextRenderer content={inputFormat} emptyPlaceholder="" />
+                </div>
+              </div>
+            )}
+
+            {/* Output Format */}
+            {outputFormat && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Output Format:</h3>
+                <div className="bg-muted/30 rounded-lg p-3 prose prose-sm dark:prose-invert max-w-none">
+                  <RichTextRenderer content={outputFormat} emptyPlaceholder="" />
+                </div>
+              </div>
+            )}
 
             {/* Examples */}
             {examples.length > 0 && (
