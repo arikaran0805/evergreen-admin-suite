@@ -24,6 +24,7 @@ export function usePracticeSkills() {
   return useQuery({
     queryKey: ["practice-skills"],
     queryFn: async () => {
+      // Get skills with direct problem count and course info
       const { data, error } = await supabase
         .from("practice_skills")
         .select("*, practice_problems(count), courses!course_id(name, slug)")
@@ -31,10 +32,33 @@ export function usePracticeSkills() {
 
       if (error) throw error;
       
+      // For course-linked skills, also count problems via sub_topics -> problem_mappings
+      const skillsWithCourses = (data || []).filter((s: any) => s.course_id);
+      const skillIds = skillsWithCourses.map((s: any) => s.id);
+      
+      let mappedCounts: Record<string, number> = {};
+      
+      if (skillIds.length > 0) {
+        // Get sub-topics for these skills with their problem mapping counts
+        const { data: subTopics } = await supabase
+          .from("sub_topics")
+          .select("skill_id, problem_mappings(count)")
+          .in("skill_id", skillIds);
+        
+        // Aggregate counts by skill_id
+        (subTopics || []).forEach((st: any) => {
+          const count = st.problem_mappings?.[0]?.count || 0;
+          mappedCounts[st.skill_id] = (mappedCounts[st.skill_id] || 0) + count;
+        });
+      }
+      
       // Transform to include problem_count and course info
       return (data || []).map((skill: any) => ({
         ...skill,
-        problem_count: skill.practice_problems?.[0]?.count || 0,
+        // Use mapped count for course-linked skills, direct count for custom collections
+        problem_count: skill.course_id 
+          ? (mappedCounts[skill.id] || 0)
+          : (skill.practice_problems?.[0]?.count || 0),
         course_name: skill.courses?.name,
         course_slug: skill.courses?.slug,
       })) as PracticeSkill[];
