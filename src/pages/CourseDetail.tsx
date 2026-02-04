@@ -280,15 +280,22 @@ const CourseDetail = () => {
     setIsHeaderVisible(visible);
   }, []);
 
-  // Computed values for course status
+  // Computed values for course status (includes lessons + practice problems)
   const courseProgress = useMemo(() => {
-    const completedCount = progress.completedLessons;
-    const totalCount = posts.length;
+    const completedLessons = progress.completedLessons;
+    const totalLessons = posts.length;
+    const solvedProblems = progress.solvedProblems;
+    const totalProblems = progress.totalProblems;
+    
+    // Combined counts
+    const completedCount = completedLessons + solvedProblems;
+    const totalCount = totalLessons + totalProblems;
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     const hasStarted = completedCount > 0;
     const isCompleted = completedCount === totalCount && totalCount > 0;
+    
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
-  }, [progress.completedLessons, posts.length]);
+  }, [progress.completedLessons, progress.solvedProblems, progress.totalProblems, posts.length]);
 
   /**
    * AD VISIBILITY LOGIC:
@@ -1366,7 +1373,7 @@ const CourseDetail = () => {
     if (courseProgress.hasStarted) {
       return {
         title: "Keep going",
-        message: `${courseProgress.completedCount} of ${courseProgress.totalCount} lessons completed`,
+        message: `${courseProgress.completedCount} of ${courseProgress.totalCount} items completed`,
         buttonLabel: "Continue Learning",
         icon: Play,
       };

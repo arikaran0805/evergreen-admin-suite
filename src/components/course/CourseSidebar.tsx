@@ -300,11 +300,11 @@ export const CourseSidebar = ({
                 <div className="flex items-center justify-between">
                   {courseProgress.percentage > 0 ? (
                     <span className="text-xs text-muted-foreground">
-                      {courseProgress.completedCount}/{courseProgress.totalCount} lessons completed
+                      {courseProgress.completedCount}/{courseProgress.totalCount} items
                     </span>
                   ) : (
                     <span className="text-xs text-muted-foreground/60">
-                      {courseProgress.totalCount} lessons
+                      {courseProgress.totalCount} items
                     </span>
                   )}
                   <span className="text-sm font-semibold text-sidebar-primary">
