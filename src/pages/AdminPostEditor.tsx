@@ -445,7 +445,7 @@ const AdminPostEditor = () => {
         previousContentRef.current = formData.content;
       } else {
         // Create new post - ensure unique slug
-        const uniqueSlug = await generateUniqueSlug(validated.slug);
+        const uniqueSlug = await generateUniqueSlug(validated.slug, validated.category_id || null);
         postData.slug = uniqueSlug;
         
         const { data: newPost, error } = await supabase
@@ -645,23 +645,29 @@ const AdminPostEditor = () => {
       .replace(/(^-|-$)/g, "");
   };
 
-  // Generate a unique slug by appending a suffix if the slug already exists
-  const generateUniqueSlug = async (baseSlug: string): Promise<string> => {
-    // Check if the slug already exists
+  // Generate a unique slug by appending a suffix if the slug already exists within the same course
+  const generateUniqueSlug = async (baseSlug: string, courseId: string | null): Promise<string> => {
+    if (!courseId) {
+      return baseSlug; // No course means no duplicate check needed
+    }
+
+    // Check if the slug already exists in this course
     const { data: existingPost } = await supabase
       .from("posts")
       .select("id")
       .eq("slug", baseSlug)
+      .eq("category_id", courseId)
       .maybeSingle();
 
     if (!existingPost) {
       return baseSlug;
     }
 
-    // Find posts with similar slugs (baseSlug or baseSlug-N pattern)
+    // Find posts with similar slugs in this course (baseSlug or baseSlug-N pattern)
     const { data: similarPosts } = await supabase
       .from("posts")
       .select("slug")
+      .eq("category_id", courseId)
       .ilike("slug", `${baseSlug}%`);
 
     if (!similarPosts || similarPosts.length === 0) {
