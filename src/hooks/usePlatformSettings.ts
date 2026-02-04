@@ -22,6 +22,7 @@ export interface CodeEditorSettings {
 export interface AdvancedSettings {
   performanceMode: boolean;
   minimap: boolean;
+  highlightErrorLines: boolean;
 }
 
 export interface PlatformSettings {
@@ -52,6 +53,7 @@ export const DEFAULT_CODE_EDITOR: CodeEditorSettings = {
 export const DEFAULT_ADVANCED: AdvancedSettings = {
   performanceMode: false,
   minimap: false,
+  highlightErrorLines: true,
 };
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {

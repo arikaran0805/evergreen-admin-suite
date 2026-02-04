@@ -330,6 +330,18 @@ function AdvancedSection({
             }
           />
         </SettingRow>
+
+        <SettingRow
+          label="Highlight Error Lines"
+          description="Visually highlight the line where an error occurred"
+        >
+          <Switch
+            checked={advanced.highlightErrorLines}
+            onCheckedChange={(v) =>
+              updateCategory("advanced", { highlightErrorLines: v })
+            }
+          />
+        </SettingRow>
       </div>
 
       {/* Reset Options */}
