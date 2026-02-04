@@ -8,6 +8,7 @@ const corsHeaders = {
 
 // Verdict types
 type Verdict = 'accepted' | 'wrong_answer' | 'runtime_error' | 'time_limit_exceeded' | 'compilation_error';
+type ExecutionMode = 'run' | 'submit';
 
 interface TestCase {
   id: string | number;
@@ -22,6 +23,7 @@ interface JudgeRequest {
   function_name: string;
   parameter_names: string[];
   test_cases: TestCase[];
+  mode?: ExecutionMode; // Default: 'run'
   time_limit_ms?: number;
   memory_limit_mb?: number;
 }
@@ -51,10 +53,8 @@ interface JudgeResponse {
 
 /**
  * Normalize a raw input value to its typed runtime equivalent.
- * This ensures user code NEVER receives raw strings that should be arrays/numbers.
  */
 function normalizeInputValue(value: unknown): unknown {
-  // Already typed correctly - pass through
   if (value === null || value === undefined) return value;
   if (typeof value === 'number') return value;
   if (typeof value === 'boolean') return value;
@@ -67,41 +67,26 @@ function normalizeInputValue(value: unknown): unknown {
     return normalized;
   }
 
-  // String handling - the critical part
   if (typeof value === 'string') {
     const trimmed = value.trim();
     
-    // Empty string stays empty
     if (trimmed === '') return '';
-    
-    // Boolean literals
-    if (trimmed === 'true') return true;
-    if (trimmed === 'false') return false;
-    if (trimmed === 'True') return true;
-    if (trimmed === 'False') return false;
-    
-    // None/null
+    if (trimmed === 'true' || trimmed === 'True') return true;
+    if (trimmed === 'false' || trimmed === 'False') return false;
     if (trimmed === 'null' || trimmed === 'None') return null;
     
-    // Try JSON parse first (handles arrays, objects, quoted strings)
     if (trimmed.startsWith('[') || trimmed.startsWith('{') || trimmed.startsWith('"')) {
       try {
         const parsed = JSON.parse(trimmed);
         return normalizeInputValue(parsed);
       } catch {
-        // Not valid JSON, continue with other strategies
+        // Not valid JSON
       }
     }
     
-    // Numeric string (integer or float)
-    if (/^-?\d+$/.test(trimmed)) {
-      return parseInt(trimmed, 10);
-    }
-    if (/^-?\d+\.\d+$/.test(trimmed)) {
-      return parseFloat(trimmed);
-    }
+    if (/^-?\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+    if (/^-?\d+\.\d+$/.test(trimmed)) return parseFloat(trimmed);
     
-    // CSV format: "1,2,3" or "1, 2, 3" → [1, 2, 3]
     if (/^-?\d+(\s*,\s*-?\d+)+$/.test(trimmed)) {
       return trimmed.split(',').map(s => {
         const n = s.trim();
@@ -109,26 +94,20 @@ function normalizeInputValue(value: unknown): unknown {
       });
     }
     
-    // Space-separated numbers: "1 2 3" → [1, 2, 3]
     if (/^-?\d+(\s+-?\d+)+$/.test(trimmed)) {
       return trimmed.split(/\s+/).map(s => {
         return s.includes('.') ? parseFloat(s) : parseInt(s, 10);
       });
     }
     
-    // CSV strings with potential mixed content: "a,b,c" → ["a", "b", "c"]
-    // Only if it looks like a list (has commas and no spaces around them suggesting sentence)
     if (trimmed.includes(',') && !/,\s+[a-z]/i.test(trimmed)) {
       const parts = trimmed.split(',').map(s => s.trim());
-      // Check if all parts are numeric
       if (parts.every(p => /^-?\d+(\.\d+)?$/.test(p))) {
         return parts.map(p => p.includes('.') ? parseFloat(p) : parseInt(p, 10));
       }
-      // Return as string array
       return parts;
     }
     
-    // Plain string - return as-is
     return trimmed;
   }
 
@@ -136,8 +115,7 @@ function normalizeInputValue(value: unknown): unknown {
 }
 
 /**
- * Prepare all test case inputs for execution.
- * Returns normalized inputs or throws if conversion fails.
+ * Prepare test case inputs for execution.
  */
 function prepareTestCaseInputs(
   testCases: TestCase[],
@@ -147,14 +125,12 @@ function prepareTestCaseInputs(
 
   for (const tc of testCases) {
     try {
-      // Validate all required parameters exist
       for (const param of parameterNames) {
         if (!(param in tc.inputs)) {
           return { normalizedCases: [], error: `Missing input for parameter '${param}'` };
         }
       }
 
-      // Normalize each input in parameter order
       const args: unknown[] = [];
       for (const param of parameterNames) {
         const raw = tc.inputs[param];
@@ -177,7 +153,7 @@ function prepareTestCaseInputs(
 }
 
 // =============================================================================
-// CODE GENERATION - Language-specific execution wrappers
+// CODE GENERATION
 // =============================================================================
 
 function generatePythonCode(
@@ -185,7 +161,6 @@ function generatePythonCode(
   functionName: string,
   normalizedCases: Array<{ id: string | number; args: unknown[]; expected: unknown; is_visible: boolean }>
 ): string {
-  // Serialize cases with Python-compatible literals
   const casesForPython = normalizedCases.map(tc => ({
     id: tc.id,
     args: tc.args,
@@ -202,7 +177,6 @@ import time
 ${userCode}
 
 def _convert_json_to_python(val):
-    """Convert JSON values to Python types"""
     if val is None:
         return None
     if isinstance(val, bool):
@@ -218,32 +192,27 @@ def _convert_json_to_python(val):
     return val
 
 def _compare_outputs(actual, expected):
-    """Compare outputs with type-aware comparison"""
     if actual is None and expected is None:
         return True
     if actual is None or expected is None:
         return False
     
-    # Handle numeric comparison with tolerance for floats
     if isinstance(expected, float) or isinstance(actual, float):
         try:
             return abs(float(actual) - float(expected)) < 1e-9
         except (TypeError, ValueError):
             return False
     
-    # Handle list/array comparison
     if isinstance(expected, list) and isinstance(actual, list):
         if len(expected) != len(actual):
             return False
         return all(_compare_outputs(a, e) for a, e in zip(actual, expected))
     
-    # Handle dict comparison
     if isinstance(expected, dict) and isinstance(actual, dict):
         if set(expected.keys()) != set(actual.keys()):
             return False
         return all(_compare_outputs(actual[k], expected[k]) for k in expected)
     
-    # Direct equality
     return actual == expected
 
 def run_tests():
@@ -308,19 +277,16 @@ function compareOutputs(actual, expected) {
   if (actual === undefined && expected === undefined) return true;
   if (actual === undefined || expected === undefined) return false;
   
-  // Handle numeric comparison with tolerance
   if (typeof expected === 'number' && typeof actual === 'number') {
     if (Number.isNaN(expected) && Number.isNaN(actual)) return true;
     return Math.abs(actual - expected) < 1e-9;
   }
   
-  // Handle array comparison
   if (Array.isArray(expected) && Array.isArray(actual)) {
     if (expected.length !== actual.length) return false;
     return expected.every((e, i) => compareOutputs(actual[i], e));
   }
   
-  // Handle object comparison
   if (typeof expected === 'object' && typeof actual === 'object') {
     const expectedKeys = Object.keys(expected);
     const actualKeys = Object.keys(actual);
@@ -419,6 +385,107 @@ function parseExecutionResults(
 }
 
 // =============================================================================
+// MODE-AWARE RESPONSE SHAPING
+// =============================================================================
+
+/**
+ * Shape the response based on execution mode.
+ * - Run mode: Full details for debugging
+ * - Submit mode: Minimal details, hide sensitive data
+ */
+function shapeResponseForMode(
+  verdict: Verdict,
+  testResults: TestCaseResult[],
+  mode: ExecutionMode,
+  totalRuntime: number,
+  parseError?: string
+): JudgeResponse {
+  const passedCount = testResults.filter(r => r.passed).length;
+  const totalCount = testResults.length;
+
+  // RUN MODE: Full transparency for learning
+  if (mode === 'run') {
+    return {
+      verdict,
+      passed_count: passedCount,
+      total_count: totalCount,
+      test_results: testResults,
+      error: parseError,
+      total_runtime_ms: Math.round(totalRuntime * 100) / 100
+    };
+  }
+
+  // SUBMIT MODE: Minimal details, protect hidden test data
+  // Shape test results to hide sensitive information
+  const shapedResults: TestCaseResult[] = testResults.map(r => {
+    // For hidden tests: never reveal actual/expected output or specific errors
+    if (!r.is_visible) {
+      return {
+        id: r.id,
+        passed: r.passed,
+        is_visible: false,
+        runtime_ms: r.runtime_ms,
+        // Hide everything else for hidden tests
+        actual_output: undefined,
+        expected_output: undefined,
+        error: r.error ? 'Runtime Error' : undefined, // Generic error only
+      };
+    }
+    
+    // For visible tests in submit mode: show basic info but not detailed errors
+    return {
+      id: r.id,
+      passed: r.passed,
+      is_visible: true,
+      runtime_ms: r.runtime_ms,
+      actual_output: r.actual_output,
+      expected_output: r.expected_output,
+      // In submit mode, simplify error messages
+      error: r.error ? getGenericErrorType(r.error) : undefined,
+    };
+  });
+
+  // In submit mode with non-accepted verdict, provide minimal response
+  if (verdict !== 'accepted') {
+    return {
+      verdict,
+      passed_count: passedCount,
+      total_count: totalCount,
+      test_results: shapedResults,
+      // Don't expose parse errors in submit mode
+      error: undefined,
+      total_runtime_ms: Math.round(totalRuntime * 100) / 100
+    };
+  }
+
+  return {
+    verdict,
+    passed_count: passedCount,
+    total_count: totalCount,
+    test_results: shapedResults,
+    error: undefined,
+    total_runtime_ms: Math.round(totalRuntime * 100) / 100
+  };
+}
+
+/**
+ * Extract generic error type from detailed error message.
+ */
+function getGenericErrorType(error: string): string {
+  if (error.includes('TypeError')) return 'TypeError';
+  if (error.includes('ValueError')) return 'ValueError';
+  if (error.includes('IndexError')) return 'IndexError';
+  if (error.includes('KeyError')) return 'KeyError';
+  if (error.includes('ZeroDivisionError')) return 'ZeroDivisionError';
+  if (error.includes('AttributeError')) return 'AttributeError';
+  if (error.includes('NameError')) return 'NameError';
+  if (error.includes('SyntaxError')) return 'SyntaxError';
+  if (error.includes('ReferenceError')) return 'ReferenceError';
+  if (error.includes('RangeError')) return 'RangeError';
+  return 'Runtime Error';
+}
+
+// =============================================================================
 // MAIN HANDLER
 // =============================================================================
 
@@ -436,6 +503,7 @@ serve(async (req) => {
       function_name,
       parameter_names,
       test_cases,
+      mode = 'run', // Default to run mode
       time_limit_ms = 5000,
     } = body;
 
@@ -449,30 +517,38 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Judging ${language} code for function: ${function_name}`);
+    console.log(`[${mode.toUpperCase()}] Judging ${language} code for function: ${function_name}`);
     console.log(`Test cases: ${test_cases.length}, Time limit: ${time_limit_ms}ms`);
 
     // =========================================================================
-    // STEP 1: Normalize all inputs BEFORE code generation
+    // STEP 1: Select test cases based on mode
+    // =========================================================================
+    const activeTestCases = mode === 'run'
+      ? test_cases.filter(tc => tc.is_visible !== false)
+      : test_cases;
+
+    console.log(`Active test cases for ${mode} mode: ${activeTestCases.length}`);
+
+    // =========================================================================
+    // STEP 2: Normalize inputs
     // =========================================================================
     const { normalizedCases, error: normalizationError } = prepareTestCaseInputs(
-      test_cases,
+      activeTestCases,
       parameter_names || []
     );
 
     if (normalizationError) {
-      // Input conversion failure - return clean error without calling user code
       const response: JudgeResponse = {
         verdict: 'runtime_error',
         passed_count: 0,
-        total_count: test_cases.length,
-        test_results: test_cases.map(tc => ({
+        total_count: activeTestCases.length,
+        test_results: activeTestCases.map(tc => ({
           id: tc.id,
           passed: false,
           is_visible: tc.is_visible ?? true,
-          error: 'Invalid input format.'
+          error: mode === 'run' ? 'Invalid input format.' : 'Runtime Error'
         })),
-        error: 'Invalid input format.',
+        error: mode === 'run' ? 'Invalid input format.' : undefined,
         total_runtime_ms: 0
       };
       
@@ -483,7 +559,7 @@ serve(async (req) => {
     }
 
     // =========================================================================
-    // STEP 2: Generate execution code with pre-normalized inputs
+    // STEP 3: Generate execution code
     // =========================================================================
     let executionCode: string;
     
@@ -499,7 +575,7 @@ serve(async (req) => {
     }
 
     // =========================================================================
-    // STEP 3: Execute via Piston API
+    // STEP 4: Execute via Piston API
     // =========================================================================
     const pistonResponse = await fetch('https://emkc.org/api/v2/piston/execute', {
       method: 'POST',
@@ -519,14 +595,14 @@ serve(async (req) => {
       const response: JudgeResponse = {
         verdict: 'runtime_error',
         passed_count: 0,
-        total_count: test_cases.length,
-        test_results: test_cases.map(tc => ({
+        total_count: activeTestCases.length,
+        test_results: activeTestCases.map(tc => ({
           id: tc.id,
           passed: false,
           is_visible: tc.is_visible ?? true,
           error: 'Code execution service unavailable'
         })),
-        error: 'Code execution service unavailable',
+        error: mode === 'run' ? 'Code execution service unavailable' : undefined,
         total_runtime_ms: 0
       };
       
@@ -541,17 +617,18 @@ serve(async (req) => {
 
     // Check for compilation errors (non-Python)
     if (pistonResult.compile?.stderr && language !== 'python') {
+      const errorMsg = pistonResult.compile.stderr.substring(0, 500);
       const response: JudgeResponse = {
         verdict: 'compilation_error',
         passed_count: 0,
-        total_count: test_cases.length,
-        test_results: test_cases.map(tc => ({
+        total_count: activeTestCases.length,
+        test_results: activeTestCases.map(tc => ({
           id: tc.id,
           passed: false,
           is_visible: tc.is_visible ?? true,
-          error: pistonResult.compile.stderr.substring(0, 500)
+          error: mode === 'run' ? errorMsg : 'Compilation Error'
         })),
-        error: pistonResult.compile.stderr.substring(0, 500),
+        error: mode === 'run' ? errorMsg : undefined,
         total_runtime_ms: 0
       };
       
@@ -566,14 +643,14 @@ serve(async (req) => {
       const response: JudgeResponse = {
         verdict: 'time_limit_exceeded',
         passed_count: 0,
-        total_count: test_cases.length,
-        test_results: test_cases.map(tc => ({
+        total_count: activeTestCases.length,
+        test_results: activeTestCases.map(tc => ({
           id: tc.id,
           passed: false,
           is_visible: tc.is_visible ?? true,
           error: 'Time Limit Exceeded'
         })),
-        error: 'Execution exceeded time limit',
+        error: 'Time Limit Exceeded',
         total_runtime_ms: time_limit_ms
       };
       
@@ -589,17 +666,18 @@ serve(async (req) => {
 
     // Only treat stderr as runtime error if there's NO valid JSON output
     if (stderr && !stdout.trim()) {
+      const errorMsg = stderr.substring(0, 500);
       const response: JudgeResponse = {
         verdict: 'runtime_error',
         passed_count: 0,
-        total_count: test_cases.length,
-        test_results: test_cases.map(tc => ({
+        total_count: activeTestCases.length,
+        test_results: activeTestCases.map(tc => ({
           id: tc.id,
           passed: false,
           is_visible: tc.is_visible ?? true,
-          error: stderr.substring(0, 500)
+          error: mode === 'run' ? errorMsg : 'Runtime Error'
         })),
-        error: stderr.substring(0, 500),
+        error: mode === 'run' ? errorMsg : undefined,
         total_runtime_ms: 0
       };
       
@@ -610,9 +688,9 @@ serve(async (req) => {
     }
 
     // =========================================================================
-    // STEP 4: Parse results
+    // STEP 5: Parse results and determine verdict
     // =========================================================================
-    const { results: testResults, error: parseError } = parseExecutionResults(stdout, test_cases);
+    const { results: testResults, error: parseError } = parseExecutionResults(stdout, activeTestCases);
 
     const passedCount = testResults.filter(r => r.passed).length;
     const totalCount = testResults.length;
@@ -630,14 +708,16 @@ serve(async (req) => {
       verdict = 'wrong_answer';
     }
 
-    const response: JudgeResponse = {
+    // =========================================================================
+    // STEP 6: Shape response based on mode
+    // =========================================================================
+    const response = shapeResponseForMode(
       verdict,
-      passed_count: passedCount,
-      total_count: totalCount,
-      test_results: testResults,
-      error: parseError,
-      total_runtime_ms: Math.round(totalRuntime * 100) / 100
-    };
+      testResults,
+      mode,
+      totalRuntime,
+      parseError
+    );
 
     return new Response(
       JSON.stringify(response),
