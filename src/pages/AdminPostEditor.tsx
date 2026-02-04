@@ -444,7 +444,10 @@ const AdminPostEditor = () => {
         }
         previousContentRef.current = formData.content;
       } else {
-        // Create new post
+        // Create new post - ensure unique slug
+        const uniqueSlug = await generateUniqueSlug(validated.slug);
+        postData.slug = uniqueSlug;
+        
         const { data: newPost, error } = await supabase
           .from("posts")
           .insert([postData])
@@ -640,6 +643,43 @@ const AdminPostEditor = () => {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+  };
+
+  // Generate a unique slug by appending a suffix if the slug already exists
+  const generateUniqueSlug = async (baseSlug: string): Promise<string> => {
+    // Check if the slug already exists
+    const { data: existingPost } = await supabase
+      .from("posts")
+      .select("id")
+      .eq("slug", baseSlug)
+      .maybeSingle();
+
+    if (!existingPost) {
+      return baseSlug;
+    }
+
+    // Find posts with similar slugs (baseSlug or baseSlug-N pattern)
+    const { data: similarPosts } = await supabase
+      .from("posts")
+      .select("slug")
+      .ilike("slug", `${baseSlug}%`);
+
+    if (!similarPosts || similarPosts.length === 0) {
+      return baseSlug;
+    }
+
+    // Extract numbers from existing slugs and find the highest
+    const suffixPattern = new RegExp(`^${baseSlug}-(\\d+)$`);
+    let maxSuffix = 0;
+
+    similarPosts.forEach(post => {
+      const match = post.slug.match(suffixPattern);
+      if (match) {
+        maxSuffix = Math.max(maxSuffix, parseInt(match[1], 10));
+      }
+    });
+
+    return `${baseSlug}-${maxSuffix + 1}`;
   };
 
   // Check if moderator can only save as draft or submit for approval
