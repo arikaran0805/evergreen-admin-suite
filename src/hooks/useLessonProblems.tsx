@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface LessonProblemCount {
   lessonId: string;
@@ -72,5 +73,77 @@ export function useLessonProblemCounts(courseId: string | undefined) {
       return countMap;
     },
     enabled: !!courseId,
+  });
+}
+
+/**
+ * Hook to get lesson problem completion status
+ * Returns a map of lessonId -> allCompleted (boolean)
+ */
+export function useLessonProblemsCompletion(courseId: string | undefined) {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ["lesson-problems-completion", courseId, user?.id],
+    queryFn: async () => {
+      if (!courseId || !user?.id) return new Map<string, boolean>();
+
+      // Get the practice skill for this course
+      const { data: skill } = await supabase
+        .from("practice_skills")
+        .select("id")
+        .eq("course_id", courseId)
+        .eq("status", "published")
+        .maybeSingle();
+
+      if (!skill) return new Map<string, boolean>();
+
+      // Get sub-topics with problem mappings
+      const { data: subTopics } = await supabase
+        .from("sub_topics")
+        .select(`
+          lesson_id,
+          problem_mappings(problem_id)
+        `)
+        .eq("skill_id", skill.id);
+
+      if (!subTopics) return new Map<string, boolean>();
+
+      // Get all problem IDs grouped by lesson
+      const problemsByLesson = new Map<string, string[]>();
+      subTopics.forEach((st: any) => {
+        if (!st.lesson_id) return;
+        const problemIds = (st.problem_mappings || []).map((pm: any) => pm.problem_id);
+        const existing = problemsByLesson.get(st.lesson_id) || [];
+        problemsByLesson.set(st.lesson_id, [...existing, ...problemIds]);
+      });
+
+      // Get user's solved problems
+      const allProblemIds = Array.from(problemsByLesson.values()).flat();
+      if (allProblemIds.length === 0) return new Map<string, boolean>();
+
+      const { data: progress } = await supabase
+        .from("learner_problem_progress")
+        .select("problem_id, status")
+        .eq("user_id", user.id)
+        .eq("status", "solved")
+        .in("problem_id", allProblemIds);
+
+      const solvedIds = new Set((progress || []).map(p => p.problem_id));
+
+      // Check completion per lesson
+      const completionMap = new Map<string, boolean>();
+      problemsByLesson.forEach((problemIds, lessonId) => {
+        if (problemIds.length === 0) {
+          completionMap.set(lessonId, false);
+        } else {
+          const allSolved = problemIds.every(id => solvedIds.has(id));
+          completionMap.set(lessonId, allSolved);
+        }
+      });
+
+      return completionMap;
+    },
+    enabled: !!courseId && !!user?.id,
   });
 }
