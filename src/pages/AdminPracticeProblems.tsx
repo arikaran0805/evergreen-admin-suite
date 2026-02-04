@@ -188,32 +188,58 @@ export default function AdminPracticeProblems() {
           {/* Show standalone problems */}
           {skillProblems && skillProblems.length > 0 ? (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Standalone Problems</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg">Problems</CardTitle>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    {skillProblems.length} problems
+                  </span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Problem
+                </Button>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="pt-0">
+                <div className="space-y-1">
                   {skillProblems.map((problem) => (
                     <div
                       key={problem.id}
                       onClick={() => handleProblemClick(problem.id)}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors group"
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                          problem.difficulty === "Easy" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                          problem.difficulty === "Medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                        <div className="grid grid-cols-2 gap-0.5 opacity-40 group-hover:opacity-60">
+                          <div className="w-1 h-1 bg-current rounded-full" />
+                          <div className="w-1 h-1 bg-current rounded-full" />
+                          <div className="w-1 h-1 bg-current rounded-full" />
+                          <div className="w-1 h-1 bg-current rounded-full" />
+                          <div className="w-1 h-1 bg-current rounded-full" />
+                          <div className="w-1 h-1 bg-current rounded-full" />
+                        </div>
+                        <span className="font-medium text-sm">{problem.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
+                          problem.difficulty === "Easy" ? "border-green-500/30 text-green-600 dark:text-green-400" :
+                          problem.difficulty === "Medium" ? "border-amber-500/30 text-amber-600 dark:text-amber-400" :
+                          "border-red-500/30 text-red-600 dark:text-red-400"
                         }`}>
                           {problem.difficulty}
                         </span>
-                        <span className="font-medium">{problem.title}</span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                          problem.status === "published" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {problem.status}
+                        </span>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        problem.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                      }`}>
-                        {problem.status}
-                      </span>
                     </div>
                   ))}
                 </div>
