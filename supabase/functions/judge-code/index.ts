@@ -11,7 +11,7 @@ type Verdict = 'accepted' | 'wrong_answer' | 'runtime_error' | 'time_limit_excee
 
 interface TestCase {
   id: string | number;
-  inputs: Record<string, unknown>; // Structured inputs { paramName: value }
+  inputs: Record<string, unknown>;
   expected_output: unknown;
   is_visible?: boolean;
 }
@@ -22,8 +22,8 @@ interface JudgeRequest {
   function_name: string;
   parameter_names: string[];
   test_cases: TestCase[];
-  time_limit_ms?: number; // Default 5000ms
-  memory_limit_mb?: number; // Default 256MB
+  time_limit_ms?: number;
+  memory_limit_mb?: number;
 }
 
 interface TestCaseResult {
@@ -45,45 +45,179 @@ interface JudgeResponse {
   total_runtime_ms: number;
 }
 
-// Generate execution wrapper based on language
-function generateExecutionCode(
-  userCode: string,
-  language: string,
-  functionName: string,
-  parameterNames: string[],
-  testCases: TestCase[]
-): string {
-  if (language === 'python') {
-    return generatePythonCode(userCode, functionName, parameterNames, testCases);
-  } else if (language === 'javascript' || language === 'typescript') {
-    return generateJavaScriptCode(userCode, functionName, parameterNames, testCases);
+// =============================================================================
+// INPUT NORMALIZATION - LeetCode-style type conversion
+// =============================================================================
+
+/**
+ * Normalize a raw input value to its typed runtime equivalent.
+ * This ensures user code NEVER receives raw strings that should be arrays/numbers.
+ */
+function normalizeInputValue(value: unknown): unknown {
+  // Already typed correctly - pass through
+  if (value === null || value === undefined) return value;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.map(normalizeInputValue);
+  if (typeof value === 'object') {
+    const normalized: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      normalized[k] = normalizeInputValue(v);
+    }
+    return normalized;
   }
-  
-  throw new Error(`Unsupported language: ${language}`);
+
+  // String handling - the critical part
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    
+    // Empty string stays empty
+    if (trimmed === '') return '';
+    
+    // Boolean literals
+    if (trimmed === 'true') return true;
+    if (trimmed === 'false') return false;
+    if (trimmed === 'True') return true;
+    if (trimmed === 'False') return false;
+    
+    // None/null
+    if (trimmed === 'null' || trimmed === 'None') return null;
+    
+    // Try JSON parse first (handles arrays, objects, quoted strings)
+    if (trimmed.startsWith('[') || trimmed.startsWith('{') || trimmed.startsWith('"')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return normalizeInputValue(parsed);
+      } catch {
+        // Not valid JSON, continue with other strategies
+      }
+    }
+    
+    // Numeric string (integer or float)
+    if (/^-?\d+$/.test(trimmed)) {
+      return parseInt(trimmed, 10);
+    }
+    if (/^-?\d+\.\d+$/.test(trimmed)) {
+      return parseFloat(trimmed);
+    }
+    
+    // CSV format: "1,2,3" or "1, 2, 3" → [1, 2, 3]
+    if (/^-?\d+(\s*,\s*-?\d+)+$/.test(trimmed)) {
+      return trimmed.split(',').map(s => {
+        const n = s.trim();
+        return n.includes('.') ? parseFloat(n) : parseInt(n, 10);
+      });
+    }
+    
+    // Space-separated numbers: "1 2 3" → [1, 2, 3]
+    if (/^-?\d+(\s+-?\d+)+$/.test(trimmed)) {
+      return trimmed.split(/\s+/).map(s => {
+        return s.includes('.') ? parseFloat(s) : parseInt(s, 10);
+      });
+    }
+    
+    // CSV strings with potential mixed content: "a,b,c" → ["a", "b", "c"]
+    // Only if it looks like a list (has commas and no spaces around them suggesting sentence)
+    if (trimmed.includes(',') && !/,\s+[a-z]/i.test(trimmed)) {
+      const parts = trimmed.split(',').map(s => s.trim());
+      // Check if all parts are numeric
+      if (parts.every(p => /^-?\d+(\.\d+)?$/.test(p))) {
+        return parts.map(p => p.includes('.') ? parseFloat(p) : parseInt(p, 10));
+      }
+      // Return as string array
+      return parts;
+    }
+    
+    // Plain string - return as-is
+    return trimmed;
+  }
+
+  return value;
 }
+
+/**
+ * Prepare all test case inputs for execution.
+ * Returns normalized inputs or throws if conversion fails.
+ */
+function prepareTestCaseInputs(
+  testCases: TestCase[],
+  parameterNames: string[]
+): { normalizedCases: Array<{ id: string | number; args: unknown[]; expected: unknown; is_visible: boolean }>; error?: string } {
+  const normalizedCases: Array<{ id: string | number; args: unknown[]; expected: unknown; is_visible: boolean }> = [];
+
+  for (const tc of testCases) {
+    try {
+      // Validate all required parameters exist
+      for (const param of parameterNames) {
+        if (!(param in tc.inputs)) {
+          return { normalizedCases: [], error: `Missing input for parameter '${param}'` };
+        }
+      }
+
+      // Normalize each input in parameter order
+      const args: unknown[] = [];
+      for (const param of parameterNames) {
+        const raw = tc.inputs[param];
+        const normalized = normalizeInputValue(raw);
+        args.push(normalized);
+      }
+
+      normalizedCases.push({
+        id: tc.id,
+        args,
+        expected: normalizeInputValue(tc.expected_output),
+        is_visible: tc.is_visible ?? true,
+      });
+    } catch (e) {
+      return { normalizedCases: [], error: `Input normalization failed: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  return { normalizedCases };
+}
+
+// =============================================================================
+// CODE GENERATION - Language-specific execution wrappers
+// =============================================================================
 
 function generatePythonCode(
   userCode: string,
   functionName: string,
-  parameterNames: string[],
-  testCases: TestCase[]
+  normalizedCases: Array<{ id: string | number; args: unknown[]; expected: unknown; is_visible: boolean }>
 ): string {
-  const testCasesJson = JSON.stringify(testCases.map(tc => ({
+  // Serialize cases with Python-compatible literals
+  const casesForPython = normalizedCases.map(tc => ({
     id: tc.id,
-    inputs: tc.inputs,
-    expected: tc.expected_output
-  })));
+    args: tc.args,
+    expected: tc.expected,
+  }));
+  
+  const testCasesJson = JSON.stringify(casesForPython);
 
   return `
 import json
-import sys
 import time
-import traceback
 
 # User submitted code
 ${userCode}
 
-def compare_outputs(actual, expected):
+def _convert_json_to_python(val):
+    """Convert JSON values to Python types"""
+    if val is None:
+        return None
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        return val
+    if isinstance(val, str):
+        return val
+    if isinstance(val, list):
+        return [_convert_json_to_python(x) for x in val]
+    if isinstance(val, dict):
+        return {k: _convert_json_to_python(v) for k, v in val.items()}
+    return val
+
+def _compare_outputs(actual, expected):
     """Compare outputs with type-aware comparison"""
     if actual is None and expected is None:
         return True
@@ -101,30 +235,25 @@ def compare_outputs(actual, expected):
     if isinstance(expected, list) and isinstance(actual, list):
         if len(expected) != len(actual):
             return False
-        return all(compare_outputs(a, e) for a, e in zip(actual, expected))
+        return all(_compare_outputs(a, e) for a, e in zip(actual, expected))
     
-    # Handle dict comparison (order independent)
+    # Handle dict comparison
     if isinstance(expected, dict) and isinstance(actual, dict):
         if set(expected.keys()) != set(actual.keys()):
             return False
-        return all(compare_outputs(actual[k], expected[k]) for k in expected)
+        return all(_compare_outputs(actual[k], expected[k]) for k in expected)
     
-    # Handle set comparison
-    if isinstance(expected, set) and isinstance(actual, set):
-        return expected == actual
-    
-    # Direct equality for primitives
+    # Direct equality
     return actual == expected
 
 def run_tests():
     test_cases = json.loads('''${testCasesJson}''')
-    param_names = ${JSON.stringify(parameterNames)}
     results = []
     
     for tc in test_cases:
         tc_id = tc['id']
-        inputs = tc['inputs']
-        expected = tc['expected']
+        args = [_convert_json_to_python(a) for a in tc['args']]
+        expected = _convert_json_to_python(tc['expected'])
         
         result = {
             'id': tc_id,
@@ -136,21 +265,13 @@ def run_tests():
         }
         
         try:
-            # FIX 1: Validate all required parameters exist
-            for p in param_names:
-                if p not in inputs:
-                    raise ValueError(f"Missing input for parameter '{p}'")
-            
-            # Build arguments in correct order
-            args = [inputs[p] for p in param_names]
-            
             start_time = time.time()
             actual = ${functionName}(*args)
             end_time = time.time()
             
             result['runtime_ms'] = round((end_time - start_time) * 1000, 2)
             result['actual'] = actual
-            result['passed'] = compare_outputs(actual, expected)
+            result['passed'] = _compare_outputs(actual, expected)
             
         except Exception as e:
             result['error'] = type(e).__name__ + ': ' + str(e)[:200]
@@ -167,14 +288,15 @@ if __name__ == "__main__":
 function generateJavaScriptCode(
   userCode: string,
   functionName: string,
-  parameterNames: string[],
-  testCases: TestCase[]
+  normalizedCases: Array<{ id: string | number; args: unknown[]; expected: unknown; is_visible: boolean }>
 ): string {
-  const testCasesJson = JSON.stringify(testCases.map(tc => ({
+  const casesForJS = normalizedCases.map(tc => ({
     id: tc.id,
-    inputs: tc.inputs,
-    expected: tc.expected_output
-  })));
+    args: tc.args,
+    expected: tc.expected,
+  }));
+  
+  const testCasesJson = JSON.stringify(casesForJS);
 
   return `
 // User submitted code
@@ -186,7 +308,7 @@ function compareOutputs(actual, expected) {
   if (actual === undefined && expected === undefined) return true;
   if (actual === undefined || expected === undefined) return false;
   
-  // Handle numeric comparison with tolerance for floats
+  // Handle numeric comparison with tolerance
   if (typeof expected === 'number' && typeof actual === 'number') {
     if (Number.isNaN(expected) && Number.isNaN(actual)) return true;
     return Math.abs(actual - expected) < 1e-9;
@@ -198,7 +320,7 @@ function compareOutputs(actual, expected) {
     return expected.every((e, i) => compareOutputs(actual[i], e));
   }
   
-  // Handle object comparison (order independent)
+  // Handle object comparison
   if (typeof expected === 'object' && typeof actual === 'object') {
     const expectedKeys = Object.keys(expected);
     const actualKeys = Object.keys(actual);
@@ -206,13 +328,11 @@ function compareOutputs(actual, expected) {
     return expectedKeys.every(k => compareOutputs(actual[k], expected[k]));
   }
   
-  // Direct equality for primitives
   return actual === expected;
 }
 
 function runTests() {
   const testCases = ${testCasesJson};
-  const paramNames = ${JSON.stringify(parameterNames)};
   const results = [];
   
   for (const tc of testCases) {
@@ -226,14 +346,7 @@ function runTests() {
     };
     
     try {
-      // FIX 1: Validate all required parameters exist
-      for (const p of paramNames) {
-        if (!(p in tc.inputs)) {
-          throw new Error(\`Missing input for parameter '\${p}'\`);
-        }
-      }
-      
-      const args = paramNames.map(p => tc.inputs[p]);
+      const args = tc.args;
       
       const startTime = performance.now();
       const actual = ${functionName}(...args);
@@ -257,13 +370,15 @@ runTests();
 `;
 }
 
-// Parse Piston API response and extract results
+// =============================================================================
+// RESULT PARSING
+// =============================================================================
+
 function parseExecutionResults(
   output: string,
   testCases: TestCase[]
 ): { results: TestCaseResult[]; error?: string } {
   try {
-    // Try to parse JSON results
     const jsonMatch = output.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       return {
@@ -280,13 +395,13 @@ function parseExecutionResults(
     const rawResults = JSON.parse(jsonMatch[0]);
     
     return {
-      results: rawResults.map((r: any, i: number) => ({
+      results: rawResults.map((r: Record<string, unknown>, i: number) => ({
         id: r.id ?? i,
-        passed: r.passed,
+        passed: r.passed as boolean,
         actual_output: r.actual,
         expected_output: r.expected,
-        runtime_ms: r.runtime_ms,
-        error: r.error,
+        runtime_ms: r.runtime_ms as number,
+        error: r.error as string | undefined,
         is_visible: testCases[i]?.is_visible ?? true
       }))
     };
@@ -303,8 +418,11 @@ function parseExecutionResults(
   }
 }
 
+// =============================================================================
+// MAIN HANDLER
+// =============================================================================
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -334,16 +452,55 @@ serve(async (req) => {
     console.log(`Judging ${language} code for function: ${function_name}`);
     console.log(`Test cases: ${test_cases.length}, Time limit: ${time_limit_ms}ms`);
 
-    // Generate execution code
-    const executionCode = generateExecutionCode(
-      code,
-      language,
-      function_name,
-      parameter_names || [],
-      test_cases
+    // =========================================================================
+    // STEP 1: Normalize all inputs BEFORE code generation
+    // =========================================================================
+    const { normalizedCases, error: normalizationError } = prepareTestCaseInputs(
+      test_cases,
+      parameter_names || []
     );
 
-    // Execute via Piston API
+    if (normalizationError) {
+      // Input conversion failure - return clean error without calling user code
+      const response: JudgeResponse = {
+        verdict: 'runtime_error',
+        passed_count: 0,
+        total_count: test_cases.length,
+        test_results: test_cases.map(tc => ({
+          id: tc.id,
+          passed: false,
+          is_visible: tc.is_visible ?? true,
+          error: 'Invalid input format.'
+        })),
+        error: 'Invalid input format.',
+        total_runtime_ms: 0
+      };
+      
+      return new Response(
+        JSON.stringify(response),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // =========================================================================
+    // STEP 2: Generate execution code with pre-normalized inputs
+    // =========================================================================
+    let executionCode: string;
+    
+    if (language === 'python') {
+      executionCode = generatePythonCode(code, function_name, normalizedCases);
+    } else if (language === 'javascript' || language === 'typescript') {
+      executionCode = generateJavaScriptCode(code, function_name, normalizedCases);
+    } else {
+      return new Response(
+        JSON.stringify({ error: `Unsupported language: ${language}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // =========================================================================
+    // STEP 3: Execute via Piston API
+    // =========================================================================
     const pistonResponse = await fetch('https://emkc.org/api/v2/piston/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -382,7 +539,7 @@ serve(async (req) => {
     const pistonResult = await pistonResponse.json();
     console.log('Piston result:', JSON.stringify(pistonResult).substring(0, 500));
 
-    // FIX 3: Check for compilation errors (only for compiled languages, not Python)
+    // Check for compilation errors (non-Python)
     if (pistonResult.compile?.stderr && language !== 'python') {
       const response: JudgeResponse = {
         verdict: 'compilation_error',
@@ -429,10 +586,8 @@ serve(async (req) => {
     // Get output
     const stdout = pistonResult.run?.stdout || '';
     const stderr = pistonResult.run?.stderr || '';
-    const output = stdout + (stderr ? '\n' + stderr : '');
 
-    // FIX 2: Only treat stderr as runtime error if there's NO valid JSON output at all
-    // This allows debug prints/warnings while still catching actual errors
+    // Only treat stderr as runtime error if there's NO valid JSON output
     if (stderr && !stdout.trim()) {
       const response: JudgeResponse = {
         verdict: 'runtime_error',
@@ -454,10 +609,11 @@ serve(async (req) => {
       );
     }
 
-    // Parse results
-    const { results: testResults, error: parseError } = parseExecutionResults(output, test_cases);
+    // =========================================================================
+    // STEP 4: Parse results
+    // =========================================================================
+    const { results: testResults, error: parseError } = parseExecutionResults(stdout, test_cases);
 
-    // Determine verdict
     const passedCount = testResults.filter(r => r.passed).length;
     const totalCount = testResults.length;
     const hasRuntimeError = testResults.some(r => r.error && !r.passed);
