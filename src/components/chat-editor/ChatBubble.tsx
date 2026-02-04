@@ -104,32 +104,72 @@ const ChatBubble = ({
 
   // Render content with code blocks
   const renderContent = (content: string) => {
-    // Check if content is TipTap JSON and extract plain text if so
-    let processedContent = content;
-    try {
-      const trimmed = content.trim();
-      if (trimmed.startsWith('{') || trimmed.startsWith('"')) {
-        // Try to parse as JSON
-        const parsed = JSON.parse(trimmed.startsWith('"') ? trimmed : trimmed);
+    if (!content) return null;
+    
+    const trimmed = content.trim();
+    
+    // FIRST: Check for corrupted/partial JSON patterns before any parsing
+    // This catches strings like `"doc","content":...` or `{"type":"paragraph"...` fragments
+    const corruptedPatterns = [
+      '"doc","content"',
+      '"type":"doc"',
+      '"type":"paragraph"',
+      '"type":"text"',
+      '"content":[{',
+      '{"type":"',
+    ];
+    
+    // If content looks like JSON fragments but isn't valid parseable JSON, suppress it
+    const looksLikeJsonFragment = corruptedPatterns.some(pattern => trimmed.includes(pattern));
+    if (looksLikeJsonFragment) {
+      // Try to parse - if it's valid TipTap JSON, extract text; otherwise suppress
+      try {
+        const parsed = JSON.parse(trimmed);
         if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
-          // Extract text from TipTap JSON
+          // Valid TipTap JSON - extract text
           const extractText = (node: any): string => {
             if (node.text) return node.text;
             if (node.content) return node.content.map(extractText).join('\n');
             return '';
           };
-          processedContent = extractText(parsed).trim();
-          // If empty doc, show nothing
-          if (!processedContent) return null;
+          const extracted = extractText(parsed).trim();
+          if (!extracted) return null;
+          // Continue with extracted text
+          return renderMarkdownContent(extracted);
         }
+      } catch {
+        // Not valid JSON - it's corrupted, don't render
+        return null;
       }
-      // Also handle partial JSON that got corrupted (like `"doc","content":...`)
-      if (trimmed.includes('"type":"doc"') || trimmed.includes('"type":"paragraph"')) {
-        return null; // Don't render corrupted JSON
-      }
-    } catch {
-      // Not JSON, continue with markdown parsing
+      // If we get here, it's JSON but not TipTap format - suppress
+      return null;
     }
+    
+    // Check for valid TipTap JSON that starts properly
+    if (trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
+          const extractText = (node: any): string => {
+            if (node.text) return node.text;
+            if (node.content) return node.content.map(extractText).join('\n');
+            return '';
+          };
+          const extracted = extractText(parsed).trim();
+          if (!extracted) return null;
+          return renderMarkdownContent(extracted);
+        }
+      } catch {
+        // Not valid JSON, continue with normal rendering
+      }
+    }
+    
+    return renderMarkdownContent(content);
+  };
+  
+  // Separate function to render markdown content
+  const renderMarkdownContent = (content: string) => {
+    let processedContent = content;
     
     // Fix escaped newlines (literal \n) to actual newlines
     processedContent = processedContent.replace(/\\n/g, '\n');
