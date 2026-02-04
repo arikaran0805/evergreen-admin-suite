@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -204,6 +204,16 @@ export function TestCasePanel({
 
   const hasResults = results.length > 0;
   const hasError = globalError || results.some(r => r.error);
+
+  // Auto-highlight error line when globalError changes
+  useEffect(() => {
+    if (globalError && onErrorLineClick) {
+      const parsed = parseCodeError(globalError, language, userCodeLineCount);
+      if (parsed.userLine && parsed.userLine > 0) {
+        onErrorLineClick(parsed.userLine);
+      }
+    }
+  }, [globalError, language, userCodeLineCount, onErrorLineClick]);
 
   // Sort results: show sample (visible) test cases first if setting is enabled
   const sortedResults = showSampleTestcasesFirst 
