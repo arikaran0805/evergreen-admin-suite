@@ -48,6 +48,103 @@ interface JudgeResponse {
 }
 
 // =============================================================================
+// COMPILATION / SYNTAX ERROR DETECTION - LeetCode-style phase classification
+// =============================================================================
+
+/**
+ * Normalize language name to standard format.
+ */
+function normalizeLanguage(language: string): string {
+  const lang = language.toLowerCase().trim();
+  if (lang === 'python' || lang === 'python3' || lang === 'py') return 'python';
+  if (lang === 'javascript' || lang === 'js' || lang === 'node') return 'javascript';
+  if (lang === 'typescript' || lang === 'ts') return 'typescript';
+  if (lang === 'java') return 'java';
+  if (lang === 'c' || lang === 'c11') return 'c';
+  if (lang === 'cpp' || lang === 'c++' || lang === 'c++17' || lang === 'c++20') return 'cpp';
+  return lang;
+}
+
+/**
+ * Detect if stderr contains a compilation or syntax error.
+ * Returns true if error occurred during parsing/compilation phase (before execution).
+ */
+function isSyntaxOrCompilationError(stderr: string, language: string): boolean {
+  if (!stderr || stderr.trim().length === 0) return false;
+  
+  const normalizedLang = normalizeLanguage(language);
+  const stderrLower = stderr.toLowerCase();
+  
+  switch (normalizedLang) {
+    case 'python':
+      // Python syntax errors occur before execution
+      return (
+        stderr.includes('SyntaxError') ||
+        stderr.includes('IndentationError') ||
+        stderr.includes('TabError') ||
+        stderrLower.includes('unexpected eof') ||
+        stderrLower.includes('invalid syntax') ||
+        stderrLower.includes('was never closed') ||
+        stderrLower.includes('expected an indented block') ||
+        stderrLower.includes('unmatched')
+      );
+      
+    case 'javascript':
+    case 'typescript':
+      // JavaScript/TypeScript syntax errors
+      return (
+        stderr.includes('SyntaxError') ||
+        stderrLower.includes('unexpected token') ||
+        stderrLower.includes('unexpected end of input') ||
+        stderrLower.includes('unexpected identifier') ||
+        stderrLower.includes('unexpected string') ||
+        stderrLower.includes('unexpected number') ||
+        stderrLower.includes('missing ) after') ||
+        stderrLower.includes('missing } after') ||
+        stderrLower.includes('missing ] after') ||
+        stderrLower.includes('unterminated string') ||
+        stderrLower.includes('invalid or unexpected token')
+      );
+      
+    case 'java':
+      // Java compilation errors
+      return (
+        stderr.includes('error:') ||
+        stderrLower.includes('reached end of file while parsing') ||
+        stderrLower.includes('illegal start of expression') ||
+        stderrLower.includes('illegal start of type') ||
+        stderrLower.includes('not a statement') ||
+        stderrLower.includes('\';\' expected') ||
+        stderrLower.includes('\')\' expected') ||
+        stderrLower.includes('\'}\' expected') ||
+        stderrLower.includes('unclosed string literal') ||
+        stderrLower.includes('class, interface, or enum expected')
+      );
+      
+    case 'c':
+    case 'cpp':
+      // C/C++ compilation errors
+      return (
+        stderr.includes('error:') ||
+        stderrLower.includes('expected \';\' ') ||
+        stderrLower.includes('expected \')\' ') ||
+        stderrLower.includes('expected \'}\' ') ||
+        stderrLower.includes('expected declaration') ||
+        stderrLower.includes('expected expression') ||
+        stderrLower.includes('incompatible types') ||
+        stderrLower.includes('undeclared identifier') ||
+        stderrLower.includes('use of undeclared') ||
+        stderrLower.includes('unknown type name') ||
+        stderrLower.includes('stray \'') ||
+        stderrLower.includes('unterminated')
+      );
+      
+    default:
+      return false;
+  }
+}
+
+// =============================================================================
 // INPUT NORMALIZATION - LeetCode-style type conversion
 // =============================================================================
 
@@ -664,18 +761,24 @@ serve(async (req) => {
     const stdout = pistonResult.run?.stdout || '';
     const stderr = pistonResult.run?.stderr || '';
 
-    // Only treat stderr as runtime error if there's NO valid JSON output
+    // Classify error phase: compilation/syntax vs runtime
+    // Only process if there's stderr AND no valid JSON output
     if (stderr && !stdout.trim()) {
       const errorMsg = stderr.substring(0, 500);
+      
+      // Check if this is a compilation/syntax error (before execution)
+      const isCompilationError = isSyntaxOrCompilationError(stderr, language);
+      const verdict: Verdict = isCompilationError ? 'compilation_error' : 'runtime_error';
+      
       const response: JudgeResponse = {
-        verdict: 'runtime_error',
+        verdict,
         passed_count: 0,
         total_count: activeTestCases.length,
         test_results: activeTestCases.map(tc => ({
           id: tc.id,
           passed: false,
           is_visible: tc.is_visible ?? true,
-          error: mode === 'run' ? errorMsg : 'Runtime Error'
+          error: mode === 'run' ? errorMsg : (isCompilationError ? 'Compilation Error' : 'Runtime Error')
         })),
         error: mode === 'run' ? errorMsg : undefined,
         total_runtime_ms: 0
