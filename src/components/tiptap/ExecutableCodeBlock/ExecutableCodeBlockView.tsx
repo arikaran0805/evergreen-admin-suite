@@ -393,7 +393,7 @@ const ExecutableCodeBlockView = ({
               <div className="overflow-hidden">
                 <div className="px-4 pb-3">
                   <pre className={cn(
-                    "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0 bg-transparent border-none p-0 rounded-none",
+                    "output-pre text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
                     outputError ? "text-destructive" : "text-foreground",
                     !output && "text-muted-foreground"
                   )}>
