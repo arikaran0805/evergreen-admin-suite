@@ -64,7 +64,7 @@ const CareerCourseCompleted = () => {
   const { toast } = useToast();
   
   // Career Board context
-  const { career, careerCourses } = useCareerBoard();
+  const { career, careerCourses, isLoading: careerLoading } = useCareerBoard();
   
   // Outlet context for layout communication
   const outletContext = useOutletContext<OutletContext>();
@@ -75,8 +75,9 @@ const CareerCourseCompleted = () => {
 
   const [course, setCourse] = useState<CourseData | null>(null);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [learnerName, setLearnerName] = useState("");
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
   // Review state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -85,6 +86,21 @@ const CareerCourseCompleted = () => {
   
   // Recommended next course
   const [nextCourse, setNextCourse] = useState<CourseData | null>(null);
+
+  // Safety timeout: prevent infinite skeleton
+  useEffect(() => {
+    if (hasLoadedOnce) return;
+    
+    const timeout = setTimeout(() => {
+      if (!hasLoadedOnce) {
+        console.warn("CareerCourseCompleted: Loading timeout reached, forcing completion");
+        setDataLoading(false);
+        setHasLoadedOnce(true);
+      }
+    }, 8000);
+    
+    return () => clearTimeout(timeout);
+  }, [hasLoadedOnce]);
 
   // Register current course slug with parent layout
   useEffect(() => {
@@ -96,8 +112,11 @@ const CareerCourseCompleted = () => {
 
   // Fetch all data
   useEffect(() => {
-    // Redirect if not authenticated
-    if (!authLoading && !isAuthenticated) {
+    // Wait for auth to complete before making any decisions
+    if (authLoading) return;
+    
+    // Redirect if not authenticated (after auth loading completes)
+    if (!isAuthenticated) {
       navigate("/auth", { 
         state: { from: `/career-board/${careerIdParam}/course/${courseSlug}/completed` },
         replace: true 
@@ -105,8 +124,11 @@ const CareerCourseCompleted = () => {
       return;
     }
 
-    // Wait for user
-    if (authLoading || !user || !courseSlug) return;
+    // Wait for user object and course slug
+    if (!user || !courseSlug) {
+      // If auth says authenticated but no user, something is wrong - set timeout handles this
+      return;
+    }
 
     const fetchData = async () => {
       try {
@@ -261,7 +283,8 @@ const CareerCourseCompleted = () => {
       } catch (error) {
         console.error("Error fetching completion data:", error);
       } finally {
-        setLoading(false);
+        setDataLoading(false);
+        setHasLoadedOnce(true);
       }
     };
 
@@ -331,8 +354,12 @@ const CareerCourseCompleted = () => {
     }
   }, [course]);
 
+  // Calculate loading state - once loaded, stay loaded (prevent tab refocus flicker)
+  const isCurrentlyLoading = authLoading || careerLoading || dataLoading;
+  const showLoading = hasLoadedOnce ? false : isCurrentlyLoading;
+
   // Loading state
-  if (authLoading || loading) {
+  if (showLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
         <Skeleton className="h-6 w-32 mb-8" />
