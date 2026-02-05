@@ -1954,21 +1954,7 @@ const CareerCourseDetail = () => {
                               </div>
 
                               <div className="flex flex-col gap-3">
-                                {/* Primary CTA - View Full Certificate */}
-                                <Button 
-                                  onClick={() => {
-                                    // Navigate to career-specific completion page
-                                    navigate(`/career-board/${careerSlugForPath}/course/${course.slug}/completed`);
-                                  }}
-                                  className="w-full sm:w-auto"
-                                  size="lg"
-                                  disabled={!courseProgress.isCompleted}
-                                >
-                                  <Award className="h-4 w-4 mr-2" />
-                                  View & Download Certificate
-                                </Button>
-
-                                {/* Secondary actions */}
+                                {/* Share actions */}
                                 <Button 
                                   variant="outline" 
                                   onClick={() => {

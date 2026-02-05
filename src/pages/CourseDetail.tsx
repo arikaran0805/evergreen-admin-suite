@@ -2206,18 +2206,7 @@ const CourseDetail = () => {
                                 </div>
 
                                 <div className="flex flex-col gap-3">
-                                  {/* Primary CTA - View Full Certificate */}
-                                  <Button 
-                                    onClick={() => navigate(`/course/${course.id}/completed`)}
-                                    className="w-full sm:w-auto"
-                                    size="lg"
-                                    disabled={!courseProgress.isCompleted}
-                                  >
-                                    <Award className="h-4 w-4 mr-2" />
-                                    View & Download Certificate
-                                  </Button>
-
-                                  {/* Secondary actions - full width to match primary CTA */}
+                                  {/* Share actions */}
                                   <Button 
                                     variant="outline" 
                                     onClick={() => {

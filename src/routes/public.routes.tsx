@@ -5,7 +5,6 @@ import Index from "@/pages/Index";
 import Courses from "@/pages/Courses";
 import CourseDetail from "@/pages/CourseDetail";
 import CourseNotes from "@/pages/CourseNotes";
-import CourseCompleted from "@/pages/CourseCompleted";
 import VerifyCertificate from "@/pages/VerifyCertificate";
 import Library from "@/pages/Library";
 import Arcade from "@/pages/Arcade";
@@ -36,7 +35,6 @@ export const publicRoutes = [
   <Route key="home" path="/" element={<Index />} />,
   <Route key="courses" path="/courses" element={<Courses />} />,
   <Route key="course-detail" path="/course/:slug" element={<CourseDetail />} />,
-  <Route key="course-completed" path="/course/:courseId/completed" element={<CourseCompleted />} />,
   <Route key="course-notes" path="/courses/:courseId/notes" element={<CourseNotes />} />,
   <Route key="verify-certificate" path="/verify/certificate/:certificateId" element={<VerifyCertificate />} />,
   <Route key="library" path="/library" element={<Library />} />,
