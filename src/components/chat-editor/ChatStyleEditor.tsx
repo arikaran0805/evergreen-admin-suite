@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichTextEditor } from "@/components/tiptap";
 import { Plus, Eye, Edit3, MessageCircle, Trash2, FileText, Code, Send, Image, Link, Bold, Italic, GripVertical, Pencil, ArrowUp, ArrowDown, Terminal, List, ListOrdered, Heading2, Quote, Lightbulb, Undo2, Redo2, EyeOff, Columns, Maximize2, Minimize2, PenTool, MessageSquarePlus } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import CodeBlock from "./CodeBlock";
+import { MonacoCodeBlock } from "@/components/code-block";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
 import {
@@ -605,11 +605,11 @@ const ComposerPreview = ({ content, codeTheme }: { content: string; codeTheme?: 
     <div className="space-y-2">
       {parts.map((part, idx) => 
         part.type === 'code' ? (
-          <CodeBlock 
+          <MonacoCodeBlock 
             key={idx} 
             code={part.content} 
             language={part.language || 'text'} 
-            overrideTheme={codeTheme}
+            showLanguageLabel
           />
         ) : (
           <div key={idx}>{parseLines(part.content)}</div>

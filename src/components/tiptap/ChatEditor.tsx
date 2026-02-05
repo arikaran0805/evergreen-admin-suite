@@ -34,7 +34,7 @@ import {
   DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import CodeBlock from '../chat-editor/CodeBlock';
+import { MonacoCodeBlock } from '@/components/code-block';
 import '@/styles/tiptap.css';
 
 // Detect OS for keyboard shortcut display
@@ -314,11 +314,10 @@ export const ChatEditor = forwardRef<ChatEditorRef, ChatEditorProps>(({
       if (part.type === 'code') {
         return (
           <div key={idx} className="my-2">
-            <CodeBlock
+            <MonacoCodeBlock
               code={part.content}
               language={part.language}
-              isMentorBubble={isMentor}
-              overrideTheme={codeTheme}
+              showLanguageLabel
             />
           </div>
         );

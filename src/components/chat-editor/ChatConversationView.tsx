@@ -6,7 +6,7 @@ import { FreeformCanvasData } from "./freeform/types";
 import { extractChatSegments, extractExplanation } from "@/lib/chatContent";
 import { supabase } from "@/integrations/supabase/client";
 import { renderCourseIcon } from "./utils";
-import CodeBlock from "./CodeBlock";
+import { MonacoCodeBlock } from "@/components/code-block";
 import { getChatColors, getDynamicStyles, DynamicChatColors } from "./chatColors";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -511,13 +511,12 @@ const ChatConversationView = ({
     return parts.map((part, idx) => {
       if (part.type === "code") {
         return (
-          <CodeBlock
+          <MonacoCodeBlock
             key={idx}
             code={part.content}
             language={part.language}
-            isMentorBubble={isMentorBubble}
-            overrideTheme={codeTheme}
-            editable
+            editable={true}
+            showLanguageLabel={true}
           />
         );
       }
@@ -777,12 +776,11 @@ const ChatConversationView = ({
 
                 return (
                   <div key={idx} className="my-4 not-prose">
-                    <CodeBlock
+                    <MonacoCodeBlock
                       code={block.code}
                       language={block.language}
-                      overrideTheme={codeTheme}
-                      editable
-                      showToolbarAlways
+                      editable={true}
+                      showLanguageLabel={true}
                     />
                   </div>
                 );
