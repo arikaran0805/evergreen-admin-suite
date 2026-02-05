@@ -60,31 +60,11 @@ export const CareerBoardLayout = () => {
   
   // Welcome screen state - check if user has seen welcome for this career
   const { hasSeenWelcome, loading: welcomeLoading, markWelcomeSeen } = useCareerWelcome(career?.id);
-
-  // If we have a career but welcome state is still unknown, treat as loading.
-  // This prevents a refresh flicker where the layout renders child content and then swaps to the welcome screen.
-  // Only consider it pending if welcomeLoading is done but hasSeenWelcome is still null
-  // (which shouldn't happen with the fixed hook, but defensive check)
-  const isWelcomePending = !!career?.id && hasSeenWelcome === null && !welcomeLoading;
   
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   
-  // Track if we've completed initial load - prevents skeleton on tab refocus
-  const [hasLayoutLoaded, setHasLayoutLoaded] = useState(false);
-  
-  // Safety timeout: if layout loading takes more than 10 seconds, force it to complete
-  useEffect(() => {
-    if (hasLayoutLoaded) return;
-    
-    const timeout = setTimeout(() => {
-      if (!hasLayoutLoaded) {
-        console.warn("CareerBoardLayout: Loading timeout reached, forcing completion");
-        setHasLayoutLoaded(true);
-      }
-    }, 10000);
-    
-    return () => clearTimeout(timeout);
-  }, [hasLayoutLoaded]);
+  // Track if we've completed initial load for SHELL content - prevents skeleton on tab refocus
+  const [hasShellLoaded, setHasShellLoaded] = useState(false);
 
   // Track header visibility for sticky positioning
   const { isHeaderVisible } = useScrollDirection({
@@ -97,36 +77,78 @@ export const CareerBoardLayout = () => {
     setShowAnnouncement(visible);
   }, []);
 
-  // Calculate if we're currently in a loading state
-  const isCurrentlyLoading = isLoading || userStateLoading || welcomeLoading || isWelcomePending;
- 
-  // Once all loading completes for the first time, mark layout as loaded
-  // (useEffect to avoid setState during render, which can cause flicker on refresh)
-  useEffect(() => {
-    if (!isCurrentlyLoading && !hasLayoutLoaded) {
-      setHasLayoutLoaded(true);
-    }
-  }, [isCurrentlyLoading, hasLayoutLoaded]);
-  
-  // Only show skeleton if we haven't successfully loaded before
-  const shouldShowSkeleton = hasLayoutLoaded ? false : isCurrentlyLoading;
-
   /**
    * Handle Welcome Screen CTA click
    * - Mark welcome as seen (persists to DB)
-   * - Navigate to Career Board index (Arcade view inside shell)
+   * - Stay on current route (shell will now render with Arcade)
    */
   const handleWelcomeStart = useCallback(async () => {
     await markWelcomeSeen();
-    
-    // Navigate to Career Board index (shows Arcade inside shell)
-    // The index route renders CareerArcade component
-    if (career) {
-      navigate(`/career-board/${career.slug}`, { replace: true });
-    }
-  }, [markWelcomeSeen, career, navigate]);
+    // No navigation needed - state change will re-render and show shell
+  }, [markWelcomeSeen]);
 
-  // While loading (and haven't loaded before), show skeleton to prevent any flicker
+  // Get skills for welcome page (needed before early returns)
+  const careerSkills = career ? getCareerSkills(career.id) : [];
+
+  // Calculate if shell is loading (only matters for returning users)
+  const isShellLoading = isLoading || userStateLoading;
+  
+  // Safety timeout for shell loading
+  useEffect(() => {
+    if (hasShellLoaded) return;
+    
+    const timeout = setTimeout(() => {
+      if (!hasShellLoaded) {
+        console.warn("CareerBoardLayout: Shell loading timeout, forcing completion");
+        setHasShellLoaded(true);
+      }
+    }, 8000);
+    
+    return () => clearTimeout(timeout);
+  }, [hasShellLoaded]);
+  
+  // Mark shell as loaded once loading completes
+  useEffect(() => {
+    if (!isShellLoading && !hasShellLoaded) {
+      setHasShellLoaded(true);
+    }
+  }, [isShellLoading, hasShellLoaded]);
+
+  /**
+   * WELCOME PAGE GATE - Check BEFORE shell skeleton
+   * 
+   * If user has NOT seen welcome, show full-page welcome immediately.
+   * This bypasses ALL shell loading states - welcome page is standalone.
+   */
+  
+  // First: Check if we're still determining welcome status
+  // Only wait for welcome check if we have a career to check against
+  if (career && welcomeLoading) {
+    // Show a minimal loading state while checking welcome status
+    // This is NOT the shell skeleton - just a brief check
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  // Second: If user hasn't seen welcome, show it immediately (FULL PAGE, NO SHELL)
+  if (hasSeenWelcome === false && career) {
+    return (
+      <CareerWelcomePage 
+        career={career as any}
+        skills={careerSkills}
+        onStart={handleWelcomeStart}
+      />
+    );
+  }
+
+  /**
+   * SHELL LOADING - Only for returning users (hasSeenWelcome === true)
+   */
+  const shouldShowSkeleton = hasShellLoaded ? false : isShellLoading;
+
   if (shouldShowSkeleton) {
     return <CareerBoardSkeleton />;
   }
@@ -139,26 +161,6 @@ export const CareerBoardLayout = () => {
   // Career not found
   if (isReady && !career) {
     return <Navigate to="/arcade" replace />;
-  }
-
-  // Get skills for welcome page
-  const careerSkills = career ? getCareerSkills(career.id) : [];
-
-  /**
-   * WELCOME SCREEN GATE
-   * Show welcome screen if:
-   * - User is Pro (already verified above)
-   * - User has NOT seen welcome for this career
-   * - Career data is loaded
-   */
-  if (hasSeenWelcome === false && career) {
-    return (
-      <CareerWelcomePage 
-        career={career as any}
-        skills={careerSkills}
-        onStart={handleWelcomeStart}
-      />
-    );
   }
 
   // Build current course object for header highlighting
