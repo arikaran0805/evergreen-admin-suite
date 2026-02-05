@@ -114,19 +114,17 @@ export const CareerBoardLayout = () => {
   /**
    * Handle Welcome Screen CTA click
    * - Mark welcome as seen (persists to DB)
-   * - Navigate to first course in career
+   * - Navigate to Career Board index (Arcade view inside shell)
    */
   const handleWelcomeStart = useCallback(async () => {
     await markWelcomeSeen();
     
-    // Navigate to first course if available
-    if (careerCourses.length > 0 && career) {
-      navigate(`/career-board/${career.slug}/course/${careerCourses[0].slug}`);
-    } else {
-      // Fallback to arcade if no courses
-      navigate("/arcade");
+    // Navigate to Career Board index (shows Arcade inside shell)
+    // The index route renders CareerArcade component
+    if (career) {
+      navigate(`/career-board/${career.slug}`, { replace: true });
     }
-  }, [markWelcomeSeen, careerCourses, career, navigate]);
+  }, [markWelcomeSeen, career, navigate]);
 
   // While loading (and haven't loaded before), show skeleton to prevent any flicker
   if (shouldShowSkeleton) {
