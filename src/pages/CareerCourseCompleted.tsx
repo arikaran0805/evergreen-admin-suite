@@ -160,9 +160,11 @@ const CareerCourseCompleted = () => {
         const total = totalLessons || 0;
         const completed = completedLessons || 0;
 
-        // Only allow the completion page when the course is fully completed.
-        if (total === 0 || completed < total) {
-          // Not completed - redirect to course page
+        // Only allow the completion page when the course is fully completed
+        // Note: If total is 0 (no lessons) but user somehow got here, allow it
+        // to prevent infinite redirects. Focus on completion check.
+        if (total > 0 && completed < total) {
+          // Not completed - redirect to course page (only if there ARE lessons to complete)
           toast({
             title: "Course not completed",
             description: "Complete all lessons to view this page.",

@@ -63,7 +63,9 @@ export const CareerBoardLayout = () => {
 
   // If we have a career but welcome state is still unknown, treat as loading.
   // This prevents a refresh flicker where the layout renders child content and then swaps to the welcome screen.
-  const isWelcomePending = !!career?.id && hasSeenWelcome === null;
+  // Only consider it pending if welcomeLoading is done but hasSeenWelcome is still null
+  // (which shouldn't happen with the fixed hook, but defensive check)
+  const isWelcomePending = !!career?.id && hasSeenWelcome === null && !welcomeLoading;
   
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   
