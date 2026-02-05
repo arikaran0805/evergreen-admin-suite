@@ -282,18 +282,16 @@ const CareerCourseDetail = () => {
   const courseProgress = useMemo(() => {
     const completedLessons = progress.completedLessons;
     const totalLessons = posts.length;
-    const solvedProblems = progress.solvedProblems;
-    const totalProblems = progress.totalProblems;
     
-    // Combined counts
-    const completedCount = completedLessons + solvedProblems;
-    const totalCount = totalLessons + totalProblems;
+    // Lessons only
+    const completedCount = completedLessons;
+    const totalCount = totalLessons;
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     const hasStarted = completedCount > 0;
     const isCompleted = completedCount === totalCount && totalCount > 0;
     
     return { completedCount, totalCount, percentage, hasStarted, isCompleted };
-  }, [progress.completedLessons, progress.solvedProblems, progress.totalProblems, posts.length]);
+  }, [progress.completedLessons, posts.length]);
 
   /**
    * ROLE-AWARE, PROGRESS-AWARE DEFAULT TAB SELECTION
@@ -1218,7 +1216,7 @@ const CareerCourseDetail = () => {
     if (courseProgress.hasStarted) {
       return {
         title: "Keep going",
-        message: `${courseProgress.completedCount} of ${courseProgress.totalCount} items completed`,
+        message: `${courseProgress.completedCount} of ${courseProgress.totalCount} lessons completed`,
         buttonLabel: "Continue Learning",
         icon: Play,
       };
