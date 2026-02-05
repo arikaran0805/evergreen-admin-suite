@@ -369,14 +369,16 @@ const MonacoCodeBlock = ({
             outputExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           )}>
             <div className="overflow-hidden">
-              <div className="px-4 pb-4">
-                <pre className={cn(
-                  "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
-                  outputError ? "text-destructive" : "text-foreground",
-                  !output && "text-muted-foreground"
-                )}>
-                  {output || 'No output'}
-                </pre>
+              <div className="px-4 pb-3">
+                <div className="rounded-lg border border-border/40 bg-background px-4 py-3">
+                  <pre className={cn(
+                    "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
+                    outputError ? "text-destructive" : "text-foreground",
+                    !output && "text-muted-foreground"
+                  )}>
+                    {output || 'No output'}
+                  </pre>
+                </div>
               </div>
             </div>
           </div>
