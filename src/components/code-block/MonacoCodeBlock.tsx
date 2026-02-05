@@ -329,7 +329,7 @@ const MonacoCodeBlock = ({
 
       {/* Output panel - collapsible */}
       {showOutput && (
-        <div className="border border-t-0 border-border/60 bg-muted/50 overflow-hidden rounded-t-none rounded-b-xl">
+        <div className="border border-t-0 border-border/40 bg-muted/40 overflow-hidden rounded-t-none rounded-b-xl">
           {/* Output header */}
           <button
             onClick={() => setOutputExpanded(!outputExpanded)}
