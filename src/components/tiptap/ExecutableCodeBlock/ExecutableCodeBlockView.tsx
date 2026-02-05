@@ -392,7 +392,7 @@ const ExecutableCodeBlockView = ({
             )}>
               <div className="overflow-hidden">
                 <div className="px-4 pb-3">
-                  <div className="rounded-lg border border-border/40 bg-background px-4 py-3">
+                  <div className="rounded-lg border border-border/40 bg-white px-4 py-3">
                     <pre className={cn(
                       "text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto m-0",
                       outputError ? "text-destructive" : "text-foreground",
