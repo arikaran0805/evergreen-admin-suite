@@ -1,17 +1,17 @@
  import { useState, useMemo } from "react";
  import { useParams, useNavigate } from "react-router-dom";
- import { ArrowLeft, Bookmark } from "lucide-react";
+import { ArrowLeft, Bookmark, CheckCircle, Circle } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Skeleton } from "@/components/ui/skeleton";
  import { Toggle } from "@/components/ui/toggle";
  import { ProblemFilters } from "@/components/practice/ProblemFilters";
- import { ProblemRow } from "@/components/practice/ProblemRow";
  import { useProblemBookmarks } from "@/hooks/useProblemBookmarks";
  import { useLearnerProgress } from "@/hooks/useLearnerProblemProgress";
  import { useAuth } from "@/contexts/AuthContext";
  import { useQuery } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
  import { toast } from "sonner";
+import { cn } from "@/lib/utils";
  
  type DifficultyFilter = 'all' | 'Easy' | 'Medium' | 'Hard';
  type StatusFilter = 'all' | 'solved' | 'unsolved';
@@ -25,6 +25,7 @@
    subTopic: string;
    hasSolution: boolean;
    slug: string;
+  subTopicId?: string;
  }
  
  export default function LessonProblems() {
@@ -124,14 +125,15 @@
        if (!mappings) return [];
  
        // Build sub-topic title lookup
-       const subTopicMap = new Map(subTopics.map(st => [st.id, st.title]));
+       const subTopicMap = new Map(subTopics.map(st => [st.id, { title: st.title, id: st.id }]));
  
        // Filter to published problems and map to display format
        return mappings
          .filter((m: any) => m.practice_problems?.status === "published")
          .map((m: any) => ({
            ...m.practice_problems,
-           subTopicTitle: subTopicMap.get(m.sub_topic_id) || "General",
+           subTopicTitle: subTopicMap.get(m.sub_topic_id)?.title || "General",
+           subTopicId: m.sub_topic_id,
          }));
      },
      enabled: !!skillId && !!lessonId,
@@ -149,6 +151,7 @@
        subTopic: p.subTopicTitle || "General",
        hasSolution: !!p.solution,
        slug: p.slug,
+      subTopicId: p.subTopicId,
      }));
    }, [problems, solvedProblems]);
  
@@ -164,6 +167,25 @@
      });
    }, [displayProblems, difficulty, status, search, showBookmarkedOnly, isBookmarked]);
  
+  // Group problems by sub-topic
+  const groupedBySubTopic = useMemo(() => {
+    const groups: Record<string, DisplayProblem[]> = {};
+    filteredProblems.forEach((p) => {
+      const key = p.subTopic;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(p);
+    });
+    return groups;
+  }, [filteredProblems]);
+
+  const difficultyColors: Record<string, string> = {
+    Easy: "text-green-500",
+    Medium: "text-yellow-500",
+    Hard: "text-red-500",
+  };
+
    const handleProblemClick = (problem: DisplayProblem) => {
      if (problem.locked) {
        toast.info("This is a premium problem. Upgrade to unlock!", {
@@ -236,20 +258,58 @@
          {/* Problem List */}
          <div className="mt-6">
            {isLoading ? (
-             <div className="space-y-2">
-               {[...Array(5)].map((_, i) => (
-                 <Skeleton key={i} className="h-14 w-full" />
-               ))}
-             </div>
+            <Skeleton className="h-48 w-full rounded-xl" />
            ) : filteredProblems.length > 0 ? (
-             <div className="rounded-lg border border-border/50 overflow-hidden bg-card">
-               {filteredProblems.map((problem) => (
-                 <ProblemRow
-                   key={problem.id}
-                   problem={problem}
-                   onClick={() => handleProblemClick(problem)}
-                 />
-               ))}
+            <div className="rounded-xl border border-border/50 overflow-hidden bg-card shadow-sm">
+              {/* Card Header - Lesson Title */}
+              <div className="px-5 py-4 bg-muted/40 border-b border-border/50">
+                <h2 className="text-base font-semibold text-foreground">
+                  {lesson?.title || "Practice Problems"}
+                </h2>
+              </div>
+
+              {/* Sub-Topics and Problems */}
+              <div className="divide-y divide-border/30">
+                {Object.entries(groupedBySubTopic).map(([subTopicTitle, subTopicProblems]) => (
+                  <div key={subTopicTitle}>
+                    {/* Sub-Topic Header - only show if multiple sub-topics or different from lesson */}
+                    {(Object.keys(groupedBySubTopic).length > 1 || subTopicTitle !== lesson?.title) && (
+                      <div className="px-5 py-2.5 bg-muted/20 border-b border-border/30">
+                        <span className="text-sm text-muted-foreground">{subTopicTitle}</span>
+                      </div>
+                    )}
+
+                    {/* Problems in this Sub-Topic */}
+                    <div className="divide-y divide-border/20">
+                      {subTopicProblems.map((problem) => (
+                        <button
+                          key={problem.id}
+                          onClick={() => handleProblemClick(problem)}
+                          className={cn(
+                            "w-full flex items-center justify-between px-5 py-3.5",
+                            "hover:bg-muted/30 transition-colors duration-150",
+                            "text-left"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            {problem.solved ? (
+                              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-muted-foreground/40 flex-shrink-0" />
+                            )}
+                            <span className="text-sm font-medium text-foreground">
+                              {problem.title}
+                            </span>
+                          </div>
+                          <span className={cn("text-sm font-medium", difficultyColors[problem.difficulty])}>
+                            {problem.difficulty}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
              </div>
            ) : displayProblems.length > 0 ? (
              <div className="text-center py-12 text-muted-foreground">
