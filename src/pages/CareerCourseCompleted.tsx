@@ -110,6 +110,23 @@ const CareerCourseCompleted = () => {
     }
   }, [courseSlug, setCurrentCourseSlug]);
 
+  // Debug: Track which conditions are true
+  useEffect(() => {
+    const conditions = {
+      '1. authLoading complete': !authLoading,
+      '2. isAuthenticated': isAuthenticated,
+      '3. user available': !!user,
+      '4. careerLoading complete': !careerLoading,
+      '5. courseSlug available': !!courseSlug,
+      '6. career available': !!career,
+      '7. careerCourses loaded': careerCourses.length > 0,
+      '8. dataLoading complete': !dataLoading,
+    };
+    
+    const trueCount = Object.values(conditions).filter(Boolean).length;
+    console.log(`🔍 CareerCourseCompleted: ${trueCount}/8 conditions true`, conditions);
+  }, [authLoading, isAuthenticated, user, careerLoading, courseSlug, career, careerCourses, dataLoading]);
+
   // Fetch all data
   useEffect(() => {
     // Wait for auth to complete before making any decisions
