@@ -54,7 +54,7 @@ const CareerBoardSkeleton = () => (
 
 export const CareerBoardLayout = () => {
   const { career, careerCourses, isLoading: careerContextLoading, isReady, currentCourseSlug, setCurrentCourseSlug } = useCareerBoard();
-  const { isPro, isLoading: userStateLoading } = useUserState();
+  const { isPro } = useUserState();
   const { getCareerSkills, loading: careersLoading } = useCareers();
   
   // Welcome screen state - check if user has seen welcome for this career
@@ -94,9 +94,10 @@ export const CareerBoardLayout = () => {
   // Get skills for welcome page (needed before early returns)
   const careerSkills = career ? getCareerSkills(career.id) : [];
 
-  // SHELL loading state - ONLY depends on career context, NOT course data
+  // SHELL loading state - ONLY depends on career context loading
+  // Pro-check redirect happens via CareerBoardContext effect, NOT here
   // Course data loading is handled by child pages with local skeletons
-  const isShellLoading = careerContextLoading || userStateLoading;
+  const isShellLoading = careerContextLoading;
   
   // Safety timeout for shell loading
   useEffect(() => {
@@ -159,13 +160,9 @@ export const CareerBoardLayout = () => {
     return <CareerBoardSkeleton />;
   }
 
-  // Non-Pro redirect (safety net - context also handles this)
-  if (!isPro) {
-    return <Navigate to="/arcade" replace />;
-  }
-
-  // Career not found - only check when fully ready
-  if (isReady && !career && !careerContextLoading) {
+  // Career not found - only check when fully ready (never show skeleton as "not found")
+  // Pro-check redirect is handled by CareerBoardContext effect
+  if (isReady && !career) {
     return <Navigate to="/arcade" replace />;
   }
 
