@@ -21,9 +21,21 @@ export const useCareerWelcome = (careerId: string | undefined): UseCareerWelcome
     let cancelled = false;
 
     const checkWelcomeSeen = async () => {
-      if (!user?.id || !careerId) {
+      // If no user, not logged in - default to "seen" to avoid blocking
+      if (!user?.id) {
         if (!cancelled) {
           setLoading(false);
+          setHasSeenWelcome(true); // Default to seen for non-logged in users
+        }
+        return;
+      }
+      
+      // If user exists but careerId not ready yet, stay in loading state
+      // This prevents the race condition where career loads after this hook resolves
+      if (!careerId) {
+        if (!cancelled) {
+          // Keep loading: true until careerId is available
+          setLoading(true);
           setHasSeenWelcome(null);
         }
         return;
