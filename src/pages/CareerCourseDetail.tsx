@@ -1957,16 +1957,8 @@ const CareerCourseDetail = () => {
                                 {/* Primary CTA - View Full Certificate */}
                                 <Button 
                                   onClick={() => {
-                                    if (!careerSlugForPath) {
-                                      toast({
-                                        title: "Career context not ready",
-                                        description: "Please try again in a moment.",
-                                        variant: "destructive",
-                                      });
-                                      return;
-                                    }
-
-                                    navigate(`/career-board/${careerSlugForPath}/course/${course.slug}/completed`);
+                                    // Navigate to standard course completion page
+                                    navigate(`/course/${course.id}/completed`);
                                   }}
                                   className="w-full sm:w-auto"
                                   size="lg"
