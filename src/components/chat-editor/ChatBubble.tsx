@@ -210,8 +210,7 @@ const ChatBubble = ({
       {/* Bubble - wider when containing code blocks */}
       <div className={cn(
         "relative px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-200",
-        isEditing ? "flex-1 max-w-full" : hasCodeBlock(message.content) ? "w-[85%] max-w-[85%] min-w-[400px]" : "max-w-[70%] min-w-[60px]",
-        getChatColors(isMentor).bubble,
+        isEditing ? "flex-1 max-w-full" : hasCodeBlock(message.content) ? "w-[75%] max-w-[75%] min-w-[360px]" : "max-w-[70%] min-w-[60px]",
         getChatColors(isMentor).text,
         isMentor ? "rounded-br-md" : "rounded-bl-md",
         isDragging && "ring-2 ring-primary/50",
