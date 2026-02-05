@@ -9,7 +9,6 @@
  * ROUTE STRUCTURE:
  * /career-board/:careerId → Career overview (redirects to first course)
  * /career-board/:careerId/course/:courseSlug → Course detail within career context
- * /career-board/:careerId/course/:courseSlug/completed → Course completion within career context
  */
 import { Routes, Route, Navigate } from "react-router-dom";
 import { CareerBoardProvider, useCareerBoard } from "@/contexts/CareerBoardContext";
