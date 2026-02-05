@@ -68,6 +68,21 @@ export const useCareers = () => {
     fetchCareers();
   }, [authLoading, hasFetchedOnce]);
 
+  // Safety timeout: if loading takes more than 10 seconds, force it to complete
+  // This prevents infinite loading states in edge cases
+  useEffect(() => {
+    if (!loading) return;
+    
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("useCareers: Loading timeout reached, forcing completion");
+        setLoading(false);
+      }
+    }, 10000);
+    
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   const fetchCareers = async () => {
     setLoading(true);
     try {
