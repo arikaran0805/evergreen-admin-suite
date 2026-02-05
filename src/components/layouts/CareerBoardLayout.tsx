@@ -16,7 +16,7 @@
  * - Persisted per user per career in database
  */
 import { useState, useCallback, useEffect } from "react";
-import { Outlet, Navigate, useNavigate } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import { useCareerBoard } from "@/contexts/CareerBoardContext";
 import { useUserState } from "@/hooks/useUserState";
 import { useCareerWelcome } from "@/hooks/useCareerWelcome";
@@ -53,8 +53,7 @@ const CareerBoardSkeleton = () => (
 );
 
 export const CareerBoardLayout = () => {
-  const navigate = useNavigate();
-  const { career, careerCourses, isLoading, isReady, currentCourseSlug, setCurrentCourseSlug } = useCareerBoard();
+  const { career, careerCourses, isLoading: careerContextLoading, isReady, currentCourseSlug, setCurrentCourseSlug } = useCareerBoard();
   const { isPro, isLoading: userStateLoading } = useUserState();
   const { getCareerSkills } = useCareers();
   
@@ -63,7 +62,10 @@ export const CareerBoardLayout = () => {
   
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   
-  // Track if we've completed initial load for SHELL content - prevents skeleton on tab refocus
+  // Track if welcome was just dismissed (to skip skeleton after welcome)
+  const [welcomeJustDismissed, setWelcomeJustDismissed] = useState(false);
+  
+  // Track if we've completed initial shell load - prevents skeleton on tab refocus
   const [hasShellLoaded, setHasShellLoaded] = useState(false);
 
   // Track header visibility for sticky positioning
@@ -80,18 +82,20 @@ export const CareerBoardLayout = () => {
   /**
    * Handle Welcome Screen CTA click
    * - Mark welcome as seen (persists to DB)
-   * - Stay on current route (shell will now render with Arcade)
+   * - Skip skeleton on transition (welcomeJustDismissed flag)
    */
   const handleWelcomeStart = useCallback(async () => {
+    // Mark that we're transitioning from welcome - skip skeleton
+    setWelcomeJustDismissed(true);
+    setHasShellLoaded(true); // Prevent skeleton after welcome dismissal
     await markWelcomeSeen();
-    // No navigation needed - state change will re-render and show shell
   }, [markWelcomeSeen]);
 
   // Get skills for welcome page (needed before early returns)
   const careerSkills = career ? getCareerSkills(career.id) : [];
 
-  // Calculate if shell is loading (only matters for returning users)
-  const isShellLoading = isLoading || userStateLoading;
+  // Calculate if shell is loading
+  const isShellLoading = careerContextLoading || userStateLoading;
   
   // Safety timeout for shell loading
   useEffect(() => {
@@ -121,11 +125,8 @@ export const CareerBoardLayout = () => {
    * This bypasses ALL shell loading states - welcome page is standalone.
    */
   
-  // First: Check if we're still determining welcome status
-  // Only wait for welcome check if we have a career to check against
-  if (career && welcomeLoading) {
-    // Show a minimal loading state while checking welcome status
-    // This is NOT the shell skeleton - just a brief check
+  // First: Check if we're still determining welcome status (and not just dismissed)
+  if (career && welcomeLoading && !welcomeJustDismissed) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -133,8 +134,8 @@ export const CareerBoardLayout = () => {
     );
   }
 
-  // Second: If user hasn't seen welcome, show it immediately (FULL PAGE, NO SHELL)
-  if (hasSeenWelcome === false && career) {
+  // Second: If user hasn't seen welcome (and didn't just dismiss it), show welcome page
+  if (hasSeenWelcome === false && career && !welcomeJustDismissed) {
     return (
       <CareerWelcomePage 
         career={career as any}
@@ -145,9 +146,13 @@ export const CareerBoardLayout = () => {
   }
 
   /**
-   * SHELL LOADING - Only for returning users (hasSeenWelcome === true)
+   * SHELL RENDERING - For returning users OR after welcome dismissal
+   * 
+   * Skip skeleton if:
+   * - Shell has already loaded once (tab refocus)
+   * - Welcome was just dismissed (smooth transition)
    */
-  const shouldShowSkeleton = hasShellLoaded ? false : isShellLoading;
+  const shouldShowSkeleton = (hasShellLoaded || welcomeJustDismissed) ? false : isShellLoading;
 
   if (shouldShowSkeleton) {
     return <CareerBoardSkeleton />;
@@ -155,11 +160,11 @@ export const CareerBoardLayout = () => {
 
   // Non-Pro redirect (safety net - context also handles this)
   if (!isPro) {
-    return <Navigate to="/courses" replace />;
+    return <Navigate to="/arcade" replace />;
   }
 
-  // Career not found
-  if (isReady && !career) {
+  // Career not found - only check when fully ready
+  if (isReady && !career && !careerContextLoading) {
     return <Navigate to="/arcade" replace />;
   }
 
