@@ -276,6 +276,15 @@
   position: relative;
 }
 
+/* Exclude output panel pre elements from code block styling */
+.executable-code-block-wrapper pre.output-pre {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 .tiptap-editor .ProseMirror pre code,
 .tiptap-content pre code {
   background: none;
