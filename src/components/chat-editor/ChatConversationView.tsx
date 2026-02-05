@@ -68,6 +68,11 @@ const TAKEAWAY_REGEX = /^\[TAKEAWAY(?::([^:]*?))?(?::([^\]]*?))?\]:\s*/;
 // Freeform canvas format: [FREEFORM_CANVAS]:{json data}
 const FREEFORM_REGEX = /^\[FREEFORM_CANVAS\]:(.*)$/;
 
+// Check if content contains code blocks
+const hasCodeBlock = (content: string): boolean => {
+  return /```[\s\S]*?```/.test(content);
+};
+
 const parseConversation = (content: string): ChatMessage[] => {
   const segments = extractChatSegments(content);
   if (segments.length === 0) return [];
@@ -675,7 +680,8 @@ const ChatConversationView = ({
                 {/* Bubble */}
                 <div
                   className={cn(
-                    "relative max-w-[75%] px-5 py-3 rounded-2xl",
+                    "relative px-5 py-3 rounded-2xl",
+                    hasCodeBlock(message.content) ? "w-[85%] max-w-[85%] min-w-[400px]" : "max-w-[75%]",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
                     !dynamicStyle && getChatColors(isMentorBubble).bubble,
                     !dynamicStyle && getChatColors(isMentorBubble).text,
