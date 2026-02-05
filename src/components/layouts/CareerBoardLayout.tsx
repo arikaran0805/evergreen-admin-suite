@@ -55,7 +55,7 @@ const CareerBoardSkeleton = () => (
 export const CareerBoardLayout = () => {
   const { career, careerCourses, isLoading: careerContextLoading, isReady, currentCourseSlug, setCurrentCourseSlug } = useCareerBoard();
   const { isPro, isLoading: userStateLoading } = useUserState();
-  const { getCareerSkills } = useCareers();
+  const { getCareerSkills, loading: careersLoading } = useCareers();
   
   // Welcome screen state - check if user has seen welcome for this career
   const { hasSeenWelcome, loading: welcomeLoading, markWelcomeSeen } = useCareerWelcome(career?.id);
@@ -94,7 +94,8 @@ export const CareerBoardLayout = () => {
   // Get skills for welcome page (needed before early returns)
   const careerSkills = career ? getCareerSkills(career.id) : [];
 
-  // Calculate if shell is loading
+  // SHELL loading state - ONLY depends on career context, NOT course data
+  // Course data loading is handled by child pages with local skeletons
   const isShellLoading = careerContextLoading || userStateLoading;
   
   // Safety timeout for shell loading

@@ -36,10 +36,12 @@ interface CareerBoardContextValue {
   career: Career | null;
   /** All courses in this career path */
   careerCourses: CareerCourse[];
-  /** Whether data is still loading */
+  /** Whether career context is still loading (shell-level) */
   isLoading: boolean;
   /** Whether the context is fully initialized */
   isReady: boolean;
+  /** Whether course data is ready (for redirect decisions) */
+  isCoursesReady: boolean;
   /** Current course being viewed (if any) */
   currentCourseSlug: string | null;
   /** Set the current course slug (for CareerScopedHeader highlighting) */
@@ -186,11 +188,15 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   // Only show loading if we haven't loaded successfully before
   const isLoading = hasLoadedOnce ? false : isCurrentlyLoading;
 
+  // Course data readiness - separate from shell loading
+  const isCoursesReady = !careersLoading && isReady;
+
   const value: CareerBoardContextValue = {
     career,
     careerCourses,
     isLoading,
     isReady,
+    isCoursesReady,
     currentCourseSlug,
     setCurrentCourseSlug,
   };
