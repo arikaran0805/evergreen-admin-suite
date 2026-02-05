@@ -26,6 +26,7 @@ import AccessDenied from "@/pages/AccessDenied";
 import NotFound from "@/pages/NotFound";
 import SkillProblems from "@/pages/SkillProblems";
 import ProblemDetail from "@/pages/ProblemDetail";
+import LessonProblems from "@/pages/LessonProblems";
 
 /**
  * Public Routes - No authentication required
@@ -42,6 +43,7 @@ export const publicRoutes = [
   <Route key="arcade" path="/arcade" element={<Arcade />} />,
   <Route key="practice-lab" path="/practice-lab" element={<Navigate to="/profile?tab=practice" replace />} />,
   <Route key="skill-problems" path="/practice/:skillId" element={<SkillProblems />} />,
+  <Route key="lesson-problems" path="/practice/:skillId/lesson/:lessonId" element={<LessonProblems />} />,
   <Route key="problem-detail" path="/practice/:skillId/problem/:problemId" element={<ProblemDetail />} />,
   <Route key="tag-posts" path="/tag/:slug" element={<TagPosts />} />,
   <Route key="tags" path="/tags" element={<Tags />} />,
