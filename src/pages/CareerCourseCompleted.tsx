@@ -334,17 +334,15 @@ const CareerCourseCompleted = () => {
   // Loading state
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-          <Skeleton className="h-6 w-32 mb-8" />
-          <div className="text-center mb-10">
-            <Skeleton className="h-8 w-64 mx-auto mb-4" />
-            <Skeleton className="h-10 w-96 mx-auto mb-3" />
-            <Skeleton className="h-5 w-72 mx-auto" />
-          </div>
-          <Skeleton className="h-64 w-full mb-8" />
-          <Skeleton className="h-48 w-full mb-8" />
+      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+        <Skeleton className="h-6 w-32 mb-8" />
+        <div className="text-center mb-10">
+          <Skeleton className="h-8 w-64 mx-auto mb-4" />
+          <Skeleton className="h-10 w-96 mx-auto mb-3" />
+          <Skeleton className="h-5 w-72 mx-auto" />
         </div>
+        <Skeleton className="h-64 w-full mb-8" />
+        <Skeleton className="h-48 w-full mb-8" />
       </div>
     );
   }
@@ -355,13 +353,12 @@ const CareerCourseCompleted = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-        {/* Back link */}
-        <Link
-          to={`/career-board/${careerSlugForPath}/course/${course.slug}`}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
-        >
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      {/* Back link */}
+      <Link
+        to={`/career-board/${careerSlugForPath}/course/${course.slug}`}
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
+      >
           <ArrowLeft className="h-4 w-4" />
           Back to Course
         </Link>
@@ -441,7 +438,6 @@ const CareerCourseCompleted = () => {
           />
         </section>
       </div>
-    </div>
   );
 };
 
