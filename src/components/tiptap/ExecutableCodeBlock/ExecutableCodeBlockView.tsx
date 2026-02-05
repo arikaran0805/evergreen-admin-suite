@@ -351,7 +351,7 @@ const ExecutableCodeBlockView = ({
 
         {/* Output panel */}
         {showOutput && (
-          <div className="mt-0.5 rounded-xl border border-border/40 bg-[#F5F5F5] overflow-hidden">
+          <div className="mt-0.5 rounded-xl border border-border/40 bg-muted/40 overflow-hidden">
             {/* Header */}
             <button
               onClick={() => setOutputExpanded(!outputExpanded)}
