@@ -82,28 +82,47 @@ const AdminLayoutContent = ({ children }: { children: ReactNode }) => {
   const { notifications } = useAdminNotifications(true, userId);
   const { getUnreadCount, markBadgeSeen } = useAdminBadgeReads(userId);
 
-  const badgeKeyMap: Record<string, string> = useMemo(() => ({
-    "/admin/approvals": "totalApprovals",
-    "/admin/delete-requests": "deleteRequests",
+  // Map paths to badge keys (must match what AdminSidebar uses in getItemBadge)
+  // AdminSidebar extracts path.split('/').pop() as the key, so we must use the same keys
+  const pathToBadgeKey: Record<string, string> = useMemo(() => ({
+    "/admin/approvals": "approvals",
+    "/admin/delete-requests": "delete-requests",
     "/admin/reports": "reports",
-    "/admin/posts": "pendingPosts",
-    "/admin/courses": "pendingCourses",
-    "/admin/tags": "pendingTags",
-    "/admin/comments": "pendingComments",
-    "/admin/media": "mediaLibrary",
-    "/admin/users": "newUsers",
-    "/admin/annotations": "openAnnotations",
+    "/admin/posts": "posts",
+    "/admin/courses": "courses",
+    "/admin/tags": "tags",
+    "/admin/comments": "comments",
+    "/admin/media": "media",
+    "/admin/users": "users",
+    "/admin/annotations": "annotations",
+  }), []);
+
+  // Map badge keys to notification property names
+  const badgeKeyToNotificationProp: Record<string, keyof typeof notifications> = useMemo(() => ({
+    "approvals": "totalApprovals",
+    "delete-requests": "deleteRequests",
+    "reports": "reports",
+    "posts": "pendingPosts",
+    "courses": "pendingCourses",
+    "tags": "pendingTags",
+    "comments": "pendingComments",
+    "media": "mediaLibrary",
+    "users": "newUsers",
+    "annotations": "openAnnotations",
   }), []);
 
   useEffect(() => {
-    const badgeKey = badgeKeyMap[location.pathname];
-    if (badgeKey && notifications[badgeKey as keyof typeof notifications] !== undefined) {
-      const currentCount = notifications[badgeKey as keyof typeof notifications];
-      if (typeof currentCount === "number" && currentCount > 0) {
-        markBadgeSeen(badgeKey, currentCount);
+    const badgeKey = pathToBadgeKey[location.pathname];
+    if (badgeKey) {
+      const notificationProp = badgeKeyToNotificationProp[badgeKey];
+      if (notificationProp) {
+        const currentCount = notifications[notificationProp];
+        if (typeof currentCount === "number" && currentCount > 0) {
+          markBadgeSeen(badgeKey, currentCount);
+        }
       }
     }
-  }, [location.pathname, notifications, badgeKeyMap, markBadgeSeen]);
+  }, [location.pathname, notifications, pathToBadgeKey, badgeKeyToNotificationProp, markBadgeSeen]);
 
   const getBadgeCount = (badgeKey: string, currentCount: number): number | undefined => {
     const unread = getUnreadCount(badgeKey, currentCount);
