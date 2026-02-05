@@ -1957,8 +1957,8 @@ const CareerCourseDetail = () => {
                                 {/* Primary CTA - View Full Certificate */}
                                 <Button 
                                   onClick={() => {
-                                    // Navigate to standard course completion page
-                                    navigate(`/course/${course.id}/completed`);
+                                    // Navigate to career-specific completion page
+                                    navigate(`/career-board/${careerSlugForPath}/course/${course.slug}/completed`);
                                   }}
                                   className="w-full sm:w-auto"
                                   size="lg"

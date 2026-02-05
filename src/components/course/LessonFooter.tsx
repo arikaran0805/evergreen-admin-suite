@@ -310,8 +310,12 @@ const LessonFooter = ({
               "bg-primary hover:bg-primary/90 text-primary-foreground"
             )}
             onClick={() => {
-              // Always navigate to standard course completion page
-              navigate(`/course/${courseId}/completed`);
+              // Navigate to career-specific page if in career shell, otherwise standard
+              if (careerSlug && courseSlug) {
+                navigate(`/career-board/${careerSlug}/course/${courseSlug}/completed`);
+              } else {
+                navigate(`/course/${courseId}/completed`);
+              }
             }}
           >
             <div className="text-right min-w-0">
