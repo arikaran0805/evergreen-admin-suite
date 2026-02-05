@@ -159,7 +159,16 @@ export const useCareers = () => {
     return careerSkills[careerId] || [];
   };
 
-  const getCareerCourseSlugs = (careerId: string) => {
+  /**
+   * Get course slugs for a career.
+   * Returns:
+   * - null: Still loading (caller should NOT redirect)
+   * - []: Confirmed empty (career has no courses)
+   * - string[]: List of course slugs
+   */
+  const getCareerCourseSlugs = (careerId: string): string[] | null => {
+    // If still loading, return null to signal "unknown" state
+    if (loading) return null;
     return careerCourses[careerId]?.map(cc => cc.course?.slug).filter(Boolean) as string[] || [];
   };
 
