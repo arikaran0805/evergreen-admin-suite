@@ -69,7 +69,7 @@ const CareerCourseCompleted = () => {
   const careerIdParam = decodeURIComponent((params.careerId ?? "").split("?")[0]).trim();
   const courseSlug = decodeURIComponent((params.courseSlug ?? "").split("?")[0]).trim();
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   
   // Career Board context
@@ -94,6 +94,16 @@ const CareerCourseCompleted = () => {
   
   // Recommended next course (within career)
   const [nextCourse, setNextCourse] = useState<CourseData | null>(null);
+
+  // Redirect non-authenticated users immediately (don't wait for other loading)
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/auth", { 
+        state: { from: `/career-board/${careerIdParam}/course/${courseSlug}/completed` },
+        replace: true 
+      });
+    }
+  }, [authLoading, isAuthenticated, careerIdParam, courseSlug, navigate]);
 
   // Register current course slug with parent layout
   useEffect(() => {
@@ -289,13 +299,9 @@ const CareerCourseCompleted = () => {
       }
     };
 
-    // Only fetch when auth and career context are ready AND user is logged in
-    if (!authLoading && !careerLoading) {
-      if (!user) {
-        navigate("/auth", { state: { from: `/career-board/${careerSlugForPath}/course/${courseSlug}/completed` } });
-      } else {
-        fetchData();
-      }
+    // Only fetch when auth and career context are ready AND user is authenticated
+    if (!authLoading && !careerLoading && user) {
+      fetchData();
     }
   }, [courseSlug, user, authLoading, careerLoading, careerSlugForPath, careerCourses, navigate, toast]);
 
@@ -402,7 +408,27 @@ const CareerCourseCompleted = () => {
   }, [course]);
 
   // Loading skeleton
-  if (loading || authLoading || careerLoading) {
+  // Only show skeleton if authenticated AND still loading data
+  // Non-authenticated users are redirected immediately
+  if (authLoading || (!isAuthenticated && loading)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+          <Skeleton className="h-6 w-32 mb-8" />
+          <div className="text-center mb-10">
+            <Skeleton className="h-8 w-64 mx-auto mb-4" />
+            <Skeleton className="h-10 w-96 mx-auto mb-3" />
+            <Skeleton className="h-5 w-72 mx-auto" />
+          </div>
+          <Skeleton className="h-64 w-full mb-8" />
+          <Skeleton className="h-48 w-full mb-8" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show skeleton while loading course data (user is authenticated)
+  if (isAuthenticated && (loading || careerLoading)) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">

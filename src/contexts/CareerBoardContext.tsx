@@ -90,6 +90,21 @@ export const CareerBoardProvider = ({ children }: CareerBoardProviderProps) => {
   // the layout would otherwise immediately redirect to /arcade ("career not found").
   // We retry once before declaring the career missing.
   const hasRetriedCareerResolveRef = useRef(false);
+
+  // Safety timeout: if loading takes more than 8 seconds, force ready state
+  useEffect(() => {
+    if (hasLoadedOnce) return;
+    
+    const timeout = setTimeout(() => {
+      if (!hasLoadedOnce) {
+        console.warn("CareerBoardContext: Loading timeout reached, forcing ready state");
+        setIsReady(true);
+        setHasLoadedOnce(true);
+      }
+    }, 8000);
+    
+    return () => clearTimeout(timeout);
+  }, [hasLoadedOnce]);
   
   useEffect(() => {
     if (!authLoading) {

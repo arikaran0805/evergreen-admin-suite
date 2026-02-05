@@ -72,6 +72,20 @@ export const CareerBoardLayout = () => {
   // Track if we've completed initial load - prevents skeleton on tab refocus
   const [hasLayoutLoaded, setHasLayoutLoaded] = useState(false);
   
+  // Safety timeout: if layout loading takes more than 10 seconds, force it to complete
+  useEffect(() => {
+    if (hasLayoutLoaded) return;
+    
+    const timeout = setTimeout(() => {
+      if (!hasLayoutLoaded) {
+        console.warn("CareerBoardLayout: Loading timeout reached, forcing completion");
+        setHasLayoutLoaded(true);
+      }
+    }, 10000);
+    
+    return () => clearTimeout(timeout);
+  }, [hasLayoutLoaded]);
+
   // Track header visibility for sticky positioning
   const { isHeaderVisible } = useScrollDirection({
     threshold: 10,

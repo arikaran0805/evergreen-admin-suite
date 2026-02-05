@@ -17,6 +17,21 @@ export const useCareerWelcome = (careerId: string | undefined): UseCareerWelcome
   const [hasSeenWelcome, setHasSeenWelcome] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Safety timeout: if loading takes more than 5 seconds, default to "seen" to prevent blocking
+  useEffect(() => {
+    if (!loading) return;
+    
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("useCareerWelcome: Loading timeout, defaulting to seen");
+        setHasSeenWelcome(true);
+        setLoading(false);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   useEffect(() => {
     let cancelled = false;
 

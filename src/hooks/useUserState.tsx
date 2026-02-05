@@ -113,6 +113,20 @@ export const useUserState = (): UseUserStateReturn => {
   const [entrySource, setEntrySource] = useState<EntrySource>(() => detectEntrySource());
   const [entryFlow, setEntryFlowState] = useState<EntryFlow>(() => getEntryFlow());
 
+  // Safety timeout: if subscription loading takes more than 5 seconds, force it to complete
+  useEffect(() => {
+    if (!subscriptionLoading) return;
+    
+    const timeout = setTimeout(() => {
+      if (subscriptionLoading) {
+        console.warn("useUserState: Subscription loading timeout, forcing completion");
+        setSubscriptionLoading(false);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
+  }, [subscriptionLoading]);
+
   // Handle bfcache (back-forward cache) navigation - career flow persists on refresh
   // but clears on back/forward navigation to prevent stale career context
   useEffect(() => {
