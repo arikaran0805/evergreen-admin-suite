@@ -593,7 +593,7 @@ export const CourseSidebar = ({
                                         {/* Practice Problems Link */}
                                         {practiceSkillSlug && lessonProblemCounts && lessonProblemCounts.get(lesson.id) ? (
                                           <Link
-                                            to={`/practice/${practiceSkillSlug}?lesson=${lesson.id}`}
+                                            to={`/practice/${practiceSkillSlug}/lesson/${lesson.id}`}
                                             className={cn(
                                               "flex items-center gap-2 px-3 py-2 mt-1 rounded-md",
                                               "text-xs text-muted-foreground",
