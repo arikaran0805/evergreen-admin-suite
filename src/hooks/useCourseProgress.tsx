@@ -126,10 +126,8 @@ export const useCourseProgress = (courseId: string | undefined) => {
       const completedLessons = progressData?.filter(p => p.completed).length || 0;
       const total = totalLessons || 0;
       
-      // Calculate combined progress: completed lessons + solved problems
-      const totalItems = total + totalProblems;
-      const completedItems = completedLessons + solvedProblems;
-      const percentage = totalItems > 0 ? Math.min(100, Math.round((completedItems / totalItems) * 100)) : 0;
+      // Calculate progress based on lessons only
+      const percentage = total > 0 ? Math.min(100, Math.round((completedLessons / total) * 100)) : 0;
 
       // Build lesson status map
       const statusMap = new Map<string, LessonStatus>();
