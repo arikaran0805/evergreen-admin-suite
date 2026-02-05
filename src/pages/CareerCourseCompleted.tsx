@@ -76,6 +76,7 @@ const CareerCourseCompleted = () => {
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [learnerName, setLearnerName] = useState("");
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
   // Course stats for reviews
   const {
@@ -87,6 +88,19 @@ const CareerCourseCompleted = () => {
   
   // Next course in career path
   const [nextCourse, setNextCourse] = useState<CourseData | null>(null);
+
+  // Safety timeout to prevent infinite skeleton
+  useEffect(() => {
+    if (hasLoadedOnce) return;
+    const timeout = setTimeout(() => {
+      if (!hasLoadedOnce) {
+        console.warn("CareerCourseCompleted: Safety timeout reached");
+        setDataLoading(false);
+        setHasLoadedOnce(true);
+      }
+    }, 8000);
+    return () => clearTimeout(timeout);
+  }, [hasLoadedOnce]);
 
   // Register current course slug with parent layout
   useEffect(() => {
@@ -243,6 +257,7 @@ const CareerCourseCompleted = () => {
         console.error("Error fetching completion data:", error);
       } finally {
         setDataLoading(false);
+        setHasLoadedOnce(true);
       }
     };
 
@@ -275,10 +290,11 @@ const CareerCourseCompleted = () => {
     );
   };
 
-  // Loading state
-  const isLoading = authLoading || careerLoading || dataLoading;
+  // Loading state - once loaded, don't show skeleton again (tab refocus stability)
+  const isCurrentlyLoading = authLoading || dataLoading;
+  const showLoading = hasLoadedOnce ? false : isCurrentlyLoading;
 
-  if (isLoading) {
+  if (showLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
         <Skeleton className="h-6 w-32 mb-8" />
