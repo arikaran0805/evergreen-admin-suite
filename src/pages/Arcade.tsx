@@ -237,7 +237,18 @@ const Arcade = () => {
               Your journey to becoming a {career?.name || "professional"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {/* Continue to Career Board - Primary CTA for returning users */}
+            {careerCourseSlugs.length > 0 && (
+              <Button 
+                onClick={() => navigate(`/career-board/${career?.slug}/course/${careerCourseSlugs[0]}`)}
+                className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white shadow-md"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Continue Learning
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            )}
             {/* View Career Overview - Low priority revisit option */}
             <Button 
               variant="ghost" 
