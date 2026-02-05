@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useRef } from "react";
 import { PostAnnotation } from "@/hooks/usePostAnnotations";
 import { isChatTranscript, extractChatSegments } from "@/lib/chatContent";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
-import CodeBlock from "@/components/chat-editor/CodeBlock";
+import { MonacoCodeBlock } from "@/components/code-block";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -280,13 +280,12 @@ const AnnotatedContent = ({
               className="my-4 not-prose relative"
               onMouseUp={() => handleTextSelection("code")}
             >
-              <CodeBlock
+              <MonacoCodeBlock
                 code={editedCodes[codeBlockIndex] ?? block.code}
                 language={block.language}
-                editable={true}
-                overrideTheme={codeTheme || "clean"}
-                onEdit={(newCode) => handleCodeEdit(codeBlockIndex, newCode)}
-                showToolbarAlways
+                editable
+                onCodeChange={(newCode) => handleCodeEdit(codeBlockIndex, newCode)}
+                showLanguageLabel
               />
             </div>
           );

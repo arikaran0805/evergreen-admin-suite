@@ -3,7 +3,7 @@ import { ChatMessage, CourseCharacter } from "./types";
 import { cn } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
 import { renderCourseIcon } from "./utils";
-import CodeBlock from "./CodeBlock";
+import { MonacoCodeBlock } from "@/components/code-block";
 import { getChatColors } from "./chatColors";
 import { ChatEditor, type ChatEditorRef } from "@/components/tiptap/ChatEditor";
 
@@ -189,7 +189,7 @@ const ChatBubble = ({
 
     return parts.map((part, idx) => {
       if (part.type === "code") {
-        return <div key={idx} className="-mx-4 px-0"><CodeBlock code={part.content} language={part.language} isMentorBubble={isMentor} overrideTheme={codeTheme} editable /></div>;
+        return <div key={idx} className="-mx-4 px-0"><MonacoCodeBlock code={part.content} language={part.language} editable showLanguageLabel /></div>;
       }
       return <span key={idx}>{parseLineMarkdown(part.content, `part-${idx}`)}</span>;
     });

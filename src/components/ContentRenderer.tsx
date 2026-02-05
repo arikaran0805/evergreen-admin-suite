@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import ChatConversationView from "@/components/chat-editor/ChatConversationView";
-import CodeBlock from "@/components/chat-editor/CodeBlock";
+import { MonacoCodeBlock } from "@/components/code-block";
 import { isChatTranscript, normalizeChatInput } from "@/lib/chatContent";
 import { isTipTapJSON } from "@/lib/tiptapMigration";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -164,13 +164,12 @@ const ContentRenderer = ({
           
           return (
             <div key={idx} className="my-4 not-prose">
-              <CodeBlock
+              <MonacoCodeBlock
                 code={editedCodes[codeBlockIndex] ?? block.code}
                 language={block.language}
-                editable={true}
-                overrideTheme={codeTheme || "clean"}
-                onEdit={(newCode) => handleCodeEdit(codeBlockIndex, newCode)}
-                showToolbarAlways
+                editable
+                onCodeChange={(newCode) => handleCodeEdit(codeBlockIndex, newCode)}
+                showLanguageLabel
               />
             </div>
           );
