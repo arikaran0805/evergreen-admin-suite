@@ -299,8 +299,30 @@ const LessonFooter = ({
           <div className="flex-1 max-w-xs" />
         )}
 
-        {/* Next Button - only show if there's a next lesson */}
-        {nextLesson ? (
+        {/* Next Button OR Finish Course Button */}
+        {isCourseComplete && isCompleted && !nextLesson ? (
+          /* ALL lessons completed - Show "Finish Course" CTA */
+          <Button 
+            size="lg"
+            variant="default"
+            className={cn(
+              "gap-2 flex-1 max-w-xs",
+              "bg-primary hover:bg-primary/90 text-primary-foreground"
+            )}
+            onClick={() => {
+              // Navigate to career-specific page if in career shell
+              if (careerSlug && courseSlug) {
+                navigate(`/career-board/${careerSlug}/course/${courseSlug}/completed`);
+              }
+            }}
+          >
+            <div className="text-right min-w-0">
+              <div className="text-xs opacity-80">🎉 Complete</div>
+              <div className="font-medium">Finish Course</div>
+            </div>
+            <ChevronRight className="h-5 w-5 flex-shrink-0" />
+          </Button>
+        ) : nextLesson ? (
           /* Has next lesson - Show regular navigation */
           <Button 
             size="lg"

@@ -20,6 +20,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { CareerBoardProvider } from "@/contexts/CareerBoardContext";
 import CareerBoardLayout from "@/components/layouts/CareerBoardLayout";
 import CareerCourseDetail from "@/pages/CareerCourseDetail";
+import CareerCourseCompleted from "@/pages/CareerCourseCompleted";
 import CareerBoardIndex from "@/components/career/CareerBoardIndex";
 
 /**
@@ -39,6 +40,9 @@ const CareerBoardRoutes = () => {
           
           {/* Course detail within career context */}
           <Route path="course/:courseSlug" element={<CareerCourseDetail />} />
+          
+          {/* Course completion within career context */}
+          <Route path="course/:courseSlug/completed" element={<CareerCourseCompleted />} />
           
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/arcade" replace />} />
