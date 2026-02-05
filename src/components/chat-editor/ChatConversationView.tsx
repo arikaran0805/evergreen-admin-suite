@@ -681,7 +681,7 @@ const ChatConversationView = ({
                 <div
                   className={cn(
                     "relative px-5 py-3 rounded-2xl",
-                    hasCodeBlock(message.content) ? "w-[85%] max-w-[85%] min-w-[400px]" : "max-w-[75%]",
+                    hasCodeBlock(message.content) ? "w-[75%] max-w-[75%] min-w-[360px]" : "max-w-[75%]",
                     "shadow-md transition-all duration-200 hover:shadow-lg",
                     !dynamicStyle && getChatColors(isMentorBubble).bubble,
                     !dynamicStyle && getChatColors(isMentorBubble).text,
