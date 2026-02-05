@@ -7,6 +7,11 @@ import { MonacoCodeBlock } from "@/components/code-block";
 import { getChatColors } from "./chatColors";
 import { ChatEditor, type ChatEditorRef } from "@/components/tiptap/ChatEditor";
 
+// Check if content contains code blocks
+const hasCodeBlock = (content: string): boolean => {
+  return /```[\s\S]*?```/.test(content);
+};
+
 interface ChatBubbleProps {
   message: ChatMessage;
   character: CourseCharacter;
@@ -202,8 +207,16 @@ const ChatBubble = ({
         {renderCourseIcon(character.emoji, 18)}
       </div>
 
-      {/* Bubble */}
-      <div className={cn("relative px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-200", isEditing ? "flex-1 max-w-full" : "max-w-[70%] min-w-[60px]", getChatColors(isMentor).bubble, getChatColors(isMentor).text, isMentor ? "rounded-br-md" : "rounded-bl-md", isDragging && "ring-2 ring-primary/50", hasOpenAnnotations && "ring-2 ring-amber-500 ring-offset-1 ring-offset-background")}>
+      {/* Bubble - wider when containing code blocks */}
+      <div className={cn(
+        "relative px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-200",
+        isEditing ? "flex-1 max-w-full" : hasCodeBlock(message.content) ? "max-w-[90%] min-w-[280px]" : "max-w-[70%] min-w-[60px]",
+        getChatColors(isMentor).bubble,
+        getChatColors(isMentor).text,
+        isMentor ? "rounded-br-md" : "rounded-bl-md",
+        isDragging && "ring-2 ring-primary/50",
+        hasOpenAnnotations && "ring-2 ring-amber-500 ring-offset-1 ring-offset-background"
+      )}>
         {/* Annotation indicator */}
         {hasOpenAnnotations && (
           <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white shadow-sm">
