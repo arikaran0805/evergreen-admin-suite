@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LessonProblemsSection } from "@/components/admin/practice/LessonProblemsSection";
 import { AddProblemDialog } from "@/components/admin/practice/AddProblemDialog";
+import { ProblemTypeSelectDialog } from "@/components/admin/practice/ProblemTypeSelectDialog";
 
 interface CourseLesson {
   id: string;
@@ -30,6 +31,7 @@ export default function AdminPracticeProblems() {
   const { data: subTopics, isLoading: subTopicsLoading } = useSubTopicsBySkill(skillId);
   
   const [addProblemSubTopicId, setAddProblemSubTopicId] = useState<string | null>(null);
+  const [showTypeSelect, setShowTypeSelect] = useState(false);
   
   const createMapping = useCreateProblemMapping();
   const deleteMapping = useDeleteProblemMapping();
@@ -156,7 +158,7 @@ export default function AdminPracticeProblems() {
             Manage problems organized by lessons and sub-topics
           </p>
         </div>
-        <Button onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)} className="gap-2">
+        <Button onClick={() => setShowTypeSelect(true)} className="gap-2">
           <Plus className="h-4 w-4" />
           New Problem
         </Button>
@@ -178,7 +180,7 @@ export default function AdminPracticeProblems() {
               <Button
                 variant="link"
                 className="ml-2 p-0 h-auto"
-                onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
+                onClick={() => setShowTypeSelect(true)}
               >
                 Create a standalone problem
               </Button>
@@ -199,7 +201,7 @@ export default function AdminPracticeProblems() {
                   variant="ghost" 
                   size="sm" 
                   className="gap-1"
-                  onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
+                  onClick={() => setShowTypeSelect(true)}
                 >
                   <Plus className="h-4 w-4" />
                   Add Problem
@@ -253,7 +255,7 @@ export default function AdminPracticeProblems() {
                 <p className="text-muted-foreground mb-4">
                   Create your first problem for this custom collection.
                 </p>
-                <Button onClick={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}>
+                <Button onClick={() => setShowTypeSelect(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Problem
                 </Button>
@@ -300,6 +302,14 @@ export default function AdminPracticeProblems() {
         mappedProblemIds={mappedProblemIds}
         onAddProblems={handleAddProblems}
         onCreateNew={handleCreateNewProblem}
+      />
+
+      {/* Problem Type Select Dialog */}
+      <ProblemTypeSelectDialog
+        open={showTypeSelect}
+        onOpenChange={setShowTypeSelect}
+        onSelectProblemSolving={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
+        onSelectPredictOutput={() => navigate(`/admin/practice/skills/${skillId}/predict-output/new`)}
       />
     </div>
   );
