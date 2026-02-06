@@ -7,6 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   FileText,
   BookOpen,
   History,
@@ -14,10 +20,18 @@ import {
   Shrink,
   PanelLeftClose,
   Lightbulb,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  Share2,
+  Flag,
+  Bookmark,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ShareTooltip from "@/components/ShareTooltip";
+import ReportSuggestDialog from "@/components/ReportSuggestDialog";
 
 import type { PredictOutputProblem } from "@/hooks/usePredictOutputProblems";
 import type { PredictOutputAttempt } from "@/hooks/usePredictOutputAttempts";
@@ -54,6 +68,39 @@ export function PredictDescriptionPanel({
   const setActiveTab = onTabChange ?? setInternalActiveTab;
   const [isHovered, setIsHovered] = useState(false);
   const [hintsShown, setHintsShown] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const handleLike = () => {
+    if (liked) {
+      setLiked(false);
+      setLikes((l) => l - 1);
+    } else {
+      setLiked(true);
+      setLikes((l) => l + 1);
+      if (disliked) {
+        setDisliked(false);
+        setDislikes((d) => d - 1);
+      }
+    }
+  };
+
+  const handleDislike = () => {
+    if (disliked) {
+      setDisliked(false);
+      setDislikes((d) => d - 1);
+    } else {
+      setDisliked(true);
+      setDislikes((d) => d + 1);
+      if (liked) {
+        setLiked(false);
+        setLikes((l) => l - 1);
+      }
+    }
+  };
 
   const alreadySolved = attempts.some((a) => a.is_correct);
 
@@ -408,6 +455,108 @@ export function PredictDescriptionPanel({
           </div>
         )}
       </ScrollArea>
+
+      {/* Engagement Footer */}
+      <div className="shrink-0 border-t border-border/50 px-4 py-2 bg-muted/20">
+        <TooltipProvider delayDuration={300}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              {/* Like */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("h-8 px-2 gap-1.5", liked && "text-primary")}
+                    onClick={handleLike}
+                  >
+                    <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+                    <span className="text-xs">{likes}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Like</p></TooltipContent>
+              </Tooltip>
+
+              {/* Dislike */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("h-8 px-2 gap-1.5", disliked && "text-destructive")}
+                    onClick={handleDislike}
+                  >
+                    <ThumbsDown className={cn("h-4 w-4", disliked && "fill-current")} />
+                    <span className="text-xs">{dislikes}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Dislike</p></TooltipContent>
+              </Tooltip>
+
+              <div className="w-px h-5 bg-border mx-1" />
+
+              {/* Comment */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Comments</p></TooltipContent>
+              </Tooltip>
+
+              {/* Share */}
+              <ShareTooltip title={problem.title} url={window.location.href}>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </ShareTooltip>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {/* Feedback */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setReportDialogOpen(true)}
+                  >
+                    <Flag className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Report / Feedback</p></TooltipContent>
+              </Tooltip>
+
+              {/* Save */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-8 w-8", saved && "text-primary")}
+                    onClick={() => setSaved((s) => !s)}
+                  >
+                    <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>{saved ? "Unsave" : "Save"}</p></TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+      </div>
+
+      {/* Report Dialog */}
+      <ReportSuggestDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        contentType="problem"
+        contentId={problem.id}
+        contentTitle={problem.title}
+        type="report"
+      />
     </div>
   );
 }
