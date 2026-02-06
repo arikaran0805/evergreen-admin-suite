@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Maximize,
 } from "lucide-react";
+import Editor from "@monaco-editor/react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -174,6 +175,18 @@ export function PredictEditorPanel({
     }
   };
 
+  const monacoLanguageMap: Record<string, string> = {
+    python: "python",
+    javascript: "javascript",
+    java: "java",
+    c: "c",
+    cpp: "cpp",
+    sql: "sql",
+  };
+
+  const lineCount = problem.code.split("\n").length;
+  const monacoHeight = Math.max(80, Math.min(lineCount * 20 + 16, 400));
+
   // Expanded editor only
   if (expandedPanel === "editor") {
     return (
@@ -197,9 +210,34 @@ export function PredictEditorPanel({
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4">
-              {renderCodeBlock()}
-              {renderAnswerArea()}
+            <div className="space-y-4">
+              <div style={{ height: monacoHeight }} className="border-b border-border">
+                <Editor
+                  value={problem.code}
+                  language={monacoLanguageMap[problem.language] || problem.language}
+                  theme="vs-dark"
+                  options={{
+                    readOnly: true,
+                    domReadOnly: true,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    lineNumbers: "on",
+                    lineNumbersMinChars: 2,
+                    lineDecorationsWidth: 8,
+                    renderLineHighlight: "none",
+                    folding: false,
+                    contextmenu: false,
+                    fontSize: 14,
+                    padding: { top: 12, bottom: 12 },
+                    scrollbar: { vertical: "hidden", horizontal: "auto" },
+                    wordWrap: "on",
+                    dragAndDrop: false,
+                  }}
+                />
+              </div>
+              <div className="px-4 pb-4">
+                {renderAnswerArea()}
+              </div>
             </div>
           </ScrollArea>
           {renderFooter()}
@@ -225,28 +263,6 @@ export function PredictEditorPanel({
             <div className="p-4">{renderResultContent()}</div>
           </ScrollArea>
         </div>
-      </div>
-    );
-  }
-
-  function renderCodeBlock() {
-    return (
-      <div className="relative rounded-lg border border-border overflow-hidden">
-        <div className="flex items-center justify-between bg-muted/50 px-3 py-1.5 border-b border-border">
-          <span className="text-xs font-medium text-muted-foreground capitalize">
-            {problem.language}
-          </span>
-          <button
-            onClick={handleCopy}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-        <pre className="p-4 overflow-x-auto bg-background">
-          <code className="text-sm font-mono text-foreground whitespace-pre">{problem.code}</code>
-        </pre>
       </div>
     );
   }
@@ -493,15 +509,43 @@ export function PredictEditorPanel({
                   </div>
                 </div>
 
-                {/* Code display + answer area */}
+                {/* Monaco read-only code + answer area */}
                 <ScrollArea className="flex-1">
-                  <div className="p-4 space-y-4">
-                    {/* Read-only code */}
-                    <pre className="p-4 overflow-x-auto bg-muted/30 rounded-lg border border-border">
-                      <code className="text-sm font-mono text-foreground whitespace-pre">{problem.code}</code>
-                    </pre>
+                  <div className="space-y-4">
+                    {/* Read-only Monaco editor */}
+                    <div style={{ height: monacoHeight }} className="border-b border-border">
+                      <Editor
+                        value={problem.code}
+                        language={monacoLanguageMap[problem.language] || problem.language}
+                        theme="vs-dark"
+                        options={{
+                          readOnly: true,
+                          domReadOnly: true,
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          lineNumbers: "on",
+                          lineNumbersMinChars: 2,
+                          lineDecorationsWidth: 8,
+                          renderLineHighlight: "none",
+                          folding: false,
+                          contextmenu: false,
+                          overviewRulerBorder: false,
+                          overviewRulerLanes: 0,
+                          hideCursorInOverviewRuler: true,
+                          fontSize: 14,
+                          padding: { top: 12, bottom: 12 },
+                          scrollbar: { vertical: "hidden", horizontal: "auto" },
+                          wordWrap: "on",
+                          cursorStyle: "line-thin",
+                          cursorBlinking: "solid",
+                          dragAndDrop: false,
+                        }}
+                      />
+                    </div>
 
-                    {renderAnswerArea()}
+                    <div className="px-4 pb-4">
+                      {renderAnswerArea()}
+                    </div>
                   </div>
                 </ScrollArea>
 
