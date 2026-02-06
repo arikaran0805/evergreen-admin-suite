@@ -31,6 +31,7 @@ interface DisplayProblem {
   lessonTitle?: string;
   subTopicId?: string;
   subTopicTitle?: string;
+  problemType?: "problem-solving" | "predict-output";
 }
 
 export default function SkillProblems() {
@@ -91,6 +92,7 @@ export default function SkillProblems() {
       lessonTitle: p.lesson_title,
       subTopicId: p.sub_topic_id,
       subTopicTitle: p.sub_topic_title,
+      problemType: p.problemType,
     }));
   }, [problems, solvedProblems]);
 
@@ -143,7 +145,11 @@ export default function SkillProblems() {
       });
       return;
     }
-    navigate(`/practice/${skillId}/problem/${problem.slug}`);
+    if (problem.problemType === "predict-output") {
+      navigate(`/predict-output/${problem.slug}`);
+    } else {
+      navigate(`/practice/${skillId}/problem/${problem.slug}`);
+    }
   };
 
   const isLoading = skillLoading || problemsLoading;

@@ -16,17 +16,18 @@ import { cn } from "@/lib/utils";
  type DifficultyFilter = 'all' | 'Easy' | 'Medium' | 'Hard';
  type StatusFilter = 'all' | 'solved' | 'unsolved';
  
- interface DisplayProblem {
-   id: string;
-   title: string;
-   difficulty: 'Easy' | 'Medium' | 'Hard';
-   solved: boolean;
-   locked: boolean;
-   subTopic: string;
-   hasSolution: boolean;
-   slug: string;
-  subTopicId?: string;
- }
+  interface DisplayProblem {
+    id: string;
+    title: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    solved: boolean;
+    locked: boolean;
+    subTopic: string;
+    hasSolution: boolean;
+    slug: string;
+   subTopicId?: string;
+   problemType?: "problem-solving" | "predict-output";
+  }
  
  export default function LessonProblems() {
    const { skillId, lessonId } = useParams<{ skillId: string; lessonId: string }>();
@@ -82,78 +83,117 @@ import { cn } from "@/lib/utils";
      enabled: !!skillId,
    });
  
-   // Fetch problems for this specific lesson
-   const { data: problems, isLoading: problemsLoading } = useQuery({
-     queryKey: ["lesson-problems", skillId, lessonId],
-     queryFn: async () => {
-       if (!skillId || !lessonId) return [];
-       
-       // First get skill by slug
-       const { data: skillData } = await supabase
-         .from("practice_skills")
-         .select("id")
-         .eq("slug", skillId)
-         .single();
-       
-       if (!skillData) return [];
+    // Fetch problems for this specific lesson
+    const { data: problems, isLoading: problemsLoading } = useQuery({
+      queryKey: ["lesson-problems", skillId, lessonId],
+      queryFn: async () => {
+        if (!skillId || !lessonId) return [];
+        
+        // First get skill by slug
+        const { data: skillData } = await supabase
+          .from("practice_skills")
+          .select("id")
+          .eq("slug", skillId)
+          .single();
+        
+        if (!skillData) return [];
+  
+        // Get sub-topics for this lesson
+        const { data: subTopics } = await supabase
+          .from("sub_topics")
+          .select("id, title")
+          .eq("skill_id", skillData.id)
+          .eq("lesson_id", lessonId)
+          .order("display_order", { ascending: true });
+  
+        if (!subTopics || subTopics.length === 0) return [];
+  
+        const subTopicIds = subTopics.map(st => st.id);
+  
+        // Get regular problem mappings
+        const { data: mappings } = await supabase
+          .from("problem_mappings")
+          .select(`
+            problem_id,
+            sub_topic_id,
+            display_order,
+            practice_problems (
+              id, title, slug, difficulty, is_premium, solution, status
+            )
+          `)
+          .in("sub_topic_id", subTopicIds)
+          .order("display_order", { ascending: true });
+
+        // Get predict output mappings
+        const { data: predictMappings } = await supabase
+          .from("predict_output_mappings")
+          .select(`
+            predict_output_problem_id,
+            sub_topic_id,
+            display_order,
+            predict_output_problems (
+              id, title, slug, difficulty, is_premium, status, language
+            )
+          `)
+          .in("sub_topic_id", subTopicIds)
+          .order("display_order", { ascending: true });
+  
+        // Build sub-topic title lookup
+        const subTopicMap = new Map(subTopics.map(st => [st.id, { title: st.title, id: st.id }]));
+  
+        const results: any[] = [];
+
+        // Add regular problems
+        if (mappings) {
+          mappings
+            .filter((m: any) => m.practice_problems?.status === "published")
+            .forEach((m: any) => {
+              results.push({
+                ...m.practice_problems,
+                subTopicTitle: subTopicMap.get(m.sub_topic_id)?.title || "General",
+                subTopicId: m.sub_topic_id,
+                problemType: "problem-solving",
+                displayOrder: m.display_order,
+              });
+            });
+        }
+
+        // Add predict output problems
+        if (predictMappings) {
+          predictMappings
+            .filter((m: any) => m.predict_output_problems?.status === "published")
+            .forEach((m: any) => {
+              results.push({
+                ...m.predict_output_problems,
+                subTopicTitle: subTopicMap.get(m.sub_topic_id)?.title || "General",
+                subTopicId: m.sub_topic_id,
+                problemType: "predict-output",
+                displayOrder: m.display_order,
+              });
+            });
+        }
+
+        return results;
+      },
+      enabled: !!skillId && !!lessonId,
+    });
  
-       // Get sub-topics for this lesson
-       const { data: subTopics } = await supabase
-         .from("sub_topics")
-         .select("id, title")
-         .eq("skill_id", skillData.id)
-         .eq("lesson_id", lessonId)
-         .order("display_order", { ascending: true });
- 
-       if (!subTopics || subTopics.length === 0) return [];
- 
-       const subTopicIds = subTopics.map(st => st.id);
- 
-       // Get problem mappings for these sub-topics
-       const { data: mappings } = await supabase
-         .from("problem_mappings")
-         .select(`
-           problem_id,
-           sub_topic_id,
-           practice_problems (
-             id, title, slug, difficulty, is_premium, solution, status
-           )
-         `)
-         .in("sub_topic_id", subTopicIds)
-         .order("display_order", { ascending: true });
- 
-       if (!mappings) return [];
- 
-       // Build sub-topic title lookup
-       const subTopicMap = new Map(subTopics.map(st => [st.id, { title: st.title, id: st.id }]));
- 
-       // Filter to published problems and map to display format
-       return mappings
-         .filter((m: any) => m.practice_problems?.status === "published")
-         .map((m: any) => ({
-           ...m.practice_problems,
-           subTopicTitle: subTopicMap.get(m.sub_topic_id)?.title || "General",
-           subTopicId: m.sub_topic_id,
-         }));
-     },
-     enabled: !!skillId && !!lessonId,
-   });
- 
-   // Convert to display format
-   const displayProblems: DisplayProblem[] = useMemo(() => {
-     if (!problems) return [];
-     return problems.map((p: any) => ({
-       id: p.id,
-       title: p.title,
-       difficulty: p.difficulty,
-       solved: solvedProblems.has(p.id),
-       locked: p.is_premium,
-       subTopic: p.subTopicTitle || "General",
-       hasSolution: !!p.solution,
-       slug: p.slug,
-      subTopicId: p.subTopicId,
-     }));
-   }, [problems, solvedProblems]);
+    // Convert to display format
+    const displayProblems: DisplayProblem[] = useMemo(() => {
+      if (!problems) return [];
+      return problems.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        difficulty: p.difficulty,
+        solved: solvedProblems.has(p.id),
+        locked: p.is_premium,
+        subTopic: p.subTopicTitle || "General",
+        hasSolution: !!p.solution,
+        slug: p.slug,
+       subTopicId: p.subTopicId,
+       problemType: p.problemType,
+      }));
+    }, [problems, solvedProblems]);
  
    // Filter problems
    const filteredProblems = useMemo(() => {
@@ -186,15 +226,19 @@ import { cn } from "@/lib/utils";
     Hard: "text-red-500",
   };
 
-   const handleProblemClick = (problem: DisplayProblem) => {
-     if (problem.locked) {
-       toast.info("This is a premium problem. Upgrade to unlock!", {
-         description: "Get access to all problems and solutions.",
-       });
-       return;
-     }
-     navigate(`/practice/${skillId}/problem/${problem.slug}`);
-   };
+    const handleProblemClick = (problem: DisplayProblem) => {
+      if (problem.locked) {
+        toast.info("This is a premium problem. Upgrade to unlock!", {
+          description: "Get access to all problems and solutions.",
+        });
+        return;
+      }
+      if (problem.problemType === "predict-output") {
+        navigate(`/predict-output/${problem.slug}`);
+      } else {
+        navigate(`/practice/${skillId}/problem/${problem.slug}`);
+      }
+    };
  
    const isLoading = lessonLoading || problemsLoading;
  

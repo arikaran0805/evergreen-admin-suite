@@ -50,10 +50,10 @@ export function useLessonProblemCounts(courseId: string | undefined) {
 
       if (!skill) return new Map<string, number>();
 
-      // Get sub-topics for this skill with their problem counts
+      // Get sub-topics for this skill with their problem counts (both types)
       const { data: subTopics, error } = await supabase
         .from("sub_topics")
-        .select("lesson_id, problem_mappings(count)")
+        .select("lesson_id, problem_mappings(count), predict_output_mappings(count)")
         .eq("skill_id", skill.id);
 
       if (error) throw error;
@@ -63,10 +63,12 @@ export function useLessonProblemCounts(courseId: string | undefined) {
       
       (subTopics || []).forEach((st: any) => {
         const lessonId = st.lesson_id;
-        const problemCount = st.problem_mappings?.[0]?.count || 0;
+        const regularCount = st.problem_mappings?.[0]?.count || 0;
+        const predictCount = st.predict_output_mappings?.[0]?.count || 0;
+        const totalCount = regularCount + predictCount;
         
-        if (lessonId && problemCount > 0) {
-          countMap.set(lessonId, (countMap.get(lessonId) || 0) + problemCount);
+        if (lessonId && totalCount > 0) {
+          countMap.set(lessonId, (countMap.get(lessonId) || 0) + totalCount);
         }
       });
 
