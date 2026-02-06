@@ -26,6 +26,7 @@ import NotFound from "@/pages/NotFound";
 import SkillProblems from "@/pages/SkillProblems";
 import ProblemDetail from "@/pages/ProblemDetail";
 import LessonProblems from "@/pages/LessonProblems";
+import PredictOutputDetail from "@/pages/PredictOutputDetail";
 
 /**
  * Public Routes - No authentication required
@@ -43,6 +44,7 @@ export const publicRoutes = [
   <Route key="skill-problems" path="/practice/:skillId" element={<SkillProblems />} />,
   <Route key="lesson-problems" path="/practice/:skillId/lesson/:lessonId" element={<LessonProblems />} />,
   <Route key="problem-detail" path="/practice/:skillId/problem/:problemId" element={<ProblemDetail />} />,
+  <Route key="predict-output-detail" path="/predict-output/:slug" element={<PredictOutputDetail />} />,
   <Route key="tag-posts" path="/tag/:slug" element={<TagPosts />} />,
   <Route key="tags" path="/tags" element={<Tags />} />,
   <Route key="about" path="/about" element={<About />} />,
