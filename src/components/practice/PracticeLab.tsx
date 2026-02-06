@@ -82,9 +82,9 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
   }
 
   return (
-    <div className="space-y-10 py-12 pb-20">
+    <div className="space-y-8 pt-4 pb-20">
       {/* Hero Section */}
-      <section className="text-center py-8 px-4 rounded-2xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border border-border/50">
+      <section className="text-center py-6 px-4 rounded-2xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border border-border/50">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
             Practice what matters — based on your learning
