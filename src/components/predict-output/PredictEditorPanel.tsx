@@ -211,7 +211,7 @@ export function PredictEditorPanel({
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-4">
-              <div style={{ height: monacoHeight }} className="border-b border-border">
+              <div style={{ height: monacoHeight }} className="border-b border-border bg-[#1e1e1e] rounded-sm">
                 <Editor
                   value={problem.code}
                   language={monacoLanguageMap[problem.language] || problem.language}
@@ -513,7 +513,7 @@ export function PredictEditorPanel({
                 <ScrollArea className="flex-1">
                   <div className="space-y-4">
                     {/* Read-only Monaco editor */}
-                    <div style={{ height: monacoHeight }} className="border-b border-border">
+                    <div style={{ height: monacoHeight }} className="border-b border-border bg-[#1e1e1e] rounded-sm">
                       <Editor
                         value={problem.code}
                         language={monacoLanguageMap[problem.language] || problem.language}

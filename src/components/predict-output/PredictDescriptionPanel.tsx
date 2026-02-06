@@ -14,7 +14,6 @@ import {
   Shrink,
   PanelLeftClose,
   Lightbulb,
-  Braces,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -247,12 +246,6 @@ export function PredictDescriptionPanel({
                 <p className="text-sm text-foreground/90">{problem.prompt}</p>
               </div>
             )}
-
-            {/* Code placement note */}
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/50 border border-border/50">
-              <Braces className="h-4 w-4 text-muted-foreground shrink-0" />
-              <p className="text-sm text-muted-foreground">Code is shown in the editor panel →</p>
-            </div>
 
             {/* XP Info */}
             {problem.xp_value > 0 && (
