@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Zap,
   Clock,
@@ -12,23 +10,21 @@ import {
   Bug,
   BarChart3,
   Lightbulb,
-  Play,
   ArrowRight,
   Target,
   Calendar,
-  TrendingUp,
   Rocket,
   BookOpen,
   Cpu,
   Globe,
   Terminal,
   ChevronRight,
-  Users,
-  Star,
 } from "lucide-react";
 import { usePublishedPracticeSkills } from "@/hooks/usePracticeSkills";
 import { useSkillsProgress } from "@/hooks/useSkillsProgress";
+import { useActiveLabsProgress } from "@/hooks/useActiveLabsProgress";
 import { useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
 
 interface PracticeLabProps {
   enrolledCourses: any[];
@@ -55,15 +51,33 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
   
   const skillIds = useMemo(() => (skills || []).map(s => s.id), [skills]);
   const { data: progressMap } = useSkillsProgress(userId, skillIds);
-  
-  const hasActivity = enrolledCourses.length > 0;
+
+  // Extract course IDs from enrollments for progress lookup
+  const enrolledCourseIds = useMemo(
+    () => enrolledCourses.map((e) => e.courses?.id).filter(Boolean) as string[],
+    [enrolledCourses]
+  );
+  const { data: labProgressMap, isLoading: labProgressLoading } =
+    useActiveLabsProgress(userId, enrolledCourseIds);
+
+  // Filter: only show labs where 0% < progress < 100%
+  const activeLabs = useMemo(() => {
+    if (!labProgressMap) return [];
+    return enrolledCourses.filter((enrollment) => {
+      const courseId = enrollment.courses?.id;
+      if (!courseId) return false;
+      const progress = labProgressMap.get(courseId);
+      if (!progress) return false;
+      return progress.percentage > 0 && progress.percentage < 100;
+    });
+  }, [enrolledCourses, labProgressMap]);
 
   const handleSkillClick = (skillSlug: string) => {
     navigate(`/practice/${skillSlug}`);
   };
 
   // Empty state for new users
-  if (!hasActivity && !userId) {
+  if (!userId) {
     return <EmptyState />;
   }
 
@@ -94,37 +108,57 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
       {/* Your Active Labs */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-xl font-semibold">Your Active Labs</h2>
+          <div>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-xl font-semibold">Your Active Labs</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5 ml-7">
+              Labs you're actively practicing and improving
+            </p>
           </div>
-          {enrolledCourses.length > 3 && (
+          {activeLabs.length > 3 && (
             <Button variant="ghost" size="sm" className="text-muted-foreground">
               View all <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           )}
         </div>
         
-        {enrolledCourses.length > 0 ? (
+        {labProgressLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {enrolledCourses.slice(0, 6).map((enrollment, index) => {
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="overflow-hidden border-0 shadow-lg h-[160px]">
+                <div className="flex h-full">
+                  <div className="w-1/3 bg-muted animate-pulse" />
+                  <div className="w-2/3 bg-card p-4">
+                    <div className="h-3 w-20 bg-muted animate-pulse rounded mb-2" />
+                    <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : activeLabs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeLabs.slice(0, 6).map((enrollment) => {
               const course = enrollment.courses;
               if (!course) return null;
-              
-              // Mock progress data
-              const progress = Math.floor(Math.random() * 80) + 10;
-              const lastPracticed = index === 0 ? "Today" : index === 1 ? "Yesterday" : `${index + 1} days ago`;
-              const hasWeakAreas = index < 2;
+              const labProgress = labProgressMap?.get(course.id);
+              const progress = labProgress?.percentage ?? 0;
+              const lastPracticedAt = labProgress?.lastPracticedAt;
+              const lastPracticed = lastPracticedAt
+                ? formatDistanceToNow(new Date(lastPracticedAt), { addSuffix: true })
+                : "Not yet";
               
               return (
                 <ActiveLabCard
                   key={enrollment.id}
                   name={course.name}
                   level={course.level}
-                  lessonCount={course.lessonCount || 0}
+                  lessonCount={labProgress?.total || 0}
+                  completedLessons={labProgress?.completed || 0}
                   progress={progress}
                   lastPracticed={lastPracticed}
-                  hasWeakAreas={hasWeakAreas}
                   onClick={() => navigate(`/course/${course.slug}`)}
                 />
               );
@@ -135,7 +169,9 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
             <CardContent className="text-center py-8">
               <BookOpen className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
               <p className="text-muted-foreground">
-                Enroll in courses to unlock practice labs
+                {enrolledCourses.length === 0
+                  ? "Enroll in courses to unlock practice labs"
+                  : "Start a lesson to see your active labs here"}
               </p>
             </CardContent>
           </Card>
@@ -199,17 +235,17 @@ function ActiveLabCard({
   name,
   level,
   lessonCount,
+  completedLessons,
   progress,
   lastPracticed,
-  hasWeakAreas,
   onClick,
 }: {
   name: string;
   level?: string | null;
   lessonCount: number;
+  completedLessons: number;
   progress: number;
   lastPracticed: string;
-  hasWeakAreas: boolean;
   onClick: () => void;
 }) {
   return (
@@ -239,7 +275,7 @@ function ActiveLabCard({
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-                {level || "Beginner"} • {lessonCount} Lessons
+                {level || "Beginner"} • {completedLessons}/{lessonCount} Lessons
               </span>
               <span className="text-[10px] text-muted-foreground">{progress}%</span>
             </div>
@@ -249,12 +285,6 @@ function ActiveLabCard({
                 style={{ width: `${progress}%`, background: '#14532d' }}
               />
             </div>
-            {hasWeakAreas && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Weak areas: Loops, Conditionals
-              </p>
-            )}
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <Calendar className="h-3 w-3" />
               Last practiced: {lastPracticed}
@@ -278,7 +308,7 @@ function ActiveLabCard({
                 onClick();
               }}
             >
-              {progress > 0 ? "Continue" : "Start"}
+              Continue
             </Button>
           </div>
         </div>
