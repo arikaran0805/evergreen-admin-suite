@@ -188,7 +188,7 @@ export function PredictEditorPanel({
   };
 
   const lineCount = problem.code.split("\n").length;
-  const monacoHeight = Math.max(80, Math.min(lineCount * 20 + 16, 400));
+  const monacoHeight = Math.max(120, Math.min(lineCount * 20 + 40, 500));
 
   // Expanded editor only
   if (expandedPanel === "editor") {
