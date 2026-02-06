@@ -134,6 +134,7 @@ export interface ProblemWithMapping extends PracticeProblem {
   lesson_title?: string;
   sub_topic_id?: string;
   sub_topic_title?: string;
+  problemType?: "problem-solving" | "predict-output";
 }
 
 export function usePublishedPracticeProblems(skillSlug: string | undefined) {
@@ -181,6 +182,7 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
       let problemsWithMappings: ProblemWithMapping[] = [];
       
       if (subTopicIds.length > 0) {
+        // Fetch regular problem mappings
         const { data: mappings } = await supabase
           .from("problem_mappings")
           .select(`
@@ -192,17 +194,41 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
           .in("sub_topic_id", subTopicIds)
           .eq("practice_problems.status", "published")
           .order("display_order", { ascending: true });
+
+        // Fetch predict output mappings
+        const { data: predictMappings } = await supabase
+          .from("predict_output_mappings")
+          .select(`
+            predict_output_problem_id,
+            sub_topic_id,
+            display_order,
+            predict_output_problems!inner(*)
+          `)
+          .in("sub_topic_id", subTopicIds)
+          .eq("predict_output_problems.status", "published")
+          .order("display_order", { ascending: true });
         
-        if (mappings && sortedSubTopics) {
+        if (sortedSubTopics) {
           // Create a map of sub-topic info with lesson order for sorting
           const subTopicMap = new Map(sortedSubTopics.map((st, index) => [st.id, { ...st, sortIndex: index }]));
           
-          // Group mappings by sub-topic, preserving lesson order
-          const problemsBySubTopic = new Map<string, typeof mappings>();
-          for (const mapping of mappings) {
-            const existing = problemsBySubTopic.get(mapping.sub_topic_id) || [];
-            existing.push(mapping);
-            problemsBySubTopic.set(mapping.sub_topic_id, existing);
+          // Group regular mappings by sub-topic
+          const problemsBySubTopic = new Map<string, any[]>();
+          if (mappings) {
+            for (const mapping of mappings) {
+              const existing = problemsBySubTopic.get(mapping.sub_topic_id) || [];
+              existing.push({ ...mapping, problemType: "problem-solving" as const });
+              problemsBySubTopic.set(mapping.sub_topic_id, existing);
+            }
+          }
+
+          // Group predict output mappings by sub-topic
+          if (predictMappings) {
+            for (const mapping of predictMappings) {
+              const existing = problemsBySubTopic.get(mapping.sub_topic_id) || [];
+              existing.push({ ...mapping, problemType: "predict-output" as const });
+              problemsBySubTopic.set(mapping.sub_topic_id, existing);
+            }
           }
           
           // Iterate through sorted sub-topics to maintain lesson order
@@ -210,14 +236,46 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
             const subTopicMappings = problemsBySubTopic.get(subTopic.id) || [];
             const lesson = subTopic.course_lessons as any;
             
+            // Sort by display_order within sub-topic
+            subTopicMappings.sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
+            
             for (const mapping of subTopicMappings) {
-              problemsWithMappings.push({
-                ...transformProblem(mapping.practice_problems),
-                lesson_id: subTopic.lesson_id,
-                lesson_title: lesson?.title || "General",
-                sub_topic_id: subTopic.id,
-                sub_topic_title: subTopic.title,
-              });
+              if (mapping.problemType === "predict-output") {
+                const predictProblem = mapping.predict_output_problems;
+                problemsWithMappings.push({
+                  ...transformProblem({
+                    ...predictProblem,
+                    // Map predict output fields to PracticeProblem shape
+                    sub_topic: "",
+                    description: predictProblem.prompt || "",
+                    examples: [],
+                    constraints: [],
+                    starter_code: {},
+                    is_premium: predictProblem.is_premium || false,
+                    test_cases: [],
+                    input_format: "",
+                    output_format: "",
+                    time_limit: 0,
+                    memory_limit: 0,
+                    supported_languages: [predictProblem.language],
+                    function_signature: { name: "solution", parameters: [], return_type: "str" },
+                  }),
+                  lesson_id: subTopic.lesson_id,
+                  lesson_title: lesson?.title || "General",
+                  sub_topic_id: subTopic.id,
+                  sub_topic_title: subTopic.title,
+                  problemType: "predict-output",
+                });
+              } else {
+                problemsWithMappings.push({
+                  ...transformProblem(mapping.practice_problems),
+                  lesson_id: subTopic.lesson_id,
+                  lesson_title: lesson?.title || "General",
+                  sub_topic_id: subTopic.id,
+                  sub_topic_title: subTopic.title,
+                  problemType: "problem-solving",
+                });
+              }
             }
           }
         }
@@ -241,6 +299,7 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
               ...transformProblem(problem),
               lesson_title: "General",
               sub_topic_title: problem.sub_topic || "Uncategorized",
+              problemType: "problem-solving",
             });
           }
         }
