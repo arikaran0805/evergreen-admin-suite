@@ -82,7 +82,7 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
   }
 
   return (
-    <div className="space-y-8 py-8">
+    <div className="space-y-10 py-12">
       {/* Hero Section */}
       <section className="text-center py-8 px-4 rounded-2xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border border-border/50">
         <div className="max-w-2xl mx-auto">
