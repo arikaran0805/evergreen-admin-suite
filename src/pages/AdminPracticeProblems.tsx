@@ -1,19 +1,28 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, ArrowLeft, BookOpen, AlertCircle } from "lucide-react";
+import { Plus, ArrowLeft, BookOpen, AlertCircle, Eye, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { usePracticeSkill } from "@/hooks/usePracticeSkills";
 import { usePracticeProblems } from "@/hooks/usePracticeProblems";
 import { useSubTopicsBySkill, SubTopic } from "@/hooks/useSubTopics";
 import { useCreateProblemMapping, useAllGlobalProblems, useDeleteProblemMapping } from "@/hooks/useProblemMappings";
+import { usePredictOutputProblems, useDeletePredictOutputProblem } from "@/hooks/usePredictOutputProblems";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LessonProblemsSection } from "@/components/admin/practice/LessonProblemsSection";
 import { AddProblemDialog } from "@/components/admin/practice/AddProblemDialog";
 import { ProblemTypeSelectDialog } from "@/components/admin/practice/ProblemTypeSelectDialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CourseLesson {
   id: string;
@@ -32,9 +41,14 @@ export default function AdminPracticeProblems() {
   
   const [addProblemSubTopicId, setAddProblemSubTopicId] = useState<string | null>(null);
   const [showTypeSelect, setShowTypeSelect] = useState(false);
+  const [deletePredictId, setDeletePredictId] = useState<string | null>(null);
   
   const createMapping = useCreateProblemMapping();
   const deleteMapping = useDeleteProblemMapping();
+  const deletePredictMutation = useDeletePredictOutputProblem();
+
+  // Fetch predict output problems for this skill
+  const { data: predictProblems, isLoading: predictLoading } = usePredictOutputProblems(skillId);
 
   // Fetch lessons for the linked course
   const { data: lessons, isLoading: lessonsLoading } = useQuery({
@@ -139,7 +153,7 @@ export default function AdminPracticeProblems() {
     await deleteMapping.mutateAsync({ id: mappingId, subTopicId, problemId });
   };
 
-  const isLoading = skillLoading || problemsLoading || lessonsLoading || subTopicsLoading;
+  const isLoading = skillLoading || problemsLoading || lessonsLoading || subTopicsLoading || predictLoading;
 
   const hasLinkedCourse = !!skill?.course_id;
 
@@ -294,6 +308,89 @@ export default function AdminPracticeProblems() {
         </div>
       )}
 
+      {/* Predict Output Problems Section */}
+      {!isLoading && predictProblems && predictProblems.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-amber-500" />
+              <CardTitle className="text-lg">Predict the Output</CardTitle>
+              <Badge variant="secondary" className="text-xs">
+                {predictProblems.length} problems
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1"
+              onClick={() => navigate(`/admin/practice/skills/${skillId}/predict-output/new`)}
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-1">
+              {predictProblems.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => navigate(`/admin/practice/skills/${skillId}/predict-output/${p.id}`)}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Eye className="h-4 w-4 text-amber-500/60" />
+                    <span className="font-medium text-sm">{p.title}</span>
+                    <Badge variant="outline" className="text-[10px] capitalize">{p.language}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
+                      p.difficulty === "Easy" ? "border-green-500/30 text-green-600 dark:text-green-400" :
+                      p.difficulty === "Medium" ? "border-amber-500/30 text-amber-600 dark:text-amber-400" :
+                      "border-red-500/30 text-red-600 dark:text-red-400"
+                    }`}>
+                      {p.difficulty}
+                    </span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                      p.status === "published"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {p.status}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/admin/practice/skills/${skillId}/predict-output/${p.id}`);
+                        }}>
+                          <Pencil className="h-4 w-4 mr-2" />Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => { e.stopPropagation(); setDeletePredictId(p.id); }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Add Problem Dialog */}
       <AddProblemDialog
         open={!!addProblemSubTopicId}
@@ -311,6 +408,32 @@ export default function AdminPracticeProblems() {
         onSelectProblemSolving={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
         onSelectPredictOutput={() => navigate(`/admin/practice/skills/${skillId}/predict-output/new`)}
       />
+
+      {/* Delete Predict Output Problem Confirmation */}
+      <AlertDialog open={!!deletePredictId} onOpenChange={() => setDeletePredictId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Problem</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this Predict Output problem and all learner attempts.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deletePredictId && skillId) {
+                  await deletePredictMutation.mutateAsync({ id: deletePredictId, skillId });
+                  setDeletePredictId(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
