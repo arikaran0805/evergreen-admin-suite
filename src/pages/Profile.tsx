@@ -2420,7 +2420,7 @@ const Profile = () => {
   );
 
   const renderPracticeLab = () => (
-    <div className="px-4 md:px-8 lg:px-16 py-12">
+    <div className="py-12">
       <PracticeLab enrolledCourses={enrolledCourses} userId={userId || undefined} />
     </div>
   );
