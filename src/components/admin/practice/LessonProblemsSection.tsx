@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal, Unlink, Eye, Code2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, MoreHorizontal, Unlink, Eye, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -366,7 +366,7 @@ function SubTopicSection({
                   {isPredictOutput ? (
                     <Eye className="h-4 w-4 text-amber-500 shrink-0" />
                   ) : (
-                    <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+                    <Code2 className="h-4 w-4 text-primary/70 shrink-0" />
                   )}
                   <span className="flex-1 text-sm">{problem.title}</span>
                   {isPredictOutput && (
