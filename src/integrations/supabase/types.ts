@@ -2277,6 +2277,154 @@ export type Database = {
           },
         ]
       }
+      predict_output_attempts: {
+        Row: {
+          attempt_no: number
+          created_at: string
+          id: string
+          is_correct: boolean
+          problem_id: string
+          revealed: boolean
+          score_awarded: number
+          time_taken: number | null
+          user_id: string
+          user_output: string
+        }
+        Insert: {
+          attempt_no?: number
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          problem_id: string
+          revealed?: boolean
+          score_awarded?: number
+          time_taken?: number | null
+          user_id: string
+          user_output?: string
+        }
+        Update: {
+          attempt_no?: number
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          problem_id?: string
+          revealed?: boolean
+          score_awarded?: number
+          time_taken?: number | null
+          user_id?: string
+          user_output?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predict_output_attempts_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "predict_output_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predict_output_problems: {
+        Row: {
+          accepted_outputs: Json | null
+          code: string
+          common_mistakes: Json | null
+          created_at: string
+          created_by: string | null
+          difficulty: string
+          display_order: number
+          expected_output: string
+          explanation: string | null
+          hints: Json | null
+          id: string
+          is_premium: boolean
+          language: string
+          match_mode: string
+          output_type: string
+          prompt: string | null
+          reveal_allowed: boolean
+          reveal_penalty: string
+          reveal_timing: string
+          skill_id: string
+          slug: string
+          status: string
+          step_by_step: Json | null
+          streak_eligible: boolean
+          tags: string[] | null
+          title: string
+          updated_at: string
+          xp_value: number
+        }
+        Insert: {
+          accepted_outputs?: Json | null
+          code?: string
+          common_mistakes?: Json | null
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          display_order?: number
+          expected_output?: string
+          explanation?: string | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean
+          language?: string
+          match_mode?: string
+          output_type?: string
+          prompt?: string | null
+          reveal_allowed?: boolean
+          reveal_penalty?: string
+          reveal_timing?: string
+          skill_id: string
+          slug: string
+          status?: string
+          step_by_step?: Json | null
+          streak_eligible?: boolean
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          xp_value?: number
+        }
+        Update: {
+          accepted_outputs?: Json | null
+          code?: string
+          common_mistakes?: Json | null
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          display_order?: number
+          expected_output?: string
+          explanation?: string | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean
+          language?: string
+          match_mode?: string
+          output_type?: string
+          prompt?: string | null
+          reveal_allowed?: boolean
+          reveal_penalty?: string
+          reveal_timing?: string
+          skill_id?: string
+          slug?: string
+          status?: string
+          step_by_step?: Json | null
+          streak_eligible?: boolean
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          xp_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predict_output_problems_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "practice_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       problem_bookmarks: {
         Row: {
           created_at: string
