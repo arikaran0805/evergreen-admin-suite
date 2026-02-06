@@ -12,10 +12,8 @@ import {
   Bug,
   BarChart3,
   Lightbulb,
-  Trophy,
   Play,
   ArrowRight,
-  Sparkles,
   Target,
   Calendar,
   TrendingUp,
@@ -32,22 +30,6 @@ interface PracticeLabProps {
   userId?: string;
 }
 
-// Mock data for today's practice - in real app, this would come from AI/algorithm
-const getTodaysPractice = (enrolledCourses: any[]) => {
-  if (enrolledCourses.length === 0) return null;
-  
-  const course = enrolledCourses[0]?.courses;
-  if (!course) return null;
-  
-  return {
-    topic: `${course.name} – Core Concepts`,
-    reason: "You viewed this recently but haven't practiced yet",
-    estimatedTime: "10–15 mins",
-    practiceType: "Mixed" as const,
-    difficulty: "Medium",
-  };
-};
-
 // Icon mapping for dynamic icons
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Brain,
@@ -62,36 +44,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Terminal,
 };
 
-// Mini projects data
-const miniProjects = [
-  {
-    id: "todo-app",
-    title: "Build a Todo App",
-    skills: ["JavaScript", "DOM", "Local Storage"],
-    time: "2–3 hours",
-    difficulty: "Beginner",
-  },
-  {
-    id: "quiz-game",
-    title: "Interactive Quiz Game",
-    skills: ["Python", "Logic", "Data Structures"],
-    time: "3–4 hours",
-    difficulty: "Intermediate",
-  },
-  {
-    id: "data-dashboard",
-    title: "Data Analysis Dashboard",
-    skills: ["SQL", "Charts", "Data Viz"],
-    time: "4–5 hours",
-    difficulty: "Intermediate",
-  },
-];
-
 export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
   const navigate = useNavigate();
   const { data: skills, isLoading: skillsLoading } = usePublishedPracticeSkills();
   
-  const todaysPractice = getTodaysPractice(enrolledCourses);
   const hasActivity = enrolledCourses.length > 0;
 
   const handleSkillClick = (skillSlug: string) => {
@@ -117,7 +73,7 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button size="lg" className="px-8 gap-2 text-base">
               <Zap className="h-5 w-5" />
-              Start Today's Practice
+              Start Practicing
             </Button>
             <Button variant="ghost" size="lg" className="gap-2 text-muted-foreground">
               Browse all labs
@@ -126,53 +82,6 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
           </div>
         </div>
       </section>
-
-      {/* Today's Practice - Top Priority */}
-      {todaysPractice ? (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Today's Practice</h2>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
-              Recommended for you
-            </Badge>
-          </div>
-          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">{todaysPractice.topic}</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    <Lightbulb className="h-4 w-4 inline mr-1" />
-                    {todaysPractice.reason}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {todaysPractice.estimatedTime}
-                    </span>
-                    <Badge variant="outline" className="font-normal">
-                      {todaysPractice.practiceType}
-                    </Badge>
-                    <Badge variant="outline" className="font-normal bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-                      {todaysPractice.difficulty}
-                    </Badge>
-                  </div>
-                </div>
-                <Button size="lg" className="shrink-0 gap-2">
-                  <Play className="h-5 w-5" />
-                  Start Practice
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      ) : (
-        <DefaultChallengeCard />
-      )}
 
       {/* Your Active Labs */}
       <section>
@@ -307,98 +216,7 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
           </Card>
         )}
       </section>
-
-      {/* Build Something Real - Mini Projects */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Rocket className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Build Something Real</h2>
-          <Badge variant="outline" className="text-xs">Mini Projects</Badge>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {miniProjects.map((project) => (
-            <Card key={project.id} className="group hover:shadow-md transition-all hover:border-primary/30">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs ${
-                      project.difficulty === "Beginner" 
-                        ? "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
-                        : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
-                    }`}
-                  >
-                    {project.difficulty}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {project.time}
-                  </span>
-                </div>
-                
-                <h3 className="font-semibold mb-2">{project.title}</h3>
-                
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {project.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary" className="text-xs font-normal bg-muted/50">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-                
-                <Button size="sm" variant="outline" className="w-full gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
-                  <Trophy className="h-4 w-4" />
-                  Start Project
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
     </div>
-  );
-}
-
-// Default challenge card for when there's no personalized data
-function DefaultChallengeCard() {
-  return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">Today's Challenge</h2>
-      </div>
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold">Beginner's Logic Challenge</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                A perfect starting point to warm up your brain and build confidence
-              </p>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  5–10 mins
-                </span>
-                <Badge variant="outline" className="font-normal">
-                  MCQs
-                </Badge>
-                <Badge variant="outline" className="font-normal bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-                  Easy
-                </Badge>
-              </div>
-            </div>
-            <Button size="lg" className="shrink-0 gap-2">
-              <Play className="h-5 w-5" />
-              Start Challenge
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
   );
 }
 
@@ -444,7 +262,7 @@ function EmptyState() {
             </div>
             <div>
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                <Trophy className="h-5 w-5 text-primary" />
+                <Rocket className="h-5 w-5 text-primary" />
               </div>
               <p className="text-xs text-muted-foreground">Mini Projects</p>
             </div>
