@@ -12,7 +12,7 @@
    skillName: string;
    problems: ProblemWithMapping[];
    currentProblemSlug: string | undefined;
-   onSelectProblem: (problemSlug: string) => void;
+   onSelectProblem: (problemSlug: string, problemType?: "problem-solving" | "predict-output") => void;
  }
  
  const difficultyColors = {
@@ -90,10 +90,10 @@
                          return (
                            <button
                              key={problem.id}
-                             onClick={() => {
-                               onSelectProblem(problem.slug);
-                               onOpenChange(false);
-                             }}
+                            onClick={() => {
+                              onSelectProblem(problem.slug, problem.problemType);
+                              onOpenChange(false);
+                            }}
                              className={cn(
                                "w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors bg-background",
                                "hover:bg-muted/30",

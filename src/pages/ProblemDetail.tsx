@@ -445,17 +445,17 @@ export default function ProblemDetail() {
   const prevProblem = currentIndex > 0 ? allProblemsInSkill[currentIndex - 1] : null;
   const nextProblem = currentIndex < allProblemsInSkill.length - 1 ? allProblemsInSkill[currentIndex + 1] : null;
 
-  const handlePrevProblem = () => {
-    if (prevProblem) {
-      navigate(`/practice/${skillId}/problem/${prevProblem.slug}`);
+  const navigateToProblem = (p: typeof prevProblem) => {
+    if (!p) return;
+    if (p.problemType === "predict-output") {
+      navigate(`/practice/${skillId}/predict/${p.slug}`);
+    } else {
+      navigate(`/practice/${skillId}/problem/${p.slug}`);
     }
   };
 
-  const handleNextProblem = () => {
-    if (nextProblem) {
-      navigate(`/practice/${skillId}/problem/${nextProblem.slug}`);
-    }
-  };
+  const handlePrevProblem = () => navigateToProblem(prevProblem);
+  const handleNextProblem = () => navigateToProblem(nextProblem);
 
   // Render fullscreen panel if expanded
   if (expandedPanel) {
@@ -468,7 +468,13 @@ export default function ProblemDetail() {
           skillName={skill?.name || "Problems"}
           problems={allProblemsInSkill}
           currentProblemSlug={problemId}
-          onSelectProblem={(slug) => navigate(`/practice/${skillId}/problem/${slug}`)}
+          onSelectProblem={(slug, problemType) => {
+            if (problemType === "predict-output") {
+              navigate(`/practice/${skillId}/predict/${slug}`);
+            } else {
+              navigate(`/practice/${skillId}/problem/${slug}`);
+            }
+          }}
         />
 
         {/* Top Navigation Bar */}
@@ -573,7 +579,13 @@ export default function ProblemDetail() {
         skillName={skill?.name || "Problems"}
         problems={allProblemsInSkill}
         currentProblemSlug={problemId}
-        onSelectProblem={(slug) => navigate(`/practice/${skillId}/problem/${slug}`)}
+        onSelectProblem={(slug, problemType) => {
+          if (problemType === "predict-output") {
+            navigate(`/practice/${skillId}/predict/${slug}`);
+          } else {
+            navigate(`/practice/${skillId}/problem/${slug}`);
+          }
+        }}
       />
 
       {/* Top Navigation Bar */}
