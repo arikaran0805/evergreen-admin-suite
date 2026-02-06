@@ -100,24 +100,27 @@ export function useLessonProblemsCompletion(courseId: string | undefined) {
 
       if (!skill) return new Map<string, boolean>();
 
-      // Get sub-topics with problem mappings
+      // Get sub-topics with both problem mapping types
       const { data: subTopics } = await supabase
         .from("sub_topics")
         .select(`
           lesson_id,
-          problem_mappings(problem_id)
+          problem_mappings(problem_id),
+          predict_output_mappings(predict_output_problem_id)
         `)
         .eq("skill_id", skill.id);
 
       if (!subTopics) return new Map<string, boolean>();
 
-      // Get all problem IDs grouped by lesson
+      // Get all problem IDs grouped by lesson (both types)
       const problemsByLesson = new Map<string, string[]>();
       subTopics.forEach((st: any) => {
         if (!st.lesson_id) return;
-        const problemIds = (st.problem_mappings || []).map((pm: any) => pm.problem_id);
+        const regularIds = (st.problem_mappings || []).map((pm: any) => pm.problem_id);
+        const predictIds = (st.predict_output_mappings || []).map((pm: any) => pm.predict_output_problem_id);
+        const allIds = [...regularIds, ...predictIds];
         const existing = problemsByLesson.get(st.lesson_id) || [];
-        problemsByLesson.set(st.lesson_id, [...existing, ...problemIds]);
+        problemsByLesson.set(st.lesson_id, [...existing, ...allIds]);
       });
 
       // Get user's solved problems
