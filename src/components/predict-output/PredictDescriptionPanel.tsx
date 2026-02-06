@@ -14,13 +14,12 @@ import {
   Shrink,
   PanelLeftClose,
   Lightbulb,
-  Copy,
-  Check,
+  Braces,
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "sonner";
+
 import type { PredictOutputProblem } from "@/hooks/usePredictOutputProblems";
 import type { PredictOutputAttempt } from "@/hooks/usePredictOutputAttempts";
 
@@ -55,17 +54,9 @@ export function PredictDescriptionPanel({
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const setActiveTab = onTabChange ?? setInternalActiveTab;
   const [isHovered, setIsHovered] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [hintsShown, setHintsShown] = useState(0);
 
   const alreadySolved = attempts.some((a) => a.is_correct);
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(problem.code);
-    setCopied(true);
-    toast.success("Code copied");
-    setTimeout(() => setCopied(false), 2000);
-  }, [problem.code]);
 
   // Collapsed state: vertical tabs
   if (isCollapsed && !isExpanded) {
@@ -257,32 +248,10 @@ export function PredictDescriptionPanel({
               </div>
             )}
 
-            {/* Code Block */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Code:</h3>
-              <div className="relative group rounded-lg border border-border overflow-hidden">
-                <div className="flex items-center justify-between bg-muted/50 px-3 py-1.5 border-b border-border">
-                  <span className="text-xs font-medium text-muted-foreground capitalize">
-                    {problem.language}
-                  </span>
-                  <button
-                    onClick={handleCopy}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                  >
-                    {copied ? (
-                      <Check className="h-3 w-3 text-green-500" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                    {copied ? "Copied" : "Copy"}
-                  </button>
-                </div>
-                <pre className="p-4 overflow-x-auto bg-background">
-                  <code className="text-sm font-mono text-foreground whitespace-pre">
-                    {problem.code}
-                  </code>
-                </pre>
-              </div>
+            {/* Code placement note */}
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/50 border border-border/50">
+              <Braces className="h-4 w-4 text-muted-foreground shrink-0" />
+              <p className="text-sm text-muted-foreground">Code is shown in the editor panel →</p>
             </div>
 
             {/* XP Info */}
