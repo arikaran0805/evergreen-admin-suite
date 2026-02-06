@@ -1,7 +1,8 @@
 /**
  * PredictEditorPanel
  * Right panel for the Predict workspace — mirrors the solve workspace's editor chrome.
- * Shows: read-only code, output textarea, hints, reveal, submit.
+ * Shows: read-only code, output textarea, reveal, submit.
+ * Hints moved to description panel. Reveal output shown in Result panel.
  */
 import { useState, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import {
   Copy,
   Check,
   X,
-  Lightbulb,
   RotateCcw,
   Maximize,
 } from "lucide-react";
@@ -59,7 +59,6 @@ export function PredictEditorPanel({
   const [userOutput, setUserOutput] = useState("");
   const [viewState, setViewState] = useState<ViewState>("answering");
   const [revealed, setRevealed] = useState(false);
-  const [hintsShown, setHintsShown] = useState(0);
   const [startTime] = useState(Date.now());
   const [copied, setCopied] = useState(false);
   const [isEditorHovered, setIsEditorHovered] = useState(false);
@@ -135,6 +134,9 @@ export function PredictEditorPanel({
 
   const handleReveal = useCallback(() => {
     setRevealed(true);
+    // Expand result panel to show revealed output
+    resultPanelRef.current?.expand();
+    resultPanelRef.current?.resize(45);
     submitMutation.mutate({
       problem_id: problem.id,
       user_output: "",
@@ -268,43 +270,31 @@ export function PredictEditorPanel({
             Match line breaks and spacing as shown in output
           </p>
         </div>
-
-        {/* Hints */}
-        {problem.hints.length > 0 && hintsShown < problem.hints.length && (
-          <div className="space-y-2">
-            {problem.hints.slice(0, hintsShown).map((hint, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30"
-              >
-                <Lightbulb className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <p className="text-sm text-amber-900 dark:text-amber-200">{hint}</p>
-              </div>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setHintsShown((h) => h + 1)}
-              className="text-amber-600 gap-1.5"
-            >
-              <Lightbulb className="h-4 w-4" />
-              Show hint ({hintsShown + 1}/{problem.hints.length})
-            </Button>
-          </div>
-        )}
-
-        {/* Revealed output */}
-        {revealed && (
-          <div className="rounded-lg border border-amber-200 dark:border-amber-800/30 p-3 space-y-1">
-            <p className="text-xs text-amber-600 font-medium">Expected Output (revealed)</p>
-            <pre className="font-mono text-sm bg-muted/50 p-3 rounded">{problem.expected_output}</pre>
-          </div>
-        )}
       </div>
     );
   }
 
   function renderResultContent() {
+    // Show revealed output in result panel
+    if (revealed && viewState === "answering") {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+            <Eye className="h-5 w-5 text-amber-600" />
+            <span className="font-semibold text-amber-800 dark:text-amber-300">Expected Output (Revealed)</span>
+            {problem.reveal_penalty === "half_xp" && (
+              <Badge className="ml-auto bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                ½ XP penalty
+              </Badge>
+            )}
+          </div>
+          <pre className="font-mono text-sm bg-muted/50 p-4 rounded-lg border border-border whitespace-pre-wrap">
+            {problem.expected_output}
+          </pre>
+        </div>
+      );
+    }
+
     if (viewState === "correct") {
       return (
         <div className="space-y-4">

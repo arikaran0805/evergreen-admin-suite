@@ -1,7 +1,7 @@
 /**
  * PredictDescriptionPanel
  * Left panel for the Predict workspace — visually matches ProblemDescriptionPanel.
- * Shows: title, difficulty, prompt, code snippet, explanation (after solve), step-by-step.
+ * Shows: title, difficulty, prompt, code snippet, hints, explanation (after solve), step-by-step.
  */
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,6 @@ import {
   Shrink,
   PanelLeftClose,
   Lightbulb,
-  ChevronDown,
-  ChevronUp,
   Copy,
   Check,
 } from "lucide-react";
@@ -57,8 +55,8 @@ export function PredictDescriptionPanel({
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const setActiveTab = onTabChange ?? setInternalActiveTab;
   const [isHovered, setIsHovered] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hintsShown, setHintsShown] = useState(0);
 
   const alreadySolved = attempts.some((a) => a.is_correct);
 
@@ -296,6 +294,32 @@ export function PredictDescriptionPanel({
                   <span className="text-xs">
                     (Reveal penalty: {problem.reveal_penalty === "half_xp" ? "½ XP" : "Viewed"})
                   </span>
+                )}
+              </div>
+            )}
+
+            {/* Hints section */}
+            {problem.hints.length > 0 && (
+              <div className="space-y-2">
+                {problem.hints.slice(0, hintsShown).map((hint, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30"
+                  >
+                    <Lightbulb className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <p className="text-sm text-amber-900 dark:text-amber-200">{hint}</p>
+                  </div>
+                ))}
+                {hintsShown < problem.hints.length && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setHintsShown((h) => h + 1)}
+                    className="text-amber-600 gap-1.5"
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    Show hint ({hintsShown + 1}/{problem.hints.length})
+                  </Button>
                 )}
               </div>
             )}
