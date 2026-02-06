@@ -156,8 +156,10 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
           </div>
         ) : skills && skills.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {skills.map((skill) => {
+            {skills.map((skill, index) => {
               const Icon = iconMap[skill.icon] || Code2;
+              // Mock progress - in real app this would come from learner_problem_progress
+              const mockProgress = [0, 25, 60, 40, 10, 0, 75, 30][index % 8];
               return (
                 <SkillCard
                   key={skill.id}
@@ -165,6 +167,7 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
                   slug={skill.slug}
                   icon={Icon}
                   description={skill.description}
+                  progress={mockProgress}
                   onClick={() => handleSkillClick(skill.slug)}
                 />
               );
@@ -284,12 +287,14 @@ function SkillCard({
   slug,
   icon: Icon,
   description,
+  progress,
   onClick,
 }: {
   name: string;
   slug: string;
   icon: React.ComponentType<{ className?: string }>;
   description?: string | null;
+  progress: number;
   onClick: () => void;
 }) {
   return (
@@ -317,20 +322,33 @@ function SkillCard({
         {/* Right Section - Light */}
         <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Icon className="h-3.5 w-3.5 text-primary" />
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon className="h-3 w-3 text-primary" />
+                </div>
+                <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                  Practice
+                </span>
               </div>
-              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-                Practice
-              </span>
+              <span className="text-[10px] text-muted-foreground">{progress}%</span>
             </div>
-            <p className="text-xs text-foreground line-clamp-3">
+            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ width: `${progress}%`, background: '#14532d' }}
+              />
+            </div>
+            <p className="text-xs text-foreground line-clamp-2">
               {description || `Sharpen your ${name} skills with hands-on challenges`}
             </p>
           </div>
           
-          <div className="flex items-center justify-end mt-3">
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Code2 className="h-3 w-3" />
+              <span className="text-xs">Problems</span>
+            </div>
             <Button 
               variant="default" 
               size="sm"
@@ -341,7 +359,7 @@ function SkillCard({
                 onClick();
               }}
             >
-              Start
+              {progress > 0 ? "Continue" : "Start"}
             </Button>
           </div>
         </div>
