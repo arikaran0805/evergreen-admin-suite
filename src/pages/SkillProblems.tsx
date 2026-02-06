@@ -146,7 +146,7 @@ export default function SkillProblems() {
       return;
     }
     if (problem.problemType === "predict-output") {
-      navigate(`/predict-output/${problem.slug}`);
+      navigate(`/practice/${skillId}/predict/${problem.slug}`);
     } else {
       navigate(`/practice/${skillId}/problem/${problem.slug}`);
     }
