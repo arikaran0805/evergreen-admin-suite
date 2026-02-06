@@ -2324,6 +2324,51 @@ export type Database = {
           },
         ]
       }
+      predict_output_mappings: {
+        Row: {
+          context_note: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          predict_output_problem_id: string
+          sub_topic_id: string
+        }
+        Insert: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          predict_output_problem_id: string
+          sub_topic_id: string
+        }
+        Update: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          predict_output_problem_id?: string
+          sub_topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predict_output_mappings_predict_output_problem_id_fkey"
+            columns: ["predict_output_problem_id"]
+            isOneToOne: false
+            referencedRelation: "predict_output_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predict_output_mappings_sub_topic_id_fkey"
+            columns: ["sub_topic_id"]
+            isOneToOne: false
+            referencedRelation: "sub_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predict_output_problems: {
         Row: {
           accepted_outputs: Json | null

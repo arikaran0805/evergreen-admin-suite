@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Check, Plus } from "lucide-react";
+import { Search, Check, Plus, Eye, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +13,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-interface AddProblemDialogProblem {
+export interface AddProblemDialogProblem {
   id: string;
   title: string;
   difficulty: string;
   status: string;
   sub_topic?: string | null;
+  problemType: "problem-solving" | "predict-output";
+  language?: string;
 }
 
 interface AddProblemDialogProps {
@@ -26,7 +28,7 @@ interface AddProblemDialogProps {
   onOpenChange: (open: boolean) => void;
   allProblems: AddProblemDialogProblem[];
   mappedProblemIds: Set<string>;
-  onAddProblems: (problemIds: string[]) => void;
+  onAddProblems: (selections: { id: string; problemType: "problem-solving" | "predict-output" }[]) => void;
   onCreateNew: () => void;
 }
 
@@ -62,7 +64,11 @@ export function AddProblemDialog({
   };
 
   const handleAdd = () => {
-    onAddProblems(Array.from(selectedIds));
+    const selections = Array.from(selectedIds).map(id => {
+      const problem = allProblems.find(p => p.id === id);
+      return { id, problemType: problem?.problemType || "problem-solving" as const };
+    });
+    onAddProblems(selections);
     setSelectedIds(new Set());
     setSearch("");
     onOpenChange(false);
@@ -131,7 +137,7 @@ export function AddProblemDialog({
                     onClick={() => handleToggle(problem.id)}
                   >
                     <div className={cn(
-                      "h-5 w-5 rounded border flex items-center justify-center",
+                      "h-5 w-5 rounded border flex items-center justify-center shrink-0",
                       selectedIds.has(problem.id) 
                         ? "bg-primary border-primary" 
                         : "border-border"
@@ -140,10 +146,17 @@ export function AddProblemDialog({
                         <Check className="h-3.5 w-3.5 text-primary-foreground" />
                       )}
                     </div>
+                    {problem.problemType === "predict-output" ? (
+                      <Eye className="h-4 w-4 text-amber-500 shrink-0" />
+                    ) : (
+                      <Code2 className="h-4 w-4 text-primary shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{problem.title}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {problem.sub_topic || "No sub-topic"}
+                        {problem.problemType === "predict-output" 
+                          ? `Predict Output · ${problem.language || "python"}`
+                          : problem.sub_topic || "Problem Solving"}
                       </p>
                     </div>
                     <span className={cn("text-sm font-medium", getDifficultyColor(problem.difficulty))}>

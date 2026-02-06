@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal, Unlink } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal, Unlink, Eye, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SubTopic, useCreateSubTopic, useDeleteSubTopic, useUpdateSubTopic } from "@/hooks/useSubTopics";
-import { PracticeProblem } from "@/hooks/usePracticeProblems";
+// PracticeProblem type not needed - using unified any[] with problemType field
 import { cn } from "@/lib/utils";
 
 interface LessonProblemsSectionProps {
@@ -39,11 +39,11 @@ interface LessonProblemsSectionProps {
   };
   skillId: string;
   subTopics: SubTopic[];
-  problemsBySubTopic: Record<string, PracticeProblem[]>;
-  mappingsBySubTopic?: Record<string, { id: string; problem_id: string }[]>;
-  onProblemClick: (problemId: string) => void;
+  problemsBySubTopic: Record<string, any[]>;
+  mappingsBySubTopic?: Record<string, { id: string; problem_id: string; problemType?: string }[]>;
+  onProblemClick: (problemId: string, problemType?: string) => void;
   onAddProblem: (subTopicId: string) => void;
-  onUnlinkProblem?: (mappingId: string, subTopicId: string, problemId: string) => void;
+  onUnlinkProblem?: (mappingId: string, subTopicId: string, problemId: string, problemType?: string) => void;
 }
 
 export function LessonProblemsSection({
@@ -268,13 +268,13 @@ export function LessonProblemsSection({
 
 interface SubTopicSectionProps {
   subTopic: SubTopic;
-  problems: PracticeProblem[];
-  mappings: { id: string; problem_id: string }[];
-  onProblemClick: (problemId: string) => void;
+  problems: any[];
+  mappings: { id: string; problem_id: string; problemType?: string }[];
+  onProblemClick: (problemId: string, problemType?: string) => void;
   onAddProblem: () => void;
   onRename: () => void;
   onDelete: () => void;
-  onUnlinkProblem?: (mappingId: string, subTopicId: string, problemId: string) => void;
+  onUnlinkProblem?: (mappingId: string, subTopicId: string, problemId: string, problemType?: string) => void;
   getDifficultyBadge: (difficulty: string) => React.ReactNode;
 }
 
@@ -355,15 +355,23 @@ function SubTopicSection({
             </div>
           ) : (
             problems.map((problem) => {
+              const isPredictOutput = problem.problemType === "predict-output";
               const mapping = mappings.find(m => m.problem_id === problem.id);
               return (
                 <div
-                  key={problem.id}
+                  key={`${problem.problemType || 'ps'}-${problem.id}`}
                   className="flex items-center gap-3 px-4 py-2.5 pl-14 hover:bg-muted/30 cursor-pointer transition-colors group"
-                  onClick={() => onProblemClick(problem.id)}
+                  onClick={() => onProblemClick(problem.id, problem.problemType)}
                 >
-                  <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+                  {isPredictOutput ? (
+                    <Eye className="h-4 w-4 text-amber-500 shrink-0" />
+                  ) : (
+                    <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+                  )}
                   <span className="flex-1 text-sm">{problem.title}</span>
+                  {isPredictOutput && (
+                    <Badge variant="outline" className="text-[10px] capitalize">{problem.language}</Badge>
+                  )}
                   {getDifficultyBadge(problem.difficulty)}
                   <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
                     {problem.status}
@@ -377,7 +385,7 @@ function SubTopicSection({
                           className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onUnlinkProblem(mapping.id, subTopic.id, problem.id);
+                            onUnlinkProblem(mapping.id, subTopic.id, problem.id, problem.problemType);
                           }}
                         >
                           <Unlink className="h-3.5 w-3.5" />
