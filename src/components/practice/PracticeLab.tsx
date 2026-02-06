@@ -27,6 +27,8 @@ import {
   Star,
 } from "lucide-react";
 import { usePublishedPracticeSkills } from "@/hooks/usePracticeSkills";
+import { useSkillsProgress } from "@/hooks/useSkillsProgress";
+import { useMemo } from "react";
 
 interface PracticeLabProps {
   enrolledCourses: any[];
@@ -50,6 +52,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
   const navigate = useNavigate();
   const { data: skills, isLoading: skillsLoading } = usePublishedPracticeSkills();
+  
+  const skillIds = useMemo(() => (skills || []).map(s => s.id), [skills]);
+  const { data: progressMap } = useSkillsProgress(userId, skillIds);
   
   const hasActivity = enrolledCourses.length > 0;
 
@@ -156,10 +161,9 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
           </div>
         ) : skills && skills.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {skills.map((skill, index) => {
+            {skills.map((skill) => {
               const Icon = iconMap[skill.icon] || Code2;
-              // Mock progress - in real app this would come from learner_problem_progress
-              const mockProgress = [0, 25, 60, 40, 10, 0, 75, 30][index % 8];
+              const skillProgress = progressMap?.get(skill.id);
               return (
                 <SkillCard
                   key={skill.id}
@@ -167,7 +171,9 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
                   slug={skill.slug}
                   icon={Icon}
                   description={skill.description}
-                  progress={mockProgress}
+                  progress={skillProgress?.percentage ?? 0}
+                  totalProblems={skillProgress?.totalProblems ?? 0}
+                  solvedProblems={skillProgress?.solvedProblems ?? 0}
                   onClick={() => handleSkillClick(skill.slug)}
                 />
               );
@@ -288,6 +294,8 @@ function SkillCard({
   icon: Icon,
   description,
   progress,
+  totalProblems,
+  solvedProblems,
   onClick,
 }: {
   name: string;
@@ -295,6 +303,8 @@ function SkillCard({
   icon: React.ComponentType<{ className?: string }>;
   description?: string | null;
   progress: number;
+  totalProblems: number;
+  solvedProblems: number;
   onClick: () => void;
 }) {
   return (
@@ -347,7 +357,7 @@ function SkillCard({
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Code2 className="h-3 w-3" />
-              <span className="text-xs">Problems</span>
+              <span className="text-xs">{solvedProblems}/{totalProblems} Solved</span>
             </div>
             <Button 
               variant="default" 
