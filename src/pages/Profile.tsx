@@ -2553,7 +2553,7 @@ const Profile = () => {
           )}
 
           {/* Main Content */}
-          <main className="flex-1 min-w-0">
+          <main className={`flex-1 min-w-0 ${activeTab === 'practice' ? 'py-8' : ''}`}>
             {renderContent()}
           </main>
         </div>
