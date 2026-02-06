@@ -2420,7 +2420,7 @@ const Profile = () => {
   );
 
   const renderPracticeLab = () => (
-    <div className="px-4 md:px-8 lg:px-16">
+    <div className="px-6 md:px-12 lg:px-24">
       <PracticeLab enrolledCourses={enrolledCourses} userId={userId || undefined} />
     </div>
   );
