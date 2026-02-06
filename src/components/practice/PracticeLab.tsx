@@ -22,6 +22,9 @@ import {
   Cpu,
   Globe,
   Terminal,
+  ChevronRight,
+  Users,
+  Star,
 } from "lucide-react";
 import { usePublishedPracticeSkills } from "@/hooks/usePracticeSkills";
 
@@ -109,51 +112,16 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
               const hasWeakAreas = index < 2;
               
               return (
-                <Card key={enrollment.id} className="group hover:shadow-md transition-all hover:border-primary/30">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm truncate">{course.name}</h4>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Calendar className="h-3 w-3" />
-                          Last practiced: {lastPracticed}
-                        </p>
-                      </div>
-                      {progress === 0 && (
-                        <Badge variant="secondary" className="text-xs bg-primary/10 text-primary shrink-0">
-                          Recommended
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">{progress}%</span>
-                      </div>
-                      <Progress value={progress} className="h-2" />
-                    </div>
-                    
-                    {hasWeakAreas && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        Weak areas: Loops, Conditionals
-                      </p>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1 gap-1">
-                        <Play className="h-3.5 w-3.5" />
-                        {progress > 0 ? "Continue" : "Start"}
-                      </Button>
-                      {hasWeakAreas && (
-                        <Button size="sm" variant="outline" className="text-xs px-2">
-                          Revise
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ActiveLabCard
+                  key={enrollment.id}
+                  name={course.name}
+                  level={course.level}
+                  lessonCount={course.lessonCount || 0}
+                  progress={progress}
+                  lastPracticed={lastPracticed}
+                  hasWeakAreas={hasWeakAreas}
+                  onClick={() => navigate(`/course/${course.slug}`)}
+                />
               );
             })}
           </div>
@@ -173,35 +141,32 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
       <section>
         <h2 className="text-xl font-bold mb-6">Practice Skills</h2>
         {skillsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <Card key={i} className="bg-muted/50 border border-border/50">
-                <CardContent className="p-5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
-                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                </CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="overflow-hidden border-0 shadow-lg h-[160px]">
+                <div className="flex h-full">
+                  <div className="w-1/3 bg-muted animate-pulse" />
+                  <div className="w-2/3 bg-card p-4">
+                    <div className="h-3 w-20 bg-muted animate-pulse rounded mb-2" />
+                    <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
         ) : skills && skills.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {skills.map((skill) => {
               const Icon = iconMap[skill.icon] || Code2;
               return (
-                <Card 
-                  key={skill.id} 
-                  className="bg-muted/50 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                <SkillCard
+                  key={skill.id}
+                  name={skill.name}
+                  slug={skill.slug}
+                  icon={Icon}
+                  description={skill.description}
                   onClick={() => handleSkillClick(skill.slug)}
-                >
-                  <CardContent className="p-5 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="font-medium text-foreground group-hover:text-primary transition-colors">
-                      {skill.name}
-                    </span>
-                  </CardContent>
-                </Card>
+                />
               );
             })}
           </div>
@@ -217,6 +182,171 @@ export function PracticeLab({ enrolledCourses, userId }: PracticeLabProps) {
         )}
       </section>
     </div>
+  );
+}
+
+// Card matching Library CourseCard design for Active Labs
+function ActiveLabCard({
+  name,
+  level,
+  lessonCount,
+  progress,
+  lastPracticed,
+  hasWeakAreas,
+  onClick,
+}: {
+  name: string;
+  level?: string | null;
+  lessonCount: number;
+  progress: number;
+  lastPracticed: string;
+  hasWeakAreas: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Card
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
+      onClick={onClick}
+    >
+      <div className="flex h-full">
+        {/* Left Section - Dark */}
+        <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#14532d' }}>
+          <div>
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+              Practice Lab
+            </span>
+            <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+              {name}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs mt-2">
+            <span>View all</span>
+            <ChevronRight className="h-3 w-3" />
+          </div>
+        </div>
+
+        {/* Right Section - Light */}
+        <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                {level || "Beginner"} • {lessonCount} Lessons
+              </span>
+              <span className="text-[10px] text-muted-foreground">{progress}%</span>
+            </div>
+            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ width: `${progress}%`, background: '#14532d' }}
+              />
+            </div>
+            {hasWeakAreas && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Weak areas: Loops, Conditionals
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <Calendar className="h-3 w-3" />
+              Last practiced: {lastPracticed}
+            </p>
+          </div>
+          
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span className="text-xs">
+                {Math.max(1, Math.round((lessonCount * 15) / 60))}h
+              </span>
+            </div>
+            <Button 
+              variant="default" 
+              size="sm"
+              className="text-white rounded-full px-4 h-7 text-xs hover:opacity-90"
+              style={{ background: '#14532d' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+            >
+              {progress > 0 ? "Continue" : "Start"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// Card matching Library CourseCard design for Practice Skills
+function SkillCard({
+  name,
+  slug,
+  icon: Icon,
+  description,
+  onClick,
+}: {
+  name: string;
+  slug: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description?: string | null;
+  onClick: () => void;
+}) {
+  return (
+    <Card
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
+      onClick={onClick}
+    >
+      <div className="flex h-full">
+        {/* Left Section - Dark */}
+        <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#14532d' }}>
+          <div>
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+              Skill
+            </span>
+            <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+              {name}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs mt-2">
+            <span>Explore</span>
+            <ChevronRight className="h-3 w-3" />
+          </div>
+        </div>
+
+        {/* Right Section - Light */}
+        <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Icon className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                Practice
+              </span>
+            </div>
+            <p className="text-xs text-foreground line-clamp-3">
+              {description || `Sharpen your ${name} skills with hands-on challenges`}
+            </p>
+          </div>
+          
+          <div className="flex items-center justify-end mt-3">
+            <Button 
+              variant="default" 
+              size="sm"
+              className="text-white rounded-full px-4 h-7 text-xs hover:opacity-90"
+              style={{ background: '#14532d' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+            >
+              Start
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 
