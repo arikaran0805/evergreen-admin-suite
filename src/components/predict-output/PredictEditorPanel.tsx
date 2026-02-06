@@ -5,6 +5,7 @@
  * Hints moved to description panel. Reveal output shown in Result panel.
  */
 import { useState, useRef, useMemo, useCallback } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,8 @@ export function PredictEditorPanel({
   expandedPanel,
   onTabSwitchToAttempts,
 }: PredictEditorPanelProps) {
+  const { theme } = useTheme();
+  const monacoTheme = theme === 'dark' ? 'vs-dark' : 'vs';
   const [userOutput, setUserOutput] = useState("");
   const [viewState, setViewState] = useState<ViewState>("answering");
   const [revealed, setRevealed] = useState(false);
@@ -211,27 +214,35 @@ export function PredictEditorPanel({
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-4">
-              <div style={{ height: monacoHeight }} className="border-b border-border bg-[#1e1e1e] rounded-sm">
+              <div style={{ height: monacoHeight }} className="border-b border-border">
                 <Editor
                   value={problem.code}
                   language={monacoLanguageMap[problem.language] || problem.language}
-                  theme="vs-dark"
+                  theme={monacoTheme}
                   options={{
                     readOnly: true,
                     domReadOnly: true,
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
                     lineNumbers: "on",
-                    lineNumbersMinChars: 2,
-                    lineDecorationsWidth: 8,
-                    renderLineHighlight: "none",
-                    folding: false,
+                    lineNumbersMinChars: 3,
+                    lineDecorationsWidth: 16,
+                    glyphMargin: true,
+                    renderLineHighlight: "line",
+                    folding: true,
                     contextmenu: false,
                     fontSize: 14,
-                    padding: { top: 12, bottom: 12 },
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+                    padding: { top: 16, bottom: 16 },
                     scrollbar: { vertical: "hidden", horizontal: "auto" },
                     wordWrap: "on",
                     dragAndDrop: false,
+                    overviewRulerBorder: false,
+                    overviewRulerLanes: 0,
+                    hideCursorInOverviewRuler: true,
+                    bracketPairColorization: { enabled: true },
+                    guides: { indentation: true, bracketPairs: true },
+                    smoothScrolling: true,
                   }}
                 />
               </div>
@@ -513,32 +524,35 @@ export function PredictEditorPanel({
                 <ScrollArea className="flex-1">
                   <div className="space-y-4">
                     {/* Read-only Monaco editor */}
-                    <div style={{ height: monacoHeight }} className="border-b border-border bg-[#1e1e1e] rounded-sm">
+                    <div style={{ height: monacoHeight }} className="border-b border-border">
                       <Editor
                         value={problem.code}
                         language={monacoLanguageMap[problem.language] || problem.language}
-                        theme="vs-dark"
+                        theme={monacoTheme}
                         options={{
                           readOnly: true,
                           domReadOnly: true,
                           minimap: { enabled: false },
                           scrollBeyondLastLine: false,
                           lineNumbers: "on",
-                          lineNumbersMinChars: 2,
-                          lineDecorationsWidth: 8,
-                          renderLineHighlight: "none",
-                          folding: false,
+                          lineNumbersMinChars: 3,
+                          lineDecorationsWidth: 16,
+                          glyphMargin: true,
+                          renderLineHighlight: "line",
+                          folding: true,
                           contextmenu: false,
+                          fontSize: 14,
+                          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+                          padding: { top: 16, bottom: 16 },
+                          scrollbar: { vertical: "hidden", horizontal: "auto" },
+                          wordWrap: "on",
+                          dragAndDrop: false,
                           overviewRulerBorder: false,
                           overviewRulerLanes: 0,
                           hideCursorInOverviewRuler: true,
-                          fontSize: 14,
-                          padding: { top: 12, bottom: 12 },
-                          scrollbar: { vertical: "hidden", horizontal: "auto" },
-                          wordWrap: "on",
-                          cursorStyle: "line-thin",
-                          cursorBlinking: "solid",
-                          dragAndDrop: false,
+                          bracketPairColorization: { enabled: true },
+                          guides: { indentation: true, bracketPairs: true },
+                          smoothScrolling: true,
                         }}
                       />
                     </div>
