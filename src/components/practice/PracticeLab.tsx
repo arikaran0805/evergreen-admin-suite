@@ -339,52 +339,46 @@ function SkillCard({
 }) {
   return (
     <Card
-      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg h-[160px]"
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 shadow-lg"
       onClick={onClick}
     >
-      <div className="flex h-full">
-        {/* Left Section - Dark */}
-        <div className="w-1/3 p-4 flex flex-col justify-between" style={{ background: '#14532d' }}>
-          <div>
+      <div className="flex flex-col h-full">
+        {/* Top Section - Dark */}
+        <div className="p-4 flex items-center gap-3" style={{ background: '#14532d' }}>
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+          <div className="min-w-0">
             <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
               Skill
             </span>
-            <h3 className="text-sm font-semibold text-white mt-1 leading-tight line-clamp-3">
+            <h3 className="text-sm font-semibold text-white leading-tight truncate">
               {name}
             </h3>
           </div>
-          <div className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs mt-2">
-            <span>Explore</span>
-            <ChevronRight className="h-3 w-3" />
-          </div>
         </div>
 
-        {/* Right Section - Light */}
-        <div className="w-2/3 bg-card p-4 flex flex-col justify-between">
+        {/* Bottom Section - Light */}
+        <div className="bg-card p-4 flex flex-col justify-between flex-1">
           <div>
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+              {description || `Sharpen your ${name} skills with hands-on challenges`}
+            </p>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Icon className="h-3 w-3 text-primary" />
-                </div>
-                <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-                  Practice
-                </span>
-              </div>
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                Progress
+              </span>
               <span className="text-[10px] text-muted-foreground">{progress}%</span>
             </div>
-            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mb-2">
+            <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all"
                 style={{ width: `${progress}%`, background: '#14532d' }}
               />
             </div>
-            <p className="text-xs text-foreground line-clamp-2">
-              {description || `Sharpen your ${name} skills with hands-on challenges`}
-            </p>
           </div>
           
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Code2 className="h-3 w-3" />
               <span className="text-xs">{solvedProblems}/{totalProblems} Solved</span>
