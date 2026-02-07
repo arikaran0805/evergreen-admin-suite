@@ -535,9 +535,6 @@ function SortableProblemRow({
         <Code2 className="h-4 w-4 text-primary/70 shrink-0" />
       )}
       <span className="flex-1 text-sm">{problem.title}</span>
-      {isPredictOutput && (
-        <Badge variant="outline" className="text-[10px] capitalize">{problem.language}</Badge>
-      )}
       {getDifficultyBadge(problem.difficulty)}
       <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
         {problem.status}
