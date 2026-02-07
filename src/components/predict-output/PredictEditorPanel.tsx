@@ -312,7 +312,7 @@ export function PredictEditorPanel({
         <div
           className={cn(
             "flex items-center gap-0.5 transition-opacity",
-            isResultHovered || !isResultPanelCollapsed ? "opacity-100" : "opacity-0"
+            isResultHovered ? "opacity-100" : "opacity-0"
           )}
         >
           {!opts.shrinkable && (
