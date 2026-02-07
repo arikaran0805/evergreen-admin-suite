@@ -74,7 +74,11 @@ export function PredictDescriptionPanel({
   // Collapsed state: show all tabs in a header-only bar
   if (isCollapsed && !isExpanded) {
     return (
-      <div className="h-full flex flex-col bg-card">
+      <div
+        className="h-full flex flex-col bg-card"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
           <div className="flex items-center gap-4">
             <button
@@ -124,7 +128,10 @@ export function PredictDescriptionPanel({
               )}
             </button>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className={cn(
+            "flex items-center gap-0.5 transition-opacity",
+            isHovered ? "opacity-100" : "opacity-0"
+          )}>
             {onToggleCollapse && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleCollapse} title="Expand panel">
                 <PanelTopOpen className="h-4 w-4" />
