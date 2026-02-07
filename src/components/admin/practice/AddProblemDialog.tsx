@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Check, Plus, Eye, Code2 } from "lucide-react";
+import { Search, Check, Plus, Eye, Code2, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ export interface AddProblemDialogProblem {
   difficulty: string;
   status: string;
   sub_topic?: string | null;
-  problemType: "problem-solving" | "predict-output";
+  problemType: "problem-solving" | "predict-output" | "fix-error";
   language?: string;
 }
 
@@ -28,7 +28,7 @@ interface AddProblemDialogProps {
   onOpenChange: (open: boolean) => void;
   allProblems: AddProblemDialogProblem[];
   mappedProblemIds: Set<string>;
-  onAddProblems: (selections: { id: string; problemType: "problem-solving" | "predict-output" }[]) => void;
+  onAddProblems: (selections: { id: string; problemType: "problem-solving" | "predict-output" | "fix-error" }[]) => void;
   onCreateNew: () => void;
 }
 
@@ -148,6 +148,8 @@ export function AddProblemDialog({
                     </div>
                     {problem.problemType === "predict-output" ? (
                       <Eye className="h-4 w-4 text-amber-500 shrink-0" />
+                    ) : problem.problemType === "fix-error" ? (
+                      <Bug className="h-4 w-4 text-destructive shrink-0" />
                     ) : (
                       <Code2 className="h-4 w-4 text-primary shrink-0" />
                     )}
@@ -156,6 +158,8 @@ export function AddProblemDialog({
                       <p className="text-xs text-muted-foreground truncate">
                         {problem.problemType === "predict-output" 
                           ? `Predict Output · ${problem.language || "python"}`
+                          : problem.problemType === "fix-error"
+                          ? `Fix the Error · ${problem.language || "python"}`
                           : problem.sub_topic || "Problem Solving"}
                       </p>
                     </div>
