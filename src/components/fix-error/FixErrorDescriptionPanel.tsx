@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Lightbulb, ChevronDown, ChevronUp, Bug, Expand, Shrink } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp, Bug, Expand, Shrink, PanelLeftClose, FileText } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { FixErrorProblem } from "@/hooks/useFixErrorProblems";
@@ -16,15 +16,72 @@ interface FixErrorDescriptionPanelProps {
   problem: FixErrorProblem;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function FixErrorDescriptionPanel({
   problem,
   isExpanded = false,
   onToggleExpand,
+  isCollapsed = false,
+  onToggleCollapse,
 }: FixErrorDescriptionPanelProps) {
   const [showHints, setShowHints] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Collapsed state: vertical icon sidebar like solve layout
+  if (isCollapsed && !isExpanded) {
+    return (
+      <div
+        className="h-full w-7 flex flex-col bg-card group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Vertical label */}
+        <div className="flex-1 flex flex-col py-1">
+          <button
+            onClick={onToggleCollapse}
+            className="flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2 border-primary text-foreground bg-muted/50"
+          >
+            <FileText className="h-4 w-4 shrink-0" />
+            <span
+              className="font-medium text-xs"
+              style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+            >
+              Problem
+            </span>
+          </button>
+        </div>
+
+        {/* Bottom buttons - Show on hover only */}
+        <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {onToggleExpand && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onToggleExpand}
+              title="Fullscreen"
+            >
+              <Expand className="h-3 w-3" />
+            </Button>
+          )}
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onToggleCollapse}
+              title="Expand panel"
+            >
+              <PanelLeftClose className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -53,6 +110,17 @@ export function FixErrorDescriptionPanel({
               title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
             >
               {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+            </Button>
+          )}
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onToggleCollapse}
+              title="Collapse panel"
+            >
+              <PanelLeftClose className="h-4 w-4" />
             </Button>
           )}
         </div>
