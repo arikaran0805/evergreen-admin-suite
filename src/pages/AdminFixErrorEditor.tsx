@@ -85,6 +85,9 @@ export default function AdminFixErrorEditor() {
   const [successMessage, setSuccessMessage] = useState("Great job! You found and fixed the bug!");
   const [hints, setHints] = useState<string[]>([]);
   const [showCorrectCode, setShowCorrectCode] = useState(false);
+  const [sampleOutput, setSampleOutput] = useState("");
+  const [editableStartLine, setEditableStartLine] = useState<number | undefined>(undefined);
+  const [editableEndLine, setEditableEndLine] = useState<number | undefined>(undefined);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -112,6 +115,9 @@ export default function AdminFixErrorEditor() {
       setFailureMessage(problem.failure_message);
       setSuccessMessage(problem.success_message);
       setHints(problem.hints);
+      setSampleOutput((problem as any).sample_output || "");
+      setEditableStartLine((problem as any).editable_start_line ?? undefined);
+      setEditableEndLine((problem as any).editable_end_line ?? undefined);
     }
   }, [problem, form]);
 
@@ -130,7 +136,7 @@ export default function AdminFixErrorEditor() {
   const onSubmit = async (data: FormData) => {
     if (data.status === "published" && !canPublish) return;
 
-    const payload = {
+    const payload: Record<string, any> = {
       ...data,
       skill_id: skillId!,
       tags, description, buggy_code: buggyCode, correct_code: correctCode,
@@ -139,6 +145,9 @@ export default function AdminFixErrorEditor() {
       custom_validator: customValidator,
       failure_message: failureMessage, success_message: successMessage,
       hints,
+      sample_output: sampleOutput || null,
+      editable_start_line: editableStartLine ?? null,
+      editable_end_line: editableEndLine ?? null,
     };
 
     if (isEditing) {
@@ -511,6 +520,57 @@ export default function AdminFixErrorEditor() {
                   <p className="text-xs text-muted-foreground mt-2">
                     Tip: Include realistic bugs — off-by-one errors, wrong operators, missing edge cases.
                   </p>
+                </CardContent>
+              </Card>
+
+              {/* Editable Region & Sample Output */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                    Editable Region & Sample Output
+                  </CardTitle>
+                  <CardDescription>
+                    Lock lines outside the editable range. Learners can only modify lines within the range.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Editable Start Line</Label>
+                      <Input
+                        type="number" min={1}
+                        value={editableStartLine ?? ""}
+                        onChange={e => setEditableStartLine(e.target.value ? Number(e.target.value) : undefined)}
+                        placeholder="e.g. 2 (leave empty for all editable)"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Editable End Line</Label>
+                      <Input
+                        type="number" min={1}
+                        value={editableEndLine ?? ""}
+                        onChange={e => setEditableEndLine(e.target.value ? Number(e.target.value) : undefined)}
+                        placeholder="e.g. 8 (leave empty for all editable)"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Leave both empty to allow editing the entire code. When set, lines outside this range are locked with a visual indicator.
+                  </p>
+
+                  <div className="space-y-1.5 pt-2">
+                    <Label>Sample Output</Label>
+                    <Textarea
+                      value={sampleOutput}
+                      onChange={e => setSampleOutput(e.target.value)}
+                      placeholder="The expected output shown to learners as a reference..."
+                      className="min-h-[80px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Shown in the Problem panel. If empty, derived from expected output or first visible test case.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 

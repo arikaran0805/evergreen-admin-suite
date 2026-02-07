@@ -2,8 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Lightbulb, ChevronDown, ChevronUp, Bug, Expand, Shrink, PanelLeftClose, FileText, ThumbsUp, ThumbsDown, Share2, Flag, Bookmark } from "lucide-react";
-import { useState, useCallback } from "react";
+import {
+  Lightbulb, ChevronDown, ChevronUp, Bug, Expand, Shrink,
+  PanelLeftClose, FileText, ThumbsUp, ThumbsDown, Share2,
+  Flag, Bookmark, Monitor,
+} from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ShareTooltip from "@/components/ShareTooltip";
@@ -39,6 +43,18 @@ export function FixErrorDescriptionPanel({
   const [dislikes, setDislikes] = useState(0);
   const [saved, setSaved] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+
+  // Derive sample output from available data
+  const sampleOutput = useMemo(() => {
+    // Priority: explicit sample_output > expected_output > first visible test case
+    if ((problem as any).sample_output) return (problem as any).sample_output as string;
+    if (problem.expected_output) return problem.expected_output;
+    if (problem.test_cases?.length > 0) {
+      const visibleCase = problem.test_cases.find((tc) => !tc.is_hidden);
+      return visibleCase?.expected_output || null;
+    }
+    return null;
+  }, [problem]);
 
   const handleLike = useCallback(() => {
     if (liked) {
@@ -77,7 +93,7 @@ export function FixErrorDescriptionPanel({
     setReportDialogOpen(true);
   }, []);
 
-  // Collapsed state: vertical icon sidebar like solve layout
+  // Collapsed state: vertical icon sidebar
   if (isCollapsed && !isExpanded) {
     return (
       <div
@@ -85,7 +101,6 @@ export function FixErrorDescriptionPanel({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Vertical label */}
         <div className="flex-1 flex flex-col py-1">
           <button
             onClick={onToggleCollapse}
@@ -100,28 +115,14 @@ export function FixErrorDescriptionPanel({
             </span>
           </button>
         </div>
-
-        {/* Bottom buttons - Show on hover only */}
         <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           {onToggleCollapse && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={onToggleCollapse}
-              title="Expand panel"
-            >
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggleCollapse} title="Expand panel">
               <PanelLeftClose className="h-3 w-3" />
             </Button>
           )}
           {onToggleExpand && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={onToggleExpand}
-              title="Fullscreen"
-            >
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggleExpand} title="Fullscreen">
               <Expand className="h-3 w-3" />
             </Button>
           )}
@@ -148,27 +149,14 @@ export function FixErrorDescriptionPanel({
             isHovered || isExpanded ? "opacity-100" : "opacity-0"
           )}
         >
-          {/* Collapse first */}
           {onToggleCollapse && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onToggleCollapse}
-              title="Collapse panel"
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleCollapse} title="Collapse panel">
               <PanelLeftClose className="h-4 w-4" />
             </Button>
           )}
-          {/* Expand second */}
           {onToggleExpand && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onToggleExpand}
-              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleExpand}
+              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}>
               {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
             </Button>
           )}
@@ -211,17 +199,13 @@ export function FixErrorDescriptionPanel({
                     </li>
                   );
                 }
-                // Handle inline code
                 if (line.includes("`")) {
                   const parts = line.split(/(`[^`]+`)/g);
                   return (
                     <p key={i} className="text-sm text-foreground/90 mb-2">
                       {parts.map((part, j) =>
                         part.startsWith("`") ? (
-                          <code
-                            key={j}
-                            className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono"
-                          >
+                          <code key={j} className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">
                             {part.slice(1, -1)}
                           </code>
                         ) : (
@@ -240,35 +224,19 @@ export function FixErrorDescriptionPanel({
             </div>
           )}
 
-          {/* Validation Info */}
-          {problem.validation_type === "output_comparison" && problem.expected_output && (
+          {/* Sample Output */}
+          {sampleOutput && (
             <div>
-              <h3 className="text-sm font-medium text-foreground mb-2">Expected Output:</h3>
-              <div className="bg-muted/50 rounded-lg p-3 font-mono text-sm">
-                <pre className="whitespace-pre-wrap">{problem.expected_output}</pre>
+              <div className="flex items-center gap-2 mb-2">
+                <Monitor className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium text-foreground">Sample Output</h3>
               </div>
-            </div>
-          )}
-
-          {problem.validation_type === "test_cases" && problem.test_cases.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-foreground mb-2">Test Cases:</h3>
-              <div className="space-y-2">
-                {problem.test_cases
-                  .filter((tc) => !tc.is_hidden)
-                  .map((tc, i) => (
-                    <div key={i} className="bg-muted/50 rounded-lg p-3 font-mono text-sm space-y-1">
-                      <div>
-                        <span className="text-muted-foreground">Input: </span>
-                        <span>{tc.input}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Expected: </span>
-                        <span>{tc.expected_output}</span>
-                      </div>
-                    </div>
-                  ))}
+              <div className="bg-muted/50 rounded-lg p-3 font-mono text-sm border border-border/30">
+                <pre className="whitespace-pre-wrap">{sampleOutput}</pre>
               </div>
+              <p className="text-xs text-muted-foreground mt-1.5 italic">
+                This is the expected output for the sample input. Hidden tests may use different inputs.
+              </p>
             </div>
           )}
 
@@ -286,19 +254,12 @@ export function FixErrorDescriptionPanel({
               >
                 <Lightbulb className={cn("h-4 w-4", showHints && "text-amber-500")} />
                 {showHints ? "Hide" : "Show"} Hints ({problem.hints.length})
-                {showHints ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
+                {showHints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
               {showHints && (
                 <div className="space-y-2">
                   {problem.hints.map((hint, i) => (
-                    <div
-                      key={i}
-                      className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3"
-                    >
+                    <div key={i} className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
                       <p className="text-sm text-foreground/80">
                         <span className="font-medium text-amber-600 dark:text-amber-500">
                           Hint {i + 1}:{" "}
@@ -319,12 +280,10 @@ export function FixErrorDescriptionPanel({
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
-              {/* Like */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="ghost" size="sm"
                     className={cn("h-8 px-2 gap-1.5", liked && "text-primary")}
                     onClick={handleLike}
                   >
@@ -334,13 +293,10 @@ export function FixErrorDescriptionPanel({
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Like</p></TooltipContent>
               </Tooltip>
-
-              {/* Dislike */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="ghost" size="sm"
                     className={cn("h-8 px-2 gap-1.5", disliked && "text-destructive")}
                     onClick={handleDislike}
                   >
@@ -350,39 +306,26 @@ export function FixErrorDescriptionPanel({
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Dislike</p></TooltipContent>
               </Tooltip>
-
               <div className="w-px h-5 bg-border mx-1" />
-
-              {/* Share */}
               <ShareTooltip title={problem.title} url={window.location.href}>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Share2 className="h-4 w-4" />
                 </Button>
               </ShareTooltip>
             </div>
-
             <div className="flex items-center gap-1">
-              {/* Feedback */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={handleFeedback}
-                  >
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleFeedback}>
                     <Flag className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Report / Feedback</p></TooltipContent>
               </Tooltip>
-
-              {/* Save */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    variant="ghost" size="icon"
                     className={cn("h-8 w-8", saved && "text-primary")}
                     onClick={handleSave}
                   >
@@ -396,7 +339,6 @@ export function FixErrorDescriptionPanel({
         </TooltipProvider>
       </div>
 
-      {/* Report Dialog */}
       <ReportSuggestDialog
         open={reportDialogOpen}
         onOpenChange={setReportDialogOpen}
