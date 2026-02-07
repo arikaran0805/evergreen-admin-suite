@@ -41,6 +41,8 @@ interface PredictEditorPanelProps {
   onExpandResult?: () => void;
   expandedPanel?: "editor" | "result" | null;
   onTabSwitchToAttempts?: () => void;
+  onSubmitExpandDescription?: () => void;
+  onRetryCollapseDescription?: () => void;
 }
 
 type ViewState = "answering" | "checking" | "correct" | "incorrect";
@@ -53,6 +55,8 @@ export function PredictEditorPanel({
   onExpandResult,
   expandedPanel,
   onTabSwitchToAttempts,
+  onSubmitExpandDescription,
+  onRetryCollapseDescription,
 }: PredictEditorPanelProps) {
   const [userOutput, setUserOutput] = useState("");
   const [viewState, setViewState] = useState<ViewState>("answering");
@@ -121,11 +125,8 @@ export function PredictEditorPanel({
     }
 
     setViewState(result.isCorrect ? "correct" : "incorrect");
-
-    if (result.isCorrect) {
-      onTabSwitchToAttempts?.();
-    }
-  }, [userOutput, problem, revealed, attemptCount, startTime, submitMutation, onTabSwitchToAttempts]);
+    onSubmitExpandDescription?.();
+  }, [userOutput, problem, revealed, attemptCount, startTime, submitMutation, onSubmitExpandDescription]);
 
   const handleReveal = useCallback(() => {
     setRevealed(true);
@@ -144,8 +145,9 @@ export function PredictEditorPanel({
   const handleTryAgain = useCallback(() => {
     setUserOutput("");
     setViewState("answering");
+    onRetryCollapseDescription?.();
     textareaRef.current?.focus();
-  }, []);
+  }, [onRetryCollapseDescription]);
 
   const lineDiff = useMemo(() => {
     if (viewState !== "incorrect") return null;
