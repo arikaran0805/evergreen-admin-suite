@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal, Unlink, Eye, Code2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, GripVertical, MoreHorizontal, Unlink, Eye, Code2, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -369,7 +369,11 @@ function SortableSubTopic({
       return {
         id: mapping.id,
         display_order: i,
-        table: (problem.problemType === "predict-output" ? "predict_output_mappings" : "problem_mappings") as "problem_mappings" | "predict_output_mappings",
+        table: (problem.problemType === "predict-output" 
+          ? "predict_output_mappings" 
+          : problem.problemType === "fix-error" 
+          ? "fix_error_mappings" 
+          : "problem_mappings") as "problem_mappings" | "predict_output_mappings" | "fix_error_mappings",
       };
     }).filter(Boolean) as { id: string; display_order: number; table: "problem_mappings" | "predict_output_mappings" }[];
 
@@ -508,6 +512,7 @@ function SortableProblemRow({
   };
 
   const isPredictOutput = problem.problemType === "predict-output";
+  const isFixError = problem.problemType === "fix-error";
 
   return (
     <div
@@ -531,6 +536,8 @@ function SortableProblemRow({
       {/* Type icon */}
       {isPredictOutput ? (
         <Eye className="h-4 w-4 text-amber-500 shrink-0" />
+      ) : isFixError ? (
+        <Bug className="h-4 w-4 text-destructive shrink-0" />
       ) : (
         <Code2 className="h-4 w-4 text-primary/70 shrink-0" />
       )}

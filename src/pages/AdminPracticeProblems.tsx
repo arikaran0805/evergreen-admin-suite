@@ -17,6 +17,8 @@ import { useSubTopicsBySkill, SubTopic } from "@/hooks/useSubTopics";
 import { useCreateProblemMapping, useAllGlobalProblems, useDeleteProblemMapping } from "@/hooks/useProblemMappings";
 import { usePredictOutputProblems } from "@/hooks/usePredictOutputProblems";
 import { usePredictOutputMappingsBySkill, useCreatePredictOutputMapping, useDeletePredictOutputMapping } from "@/hooks/usePredictOutputMappings";
+import { useFixErrorProblems } from "@/hooks/useFixErrorProblems";
+import { useFixErrorMappingsBySkill, useCreateFixErrorMapping, useDeleteFixErrorMapping } from "@/hooks/useFixErrorMappings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LessonProblemsSection } from "@/components/admin/practice/LessonProblemsSection";
@@ -47,9 +49,12 @@ export default function AdminPracticeProblems() {
   const deleteMapping = useDeleteProblemMapping();
   const createPredictMapping = useCreatePredictOutputMapping();
   const deletePredictMapping = useDeletePredictOutputMapping();
+  const createFixErrorMapping = useCreateFixErrorMapping();
+  const deleteFixErrorMapping = useDeleteFixErrorMapping();
 
   // Fetch predict output problems for this skill
   const { data: predictProblems, isLoading: predictLoading } = usePredictOutputProblems(skillId);
+  const { data: fixErrorProblems, isLoading: fixErrorLoading } = useFixErrorProblems(skillId);
 
   // Fetch lessons for the linked course
   const { data: lessons, isLoading: lessonsLoading } = useQuery({
@@ -90,6 +95,7 @@ export default function AdminPracticeProblems() {
 
   // Fetch predict output mappings
   const { data: predictMappings } = usePredictOutputMappingsBySkill(skillId, subTopicIds);
+  const { data: fixErrorMappings } = useFixErrorMappingsBySkill(skillId, subTopicIds);
 
   // Group sub-topics by lesson
   const subTopicsByLesson = useMemo(() => {
@@ -128,8 +134,20 @@ export default function AdminPracticeProblems() {
         }
       }
     }
+    // Fix error mappings
+    if (fixErrorMappings) {
+      for (const m of fixErrorMappings) {
+        if (!result[m.sub_topic_id]) result[m.sub_topic_id] = [];
+        if ((m as any).fix_error_problems) {
+          result[m.sub_topic_id].push({
+            ...(m as any).fix_error_problems,
+            problemType: "fix-error",
+          });
+        }
+      }
+    }
     return result;
-  }, [mappings, predictMappings]);
+  }, [mappings, predictMappings, fixErrorMappings]);
 
   // Group mappings by sub-topic for unlink functionality
   const mappingsBySubTopic = useMemo(() => {
@@ -150,8 +168,18 @@ export default function AdminPracticeProblems() {
         });
       }
     }
+    if (fixErrorMappings) {
+      for (const m of fixErrorMappings) {
+        if (!result[m.sub_topic_id]) result[m.sub_topic_id] = [];
+        result[m.sub_topic_id].push({
+          id: m.id,
+          problem_id: m.fix_error_problem_id,
+          problemType: "fix-error",
+        });
+      }
+    }
     return result;
-  }, [mappings, predictMappings]);
+  }, [mappings, predictMappings, fixErrorMappings]);
 
   // Build combined problem list for AddProblemDialog
   const allDialogProblems = useMemo<AddProblemDialogProblem[]>(() => {
@@ -180,10 +208,22 @@ export default function AdminPracticeProblems() {
         });
       }
     }
+    if (fixErrorProblems) {
+      for (const p of fixErrorProblems) {
+        items.push({
+          id: p.id,
+          title: p.title,
+          difficulty: p.difficulty,
+          status: p.status,
+          language: p.language,
+          problemType: "fix-error",
+        });
+      }
+    }
     return items;
-  }, [allGlobalProblems, predictProblems]);
+  }, [allGlobalProblems, predictProblems, fixErrorProblems]);
 
-  // Get mapped problem IDs for the add dialog (combining both types)
+  // Get mapped problem IDs for the add dialog (combining all types)
   const mappedProblemIds = useMemo(() => {
     if (!addProblemSubTopicId) return new Set<string>();
     const ids = new Set<string>();
@@ -197,23 +237,35 @@ export default function AdminPracticeProblems() {
         .filter(m => m.sub_topic_id === addProblemSubTopicId)
         .forEach(m => ids.add(m.predict_output_problem_id));
     }
+    if (fixErrorMappings) {
+      fixErrorMappings
+        .filter(m => m.sub_topic_id === addProblemSubTopicId)
+        .forEach(m => ids.add(m.fix_error_problem_id));
+    }
     return ids;
-  }, [mappings, predictMappings, addProblemSubTopicId]);
+  }, [mappings, predictMappings, fixErrorMappings, addProblemSubTopicId]);
 
   const handleProblemClick = (problemId: string, problemType?: string) => {
     if (problemType === "predict-output") {
       navigate(`/admin/practice/skills/${skillId}/predict-output/${problemId}`);
+    } else if (problemType === "fix-error") {
+      navigate(`/admin/practice/skills/${skillId}/fix-error/${problemId}`);
     } else {
       navigate(`/admin/practice/skills/${skillId}/problems/${problemId}`);
     }
   };
 
-  const handleAddProblems = async (selections: { id: string; problemType: "problem-solving" | "predict-output" }[]) => {
+  const handleAddProblems = async (selections: { id: string; problemType: "problem-solving" | "predict-output" | "fix-error" }[]) => {
     if (!addProblemSubTopicId) return;
     for (const sel of selections) {
       if (sel.problemType === "predict-output") {
         await createPredictMapping.mutateAsync({
           predict_output_problem_id: sel.id,
+          sub_topic_id: addProblemSubTopicId,
+        });
+      } else if (sel.problemType === "fix-error") {
+        await createFixErrorMapping.mutateAsync({
+          fix_error_problem_id: sel.id,
           sub_topic_id: addProblemSubTopicId,
         });
       } else {
@@ -229,12 +281,14 @@ export default function AdminPracticeProblems() {
   const handleUnlinkProblem = async (mappingId: string, subTopicId: string, problemId: string, problemType?: string) => {
     if (problemType === "predict-output") {
       await deletePredictMapping.mutateAsync({ id: mappingId, subTopicId, problemId });
+    } else if (problemType === "fix-error") {
+      await deleteFixErrorMapping.mutateAsync({ id: mappingId, subTopicId, problemId });
     } else {
       await deleteMapping.mutateAsync({ id: mappingId, subTopicId, problemId });
     }
   };
 
-  const isLoading = skillLoading || problemsLoading || lessonsLoading || subTopicsLoading || predictLoading;
+  const isLoading = skillLoading || problemsLoading || lessonsLoading || subTopicsLoading || predictLoading || fixErrorLoading;
   const hasLinkedCourse = !!skill?.course_id;
 
   return (
