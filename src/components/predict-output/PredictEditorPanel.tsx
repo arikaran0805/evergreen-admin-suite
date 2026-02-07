@@ -143,7 +143,6 @@ export function PredictEditorPanel({
   }, [problem, attemptCount, submitMutation]);
 
   const handleTryAgain = useCallback(() => {
-    setUserOutput("");
     setViewState("answering");
     onRetryCollapseDescription?.();
     textareaRef.current?.focus();
