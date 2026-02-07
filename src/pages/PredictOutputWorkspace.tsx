@@ -102,12 +102,11 @@ export default function PredictOutputWorkspace() {
   // On submit: expand desc panel and show attempts tab
   const handleSubmitExpandDescription = () => {
     setDescriptionActiveTab("attempts");
-    if (isDescriptionCollapsed) {
-      if (isMobile) {
-        setIsDescriptionCollapsed(false);
-      } else {
-        descriptionPanelRef.current?.expand();
-      }
+    if (isMobile) {
+      setIsDescriptionCollapsed(false);
+    } else {
+      descriptionPanelRef.current?.expand();
+      descriptionPanelRef.current?.resize(50);
     }
   };
 
