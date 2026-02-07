@@ -3,11 +3,12 @@
  *
  * Learner-facing workspace for "Fix the Error" problems.
  *
- * Layout:
- *   TOP ROW — split horizontal: Problem (left) | Code Editor (right)
- *   BOTTOM ROW — full width: Result / Feedback
+ * Layout (like Solve):
+ *   LEFT — Problem Description (collapsible)
+ *   RIGHT-TOP — Code Editor
+ *   RIGHT-BOTTOM — Result / Feedback
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 import { usePublishedFixErrorProblem } from "@/hooks/useFixErrorProblemBySlug";
 import { usePublishedPracticeProblems, type ProblemWithMapping } from "@/hooks/usePracticeProblems";
 import { ProblemListDrawer } from "@/components/practice/ProblemListDrawer";
@@ -38,9 +40,11 @@ export default function FixErrorWorkspace() {
   const { skillId, slug } = useParams<{ skillId: string; slug: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const descriptionPanelRef = useRef<ImperativePanelHandle>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
+  const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
 
   // Result state
   const [verdict, setVerdict] = useState<FixErrorVerdict>("idle");
@@ -74,6 +78,19 @@ export default function FixErrorWorkspace() {
     setExpandedPanel(expandedPanel === "editor" ? null : "editor");
   const handleExpandResult = () =>
     setExpandedPanel(expandedPanel === "result" ? null : "result");
+
+  // Collapse toggle for description panel
+  const handleToggleCollapseDescription = () => {
+    if (isMobile) {
+      setIsDescriptionCollapsed((v) => !v);
+      return;
+    }
+    if (isDescriptionCollapsed) {
+      descriptionPanelRef.current?.expand();
+    } else {
+      descriptionPanelRef.current?.collapse();
+    }
+  };
 
   // Navigation
   const currentIndex = allProblemsInSkill.findIndex((p) => p.slug === slug);
@@ -124,12 +141,9 @@ export default function FixErrorWorkspace() {
 
     try {
       if (problem.validation_type === "output_comparison") {
-        // Use execute-code edge function, compare output
         const { data, error: fnError } = await supabase.functions.invoke(
           "execute-code",
-          {
-            body: { code, language: problem.language },
-          }
+          { body: { code, language: problem.language } }
         );
 
         if (fnError) {
@@ -152,59 +166,32 @@ export default function FixErrorWorkspace() {
         } else {
           setVerdict("wrong_answer");
           setTestResults([
-            {
-              id: 0,
-              input: "(full program)",
-              expected,
-              actual: output,
-              passed: false,
-            },
+            { id: 0, input: "(full program)", expected, actual: output, passed: false },
           ]);
         }
       } else if (problem.validation_type === "test_cases") {
-        // Run each test case
         const results: FixErrorTestResult[] = [];
         let allPassed = true;
         let executionError: string | undefined;
 
         for (let i = 0; i < problem.test_cases.length; i++) {
           const tc = problem.test_cases[i];
-          // Build the code with test input
           const fullCode = `${code}\n\n# Test\n${tc.input}`;
 
           const { data, error: fnError } = await supabase.functions.invoke(
             "execute-code",
-            {
-              body: { code: fullCode, language: problem.language },
-            }
+            { body: { code: fullCode, language: problem.language } }
           );
 
-          if (fnError) {
-            executionError = fnError.message;
-            allPassed = false;
-            break;
-          }
-
-          if (data?.error) {
-            executionError = data.error;
-            allPassed = false;
-            break;
-          }
+          if (fnError) { executionError = fnError.message; allPassed = false; break; }
+          if (data?.error) { executionError = data.error; allPassed = false; break; }
 
           const output = (data?.output || "").trim();
           const expected = (tc.expected_output || "").trim();
           const passed = output === expected;
           if (!passed) allPassed = false;
 
-          results.push({
-            id: i,
-            input: tc.input,
-            expected,
-            actual: output,
-            passed,
-          });
-
-          // In run mode stop at first failure for faster feedback
+          results.push({ id: i, input: tc.input, expected, actual: output, passed });
           if (mode === "run" && !passed) break;
         }
 
@@ -218,12 +205,9 @@ export default function FixErrorWorkspace() {
         }
         setTestResults(results);
       } else {
-        // Custom validator - just execute and check no errors
         const { data, error: fnError } = await supabase.functions.invoke(
           "execute-code",
-          {
-            body: { code, language: problem.language },
-          }
+          { body: { code, language: problem.language } }
         );
 
         if (fnError || data?.error) {
@@ -231,7 +215,6 @@ export default function FixErrorWorkspace() {
           setError(fnError?.message || data?.error);
           return;
         }
-
         setVerdict("accepted");
       }
     } catch (err) {
@@ -263,11 +246,7 @@ export default function FixErrorWorkspace() {
     return (
       <div className="h-screen flex flex-col bg-background">
         <div className="h-12 flex items-center px-4 border-b border-border/50 bg-card">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`/practice/${skillId}`)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/practice/${skillId}`)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
@@ -345,6 +324,8 @@ export default function FixErrorWorkspace() {
                 problem={problem}
                 isExpanded
                 onToggleExpand={handleExpandDescription}
+                isCollapsed={isDescriptionCollapsed}
+                onToggleCollapse={handleToggleCollapseDescription}
               />
             </div>
           )}
@@ -391,14 +372,19 @@ export default function FixErrorWorkspace() {
       />
       {topNav}
 
-      {/* Main Content - 3-panel layout: Left (Description) | Right-Top (Editor) / Right-Bottom (Result) */}
+      {/* Main Content - 3-panel layout like Solve */}
       <div className="flex-1 min-h-0 overflow-hidden bg-muted/30">
         {isMobile ? (
           <div className="h-full flex flex-col overflow-auto p-1.5 gap-1.5">
-            <div className="min-h-[25vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+            <div className={cn(
+              "bg-card rounded-lg border border-border shadow-sm overflow-hidden",
+              isDescriptionCollapsed ? "min-h-[56px]" : "min-h-[25vh]"
+            )}>
               <FixErrorDescriptionPanel
                 problem={problem}
                 onToggleExpand={handleExpandDescription}
+                isCollapsed={isDescriptionCollapsed}
+                onToggleCollapse={handleToggleCollapseDescription}
               />
             </div>
             <div className="min-h-[40vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
@@ -425,12 +411,23 @@ export default function FixErrorWorkspace() {
         ) : (
           <div className="h-full p-1.5">
             <ResizablePanelGroup direction="horizontal" className="h-full">
-              {/* LEFT: Problem Description */}
-              <ResizablePanel defaultSize={35} minSize={20} className="min-h-0">
+              {/* LEFT: Problem Description (collapsible) */}
+              <ResizablePanel
+                ref={descriptionPanelRef}
+                defaultSize={35}
+                minSize={20}
+                collapsible
+                collapsedSize={3}
+                className="min-h-0"
+                onCollapse={() => setIsDescriptionCollapsed(true)}
+                onExpand={() => setIsDescriptionCollapsed(false)}
+              >
                 <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                   <FixErrorDescriptionPanel
                     problem={problem}
                     onToggleExpand={handleExpandDescription}
+                    isCollapsed={isDescriptionCollapsed}
+                    onToggleCollapse={handleToggleCollapseDescription}
                   />
                 </div>
               </ResizablePanel>
