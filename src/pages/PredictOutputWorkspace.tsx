@@ -37,7 +37,7 @@ export default function PredictOutputWorkspace() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
-  const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
+  const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(true);
   const [isCodeCollapsed, setIsCodeCollapsed] = useState(false);
   const [descriptionActiveTab, setDescriptionActiveTab] = useState("description");
 
@@ -305,7 +305,7 @@ export default function PredictOutputWorkspace() {
                   {/* Description */}
                   <ResizablePanel
                     ref={descriptionPanelRef}
-                    defaultSize={50}
+                    defaultSize={8}
                     minSize={15}
                     collapsible
                     collapsedSize={8}
@@ -332,7 +332,7 @@ export default function PredictOutputWorkspace() {
                   {/* Code */}
                   <ResizablePanel
                     ref={codePanelRef}
-                    defaultSize={50}
+                    defaultSize={92}
                     minSize={15}
                     collapsible
                     collapsedSize={8}
