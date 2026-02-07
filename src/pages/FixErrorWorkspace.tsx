@@ -45,6 +45,11 @@ export default function FixErrorWorkspace() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
+  const [isResultCollapsed, setIsResultCollapsed] = useState(false);
+
+  const editorPanelRef = useRef<ImperativePanelHandle>(null);
+  const resultPanelRef = useRef<ImperativePanelHandle>(null);
 
   // Result state
   const [verdict, setVerdict] = useState<FixErrorVerdict>("idle");
@@ -91,6 +96,25 @@ export default function FixErrorWorkspace() {
       descriptionPanelRef.current?.collapse();
     }
   };
+
+  // Collapse toggle for editor panel
+  const handleToggleEditorCollapse = () => {
+    if (isEditorCollapsed) {
+      editorPanelRef.current?.expand();
+    } else {
+      editorPanelRef.current?.collapse();
+    }
+  };
+
+  // Collapse toggle for result panel
+  const handleToggleResultCollapse = () => {
+    if (isResultCollapsed) {
+      resultPanelRef.current?.expand();
+    } else {
+      resultPanelRef.current?.collapse();
+    }
+  };
+
 
   // Navigation
   const currentIndex = allProblemsInSkill.findIndex((p) => p.slug === slug);
@@ -438,7 +462,16 @@ export default function FixErrorWorkspace() {
               <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
                 <ResizablePanelGroup direction="vertical" className="h-full">
                   {/* Code Editor */}
-                  <ResizablePanel defaultSize={60} minSize={25} className="min-h-0">
+                  <ResizablePanel
+                    ref={editorPanelRef}
+                    defaultSize={60}
+                    minSize={25}
+                    collapsible
+                    collapsedSize={8}
+                    className="min-h-0"
+                    onCollapse={() => setIsEditorCollapsed(true)}
+                    onExpand={() => setIsEditorCollapsed(false)}
+                  >
                     <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <FixErrorCodeEditor
                         initialCode={problem.buggy_code}
@@ -447,6 +480,8 @@ export default function FixErrorWorkspace() {
                         onSubmit={handleSubmit}
                         isRunning={verdict === "running"}
                         onToggleExpand={handleExpandEditor}
+                        isCollapsed={isEditorCollapsed}
+                        onToggleCollapse={handleToggleEditorCollapse}
                       />
                     </div>
                   </ResizablePanel>
@@ -454,7 +489,16 @@ export default function FixErrorWorkspace() {
                   <ResizableHandle />
 
                   {/* Result / Feedback */}
-                  <ResizablePanel defaultSize={40} minSize={15} className="min-h-0">
+                  <ResizablePanel
+                    ref={resultPanelRef}
+                    defaultSize={40}
+                    minSize={15}
+                    collapsible
+                    collapsedSize={8}
+                    className="min-h-0"
+                    onCollapse={() => setIsResultCollapsed(true)}
+                    onExpand={() => setIsResultCollapsed(false)}
+                  >
                     <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <FixErrorResultPanel
                         verdict={verdict}
@@ -463,6 +507,8 @@ export default function FixErrorWorkspace() {
                         successMessage={problem.success_message}
                         failureMessage={problem.failure_message}
                         onToggleExpand={handleExpandResult}
+                        isCollapsed={isResultCollapsed}
+                        onToggleCollapse={handleToggleResultCollapse}
                       />
                     </div>
                   </ResizablePanel>

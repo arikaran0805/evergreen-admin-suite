@@ -56,17 +56,6 @@ export function FixErrorDescriptionPanel({
 
         {/* Bottom buttons - Show on hover only */}
         <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          {onToggleExpand && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={onToggleExpand}
-              title="Fullscreen"
-            >
-              <Expand className="h-3 w-3" />
-            </Button>
-          )}
           {onToggleCollapse && (
             <Button
               variant="ghost"
@@ -76,6 +65,17 @@ export function FixErrorDescriptionPanel({
               title="Expand panel"
             >
               <PanelLeftClose className="h-3 w-3" />
+            </Button>
+          )}
+          {onToggleExpand && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onToggleExpand}
+              title="Fullscreen"
+            >
+              <Expand className="h-3 w-3" />
             </Button>
           )}
         </div>
@@ -101,17 +101,7 @@ export function FixErrorDescriptionPanel({
             isHovered || isExpanded ? "opacity-100" : "opacity-0"
           )}
         >
-          {onToggleExpand && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onToggleExpand}
-              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
-            >
-              {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-            </Button>
-          )}
+          {/* Collapse first */}
           {onToggleCollapse && (
             <Button
               variant="ghost"
@@ -121,6 +111,18 @@ export function FixErrorDescriptionPanel({
               title="Collapse panel"
             >
               <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          )}
+          {/* Expand second */}
+          {onToggleExpand && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onToggleExpand}
+              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
             </Button>
           )}
         </div>

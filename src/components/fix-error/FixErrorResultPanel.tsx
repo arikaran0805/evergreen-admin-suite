@@ -12,6 +12,8 @@ import {
   ChevronUp,
   ChevronDown,
   CheckCircle2,
+  PanelTopClose,
+  PanelTopOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +41,8 @@ interface FixErrorResultPanelProps {
   failureMessage?: string;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 function ErrorBlock({ content }: { content: string }) {
@@ -101,6 +105,8 @@ export function FixErrorResultPanel({
   failureMessage,
   isExpanded = false,
   onToggleExpand,
+  isCollapsed = false,
+  onToggleCollapse,
 }: FixErrorResultPanelProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -162,6 +168,23 @@ export function FixErrorResultPanel({
             isHovered || isExpanded ? "opacity-100" : "opacity-0"
           )}
         >
+          {/* Collapse first */}
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onToggleCollapse}
+              title={isCollapsed ? "Show result" : "Hide result"}
+            >
+              {isCollapsed ? (
+                <PanelTopOpen className="h-4 w-4" />
+              ) : (
+                <PanelTopClose className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          {/* Expand second */}
           {onToggleExpand && (
             <Button
               variant="ghost"
@@ -176,106 +199,108 @@ export function FixErrorResultPanel({
         </div>
       </div>
 
-      {/* Content */}
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-4 space-y-4">
-          {/* Idle state */}
-          {verdict === "idle" && (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Terminal className="h-8 w-8 mb-3 opacity-40" />
-              <p className="text-sm">Fix the code and click Run to see results.</p>
-            </div>
-          )}
-
-          {/* Running state */}
-          {verdict === "running" && (
-            <div className="flex items-center justify-center py-12">
-              <Clock className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
-              <span className="text-muted-foreground text-sm">Running...</span>
-            </div>
-          )}
-
-          {/* Verdict banner */}
-          {verdict !== "idle" && verdict !== "running" && (
-            <>
-              <div className={cn("p-4 rounded-lg", verdictBg)}>
-                <div className="flex flex-col items-center gap-1 text-center">
-                  <span className={cn("text-xl font-semibold", verdictColor)}>
-                    {verdictLabel}
-                  </span>
-                  {totalCount > 0 && (
-                    <span
-                      className={cn(
-                        "text-sm",
-                        allPassed
-                          ? "text-green-600/80 dark:text-green-500/80"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {passedCount} / {totalCount} test cases passed
-                    </span>
-                  )}
-                </div>
+      {/* Content - hidden when collapsed */}
+      {!isCollapsed && (
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-4 space-y-4">
+            {/* Idle state */}
+            {verdict === "idle" && (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Terminal className="h-8 w-8 mb-3 opacity-40" />
+                <p className="text-sm">Fix the code and click Run to see results.</p>
               </div>
+            )}
 
-              {/* Success message */}
-              {allPassed && successMessage && (
-                <div className="flex items-start gap-2.5 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-foreground/90">{successMessage}</p>
-                </div>
-              )}
+            {/* Running state */}
+            {verdict === "running" && (
+              <div className="flex items-center justify-center py-12">
+                <Clock className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+                <span className="text-muted-foreground text-sm">Running...</span>
+              </div>
+            )}
 
-              {/* Failure message */}
-              {!allPassed && failureMessage && !error && (
-                <p className="text-sm text-muted-foreground">{failureMessage}</p>
-              )}
-
-              {/* Error output */}
-              {error && <ErrorBlock content={error} />}
-
-              {/* Test case results */}
-              {testResults.length > 0 && !error && (
-                <div className="space-y-2">
-                  {testResults.map((tr) => (
-                    <div
-                      key={tr.id}
-                      className="border border-border/50 rounded-lg p-3 bg-muted/20"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        {tr.passed ? (
-                          <Check className="h-4 w-4 text-green-600 dark:text-green-500 shrink-0" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-600 dark:text-red-500 shrink-0" />
+            {/* Verdict banner */}
+            {verdict !== "idle" && verdict !== "running" && (
+              <>
+                <div className={cn("p-4 rounded-lg", verdictBg)}>
+                  <div className="flex flex-col items-center gap-1 text-center">
+                    <span className={cn("text-xl font-semibold", verdictColor)}>
+                      {verdictLabel}
+                    </span>
+                    {totalCount > 0 && (
+                      <span
+                        className={cn(
+                          "text-sm",
+                          allPassed
+                            ? "text-green-600/80 dark:text-green-500/80"
+                            : "text-muted-foreground"
                         )}
-                        <span className="font-medium text-sm">Test Case {tr.id + 1}</span>
-                      </div>
-                      {!tr.passed && (
-                        <div className="space-y-1.5 text-sm font-mono ml-6">
-                          <div>
-                            <span className="text-muted-foreground">Input: </span>
-                            <span>{tr.input}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Expected: </span>
-                            <span className="text-green-600 dark:text-green-500">
-                              {tr.expected}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Output: </span>
-                            <span className="text-red-600 dark:text-red-500">{tr.actual}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                      >
+                        {passedCount} / {totalCount} test cases passed
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </ScrollArea>
+
+                {/* Success message */}
+                {allPassed && successMessage && (
+                  <div className="flex items-start gap-2.5 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-foreground/90">{successMessage}</p>
+                  </div>
+                )}
+
+                {/* Failure message */}
+                {!allPassed && failureMessage && !error && (
+                  <p className="text-sm text-muted-foreground">{failureMessage}</p>
+                )}
+
+                {/* Error output */}
+                {error && <ErrorBlock content={error} />}
+
+                {/* Test case results */}
+                {testResults.length > 0 && !error && (
+                  <div className="space-y-2">
+                    {testResults.map((tr) => (
+                      <div
+                        key={tr.id}
+                        className="border border-border/50 rounded-lg p-3 bg-muted/20"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          {tr.passed ? (
+                            <Check className="h-4 w-4 text-green-600 dark:text-green-500 shrink-0" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-600 dark:text-red-500 shrink-0" />
+                          )}
+                          <span className="font-medium text-sm">Test Case {tr.id + 1}</span>
+                        </div>
+                        {!tr.passed && (
+                          <div className="space-y-1.5 text-sm font-mono ml-6">
+                            <div>
+                              <span className="text-muted-foreground">Input: </span>
+                              <span>{tr.input}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Expected: </span>
+                              <span className="text-green-600 dark:text-green-500">
+                                {tr.expected}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Output: </span>
+                              <span className="text-red-600 dark:text-red-500">{tr.actual}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }
