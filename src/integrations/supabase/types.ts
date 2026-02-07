@@ -1292,6 +1292,172 @@ export type Database = {
         }
         Relationships: []
       }
+      eliminate_wrong_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          problem_id: string
+          score: number | null
+          selected_options: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          problem_id: string
+          score?: number | null
+          selected_options?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          problem_id?: string
+          score?: number | null
+          selected_options?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eliminate_wrong_attempts_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "eliminate_wrong_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eliminate_wrong_mappings: {
+        Row: {
+          context_note: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number
+          eliminate_wrong_problem_id: string
+          id: string
+          sub_topic_id: string
+        }
+        Insert: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          eliminate_wrong_problem_id: string
+          id?: string
+          sub_topic_id: string
+        }
+        Update: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          eliminate_wrong_problem_id?: string
+          id?: string
+          sub_topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eliminate_wrong_mappings_eliminate_wrong_problem_id_fkey"
+            columns: ["eliminate_wrong_problem_id"]
+            isOneToOne: false
+            referencedRelation: "eliminate_wrong_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eliminate_wrong_mappings_sub_topic_id_fkey"
+            columns: ["sub_topic_id"]
+            isOneToOne: false
+            referencedRelation: "sub_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eliminate_wrong_problems: {
+        Row: {
+          allow_partial_credit: boolean
+          allow_retry: boolean
+          context_code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: string
+          display_order: number
+          explanation: string | null
+          hints: Json | null
+          id: string
+          is_premium: boolean
+          language: string
+          options: Json
+          selection_mode: string
+          shuffle_options: boolean
+          skill_id: string
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          allow_partial_credit?: boolean
+          allow_retry?: boolean
+          context_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string
+          display_order?: number
+          explanation?: string | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean
+          language?: string
+          options?: Json
+          selection_mode?: string
+          shuffle_options?: boolean
+          skill_id: string
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          allow_partial_credit?: boolean
+          allow_retry?: boolean
+          context_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string
+          display_order?: number
+          explanation?: string | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean
+          language?: string
+          options?: Json
+          selection_mode?: string
+          shuffle_options?: boolean
+          skill_id?: string
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eliminate_wrong_problems_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "practice_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fix_error_mappings: {
         Row: {
           context_note: string | null

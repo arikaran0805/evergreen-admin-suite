@@ -19,7 +19,7 @@ export interface AddProblemDialogProblem {
   difficulty: string;
   status: string;
   sub_topic?: string | null;
-  problemType: "problem-solving" | "predict-output" | "fix-error";
+  problemType: "problem-solving" | "predict-output" | "fix-error" | "eliminate-wrong";
   language?: string;
 }
 
@@ -28,7 +28,7 @@ interface AddProblemDialogProps {
   onOpenChange: (open: boolean) => void;
   allProblems: AddProblemDialogProblem[];
   mappedProblemIds: Set<string>;
-  onAddProblems: (selections: { id: string; problemType: "problem-solving" | "predict-output" | "fix-error" }[]) => void;
+  onAddProblems: (selections: { id: string; problemType: "problem-solving" | "predict-output" | "fix-error" | "eliminate-wrong" }[]) => void;
   onCreateNew: () => void;
 }
 
