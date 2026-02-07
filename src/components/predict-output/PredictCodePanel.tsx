@@ -17,7 +17,6 @@ import {
   Braces,
   Copy,
   Check,
-  
   Expand,
   Shrink,
   PanelTopOpen,
@@ -118,7 +117,7 @@ export function PredictCodePanel({
           <div className="flex items-center gap-2">
             <Braces className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">Code</span>
-            <Badge variant="outline" className="text-xs capitalize h-6">
+            <Badge variant="outline" className="text-[11px] capitalize h-5 px-2">
               {problem.language}
             </Badge>
           </div>
@@ -150,7 +149,7 @@ export function PredictCodePanel({
         <div className="flex items-center gap-2">
           <Braces className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium">Code</span>
-          <Badge variant="outline" className="text-xs capitalize h-6">
+          <Badge variant="outline" className="text-[11px] capitalize h-5 px-2">
             {problem.language}
           </Badge>
         </div>
@@ -189,43 +188,46 @@ export function PredictCodePanel({
             scrollBeyondLastLine: false,
             lineNumbers: "on",
             lineNumbersMinChars: 1,
-            lineDecorationsWidth: 8,
+            lineDecorationsWidth: 4,
             glyphMargin: false,
-            renderLineHighlight: "line",
-            folding: true,
+            renderLineHighlight: "none",
+            folding: false,
             contextmenu: false,
-            fontSize: 14,
+            fontSize: 13,
             fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-            padding: { top: 16, bottom: 16 },
-            scrollbar: { vertical: "auto", horizontal: "auto" },
+            padding: { top: 12, bottom: 12 },
+            scrollbar: { vertical: "auto", horizontal: "auto", verticalScrollbarSize: 6 },
             wordWrap: "on",
             dragAndDrop: false,
             overviewRulerBorder: false,
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
+            cursorStyle: "line-thin",
+            cursorBlinking: "solid",
             bracketPairColorization: { enabled: true },
-            guides: { indentation: true, bracketPairs: true },
+            guides: { indentation: true, bracketPairs: false },
             smoothScrolling: true,
+            renderWhitespace: "none",
           }}
         />
       </div>
 
       {/* Engagement Footer */}
-      <div className="shrink-0 border-t border-border/50 px-4 py-2 bg-muted/20">
+      <div className="shrink-0 border-t border-border/50 px-4 py-1.5 bg-muted/20">
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {/* Like */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={cn("h-8 px-2 gap-1.5", liked && "text-primary")}
+                    className={cn("h-7 px-2 gap-1.5", liked && "text-primary")}
                     onClick={handleLike}
                   >
-                    <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
-                    <span className="text-xs">{likes}</span>
+                    <ThumbsUp className={cn("h-3.5 w-3.5", liked && "fill-current")} />
+                    <span className="text-[11px]">{likes}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Like</p></TooltipContent>
@@ -237,17 +239,17 @@ export function PredictCodePanel({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={cn("h-8 px-2 gap-1.5", disliked && "text-destructive")}
+                    className={cn("h-7 px-2 gap-1.5", disliked && "text-destructive")}
                     onClick={handleDislike}
                   >
-                    <ThumbsDown className={cn("h-4 w-4", disliked && "fill-current")} />
-                    <span className="text-xs">{dislikes}</span>
+                    <ThumbsDown className={cn("h-3.5 w-3.5", disliked && "fill-current")} />
+                    <span className="text-[11px]">{dislikes}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Dislike</p></TooltipContent>
               </Tooltip>
 
-              <div className="w-px h-5 bg-border mx-1" />
+              <div className="w-px h-4 bg-border/60 mx-1" />
 
               {/* Comment */}
               <Tooltip>
@@ -255,10 +257,10 @@ export function PredictCodePanel({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-7 w-7"
                     onClick={onCommentClick}
                   >
-                    <MessageSquare className="h-4 w-4" />
+                    <MessageSquare className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Comments</p></TooltipContent>
@@ -266,23 +268,23 @@ export function PredictCodePanel({
 
               {/* Share */}
               <ShareTooltip title={problem.title} url={window.location.href}>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Share2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <Share2 className="h-3.5 w-3.5" />
                 </Button>
               </ShareTooltip>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {/* Feedback */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-7 w-7"
                     onClick={() => setReportDialogOpen(true)}
                   >
-                    <Flag className="h-4 w-4" />
+                    <Flag className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>Report / Feedback</p></TooltipContent>
@@ -294,10 +296,10 @@ export function PredictCodePanel({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn("h-8 w-8", saved && "text-primary")}
+                    className={cn("h-7 w-7", saved && "text-primary")}
                     onClick={() => setSaved((s) => !s)}
                   >
-                    <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
+                    <Bookmark className={cn("h-3.5 w-3.5", saved && "fill-current")} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>{saved ? "Unsave" : "Save"}</p></TooltipContent>

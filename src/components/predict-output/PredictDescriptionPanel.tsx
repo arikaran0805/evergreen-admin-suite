@@ -1,7 +1,7 @@
 /**
  * PredictDescriptionPanel
  * Left panel for the Predict workspace — visually matches ProblemDescriptionPanel.
- * Shows: title, difficulty, prompt, code snippet, hints, explanation (after solve), step-by-step.
+ * Shows: title, difficulty, prompt, hints, explanation (after solve), step-by-step.
  */
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -212,30 +212,30 @@ export function PredictDescriptionPanel({
       {/* Tab Content */}
       <ScrollArea className="flex-1">
         {activeTab === "description" && (
-          <div className="p-4 space-y-6">
+          <div className="p-5 space-y-5">
             {/* Title and Difficulty */}
-            <div className="space-y-3">
-              <h1 className="text-xl font-semibold">{problem.title}</h1>
-              <div className="flex items-center gap-2 flex-wrap">
+            <div className="space-y-2.5">
+              <h1 className="text-lg font-semibold leading-snug tracking-tight">{problem.title}</h1>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Badge
                   variant="outline"
                   className={cn(
-                    "capitalize font-medium",
+                    "capitalize font-medium text-[11px] h-5 px-2",
                     difficultyColors[problem.difficulty?.toLowerCase()] || difficultyColors.medium
                   )}
                 >
                   {problem.difficulty}
                 </Badge>
-                <Badge variant="outline" className="text-xs capitalize">
+                <Badge variant="outline" className="text-[11px] capitalize h-5 px-2">
                   {problem.language}
                 </Badge>
                 {problem.tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs font-normal">
+                  <Badge key={tag} variant="secondary" className="text-[11px] font-normal h-5 px-2">
                     {tag}
                   </Badge>
                 ))}
                 {problem.tags.length > 3 && (
-                  <Badge variant="secondary" className="text-xs font-normal">
+                  <Badge variant="secondary" className="text-[11px] font-normal h-5 px-2">
                     +{problem.tags.length - 3}
                   </Badge>
                 )}
@@ -244,19 +244,19 @@ export function PredictDescriptionPanel({
 
             {/* Prompt */}
             {problem.prompt && (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="text-sm text-foreground/90">{problem.prompt}</p>
-              </div>
+              <p className="text-[13px] leading-relaxed text-foreground/85">
+                {problem.prompt}
+              </p>
             )}
 
             {/* XP Info */}
             {problem.xp_value > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>🏆</span>
                 <span>{problem.xp_value} XP</span>
                 {problem.reveal_allowed && problem.reveal_penalty !== "no_xp" && (
-                  <span className="text-xs">
-                    (Reveal penalty: {problem.reveal_penalty === "half_xp" ? "½ XP" : "Viewed"})
+                  <span className="text-[11px]">
+                    · Reveal penalty: {problem.reveal_penalty === "half_xp" ? "½ XP" : "Viewed"}
                   </span>
                 )}
               </div>
@@ -264,14 +264,14 @@ export function PredictDescriptionPanel({
 
             {/* Hints section */}
             {problem.hints.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-1">
                 {problem.hints.slice(0, hintsShown).map((hint, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30"
+                    className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/30"
                   >
-                    <Lightbulb className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                    <p className="text-sm text-amber-900 dark:text-amber-200">{hint}</p>
+                    <Lightbulb className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                    <p className="text-[13px] leading-relaxed text-amber-900 dark:text-amber-200">{hint}</p>
                   </div>
                 ))}
                 {hintsShown < problem.hints.length && (
@@ -279,9 +279,9 @@ export function PredictDescriptionPanel({
                     variant="ghost"
                     size="sm"
                     onClick={() => setHintsShown((h) => h + 1)}
-                    className="text-amber-600 gap-1.5"
+                    className="text-amber-600 gap-1.5 h-7 text-xs"
                   >
-                    <Lightbulb className="h-4 w-4" />
+                    <Lightbulb className="h-3.5 w-3.5" />
                     Show hint ({hintsShown + 1}/{problem.hints.length})
                   </Button>
                 )}
@@ -291,11 +291,11 @@ export function PredictDescriptionPanel({
         )}
 
         {activeTab === "explanation" && (
-          <div className="p-4 space-y-6">
+          <div className="p-5 space-y-5">
             {!alreadySolved && !attempts.some((a) => a.revealed) ? (
-              <div className="py-12 text-center">
-                <BookOpen className="h-8 w-8 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-muted-foreground">
+              <div className="py-16 text-center">
+                <BookOpen className="h-7 w-7 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground/70">
                   Solve or reveal the problem to view the explanation.
                 </p>
               </div>
@@ -303,8 +303,8 @@ export function PredictDescriptionPanel({
               <>
                 {problem.explanation && (
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Explanation</h3>
-                    <p className="text-sm text-foreground/90 whitespace-pre-wrap">
+                    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Explanation</h3>
+                    <p className="text-[13px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
                       {problem.explanation}
                     </p>
                   </div>
@@ -312,10 +312,10 @@ export function PredictDescriptionPanel({
 
                 {problem.step_by_step.length > 0 && (
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Step-by-Step</h3>
+                    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Step-by-Step</h3>
                     <ol className="list-decimal list-inside space-y-1.5">
                       {problem.step_by_step.map((s, i) => (
-                        <li key={i} className="text-sm text-foreground/80">
+                        <li key={i} className="text-[13px] leading-relaxed text-foreground/80">
                           {s}
                         </li>
                       ))}
@@ -325,10 +325,10 @@ export function PredictDescriptionPanel({
 
                 {problem.common_mistakes.length > 0 && (
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Common Mistakes</h3>
+                    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Common Mistakes</h3>
                     <ul className="list-disc list-inside space-y-1.5">
                       {problem.common_mistakes.map((m, i) => (
-                        <li key={i} className="text-sm text-muted-foreground">
+                        <li key={i} className="text-[13px] leading-relaxed text-muted-foreground">
                           {m}
                         </li>
                       ))}
@@ -339,8 +339,8 @@ export function PredictDescriptionPanel({
                 {!problem.explanation &&
                   problem.step_by_step.length === 0 &&
                   problem.common_mistakes.length === 0 && (
-                    <div className="py-12 text-center">
-                      <p className="text-muted-foreground">
+                    <div className="py-16 text-center">
+                      <p className="text-sm text-muted-foreground/70">
                         No explanation available for this problem.
                       </p>
                     </div>
@@ -351,17 +351,17 @@ export function PredictDescriptionPanel({
         )}
 
         {activeTab === "discuss" && (
-          <div className="p-4">
+          <div className="p-5">
             <ProblemCommentsSection problemId={problem.id} />
           </div>
         )}
 
         {activeTab === "attempts" && (
-          <div className="p-4 space-y-3">
+          <div className="p-5 space-y-2.5">
             {attempts.length === 0 ? (
-              <div className="py-12 text-center">
-                <History className="h-8 w-8 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-muted-foreground">No attempts yet.</p>
+              <div className="py-16 text-center">
+                <History className="h-7 w-7 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground/70">No attempts yet.</p>
               </div>
             ) : (
               attempts
@@ -371,18 +371,18 @@ export function PredictDescriptionPanel({
                   <div
                     key={attempt.id}
                     className={cn(
-                      "rounded-lg border p-3 space-y-1",
+                      "rounded-md border p-3 space-y-1",
                       attempt.is_correct
-                        ? "border-green-500/30 bg-green-500/5"
+                        ? "border-green-500/20 bg-green-500/5"
                         : attempt.revealed && !attempt.user_output
-                        ? "border-amber-500/30 bg-amber-500/5"
-                        : "border-red-500/30 bg-red-500/5"
+                        ? "border-amber-500/20 bg-amber-500/5"
+                        : "border-red-500/20 bg-red-500/5"
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <span
                         className={cn(
-                          "text-sm font-medium",
+                          "text-xs font-medium",
                           attempt.is_correct
                             ? "text-green-600 dark:text-green-400"
                             : attempt.revealed && !attempt.user_output
@@ -396,17 +396,17 @@ export function PredictDescriptionPanel({
                           ? "👁 Revealed"
                           : "✗ Incorrect"}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        Attempt #{attempt.attempt_no}
+                      <span className="text-[11px] text-muted-foreground/60">
+                        #{attempt.attempt_no}
                       </span>
                     </div>
                     {attempt.user_output && (
-                      <pre className="text-xs font-mono bg-muted/50 rounded p-2 whitespace-pre-wrap">
+                      <pre className="text-xs font-mono bg-muted/40 rounded p-2 whitespace-pre-wrap text-foreground/80">
                         {attempt.user_output}
                       </pre>
                     )}
                     {attempt.score_awarded > 0 && (
-                      <span className="text-xs text-green-600 dark:text-green-400">
+                      <span className="text-[11px] text-green-600 dark:text-green-400">
                         +{attempt.score_awarded} XP
                       </span>
                     )}

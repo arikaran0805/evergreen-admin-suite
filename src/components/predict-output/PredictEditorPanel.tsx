@@ -1,8 +1,8 @@
 /**
  * PredictEditorPanel
- * Right panel for the Predict workspace.
- * Shows: output textarea (top) + result (bottom).
- * Premium design: full-bleed textarea, console-like result view.
+ * Right column for the Predict workspace.
+ * Top: "Your Output" — full-bleed textarea, no nested containers.
+ * Bottom: "Result" — clean console-like comparison view.
  */
 import { useState, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   Check,
   RotateCcw,
   Terminal,
+  BarChart3,
 } from "lucide-react";
 import {
   ResizableHandle,
@@ -111,7 +112,6 @@ export function PredictEditorPanel({
     }
 
     setViewState(result.isCorrect ? "correct" : "incorrect");
-
     resultPanelRef.current?.expand();
     resultPanelRef.current?.resize(50);
 
@@ -228,18 +228,18 @@ export function PredictEditorPanel({
     }
 
     return (
-      <div className="flex-1 min-h-0 flex flex-col relative">
+      <div className="flex-1 min-h-0 flex flex-col">
         <textarea
           ref={textareaRef}
           value={userOutput}
           onChange={(e) => setUserOutput(e.target.value)}
-          placeholder="Type the exact output of the code…"
+          placeholder={"Type the exact output printed by the program.\nEach print appears on a new line."}
           autoFocus
-          className="flex-1 w-full resize-none bg-transparent font-mono text-sm p-4 text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          className="flex-1 w-full resize-none bg-transparent font-mono text-sm p-4 text-foreground placeholder:text-muted-foreground/40 focus:outline-none leading-relaxed"
           spellCheck={false}
         />
-        <div className="flex items-center justify-between px-4 py-2 shrink-0">
-          <span className="text-[11px] text-muted-foreground/60 tracking-wide">
+        <div className="flex items-center justify-between px-4 py-2 shrink-0 border-t border-border/30">
+          <span className="text-[11px] text-muted-foreground/50 tracking-wide font-mono">
             Whitespace and line breaks matter
           </span>
           <div className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export function PredictEditorPanel({
             )}
             <Button
               size="sm"
-              className="h-7"
+              className="h-7 px-4"
               onClick={handleSubmit}
               disabled={!userOutput.trim() || submitMutation.isPending}
             >
@@ -266,7 +266,7 @@ export function PredictEditorPanel({
   /* ─── Footer for post-submit states ─── */
   function renderFooter() {
     return (
-      <div className="flex items-center justify-end px-4 py-2 shrink-0">
+      <div className="flex items-center justify-end px-4 py-2 shrink-0 border-t border-border/30">
         <div className="flex items-center gap-2">
           {canReveal && !revealed && viewState !== "answering" && (
             <Button variant="ghost" size="sm" onClick={handleReveal} className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
@@ -278,6 +278,46 @@ export function PredictEditorPanel({
             <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={handleTryAgain}>
               <RotateCcw className="h-3.5 w-3.5" />
               Try Again
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Result panel header ─── */
+  function renderResultHeader(opts: { shrinkable?: boolean }) {
+    return (
+      <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Result</span>
+        </div>
+        <div
+          className={cn(
+            "flex items-center gap-0.5 transition-opacity",
+            isResultHovered || !isResultPanelCollapsed ? "opacity-100" : "opacity-0"
+          )}
+        >
+          {!opts.shrinkable && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleToggleResultPanelCollapse}
+              title={isResultPanelCollapsed ? "Show" : "Hide"}
+            >
+              {isResultPanelCollapsed ? <PanelTopOpen className="h-4 w-4" /> : <PanelTopClose className="h-4 w-4" />}
+            </Button>
+          )}
+          {opts.shrinkable && onExpandResult && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandResult}>
+              <Shrink className="h-4 w-4" />
+            </Button>
+          )}
+          {!opts.shrinkable && onExpandResult && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandResult}>
+              <Expand className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -298,7 +338,7 @@ export function PredictEditorPanel({
               <Badge variant="outline" className="ml-auto text-[10px] h-5">½ XP penalty</Badge>
             )}
           </div>
-          <pre className="flex-1 font-mono text-sm p-4 whitespace-pre-wrap text-foreground/90">
+          <pre className="flex-1 font-mono text-sm p-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
             {problem.expected_output}
           </pre>
         </div>
@@ -320,14 +360,14 @@ export function PredictEditorPanel({
           </div>
           <div className="flex-1 grid grid-cols-2 divide-x divide-border/30">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Yours</span>
-              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90">
+              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Yours</span>
+              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
                 {userOutput}
               </pre>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Expected</span>
-              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90">
+              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Expected</span>
+              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
                 {problem.expected_output}
               </pre>
             </div>
@@ -346,11 +386,11 @@ export function PredictEditorPanel({
           </div>
           <div className="flex-1 grid grid-cols-2 divide-x divide-border/30">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Yours</span>
-              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90">
+              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Yours</span>
+              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
                 {lineDiff
                   ? lineDiff.userLines.map((line: string, i: number) => (
-                      <span key={i} className={cn(lineDiff.mismatches.includes(i) && "bg-red-500/15")}>
+                      <span key={i} className={cn(lineDiff.mismatches.includes(i) && "bg-red-500/10 rounded-sm")}>
                         {line}
                         {i < lineDiff.userLines.length - 1 ? "\n" : ""}
                       </span>
@@ -359,10 +399,10 @@ export function PredictEditorPanel({
               </pre>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Expected</span>
+              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Expected</span>
               <pre
                 className={cn(
-                  "flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap",
+                  "flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap leading-relaxed",
                   revealed ? "text-foreground/90" : "text-foreground/90 blur-sm select-none"
                 )}
               >
@@ -370,7 +410,7 @@ export function PredictEditorPanel({
                   ? lineDiff.expectedLines.map((line: string, i: number) => (
                       <span
                         key={i}
-                        className={cn(revealed && lineDiff.mismatches.includes(i) && "bg-amber-500/15")}
+                        className={cn(revealed && lineDiff.mismatches.includes(i) && "bg-amber-500/10 rounded-sm")}
                       >
                         {line}
                         {i < lineDiff.expectedLines.length - 1 ? "\n" : ""}
@@ -384,10 +424,11 @@ export function PredictEditorPanel({
       );
     }
 
-    // Default empty state
+    // Default empty state — soft, centered
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-sm text-muted-foreground/50">Submit your answer to see results</p>
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 py-8">
+        <BarChart3 className="h-6 w-6 text-muted-foreground/20" />
+        <p className="text-sm text-muted-foreground/40">Submit your answer to see results</p>
       </div>
     );
   }
@@ -413,14 +454,7 @@ export function PredictEditorPanel({
     return (
       <div className="h-full flex flex-col gap-1.5">
         <div className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
-            <span className="text-sm font-medium">Result</span>
-            {onExpandResult && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandResult}>
-                <Shrink className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          {renderResultHeader({ shrinkable: true })}
           {renderResultBody()}
         </div>
       </div>
@@ -470,30 +504,7 @@ export function PredictEditorPanel({
             onMouseEnter={() => setIsResultHovered(true)}
             onMouseLeave={() => setIsResultHovered(false)}
           >
-            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
-              <span className="text-sm font-medium">Result</span>
-              <div
-                className={cn(
-                  "flex items-center gap-0.5 transition-opacity",
-                  isResultHovered || !isResultPanelCollapsed ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleToggleResultPanelCollapse}
-                  title={isResultPanelCollapsed ? "Show" : "Hide"}
-                >
-                  {isResultPanelCollapsed ? <PanelTopOpen className="h-4 w-4" /> : <PanelTopClose className="h-4 w-4" />}
-                </Button>
-                {onExpandResult && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandResult}>
-                    <Expand className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
+            {renderResultHeader({ shrinkable: false })}
             {!isResultPanelCollapsed && renderResultBody()}
           </div>
         </ResizablePanel>
