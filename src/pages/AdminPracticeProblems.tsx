@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, ArrowLeft, BookOpen, AlertCircle } from "lucide-react";
+import { Plus, ArrowLeft, BookOpen, AlertCircle, Eye, Code2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { usePracticeSkill } from "@/hooks/usePracticeSkills";
 import { usePracticeProblems } from "@/hooks/usePracticeProblems";
 import { useSubTopicsBySkill, SubTopic } from "@/hooks/useSubTopics";
@@ -295,40 +296,28 @@ export default function AdminPracticeProblems() {
                 </Button>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-1">
+                <div className="divide-y divide-border/50">
                   {skillProblems.map((problem) => (
                     <div
                       key={problem.id}
                       onClick={() => handleProblemClick(problem.id)}
-                      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors group"
+                      className="flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors group"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="grid grid-cols-2 gap-0.5 opacity-40 group-hover:opacity-60">
-                          <div className="w-1 h-1 bg-current rounded-full" />
-                          <div className="w-1 h-1 bg-current rounded-full" />
-                          <div className="w-1 h-1 bg-current rounded-full" />
-                          <div className="w-1 h-1 bg-current rounded-full" />
-                          <div className="w-1 h-1 bg-current rounded-full" />
-                          <div className="w-1 h-1 bg-current rounded-full" />
-                        </div>
-                        <span className="font-medium text-sm">{problem.title}</span>
+                      <div className="text-muted-foreground/40 group-hover:text-muted-foreground">
+                        <GripVertical className="h-3.5 w-3.5" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
-                          problem.difficulty === "Easy" ? "border-green-500/30 text-green-600 dark:text-green-400" :
-                          problem.difficulty === "Medium" ? "border-amber-500/30 text-amber-600 dark:text-amber-400" :
-                          "border-red-500/30 text-red-600 dark:text-red-400"
-                        }`}>
-                          {problem.difficulty}
-                        </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                          problem.status === "published" 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted text-muted-foreground"
-                        }`}>
-                          {problem.status}
-                        </span>
-                      </div>
+                      <Code2 className="h-4 w-4 text-primary/70 shrink-0" />
+                      <span className="flex-1 text-sm font-medium">{problem.title}</span>
+                      <Badge className={`text-xs ${
+                        problem.difficulty === "Easy" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
+                        problem.difficulty === "Medium" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
+                        "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      }`}>
+                        {problem.difficulty}
+                      </Badge>
+                      <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
+                        {problem.status}
+                      </Badge>
                     </div>
                   ))}
                 </div>
