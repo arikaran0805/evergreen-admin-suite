@@ -10,6 +10,8 @@ import {
   Expand,
   Shrink,
   AlignLeft,
+  PanelTopClose,
+  PanelTopOpen,
 } from "lucide-react";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
@@ -35,6 +37,8 @@ interface FixErrorCodeEditorProps {
   isRunning: boolean;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function FixErrorCodeEditor({
@@ -45,6 +49,8 @@ export function FixErrorCodeEditor({
   isRunning,
   isExpanded = false,
   onToggleExpand,
+  isCollapsed = false,
+  onToggleCollapse,
 }: FixErrorCodeEditorProps) {
   const { theme } = useTheme();
   const { settings, monacoOptions } = usePlatformSettings();
@@ -171,7 +177,7 @@ export function FixErrorCodeEditor({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Header Row 1 */}
+        {/* Header Row 1 - Always visible */}
         <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
           <div className="flex items-center gap-2">
             <Braces className="h-4 w-4 text-primary" />
@@ -186,6 +192,23 @@ export function FixErrorCodeEditor({
               isHovered || isExpanded ? "opacity-100" : "opacity-0"
             )}
           >
+            {/* Collapse first */}
+            {onToggleCollapse && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onToggleCollapse}
+                title={isCollapsed ? "Show editor" : "Hide editor"}
+              >
+                {isCollapsed ? (
+                  <PanelTopOpen className="h-4 w-4" />
+                ) : (
+                  <PanelTopClose className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            {/* Expand second */}
             {onToggleExpand && (
               <Button
                 variant="ghost"
@@ -204,131 +227,135 @@ export function FixErrorCodeEditor({
           </div>
         </div>
 
-        {/* Header Row 2 - Tools */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background shrink-0">
-          <span className="text-xs text-muted-foreground">
-            Fix the buggy code below
-          </span>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              title="Format code"
-              onClick={handleFormatCode}
-            >
-              <AlignLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleReset}
-              title="Reset to buggy code"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setSettingsModalOpen(true)}
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => document.documentElement.requestFullscreen?.()}
-              title="Fullscreen"
-            >
-              <Maximize className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        {!isCollapsed && (
+          <>
+            {/* Header Row 2 - Tools */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background shrink-0">
+              <span className="text-xs text-muted-foreground">
+                Fix the buggy code below
+              </span>
+              <div className="flex items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  title="Format code"
+                  onClick={handleFormatCode}
+                >
+                  <AlignLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleReset}
+                  title="Reset to buggy code"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setSettingsModalOpen(true)}
+                  title="Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => document.documentElement.requestFullscreen?.()}
+                  title="Fullscreen"
+                >
+                  <Maximize className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-        {/* Monaco Editor */}
-        <div className="flex-1 overflow-hidden">
-          <Editor
-            height="100%"
-            language={monacoLanguage}
-            value={code}
-            theme={monacoTheme}
-            onChange={handleEditorChange}
-            onMount={handleEditorMount}
-            options={{
-              ...monacoOptions,
-              fontFamily:
-                monacoOptions.fontFamily ||
-                "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-              lineNumbersMinChars: 1,
-              lineDecorationsWidth: 8,
-              glyphMargin: true,
-              folding: true,
-              showFoldingControls: "always",
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              renderIndentGuides: true,
-              padding: { top: 16, bottom: 16 },
-              scrollbar: {
-                vertical: "auto",
-                horizontal: "auto",
-                verticalScrollbarSize: 10,
-                horizontalScrollbarSize: 10,
-              },
-              overviewRulerBorder: false,
-              hideCursorInOverviewRuler: true,
-              overviewRulerLanes: 0,
-              cursorBlinking: "smooth",
-              cursorSmoothCaretAnimation: "on",
-              smoothScrolling: true,
-              contextmenu: true,
-              bracketPairColorization: { enabled: true },
-              guides: {
-                indentation: true,
-                bracketPairs: true,
-              },
-            }}
-          />
-        </div>
+            {/* Monaco Editor */}
+            <div className="flex-1 overflow-hidden">
+              <Editor
+                height="100%"
+                language={monacoLanguage}
+                value={code}
+                theme={monacoTheme}
+                onChange={handleEditorChange}
+                onMount={handleEditorMount}
+                options={{
+                  ...monacoOptions,
+                  fontFamily:
+                    monacoOptions.fontFamily ||
+                    "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+                  lineNumbersMinChars: 1,
+                  lineDecorationsWidth: 8,
+                  glyphMargin: true,
+                  folding: true,
+                  showFoldingControls: "always",
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  renderIndentGuides: true,
+                  padding: { top: 16, bottom: 16 },
+                  scrollbar: {
+                    vertical: "auto",
+                    horizontal: "auto",
+                    verticalScrollbarSize: 10,
+                    horizontalScrollbarSize: 10,
+                  },
+                  overviewRulerBorder: false,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerLanes: 0,
+                  cursorBlinking: "smooth",
+                  cursorSmoothCaretAnimation: "on",
+                  smoothScrolling: true,
+                  contextmenu: true,
+                  bracketPairColorization: { enabled: true },
+                  guides: {
+                    indentation: true,
+                    bracketPairs: true,
+                  },
+                }}
+              />
+            </div>
 
-        {/* Footer with Run/Submit */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40 shrink-0">
-          <span className="text-xs text-muted-foreground">
-            Press{" "}
-            <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">
-              Ctrl
-            </kbd>{" "}
-            +{" "}
-            <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">
-              Enter
-            </kbd>{" "}
-            to run
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5"
-              onClick={() => onRun(code)}
-              disabled={isRunning}
-            >
-              <Play className="h-3.5 w-3.5" />
-              Run
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 gap-1.5"
-              onClick={() => onSubmit(code)}
-              disabled={isRunning}
-            >
-              <Send className="h-3.5 w-3.5" />
-              Submit
-            </Button>
-          </div>
-        </div>
+            {/* Footer with Run/Submit */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40 shrink-0">
+              <span className="text-xs text-muted-foreground">
+                Press{" "}
+                <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">
+                  Ctrl
+                </kbd>{" "}
+                +{" "}
+                <kbd className="px-1 py-0.5 text-[10px] rounded bg-muted border border-border">
+                  Enter
+                </kbd>{" "}
+                to run
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => onRun(code)}
+                  disabled={isRunning}
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  Run
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => onSubmit(code)}
+                  disabled={isRunning}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Submit
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <PlatformSettingsModal
