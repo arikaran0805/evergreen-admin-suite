@@ -11,10 +11,12 @@ export type FixErrorFailureType =
   | "RUNTIME_ERROR"
   | "TIMEOUT"
   | "WRONG_ANSWER"
-  | "VALIDATOR_ERROR";
+  | "VALIDATOR_ERROR"
+  | "LOCKED_REGION_MODIFIED";
 
 export type FixErrorStatus = "PASS" | "FAIL";
 
+// DiffLine kept for backward compat but no longer rendered in UI
 export interface DiffLine {
   type: "match" | "missing" | "extra" | "incorrect";
   lineNumber: number;
@@ -83,6 +85,15 @@ export function useFixErrorJudge(problem: FixErrorProblem | null): UseFixErrorJu
           payload.test_cases = problem.test_cases;
         } else if (problem.validation_type === "custom_function") {
           payload.custom_validator = problem.custom_validator;
+        }
+
+        // Attach locked region data for anti-cheat validation
+        const startLine = (problem as any).editable_start_line;
+        const endLine = (problem as any).editable_end_line;
+        if (startLine != null && endLine != null) {
+          payload.editable_start_line = startLine;
+          payload.editable_end_line = endLine;
+          payload.original_code = problem.buggy_code;
         }
 
         const { data, error } = await supabase.functions.invoke("judge-fix-error", {

@@ -265,6 +265,8 @@ export default function FixErrorWorkspace() {
                 isRunning={isRunning}
                 isExpanded
                 onToggleExpand={handleExpandEditor}
+                editableStartLine={(problem as any).editable_start_line}
+                editableEndLine={(problem as any).editable_end_line}
               />
             </div>
           )}
@@ -317,6 +319,8 @@ export default function FixErrorWorkspace() {
                 onSubmit={handleSubmit}
                 isRunning={isRunning}
                 onToggleExpand={handleExpandEditor}
+                editableStartLine={(problem as any).editable_start_line}
+                editableEndLine={(problem as any).editable_end_line}
               />
             </div>
             <div className="min-h-[25vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
@@ -376,6 +380,8 @@ export default function FixErrorWorkspace() {
                         onToggleExpand={handleExpandEditor}
                         isCollapsed={isEditorCollapsed}
                         onToggleCollapse={handleToggleEditorCollapse}
+                        editableStartLine={(problem as any).editable_start_line}
+                        editableEndLine={(problem as any).editable_end_line}
                       />
                     </div>
                   </ResizablePanel>

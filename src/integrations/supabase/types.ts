@@ -1347,12 +1347,15 @@ export type Database = {
           description: string | null
           difficulty: string
           display_order: number
+          editable_end_line: number | null
+          editable_start_line: number | null
           expected_output: string | null
           failure_message: string | null
           hints: Json | null
           id: string
           is_premium: boolean
           language: string
+          sample_output: string | null
           skill_id: string
           slug: string
           status: string
@@ -1372,12 +1375,15 @@ export type Database = {
           description?: string | null
           difficulty?: string
           display_order?: number
+          editable_end_line?: number | null
+          editable_start_line?: number | null
           expected_output?: string | null
           failure_message?: string | null
           hints?: Json | null
           id?: string
           is_premium?: boolean
           language?: string
+          sample_output?: string | null
           skill_id: string
           slug: string
           status?: string
@@ -1397,12 +1403,15 @@ export type Database = {
           description?: string | null
           difficulty?: string
           display_order?: number
+          editable_end_line?: number | null
+          editable_start_line?: number | null
           expected_output?: string | null
           failure_message?: string | null
           hints?: Json | null
           id?: string
           is_premium?: boolean
           language?: string
+          sample_output?: string | null
           skill_id?: string
           slug?: string
           status?: string

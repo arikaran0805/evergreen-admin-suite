@@ -15,7 +15,8 @@ type FailureType =
   | 'RUNTIME_ERROR'
   | 'TIMEOUT'
   | 'WRONG_ANSWER'
-  | 'VALIDATOR_ERROR';
+  | 'VALIDATOR_ERROR'
+  | 'LOCKED_REGION_MODIFIED';
 
 type Status = 'PASS' | 'FAIL';
 type ValidationMode = 'output_comparison' | 'test_cases' | 'custom_function';
@@ -41,6 +42,10 @@ interface JudgeFixErrorRequest {
   // Limits
   time_limit_ms?: number;
   memory_limit_mb?: number;
+  // Locked region anti-cheat
+  editable_start_line?: number;
+  editable_end_line?: number;
+  original_code?: string;
 }
 
 interface DiffLine {
@@ -703,6 +708,43 @@ try {
 }
 
 // =============================================================================
+// LOCKED REGION VALIDATION
+// =============================================================================
+
+function validateLockedRegions(
+  code: string,
+  originalCode: string,
+  editableStartLine: number,
+  editableEndLine: number,
+): boolean {
+  const codeLines = code.split('\n');
+  const originalLines = originalCode.split('\n');
+
+  // Check lines before editable region
+  for (let i = 0; i < editableStartLine - 1; i++) {
+    if ((codeLines[i] ?? '') !== (originalLines[i] ?? '')) {
+      return false;
+    }
+  }
+
+  // Check lines after editable region
+  const origAfterCount = originalLines.length - editableEndLine;
+  const codeAfterCount = codeLines.length - editableEndLine;
+
+  if (origAfterCount !== codeAfterCount) return false;
+
+  for (let i = 0; i < origAfterCount; i++) {
+    const origIdx = originalLines.length - 1 - i;
+    const codeIdx = codeLines.length - 1 - i;
+    if ((codeLines[codeIdx] ?? '') !== (originalLines[origIdx] ?? '')) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// =============================================================================
 // MAIN HANDLER
 // =============================================================================
 
@@ -723,6 +765,9 @@ serve(async (req) => {
       test_cases,
       custom_validator,
       time_limit_ms = 5000,
+      editable_start_line,
+      editable_end_line,
+      original_code,
     } = body;
 
     // Validate required fields
@@ -731,6 +776,27 @@ serve(async (req) => {
         JSON.stringify({ error: 'Missing required fields: code, language, validation_type' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Locked region anti-cheat check
+    if (editable_start_line && editable_end_line && original_code) {
+      const lockedValid = validateLockedRegions(code, original_code, editable_start_line, editable_end_line);
+      if (!lockedValid) {
+        const lockedResponse: JudgeFixErrorResponse = {
+          status: 'FAIL',
+          failureType: 'LOCKED_REGION_MODIFIED',
+          summaryMessage: 'Locked code regions were modified. Only edit within the allowed range.',
+          stdout: '',
+          stderr: '',
+          runtime_ms: 0,
+          passed_count: 0,
+          total_count: 0,
+        };
+        return new Response(
+          JSON.stringify(lockedResponse),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     console.log(`[JUDGE-FIX-ERROR][${mode.toUpperCase()}] ${validation_type} | ${language}`);

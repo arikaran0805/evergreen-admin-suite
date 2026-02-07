@@ -3,11 +3,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
   Check,
-  X,
-  Clock,
-  Terminal,
-  Expand,
-  Shrink,
   Copy,
   ChevronUp,
   ChevronDown,
@@ -16,13 +11,17 @@ import {
   PanelTopOpen,
   AlertTriangle,
   Timer,
+  Terminal,
+  Expand,
+  Shrink,
+  Clock,
+  ShieldAlert,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   FixErrorJudgeResult,
   FixErrorVerdict,
-  DiffLine,
-  FixErrorTestResult,
 } from "@/hooks/useFixErrorJudge";
 
 interface FixErrorResultPanelProps {
@@ -84,148 +83,40 @@ function ErrorBlock({ content }: { content: string }) {
   );
 }
 
-// ── Diff Viewer ─────────────────────────────────────────────────────────────
+// ── Test Summary Bar ────────────────────────────────────────────────────────
 
-function DiffViewer({ diff }: { diff: DiffLine[] }) {
-  return (
-    <div className="rounded-lg border border-border/50 overflow-hidden">
-      <div className="px-3 py-2 bg-muted/40 border-b border-border/50">
-        <span className="text-xs font-medium text-muted-foreground">Output Diff</span>
-      </div>
-      <div className="font-mono text-sm overflow-x-auto">
-        {diff.map((line, idx) => {
-          let bgClass = "";
-          let prefix = " ";
-          let textColor = "text-foreground";
+function TestSummaryBar({
+  passed,
+  total,
+  isPassed,
+}: {
+  passed: number;
+  total: number;
+  isPassed: boolean;
+}) {
+  const percentage = total > 0 ? (passed / total) * 100 : 0;
 
-          switch (line.type) {
-            case "match":
-              bgClass = "";
-              prefix = " ";
-              break;
-            case "missing":
-              bgClass = "bg-green-500/10";
-              prefix = "+";
-              textColor = "text-green-600 dark:text-green-500";
-              break;
-            case "extra":
-              bgClass = "bg-red-500/10";
-              prefix = "-";
-              textColor = "text-red-600 dark:text-red-500";
-              break;
-            case "incorrect":
-              bgClass = "bg-amber-500/10";
-              prefix = "~";
-              textColor = "text-amber-600 dark:text-amber-500";
-              break;
-          }
-
-          return (
-            <div key={idx} className={cn("flex", bgClass)}>
-              <span className="w-8 text-right pr-2 text-muted-foreground/60 select-none shrink-0 py-0.5">
-                {line.lineNumber}
-              </span>
-              <span className={cn("w-4 text-center shrink-0 py-0.5", textColor)}>
-                {prefix}
-              </span>
-              <div className="flex-1 py-0.5 pr-3">
-                {line.type === "incorrect" ? (
-                  <div className="space-y-0.5">
-                    <div className="text-red-600 dark:text-red-500 line-through opacity-70">
-                      {line.actual}
-                    </div>
-                    <div className="text-green-600 dark:text-green-500">
-                      {line.expected}
-                    </div>
-                  </div>
-                ) : (
-                  <span className={textColor}>
-                    {line.type === "missing" ? line.expected : line.actual ?? line.expected}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="px-3 py-1.5 bg-muted/20 border-t border-border/50 flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500" /> Expected (missing)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-red-500" /> Your output (extra)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-amber-500" /> Mismatch
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Test Results List ───────────────────────────────────────────────────────
-
-function TestResultsList({ testResults }: { testResults: FixErrorTestResult[] }) {
   return (
     <div className="space-y-2">
-      {testResults.map((tr) => (
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground font-medium">Test Results</span>
+        <span className={cn("font-semibold", isPassed ? "text-green-600 dark:text-green-500" : "text-foreground")}>
+          {passed} / {total} passed
+        </span>
+      </div>
+      <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
         <div
-          key={tr.id}
-          className="border border-border/50 rounded-lg p-3 bg-muted/20"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            {tr.passed ? (
-              <Check className="h-4 w-4 text-green-600 dark:text-green-500 shrink-0" />
-            ) : (
-              <X className="h-4 w-4 text-red-600 dark:text-red-500 shrink-0" />
-            )}
-            <span className="font-medium text-sm">
-              Test Case {tr.id + 1}
-              {!tr.is_visible && (
-                <span className="ml-1.5 text-xs text-muted-foreground font-normal">(hidden)</span>
-              )}
-            </span>
-            {tr.runtime_ms !== undefined && tr.runtime_ms > 0 && (
-              <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
-                <Timer className="h-3 w-3" />
-                {tr.runtime_ms}ms
-              </span>
-            )}
-          </div>
-
-          {!tr.passed && tr.is_visible && (
-            <div className="space-y-1.5 text-sm font-mono ml-6">
-              {tr.error ? (
-                <div>
-                  <span className="text-muted-foreground">Error: </span>
-                  <span className="text-red-600 dark:text-red-500">{tr.error}</span>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <span className="text-muted-foreground">Input: </span>
-                    <span>{tr.input}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Expected: </span>
-                    <span className="text-green-600 dark:text-green-500">{tr.expected}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Output: </span>
-                    <span className="text-red-600 dark:text-red-500">{tr.actual}</span>
-                  </div>
-                </>
-              )}
-            </div>
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            isPassed
+              ? "bg-green-500"
+              : percentage > 0
+                ? "bg-amber-500"
+                : "bg-red-500"
           )}
-
-          {!tr.passed && !tr.is_visible && (
-            <div className="ml-6 text-xs text-muted-foreground italic">
-              Details hidden for this test case.
-            </div>
-          )}
-        </div>
-      ))}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -248,47 +139,56 @@ export function FixErrorResultPanel({
   const hasFailed = result?.status === "FAIL";
   const hasResult = verdict === "completed" && result !== null;
 
-  // Verdict display mapping
-  const verdictConfig: Record<string, { label: string; color: string; bg: string; icon?: React.ReactNode }> = {
+  // Verdict display config
+  const verdictConfig: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
     PASS: {
-      label: "Accepted",
+      label: "All Tests Passed",
       color: "text-green-600 dark:text-green-500",
       bg: "bg-green-500/10",
+      icon: <CheckCircle2 className="h-6 w-6" />,
     },
     COMPILE_ERROR: {
       label: "Compilation Error",
       color: "text-red-500",
       bg: "bg-red-500/10",
-      icon: <AlertTriangle className="h-5 w-5" />,
+      icon: <AlertTriangle className="h-6 w-6" />,
     },
     RUNTIME_ERROR: {
       label: "Runtime Error",
       color: "text-red-500",
       bg: "bg-red-500/10",
+      icon: <XCircle className="h-6 w-6" />,
     },
     TIMEOUT: {
       label: "Time Limit Exceeded",
       color: "text-amber-500",
       bg: "bg-amber-500/10",
-      icon: <Timer className="h-5 w-5" />,
+      icon: <Timer className="h-6 w-6" />,
     },
     WRONG_ANSWER: {
-      label: "Wrong Answer",
+      label: "Tests Failed",
       color: "text-red-500",
       bg: "bg-red-500/10",
+      icon: <XCircle className="h-6 w-6" />,
     },
     VALIDATOR_ERROR: {
       label: "Validation Error",
       color: "text-amber-500",
       bg: "bg-amber-500/10",
-      icon: <AlertTriangle className="h-5 w-5" />,
+      icon: <AlertTriangle className="h-6 w-6" />,
+    },
+    LOCKED_REGION_MODIFIED: {
+      label: "Locked Code Modified",
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      icon: <ShieldAlert className="h-6 w-6" />,
     },
   };
 
   const config = isPassed
     ? verdictConfig.PASS
     : result?.failureType
-      ? verdictConfig[result.failureType]
+      ? verdictConfig[result.failureType] ?? verdictConfig.WRONG_ANSWER
       : null;
 
   // Status dot for header
@@ -340,7 +240,7 @@ export function FixErrorResultPanel({
             {verdict === "idle" && (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Terminal className="h-8 w-8 mb-3 opacity-40" />
-                <p className="text-sm">Fix the code and click Run to see results.</p>
+                <p className="text-sm">Fix the code and click Run to test your solution.</p>
               </div>
             )}
 
@@ -348,7 +248,7 @@ export function FixErrorResultPanel({
             {verdict === "running" && (
               <div className="flex items-center justify-center py-12">
                 <Clock className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
-                <span className="text-muted-foreground text-sm">Running...</span>
+                <span className="text-muted-foreground text-sm">Running tests...</span>
               </div>
             )}
 
@@ -356,30 +256,32 @@ export function FixErrorResultPanel({
             {hasResult && config && (
               <>
                 {/* Verdict banner */}
-                <div className={cn("p-4 rounded-lg", config.bg)}>
-                  <div className="flex flex-col items-center gap-1 text-center">
-                    <span className={cn("text-xl font-semibold", config.color)}>
+                <div className={cn("p-5 rounded-lg", config.bg)}>
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <div className={config.color}>{config.icon}</div>
+                    <span className={cn("text-lg font-semibold", config.color)}>
                       {config.label}
                     </span>
-                    <span className="text-sm text-muted-foreground">
-                      {result.summaryMessage}
-                    </span>
-                    {result.total_count > 0 && result.failureType !== "COMPILE_ERROR" && result.failureType !== "TIMEOUT" && (
-                      <span className={cn(
-                        "text-xs mt-1",
-                        isPassed ? "text-green-600/80 dark:text-green-500/80" : "text-muted-foreground"
-                      )}>
-                        {result.passed_count} / {result.total_count} test cases passed
-                      </span>
-                    )}
                     {result.runtime_ms > 0 && (
-                      <span className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Timer className="h-3 w-3" />
                         {result.runtime_ms}ms
                       </span>
                     )}
                   </div>
                 </div>
+
+                {/* Test summary bar - show for test-based results */}
+                {result.total_count > 0 &&
+                  result.failureType !== "COMPILE_ERROR" &&
+                  result.failureType !== "TIMEOUT" &&
+                  result.failureType !== "LOCKED_REGION_MODIFIED" && (
+                  <TestSummaryBar
+                    passed={result.passed_count}
+                    total={result.total_count}
+                    isPassed={isPassed}
+                  />
+                )}
 
                 {/* Success message */}
                 {isPassed && successMessage && (
@@ -389,22 +291,59 @@ export function FixErrorResultPanel({
                   </div>
                 )}
 
-                {/* Failure message */}
-                {hasFailed && failureMessage && !result.stderr && (
-                  <p className="text-sm text-muted-foreground">{failureMessage}</p>
-                )}
+                {/* Failure feedback - calm, generic, no solution leakage */}
+                {hasFailed && (
+                  <div className="space-y-3">
+                    {/* Error output (stderr) - only for compilation/runtime errors */}
+                    {result.stderr && (
+                      result.failureType === "COMPILE_ERROR" ||
+                      result.failureType === "RUNTIME_ERROR"
+                    ) && (
+                      <ErrorBlock content={result.stderr} />
+                    )}
 
-                {/* Error output (stderr) */}
-                {result.stderr && <ErrorBlock content={result.stderr} />}
+                    {/* Generic failure guidance */}
+                    {result.failureType === "WRONG_ANSWER" && (
+                      <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                        <p className="text-sm text-muted-foreground">
+                          {result.passed_count > 0
+                            ? "Some test cases failed. Review your logic for edge cases and boundary conditions."
+                            : failureMessage || "Your fix didn't produce the expected output. Review your changes and try again."
+                          }
+                        </p>
+                      </div>
+                    )}
 
-                {/* Diff viewer (for output_comparison) */}
-                {result.diff && result.diff.length > 0 && (
-                  <DiffViewer diff={result.diff} />
-                )}
+                    {result.failureType === "TIMEOUT" && (
+                      <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                        <p className="text-sm text-muted-foreground">
+                          Your code took too long to execute. Check for infinite loops or inefficient operations.
+                        </p>
+                      </div>
+                    )}
 
-                {/* Test case results */}
-                {result.testResults && result.testResults.length > 0 && !result.stderr && (
-                  <TestResultsList testResults={result.testResults} />
+                    {result.failureType === "LOCKED_REGION_MODIFIED" && (
+                      <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                        <div className="flex items-start gap-2.5">
+                          <ShieldAlert className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground mb-1">Locked code was modified</p>
+                            <p className="text-sm text-muted-foreground">
+                              You can only edit code within the highlighted editable region. Reset your code and try again.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {result.failureType === "VALIDATOR_ERROR" && (
+                      <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                        <p className="text-sm text-muted-foreground">
+                          An internal validation error occurred. Please report this problem.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </>
             )}
