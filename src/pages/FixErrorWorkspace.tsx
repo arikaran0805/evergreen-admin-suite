@@ -21,14 +21,11 @@ import {
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { usePublishedFixErrorProblem } from "@/hooks/useFixErrorProblemBySlug";
 import { usePublishedPracticeProblems, type ProblemWithMapping } from "@/hooks/usePracticeProblems";
+import { useFixErrorJudge } from "@/hooks/useFixErrorJudge";
 import { ProblemListDrawer } from "@/components/practice/ProblemListDrawer";
 import { FixErrorDescriptionPanel } from "@/components/fix-error/FixErrorDescriptionPanel";
 import { FixErrorCodeEditor } from "@/components/fix-error/FixErrorCodeEditor";
-import {
-  FixErrorResultPanel,
-  type FixErrorVerdict,
-  type FixErrorTestResult,
-} from "@/components/fix-error/FixErrorResultPanel";
+import { FixErrorResultPanel } from "@/components/fix-error/FixErrorResultPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,11 +48,6 @@ export default function FixErrorWorkspace() {
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
   const resultPanelRef = useRef<ImperativePanelHandle>(null);
 
-  // Result state
-  const [verdict, setVerdict] = useState<FixErrorVerdict>("idle");
-  const [error, setError] = useState<string | undefined>();
-  const [testResults, setTestResults] = useState<FixErrorTestResult[]>([]);
-
   // Fetch skill info
   const { data: skill } = useQuery({
     queryKey: ["practice-skill-by-slug", skillId],
@@ -75,6 +67,9 @@ export default function FixErrorWorkspace() {
 
   const { data: allProblemsInSkill = [] } = usePublishedPracticeProblems(skillId);
   const { data: problem, isLoading } = usePublishedFixErrorProblem(slug);
+
+  // Use the new judge hook
+  const { verdict, result, run, submit, reset } = useFixErrorJudge(problem ?? null);
 
   // Panel expand handlers
   const handleExpandDescription = () =>
@@ -115,7 +110,6 @@ export default function FixErrorWorkspace() {
     }
   };
 
-
   // Navigation
   const currentIndex = allProblemsInSkill.findIndex((p) => p.slug === slug);
   const prevProblem = currentIndex > 0 ? allProblemsInSkill[currentIndex - 1] : null;
@@ -125,6 +119,7 @@ export default function FixErrorWorkspace() {
       : null;
 
   const navigateToProblem = (p: ProblemWithMapping) => {
+    reset(); // Reset judge state on navigation
     if (p.problemType === "predict-output") {
       navigate(`/practice/${skillId}/predict/${p.slug}`);
     } else if (p.problemType === "fix-error") {
@@ -145,6 +140,7 @@ export default function FixErrorWorkspace() {
     problemSlug: string,
     problemType?: string
   ) => {
+    reset();
     if (problemType === "predict-output") {
       navigate(`/practice/${skillId}/predict/${problemSlug}`);
     } else if (problemType === "fix-error") {
@@ -154,101 +150,11 @@ export default function FixErrorWorkspace() {
     }
   };
 
-  // ==================
-  // Execution Logic
-  // ==================
-  const executeCode = async (code: string, mode: "run" | "submit") => {
-    if (!problem) return;
-    setVerdict("running");
-    setError(undefined);
-    setTestResults([]);
+  // Handlers for code editor
+  const handleRun = (code: string) => run(code);
+  const handleSubmit = (code: string) => submit(code);
 
-    try {
-      if (problem.validation_type === "output_comparison") {
-        const { data, error: fnError } = await supabase.functions.invoke(
-          "execute-code",
-          { body: { code, language: problem.language } }
-        );
-
-        if (fnError) {
-          setVerdict("runtime_error");
-          setError(fnError.message);
-          return;
-        }
-
-        const output = (data?.output || "").trim();
-        const expected = (problem.expected_output || "").trim();
-
-        if (data?.error) {
-          setVerdict("runtime_error");
-          setError(data.error);
-          return;
-        }
-
-        if (output === expected) {
-          setVerdict("accepted");
-        } else {
-          setVerdict("wrong_answer");
-          setTestResults([
-            { id: 0, input: "(full program)", expected, actual: output, passed: false },
-          ]);
-        }
-      } else if (problem.validation_type === "test_cases") {
-        const results: FixErrorTestResult[] = [];
-        let allPassed = true;
-        let executionError: string | undefined;
-
-        for (let i = 0; i < problem.test_cases.length; i++) {
-          const tc = problem.test_cases[i];
-          const fullCode = `${code}\n\n# Test\n${tc.input}`;
-
-          const { data, error: fnError } = await supabase.functions.invoke(
-            "execute-code",
-            { body: { code: fullCode, language: problem.language } }
-          );
-
-          if (fnError) { executionError = fnError.message; allPassed = false; break; }
-          if (data?.error) { executionError = data.error; allPassed = false; break; }
-
-          const output = (data?.output || "").trim();
-          const expected = (tc.expected_output || "").trim();
-          const passed = output === expected;
-          if (!passed) allPassed = false;
-
-          results.push({ id: i, input: tc.input, expected, actual: output, passed });
-          if (mode === "run" && !passed) break;
-        }
-
-        if (executionError) {
-          setVerdict("runtime_error");
-          setError(executionError);
-        } else if (allPassed) {
-          setVerdict("accepted");
-        } else {
-          setVerdict("wrong_answer");
-        }
-        setTestResults(results);
-      } else {
-        const { data, error: fnError } = await supabase.functions.invoke(
-          "execute-code",
-          { body: { code, language: problem.language } }
-        );
-
-        if (fnError || data?.error) {
-          setVerdict("runtime_error");
-          setError(fnError?.message || data?.error);
-          return;
-        }
-        setVerdict("accepted");
-      }
-    } catch (err) {
-      setVerdict("runtime_error");
-      setError(err instanceof Error ? err.message : "Execution failed");
-    }
-  };
-
-  const handleRun = (code: string) => executeCode(code, "run");
-  const handleSubmit = (code: string) => executeCode(code, "submit");
+  const isRunning = verdict === "running";
 
   // Loading
   if (isLoading) {
@@ -304,29 +210,25 @@ export default function FixErrorWorkspace() {
           <span>{skill?.name || "Problems"}</span>
         </button>
         <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handlePrevProblem}
-            disabled={!prevProblem}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevProblem} disabled={!prevProblem}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium px-2">{problem.title}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleNextProblem}
-            disabled={!nextProblem}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNextProblem} disabled={!nextProblem}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
     </div>
   );
+
+  // Shared result panel props
+  const resultPanelProps = {
+    verdict,
+    result,
+    successMessage: problem.success_message,
+    failureMessage: problem.failure_message,
+  };
 
   // Expanded panel views
   if (expandedPanel) {
@@ -360,7 +262,7 @@ export default function FixErrorWorkspace() {
                 language={problem.language}
                 onRun={handleRun}
                 onSubmit={handleSubmit}
-                isRunning={verdict === "running"}
+                isRunning={isRunning}
                 isExpanded
                 onToggleExpand={handleExpandEditor}
               />
@@ -369,11 +271,7 @@ export default function FixErrorWorkspace() {
           {expandedPanel === "result" && (
             <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <FixErrorResultPanel
-                verdict={verdict}
-                error={error}
-                testResults={testResults}
-                successMessage={problem.success_message}
-                failureMessage={problem.failure_message}
+                {...resultPanelProps}
                 isExpanded
                 onToggleExpand={handleExpandResult}
               />
@@ -417,17 +315,13 @@ export default function FixErrorWorkspace() {
                 language={problem.language}
                 onRun={handleRun}
                 onSubmit={handleSubmit}
-                isRunning={verdict === "running"}
+                isRunning={isRunning}
                 onToggleExpand={handleExpandEditor}
               />
             </div>
             <div className="min-h-[25vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <FixErrorResultPanel
-                verdict={verdict}
-                error={error}
-                testResults={testResults}
-                successMessage={problem.success_message}
-                failureMessage={problem.failure_message}
+                {...resultPanelProps}
                 onToggleExpand={handleExpandResult}
               />
             </div>
@@ -478,7 +372,7 @@ export default function FixErrorWorkspace() {
                         language={problem.language}
                         onRun={handleRun}
                         onSubmit={handleSubmit}
-                        isRunning={verdict === "running"}
+                        isRunning={isRunning}
                         onToggleExpand={handleExpandEditor}
                         isCollapsed={isEditorCollapsed}
                         onToggleCollapse={handleToggleEditorCollapse}
@@ -501,11 +395,7 @@ export default function FixErrorWorkspace() {
                   >
                     <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <FixErrorResultPanel
-                        verdict={verdict}
-                        error={error}
-                        testResults={testResults}
-                        successMessage={problem.success_message}
-                        failureMessage={problem.failure_message}
+                        {...resultPanelProps}
                         onToggleExpand={handleExpandResult}
                         isCollapsed={isResultCollapsed}
                         onToggleCollapse={handleToggleResultCollapse}
