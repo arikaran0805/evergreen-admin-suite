@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, ArrowLeft, BookOpen, AlertCircle, Eye, Code2, GripVertical } from "lucide-react";
+import { Plus, ArrowLeft, BookOpen, AlertCircle, Eye, Code2, GripVertical, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -275,54 +275,55 @@ export default function AdminPracticeProblems() {
             </AlertDescription>
           </Alert>
           
-          {/* Show standalone problems */}
+          {/* Show standalone problems - matching course-linked style */}
           {skillProblems && skillProblems.length > 0 ? (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">Problems</CardTitle>
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            <div className="border border-border rounded-lg overflow-hidden bg-card">
+              {/* Header - matching LessonProblemsSection style */}
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Problems</span>
+                  <Badge variant="secondary" className="text-xs">
                     {skillProblems.length} problems
-                  </span>
+                  </Badge>
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="gap-1"
+                  className="gap-1.5"
                   onClick={() => setShowTypeSelect(true)}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" />
                   Add Problem
                 </Button>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="divide-y divide-border/50">
-                  {skillProblems.map((problem) => (
-                    <div
-                      key={problem.id}
-                      onClick={() => handleProblemClick(problem.id)}
-                      className="flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors group"
-                    >
-                      <div className="text-muted-foreground/40 group-hover:text-muted-foreground">
-                        <GripVertical className="h-3.5 w-3.5" />
-                      </div>
-                      <Code2 className="h-4 w-4 text-primary/70 shrink-0" />
-                      <span className="flex-1 text-sm font-medium">{problem.title}</span>
-                      <Badge className={`text-xs ${
-                        problem.difficulty === "Easy" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-                        problem.difficulty === "Medium" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
-                        "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                      }`}>
-                        {problem.difficulty}
-                      </Badge>
-                      <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
-                        {problem.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              {/* Problem rows - matching SortableProblemRow style */}
+              <div className="divide-y divide-border/50">
+                {skillProblems.map((problem) => (
+                  <div
+                    key={problem.id}
+                    onClick={() => handleProblemClick(problem.id)}
+                    className="flex items-center gap-2 px-4 py-2.5 pl-10 hover:bg-muted/30 cursor-pointer transition-colors group bg-background"
+                  >
+                    <button className="cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground/40 hover:text-muted-foreground touch-none">
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </button>
+                    <Code2 className="h-4 w-4 text-primary/70 shrink-0" />
+                    <span className="flex-1 text-sm">{problem.title}</span>
+                    <Badge className={`text-xs ${
+                      problem.difficulty === "Easy" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
+                      problem.difficulty === "Medium" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
+                      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                    }`}>
+                      {problem.difficulty}
+                    </Badge>
+                    <Badge variant={problem.status === "published" ? "default" : "secondary"} className="text-xs">
+                      {problem.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center">
