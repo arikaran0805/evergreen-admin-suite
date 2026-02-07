@@ -391,18 +391,16 @@ export default function FixErrorWorkspace() {
       />
       {topNav}
 
-      {/* Main Content - 2-row layout */}
+      {/* Main Content - 3-panel layout: Left (Description) | Right-Top (Editor) / Right-Bottom (Result) */}
       <div className="flex-1 min-h-0 overflow-hidden bg-muted/30">
         {isMobile ? (
           <div className="h-full flex flex-col overflow-auto p-1.5 gap-1.5">
-            {/* Problem Description */}
             <div className="min-h-[25vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <FixErrorDescriptionPanel
                 problem={problem}
                 onToggleExpand={handleExpandDescription}
               />
             </div>
-            {/* Code Editor */}
             <div className="min-h-[40vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <FixErrorCodeEditor
                 initialCode={problem.buggy_code}
@@ -413,7 +411,6 @@ export default function FixErrorWorkspace() {
                 onToggleExpand={handleExpandEditor}
               />
             </div>
-            {/* Result */}
             <div className="min-h-[25vh] bg-card rounded-lg border border-border shadow-sm overflow-hidden">
               <FixErrorResultPanel
                 verdict={verdict}
@@ -427,24 +424,24 @@ export default function FixErrorWorkspace() {
           </div>
         ) : (
           <div className="h-full p-1.5">
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* TOP ROW: Problem (left) | Code Editor (right) */}
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* LEFT: Problem Description */}
+              <ResizablePanel defaultSize={35} minSize={20} className="min-h-0">
+                <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                  <FixErrorDescriptionPanel
+                    problem={problem}
+                    onToggleExpand={handleExpandDescription}
+                  />
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle />
+
+              {/* RIGHT: Editor (top) + Result (bottom) */}
               <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
-                <ResizablePanelGroup direction="horizontal" className="h-full">
-                  {/* Problem Description */}
-                  <ResizablePanel defaultSize={35} minSize={20} className="min-h-0">
-                    <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-                      <FixErrorDescriptionPanel
-                        problem={problem}
-                        onToggleExpand={handleExpandDescription}
-                      />
-                    </div>
-                  </ResizablePanel>
-
-                  <ResizableHandle />
-
+                <ResizablePanelGroup direction="vertical" className="h-full">
                   {/* Code Editor */}
-                  <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
+                  <ResizablePanel defaultSize={60} minSize={25} className="min-h-0">
                     <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <FixErrorCodeEditor
                         initialCode={problem.buggy_code}
@@ -456,23 +453,23 @@ export default function FixErrorWorkspace() {
                       />
                     </div>
                   </ResizablePanel>
+
+                  <ResizableHandle />
+
+                  {/* Result / Feedback */}
+                  <ResizablePanel defaultSize={40} minSize={15} className="min-h-0">
+                    <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                      <FixErrorResultPanel
+                        verdict={verdict}
+                        error={error}
+                        testResults={testResults}
+                        successMessage={problem.success_message}
+                        failureMessage={problem.failure_message}
+                        onToggleExpand={handleExpandResult}
+                      />
+                    </div>
+                  </ResizablePanel>
                 </ResizablePanelGroup>
-              </ResizablePanel>
-
-              <ResizableHandle />
-
-              {/* BOTTOM ROW: Result / Feedback */}
-              <ResizablePanel defaultSize={35} minSize={15} className="min-h-0">
-                <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-                  <FixErrorResultPanel
-                    verdict={verdict}
-                    error={error}
-                    testResults={testResults}
-                    successMessage={problem.success_message}
-                    failureMessage={problem.failure_message}
-                    onToggleExpand={handleExpandResult}
-                  />
-                </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
