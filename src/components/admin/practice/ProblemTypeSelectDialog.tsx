@@ -10,13 +10,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Code2, Eye, ArrowRight } from "lucide-react";
+import { Code2, Eye, Bug, ArrowRight } from "lucide-react";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectProblemSolving: () => void;
   onSelectPredictOutput: () => void;
+  onSelectFixError?: () => void;
 }
 
 const problemTypes = [
@@ -40,6 +41,16 @@ const problemTypes = [
     iconBg: "bg-amber-500/10",
     iconColor: "text-amber-500",
   },
+  {
+    key: "fix-error" as const,
+    icon: Bug,
+    title: "Fix the Error",
+    description: "Present broken code for learners to debug. Tests real problem-solving and code reading skills.",
+    tags: ["Debugging", "Code Fix", "Error Analysis"],
+    accentClass: "border-destructive/20 hover:border-destructive/50 hover:bg-destructive/5",
+    iconBg: "bg-destructive/10",
+    iconColor: "text-destructive",
+  },
 ];
 
 export function ProblemTypeSelectDialog({
@@ -47,13 +58,16 @@ export function ProblemTypeSelectDialog({
   onOpenChange,
   onSelectProblemSolving,
   onSelectPredictOutput,
+  onSelectFixError,
 }: Props) {
   const handleSelect = (key: string) => {
     onOpenChange(false);
     if (key === "problem-solving") {
       onSelectProblemSolving();
-    } else {
+    } else if (key === "predict-output") {
       onSelectPredictOutput();
+    } else if (key === "fix-error") {
+      onSelectFixError?.();
     }
   };
 

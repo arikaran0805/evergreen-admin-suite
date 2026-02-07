@@ -1292,6 +1292,137 @@ export type Database = {
         }
         Relationships: []
       }
+      fix_error_mappings: {
+        Row: {
+          context_note: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number
+          fix_error_problem_id: string
+          id: string
+          sub_topic_id: string
+        }
+        Insert: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          fix_error_problem_id: string
+          id?: string
+          sub_topic_id: string
+        }
+        Update: {
+          context_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          fix_error_problem_id?: string
+          id?: string
+          sub_topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fix_error_mappings_fix_error_problem_id_fkey"
+            columns: ["fix_error_problem_id"]
+            isOneToOne: false
+            referencedRelation: "fix_error_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fix_error_mappings_sub_topic_id_fkey"
+            columns: ["sub_topic_id"]
+            isOneToOne: false
+            referencedRelation: "sub_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fix_error_problems: {
+        Row: {
+          buggy_code: string
+          correct_code: string
+          created_at: string
+          created_by: string | null
+          custom_validator: string | null
+          description: string | null
+          difficulty: string
+          display_order: number
+          expected_output: string | null
+          failure_message: string | null
+          hints: Json | null
+          id: string
+          is_premium: boolean
+          language: string
+          skill_id: string
+          slug: string
+          status: string
+          success_message: string | null
+          tags: string[] | null
+          test_cases: Json | null
+          title: string
+          updated_at: string
+          validation_type: string
+        }
+        Insert: {
+          buggy_code?: string
+          correct_code?: string
+          created_at?: string
+          created_by?: string | null
+          custom_validator?: string | null
+          description?: string | null
+          difficulty?: string
+          display_order?: number
+          expected_output?: string | null
+          failure_message?: string | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean
+          language?: string
+          skill_id: string
+          slug: string
+          status?: string
+          success_message?: string | null
+          tags?: string[] | null
+          test_cases?: Json | null
+          title: string
+          updated_at?: string
+          validation_type?: string
+        }
+        Update: {
+          buggy_code?: string
+          correct_code?: string
+          created_at?: string
+          created_by?: string | null
+          custom_validator?: string | null
+          description?: string | null
+          difficulty?: string
+          display_order?: number
+          expected_output?: string | null
+          failure_message?: string | null
+          hints?: Json | null
+          id?: string
+          is_premium?: boolean
+          language?: string
+          skill_id?: string
+          slug?: string
+          status?: string
+          success_message?: string | null
+          tags?: string[] | null
+          test_cases?: Json | null
+          title?: string
+          updated_at?: string
+          validation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fix_error_problems_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "practice_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
