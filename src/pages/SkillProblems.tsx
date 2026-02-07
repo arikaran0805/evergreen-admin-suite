@@ -31,7 +31,7 @@ interface DisplayProblem {
   lessonTitle?: string;
   subTopicId?: string;
   subTopicTitle?: string;
-  problemType?: "problem-solving" | "predict-output";
+  problemType?: "problem-solving" | "predict-output" | "fix-error";
 }
 
 export default function SkillProblems() {
@@ -147,6 +147,8 @@ export default function SkillProblems() {
     }
     if (problem.problemType === "predict-output") {
       navigate(`/practice/${skillId}/predict/${problem.slug}`);
+    } else if (problem.problemType === "fix-error") {
+      navigate(`/practice/${skillId}/fix-error/${problem.slug}`);
     } else {
       navigate(`/practice/${skillId}/problem/${problem.slug}`);
     }

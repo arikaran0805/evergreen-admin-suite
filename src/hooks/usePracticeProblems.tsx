@@ -134,7 +134,7 @@ export interface ProblemWithMapping extends PracticeProblem {
   lesson_title?: string;
   sub_topic_id?: string;
   sub_topic_title?: string;
-  problemType?: "problem-solving" | "predict-output";
+  problemType?: "problem-solving" | "predict-output" | "fix-error";
 }
 
 export function usePublishedPracticeProblems(skillSlug: string | undefined) {
@@ -207,12 +207,25 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
           .in("sub_topic_id", subTopicIds)
           .eq("predict_output_problems.status", "published")
           .order("display_order", { ascending: true });
+
+        // Fetch fix error mappings
+        const { data: fixErrorMappings } = await supabase
+          .from("fix_error_mappings")
+          .select(`
+            fix_error_problem_id,
+            sub_topic_id,
+            display_order,
+            fix_error_problems!inner(*)
+          `)
+          .in("sub_topic_id", subTopicIds)
+          .eq("fix_error_problems.status", "published")
+          .order("display_order", { ascending: true });
         
         if (sortedSubTopics) {
           // Create a map of sub-topic info with lesson order for sorting
           const subTopicMap = new Map(sortedSubTopics.map((st, index) => [st.id, { ...st, sortIndex: index }]));
           
-          // Group regular mappings by sub-topic
+          // Group all mappings by sub-topic
           const problemsBySubTopic = new Map<string, any[]>();
           if (mappings) {
             for (const mapping of mappings) {
@@ -227,6 +240,15 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
             for (const mapping of predictMappings) {
               const existing = problemsBySubTopic.get(mapping.sub_topic_id) || [];
               existing.push({ ...mapping, problemType: "predict-output" as const });
+              problemsBySubTopic.set(mapping.sub_topic_id, existing);
+            }
+          }
+
+          // Group fix error mappings by sub-topic
+          if (fixErrorMappings) {
+            for (const mapping of fixErrorMappings) {
+              const existing = problemsBySubTopic.get(mapping.sub_topic_id) || [];
+              existing.push({ ...mapping, problemType: "fix-error" as const });
               problemsBySubTopic.set(mapping.sub_topic_id, existing);
             }
           }
@@ -245,7 +267,6 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
                 problemsWithMappings.push({
                   ...transformProblem({
                     ...predictProblem,
-                    // Map predict output fields to PracticeProblem shape
                     sub_topic: "",
                     description: predictProblem.prompt || "",
                     examples: [],
@@ -265,6 +286,31 @@ export function usePublishedPracticeProblems(skillSlug: string | undefined) {
                   sub_topic_id: subTopic.id,
                   sub_topic_title: subTopic.title,
                   problemType: "predict-output",
+                });
+              } else if (mapping.problemType === "fix-error") {
+                const fixProblem = mapping.fix_error_problems;
+                problemsWithMappings.push({
+                  ...transformProblem({
+                    ...fixProblem,
+                    sub_topic: "",
+                    description: fixProblem.description || "",
+                    examples: [],
+                    constraints: [],
+                    starter_code: {},
+                    is_premium: fixProblem.is_premium || false,
+                    test_cases: [],
+                    input_format: "",
+                    output_format: "",
+                    time_limit: 0,
+                    memory_limit: 0,
+                    supported_languages: [fixProblem.language],
+                    function_signature: { name: "solution", parameters: [], return_type: "str" },
+                  }),
+                  lesson_id: subTopic.lesson_id,
+                  lesson_title: lesson?.title || "General",
+                  sub_topic_id: subTopic.id,
+                  sub_topic_title: subTopic.title,
+                  problemType: "fix-error",
                 });
               } else {
                 problemsWithMappings.push({
