@@ -92,6 +92,13 @@ export default function PredictOutputWorkspace() {
     }
   };
 
+  const handleCommentClick = () => {
+    setDescriptionActiveTab("discuss");
+    if (isDescriptionCollapsed) {
+      handleToggleCollapseDescription();
+    }
+  };
+
   // Navigation
   const currentIndex = allProblemsInSkill.findIndex((p) => p.slug === problemSlug);
   const prevProblem = currentIndex > 0 ? allProblemsInSkill[currentIndex - 1] : null;
@@ -209,6 +216,7 @@ export default function PredictOutputWorkspace() {
                 problem={problem}
                 isExpanded={true}
                 onToggleExpand={handleExpandCode}
+                onCommentClick={handleCommentClick}
               />
             </div>
           )}
@@ -273,6 +281,7 @@ export default function PredictOutputWorkspace() {
                 isCollapsed={isCodeCollapsed}
                 onToggleCollapse={handleToggleCollapseCode}
                 onToggleExpand={handleExpandCode}
+                onCommentClick={handleCommentClick}
               />
             </div>
             {/* Output + Result */}
@@ -337,6 +346,7 @@ export default function PredictOutputWorkspace() {
                         isCollapsed={isCodeCollapsed}
                         onToggleCollapse={handleToggleCollapseCode}
                         onToggleExpand={handleExpandCode}
+                        onCommentClick={handleCommentClick}
                       />
                     </div>
                   </ResizablePanel>
