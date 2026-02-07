@@ -188,7 +188,7 @@ export function PredictEditorPanel({
   };
 
   const lineCount = problem.code.split("\n").length;
-  const monacoHeight = Math.max(120, Math.min(lineCount * 20 + 40, 500));
+  const monacoHeight = lineCount * 20 + 32;
 
   // Expanded editor only
   if (expandedPanel === "editor") {
@@ -225,8 +225,8 @@ export function PredictEditorPanel({
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
                     lineNumbers: "on",
-                    lineNumbersMinChars: 3,
-                    lineDecorationsWidth: 16,
+                    lineNumbersMinChars: 1,
+                    lineDecorationsWidth: 8,
                     glyphMargin: true,
                     renderLineHighlight: "line",
                     folding: true,
@@ -535,8 +535,8 @@ export function PredictEditorPanel({
                           minimap: { enabled: false },
                           scrollBeyondLastLine: false,
                           lineNumbers: "on",
-                          lineNumbersMinChars: 3,
-                          lineDecorationsWidth: 16,
+                          lineNumbersMinChars: 1,
+                          lineDecorationsWidth: 8,
                           glyphMargin: true,
                           renderLineHighlight: "line",
                           folding: true,
