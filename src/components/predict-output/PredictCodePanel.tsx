@@ -17,7 +17,7 @@ import {
   Braces,
   Copy,
   Check,
-  Maximize,
+  
   Expand,
   Shrink,
   PanelTopOpen,
@@ -116,27 +116,30 @@ export function PredictCodePanel({
     }
   };
 
-  // Collapsed state
+  // Collapsed state: show header only
   if (isCollapsed && !isExpanded) {
     return (
-      <div
-        className="h-full flex flex-col items-center bg-card py-3 group"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <Braces className="h-4 w-4 text-primary mb-2" />
-        <span
-          className="font-medium text-xs text-muted-foreground"
-          style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-        >
-          Code
-        </span>
-        <div className="mt-auto flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          {onToggleCollapse && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggleCollapse}>
-              <PanelTopOpen className="h-3 w-3" />
-            </Button>
-          )}
+      <div className="h-full flex flex-col bg-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
+          <div className="flex items-center gap-2">
+            <Braces className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Code</span>
+            <Badge variant="outline" className="text-xs capitalize h-6">
+              {problem.language}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {onToggleCollapse && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleCollapse} title="Expand panel">
+                <PanelTopOpen className="h-4 w-4" />
+              </Button>
+            )}
+            {onToggleExpand && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleExpand} title="Fullscreen">
+                <Expand className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -165,15 +168,6 @@ export function PredictCodePanel({
         >
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy} title="Copy code">
             {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => document.documentElement.requestFullscreen()}
-            title="Fullscreen"
-          >
-            <Maximize className="h-4 w-4" />
           </Button>
           {onToggleCollapse && (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleCollapse}>

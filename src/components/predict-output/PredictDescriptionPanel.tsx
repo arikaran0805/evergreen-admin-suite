@@ -57,81 +57,27 @@ export function PredictDescriptionPanel({
 
   const alreadySolved = attempts.some((a) => a.is_correct);
 
-  // Collapsed state: vertical tabs
+  // Collapsed state: show header only
   if (isCollapsed && !isExpanded) {
     return (
-      <div
-        className="h-full w-7 flex flex-col bg-card group"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="flex-1 flex flex-col py-1">
-          <button
-            onClick={() => setActiveTab("description")}
-            className={cn(
-              "flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2",
-              activeTab === "description"
-                ? "border-primary text-foreground bg-muted/50"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+      <div className="h-full flex flex-col bg-card">
+        <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Description</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {onToggleCollapse && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleCollapse} title="Expand panel">
+                <PanelLeftClose className="h-4 w-4" />
+              </Button>
             )}
-          >
-            <FileText className="h-4 w-4 shrink-0" />
-            <span
-              className="font-medium text-xs"
-              style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-            >
-              Description
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("explanation")}
-            className={cn(
-              "flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2",
-              activeTab === "explanation"
-                ? "border-primary text-foreground bg-muted/50"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            {onToggleExpand && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleExpand} title="Fullscreen">
+                <Expand className="h-4 w-4" />
+              </Button>
             )}
-          >
-            <BookOpen className="h-4 w-4 shrink-0" />
-            <span
-              className="font-medium text-xs"
-              style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-            >
-              Explanation
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("attempts")}
-            className={cn(
-              "flex flex-col items-center gap-1 py-2.5 transition-colors border-l-2",
-              activeTab === "attempts"
-                ? "border-primary text-foreground bg-muted/50"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <History className="h-4 w-4 shrink-0" />
-            <span
-              className="font-medium text-xs"
-              style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-            >
-              Attempts
-            </span>
-          </button>
-        </div>
-
-        <div className="flex flex-col items-center gap-0.5 py-2 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          {onToggleExpand && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggleExpand} title="Fullscreen">
-              <Expand className="h-3 w-3" />
-            </Button>
-          )}
-          {onToggleCollapse && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggleCollapse} title="Expand panel">
-              <PanelLeftClose className="h-3 w-3" />
-            </Button>
-          )}
+          </div>
         </div>
       </div>
     );
