@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
     hasSolution: boolean;
     slug: string;
    subTopicId?: string;
-   problemType?: "problem-solving" | "predict-output";
+   problemType?: "problem-solving" | "predict-output" | "fix-error";
   }
  
  export default function LessonProblems() {
@@ -137,6 +137,20 @@ import { cn } from "@/lib/utils";
           `)
           .in("sub_topic_id", subTopicIds)
           .order("display_order", { ascending: true });
+
+        // Get fix error mappings
+        const { data: fixErrorMappings } = await supabase
+          .from("fix_error_mappings")
+          .select(`
+            fix_error_problem_id,
+            sub_topic_id,
+            display_order,
+            fix_error_problems (
+              id, title, slug, difficulty, is_premium, status, language
+            )
+          `)
+          .in("sub_topic_id", subTopicIds)
+          .order("display_order", { ascending: true });
   
         // Build sub-topic title lookup
         const subTopicMap = new Map(subTopics.map(st => [st.id, { title: st.title, id: st.id }]));
@@ -168,6 +182,21 @@ import { cn } from "@/lib/utils";
                 subTopicTitle: subTopicMap.get(m.sub_topic_id)?.title || "General",
                 subTopicId: m.sub_topic_id,
                 problemType: "predict-output",
+                displayOrder: m.display_order,
+              });
+            });
+        }
+
+        // Add fix error problems
+        if (fixErrorMappings) {
+          fixErrorMappings
+            .filter((m: any) => m.fix_error_problems?.status === "published")
+            .forEach((m: any) => {
+              results.push({
+                ...m.fix_error_problems,
+                subTopicTitle: subTopicMap.get(m.sub_topic_id)?.title || "General",
+                subTopicId: m.sub_topic_id,
+                problemType: "fix-error",
                 displayOrder: m.display_order,
               });
             });
@@ -235,6 +264,8 @@ import { cn } from "@/lib/utils";
       }
       if (problem.problemType === "predict-output") {
         navigate(`/practice/${skillId}/predict/${problem.slug}`);
+      } else if (problem.problemType === "fix-error") {
+        navigate(`/practice/${skillId}/fix-error/${problem.slug}`);
       } else {
         navigate(`/practice/${skillId}/problem/${problem.slug}`);
       }

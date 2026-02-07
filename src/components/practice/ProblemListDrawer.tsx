@@ -12,7 +12,7 @@
    skillName: string;
    problems: ProblemWithMapping[];
    currentProblemSlug: string | undefined;
-   onSelectProblem: (problemSlug: string, problemType?: "problem-solving" | "predict-output") => void;
+   onSelectProblem: (problemSlug: string, problemType?: "problem-solving" | "predict-output" | "fix-error") => void;
  }
  
  const difficultyColors = {
