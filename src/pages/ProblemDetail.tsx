@@ -449,6 +449,8 @@ export default function ProblemDetail() {
     if (!p) return;
     if (p.problemType === "predict-output") {
       navigate(`/practice/${skillId}/predict/${p.slug}`);
+    } else if (p.problemType === "fix-error") {
+      navigate(`/practice/${skillId}/fix-error/${p.slug}`);
     } else {
       navigate(`/practice/${skillId}/problem/${p.slug}`);
     }
@@ -471,6 +473,8 @@ export default function ProblemDetail() {
           onSelectProblem={(slug, problemType) => {
             if (problemType === "predict-output") {
               navigate(`/practice/${skillId}/predict/${slug}`);
+            } else if (problemType === "fix-error") {
+              navigate(`/practice/${skillId}/fix-error/${slug}`);
             } else {
               navigate(`/practice/${skillId}/problem/${slug}`);
             }
@@ -582,6 +586,8 @@ export default function ProblemDetail() {
         onSelectProblem={(slug, problemType) => {
           if (problemType === "predict-output") {
             navigate(`/practice/${skillId}/predict/${slug}`);
+          } else if (problemType === "fix-error") {
+            navigate(`/practice/${skillId}/fix-error/${slug}`);
           } else {
             navigate(`/practice/${skillId}/problem/${slug}`);
           }
