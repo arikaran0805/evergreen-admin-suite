@@ -57,11 +57,12 @@ export function PredictEditorPanel({
   const [revealed, setRevealed] = useState(false);
   const [startTime] = useState(Date.now());
   const [isEditorHovered, setIsEditorHovered] = useState(false);
+  const [isResultHovered, setIsResultHovered] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
   const resultPanelRef = useRef<ImperativePanelHandle>(null);
   const [isEditorPanelCollapsed, setIsEditorPanelCollapsed] = useState(false);
-  const [isResultPanelCollapsed, setIsResultPanelCollapsed] = useState(false);
+  const [isResultPanelCollapsed, setIsResultPanelCollapsed] = useState(true);
 
   const submitMutation = useSubmitPredictOutputAttempt();
   const attemptCount = attempts.length;
@@ -433,7 +434,7 @@ export function PredictEditorPanel({
         {/* Output Textarea Panel */}
         <ResizablePanel
           ref={editorPanelRef}
-          defaultSize={50}
+          defaultSize={92}
           minSize={20}
           collapsible
           collapsedSize={8}
@@ -456,7 +457,7 @@ export function PredictEditorPanel({
         {/* Result Panel */}
         <ResizablePanel
           ref={resultPanelRef}
-          defaultSize={50}
+          defaultSize={8}
           minSize={10}
           collapsible
           collapsedSize={8}
@@ -464,10 +465,19 @@ export function PredictEditorPanel({
           onCollapse={() => setIsResultPanelCollapsed(true)}
           onExpand={() => setIsResultPanelCollapsed(false)}
         >
-          <div className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+          <div
+            className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
+            onMouseEnter={() => setIsResultHovered(true)}
+            onMouseLeave={() => setIsResultHovered(false)}
+          >
             <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
               <span className="text-sm font-medium">Result</span>
-              <div className="flex items-center gap-0.5">
+              <div
+                className={cn(
+                  "flex items-center gap-0.5 transition-opacity",
+                  isResultHovered || !isResultPanelCollapsed ? "opacity-100" : "opacity-0"
+                )}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
