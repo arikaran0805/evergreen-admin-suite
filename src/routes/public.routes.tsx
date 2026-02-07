@@ -28,6 +28,7 @@ import ProblemDetail from "@/pages/ProblemDetail";
 import LessonProblems from "@/pages/LessonProblems";
 import PredictOutputDetail from "@/pages/PredictOutputDetail";
 import PredictOutputWorkspace from "@/pages/PredictOutputWorkspace";
+import FixErrorWorkspace from "@/pages/FixErrorWorkspace";
 
 /**
  * Public Routes - No authentication required
@@ -47,6 +48,7 @@ export const publicRoutes = [
   <Route key="problem-detail" path="/practice/:skillId/problem/:problemId" element={<ProblemDetail />} />,
   <Route key="predict-output-detail" path="/predict-output/:slug" element={<PredictOutputDetail />} />,
   <Route key="predict-output-workspace" path="/practice/:skillId/predict/:problemSlug" element={<PredictOutputWorkspace />} />,
+  <Route key="fix-error-workspace" path="/practice/:skillId/fix-error/:slug" element={<FixErrorWorkspace />} />,
   <Route key="tag-posts" path="/tag/:slug" element={<TagPosts />} />,
   <Route key="tags" path="/tags" element={<Tags />} />,
   <Route key="about" path="/about" element={<About />} />,
