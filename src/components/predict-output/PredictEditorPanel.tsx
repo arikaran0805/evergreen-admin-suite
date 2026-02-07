@@ -2,7 +2,7 @@
  * PredictEditorPanel
  * Right column for the Predict workspace.
  * Top: "Your Output" — full-bleed textarea, no nested containers.
- * Bottom: "Result" — clean console-like comparison view.
+ * Bottom: "Result" — calm, line-by-line comparison view.
  */
 import { useState, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,12 @@ import {
   Maximize,
   PanelTopClose,
   PanelTopOpen,
-  X,
-  Check,
   RotateCcw,
   Terminal,
   BarChart3,
+  CheckCircle2,
+  CircleX,
+  Loader2,
 } from "lucide-react";
 import {
   ResizableHandle,
@@ -42,7 +43,7 @@ interface PredictEditorPanelProps {
   onTabSwitchToAttempts?: () => void;
 }
 
-type ViewState = "answering" | "correct" | "incorrect";
+type ViewState = "answering" | "checking" | "correct" | "incorrect";
 
 export function PredictEditorPanel({
   problem,
@@ -79,6 +80,11 @@ export function PredictEditorPanel({
   const handleSubmit = useCallback(async () => {
     if (!userOutput.trim()) return;
 
+    // Enter checking state
+    setViewState("checking");
+    resultPanelRef.current?.expand();
+    resultPanelRef.current?.resize(50);
+
     const result = matchOutput(
       userOutput,
       problem.expected_output,
@@ -97,6 +103,9 @@ export function PredictEditorPanel({
         : problem.xp_value;
     }
 
+    // Brief checking delay for UX feel
+    await new Promise((r) => setTimeout(r, 600));
+
     try {
       await submitMutation.mutateAsync({
         problem_id: problem.id,
@@ -112,8 +121,6 @@ export function PredictEditorPanel({
     }
 
     setViewState(result.isCorrect ? "correct" : "incorrect");
-    resultPanelRef.current?.expand();
-    resultPanelRef.current?.resize(50);
 
     if (result.isCorrect) {
       onTabSwitchToAttempts?.();
@@ -325,112 +332,234 @@ export function PredictEditorPanel({
     );
   }
 
-  /* ─── Result panel body: clean console-like view ─── */
+  /* ─── Line diff renderer ─── */
+  function renderLineDiffRows() {
+    if (!lineDiff) return null;
+    const maxLen = Math.max(lineDiff.userLines.length, lineDiff.expectedLines.length);
+
+    return Array.from({ length: maxLen }, (_, i) => {
+      const userLine = lineDiff.userLines[i] ?? "";
+      const expectedLine = lineDiff.expectedLines[i] ?? "";
+      const isMismatch = lineDiff.mismatches.includes(i);
+      const isMissing = i >= lineDiff.userLines.length;
+      const isExtra = i >= lineDiff.expectedLines.length;
+
+      return (
+        <div key={i} className="contents">
+          {/* Line number */}
+          <span className="text-[11px] text-muted-foreground/30 font-mono tabular-nums text-right pr-3 pt-px select-none">
+            {i + 1}
+          </span>
+          {/* Your Output cell */}
+          <span
+            className={cn(
+              "font-mono text-[13px] leading-6 whitespace-pre px-3",
+              isMissing && "italic text-muted-foreground/30",
+              isExtra && isMismatch && "bg-destructive/8 text-foreground/90",
+              !isMissing && !isExtra && isMismatch && "bg-destructive/8 text-foreground/90"
+            )}
+          >
+            {isMissing ? "—" : userLine || "\u00A0"}
+          </span>
+          {/* Expected cell */}
+          <span
+            className={cn(
+              "font-mono text-[13px] leading-6 whitespace-pre px-3",
+              isExtra && "italic text-muted-foreground/30",
+              isMissing && isMismatch && "bg-primary/8 text-foreground/90",
+              !isMissing && !isExtra && isMismatch && "bg-primary/8 text-foreground/90"
+            )}
+          >
+            {isExtra ? "—" : (revealed || viewState === "correct" ? (expectedLine || "\u00A0") : "•••")}
+          </span>
+        </div>
+      );
+    });
+  }
+
+  /* ─── Result panel body ─── */
   function renderResultBody() {
-    // Revealed
+
+    // 1️⃣ EMPTY STATE
+    if (viewState === "answering" && !revealed) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <BarChart3 className="h-5 w-5 text-muted-foreground/15" />
+          <p className="text-sm text-muted-foreground/35 font-medium">
+            Submit your answer to see results
+          </p>
+        </div>
+      );
+    }
+
+    // 2️⃣ CHECKING STATE
+    if (viewState === "checking") {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="h-5 w-5 text-muted-foreground/40 animate-spin" />
+          <p className="text-sm text-muted-foreground/50 font-medium">
+            Checking your output…
+          </p>
+        </div>
+      );
+    }
+
+    // 5️⃣ REVEAL STATE (before submit)
     if (revealed && viewState === "answering") {
+      const revealLineDiff = userOutput.trim()
+        ? getLineDiff(userOutput, problem.expected_output)
+        : null;
+
       return (
         <div className="flex-1 min-h-0 flex flex-col overflow-auto">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
-            <Eye className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Revealed</span>
+          {/* Status bar */}
+          <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border/30">
+            <Eye className="h-4 w-4 text-amber-500/70" />
+            <span className="text-sm font-medium text-amber-600/80 dark:text-amber-400/80">
+              Answer revealed
+            </span>
             {problem.reveal_penalty === "half_xp" && (
-              <Badge variant="outline" className="ml-auto text-[10px] h-5">½ XP penalty</Badge>
+              <Badge variant="outline" className="ml-auto text-[10px] h-5 text-muted-foreground/60 border-border/50">
+                ½ XP penalty
+              </Badge>
             )}
           </div>
-          <pre className="flex-1 font-mono text-sm p-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
-            {problem.expected_output}
+          {/* Output display */}
+          {revealLineDiff ? (
+            <div className="flex-1 overflow-auto">
+              {/* Column labels */}
+              <div className="grid grid-cols-[2rem_1fr_1fr] border-b border-border/20 bg-muted/20">
+                <span />
+                <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest px-3 py-2">
+                  Your Output
+                </span>
+                <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest px-3 py-2 border-l border-border/20">
+                  Expected
+                </span>
+              </div>
+              <div className="grid grid-cols-[2rem_1fr_1fr] py-1">
+                {Array.from({ length: Math.max(revealLineDiff.userLines.length, revealLineDiff.expectedLines.length) }, (_, i) => {
+                  const uLine = revealLineDiff.userLines[i] ?? "";
+                  const eLine = revealLineDiff.expectedLines[i] ?? "";
+                  const isMismatch = revealLineDiff.mismatches.includes(i);
+                  const isMissing = i >= revealLineDiff.userLines.length;
+                  const isExtra = i >= revealLineDiff.expectedLines.length;
+                  return (
+                    <div key={i} className="contents">
+                      <span className="text-[11px] text-muted-foreground/30 font-mono tabular-nums text-right pr-3 pt-px select-none">
+                        {i + 1}
+                      </span>
+                      <span className={cn(
+                        "font-mono text-[13px] leading-6 whitespace-pre px-3",
+                        isMissing && "italic text-muted-foreground/30",
+                        isMismatch && !isMissing && "bg-destructive/8"
+                      )}>
+                        {isMissing ? "—" : uLine || "\u00A0"}
+                      </span>
+                      <span className={cn(
+                        "font-mono text-[13px] leading-6 whitespace-pre px-3 border-l border-border/20",
+                        isExtra && "italic text-muted-foreground/30",
+                        isMismatch && !isExtra && "bg-primary/8"
+                      )}>
+                        {isExtra ? "—" : eLine || "\u00A0"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <pre className="flex-1 font-mono text-[13px] p-4 whitespace-pre-wrap text-foreground/90 leading-relaxed overflow-auto">
+              {problem.expected_output}
+            </pre>
+          )}
+        </div>
+      );
+    }
+
+    // 4️⃣ CORRECT STATE
+    if (viewState === "correct") {
+      return (
+        <div className="flex-1 min-h-0 flex flex-col overflow-auto">
+          {/* Status bar */}
+          <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border/30">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500/80" />
+            <span className="text-sm font-medium text-emerald-600/90 dark:text-emerald-400/80">
+              Correct output
+            </span>
+            {problem.xp_value > 0 && (
+              <Badge variant="outline" className="ml-auto text-[10px] h-5 text-muted-foreground/60 border-border/50">
+                +{revealed && problem.reveal_penalty === "half_xp" ? Math.floor(problem.xp_value / 2) : problem.xp_value} XP
+              </Badge>
+            )}
+          </div>
+          {/* Show submitted output cleanly */}
+          <pre className="flex-1 font-mono text-[13px] p-4 whitespace-pre-wrap text-foreground/90 leading-relaxed overflow-auto">
+            {userOutput}
           </pre>
         </div>
       );
     }
 
-    // Correct
-    if (viewState === "correct") {
-      return (
-        <div className="flex-1 min-h-0 flex flex-col overflow-auto">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
-            <Check className="h-4 w-4 text-green-500" />
-            <span className="text-sm font-medium text-green-600 dark:text-green-400">Correct</span>
-            {problem.xp_value > 0 && (
-              <Badge variant="outline" className="ml-auto text-[10px] h-5">
-                +{revealed && problem.reveal_penalty === "half_xp" ? Math.floor(problem.xp_value / 2) : problem.xp_value} XP
-              </Badge>
-            )}
-          </div>
-          <div className="flex-1 grid grid-cols-2 divide-x divide-border/30">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Yours</span>
-              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
-                {userOutput}
-              </pre>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Expected</span>
-              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
-                {problem.expected_output}
-              </pre>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Incorrect
+    // 3️⃣ INCORRECT STATE
     if (viewState === "incorrect") {
       return (
         <div className="flex-1 min-h-0 flex flex-col overflow-auto">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
-            <X className="h-4 w-4 text-red-500" />
-            <span className="text-sm font-medium text-red-600 dark:text-red-400">Not quite</span>
+          {/* Status bar */}
+          <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border/30">
+            <CircleX className="h-4 w-4 text-destructive/60" />
+            <span className="text-sm font-medium text-destructive/70">
+              Not quite right
+            </span>
           </div>
-          <div className="flex-1 grid grid-cols-2 divide-x divide-border/30">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Yours</span>
-              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
-                {lineDiff
-                  ? lineDiff.userLines.map((line: string, i: number) => (
-                      <span key={i} className={cn(lineDiff.mismatches.includes(i) && "bg-red-500/10 rounded-sm")}>
-                        {line}
-                        {i < lineDiff.userLines.length - 1 ? "\n" : ""}
-                      </span>
-                    ))
-                  : userOutput}
-              </pre>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-4 pt-3 pb-1.5">Expected</span>
-              <pre
-                className={cn(
-                  "flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap leading-relaxed",
+          {lineDiff ? (
+            <>
+              {/* Column labels */}
+              <div className="grid grid-cols-[2rem_1fr_1fr] border-b border-border/20 bg-muted/20">
+                <span />
+                <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest px-3 py-2">
+                  Your Output
+                </span>
+                <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest px-3 py-2 border-l border-border/20">
+                  Expected
+                </span>
+              </div>
+              {/* Line-by-line diff grid */}
+              <div className="flex-1 overflow-auto">
+                <div className="grid grid-cols-[2rem_1fr_1fr] py-1">
+                  {renderLineDiffRows()}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 grid grid-cols-2 divide-x divide-border/30 overflow-auto">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest px-4 pt-3 pb-1.5">
+                  Your Output
+                </span>
+                <pre className="flex-1 font-mono text-[13px] px-4 pb-4 whitespace-pre-wrap text-foreground/90 leading-relaxed">
+                  {userOutput}
+                </pre>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest px-4 pt-3 pb-1.5">
+                  Expected
+                </span>
+                <pre className={cn(
+                  "flex-1 font-mono text-[13px] px-4 pb-4 whitespace-pre-wrap leading-relaxed",
                   revealed ? "text-foreground/90" : "text-foreground/90 blur-sm select-none"
-                )}
-              >
-                {lineDiff
-                  ? lineDiff.expectedLines.map((line: string, i: number) => (
-                      <span
-                        key={i}
-                        className={cn(revealed && lineDiff.mismatches.includes(i) && "bg-amber-500/10 rounded-sm")}
-                      >
-                        {line}
-                        {i < lineDiff.expectedLines.length - 1 ? "\n" : ""}
-                      </span>
-                    ))
-                  : problem.expected_output}
-              </pre>
+                )}>
+                  {problem.expected_output}
+                </pre>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       );
     }
 
-    // Default empty state — soft, centered
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 py-8">
-        <BarChart3 className="h-6 w-6 text-muted-foreground/20" />
-        <p className="text-sm text-muted-foreground/40">Submit your answer to see results</p>
-      </div>
-    );
+    // Fallback
+    return null;
   }
 
   /* ─── Expanded: editor only ─── */
