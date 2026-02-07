@@ -410,6 +410,7 @@ export default function AdminPracticeProblems() {
         onOpenChange={setShowTypeSelect}
         onSelectProblemSolving={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
         onSelectPredictOutput={() => navigate(`/admin/practice/skills/${skillId}/predict-output/new`)}
+        onSelectFixError={() => navigate(`/admin/practice/skills/${skillId}/fix-error/new`)}
       />
 
       {/* Problem Type Select Dialog - from "Create New" in add dialog */}
@@ -418,6 +419,7 @@ export default function AdminPracticeProblems() {
         onOpenChange={setShowTypeSelectForCreate}
         onSelectProblemSolving={() => navigate(`/admin/practice/skills/${skillId}/problems/new`)}
         onSelectPredictOutput={() => navigate(`/admin/practice/skills/${skillId}/predict-output/new`)}
+        onSelectFixError={() => navigate(`/admin/practice/skills/${skillId}/fix-error/new`)}
       />
     </div>
   );

@@ -36,6 +36,7 @@ import AdminPracticeProblems from "@/pages/AdminPracticeProblems";
 import AdminProblemEditor from "@/pages/AdminProblemEditor";
 import AdminPredictOutputProblems from "@/pages/AdminPredictOutputProblems";
 import AdminPredictOutputEditor from "@/pages/AdminPredictOutputEditor";
+import AdminFixErrorEditor from "@/pages/AdminFixErrorEditor";
 import NotFound from "@/pages/NotFound";
 
 /**
@@ -73,6 +74,8 @@ const AdminRoutes = () => {
           <Route path="practice/skills/:skillId/predict-output" element={<AdminPredictOutputProblems />} />
           <Route path="practice/skills/:skillId/predict-output/new" element={<AdminPredictOutputEditor />} />
           <Route path="practice/skills/:skillId/predict-output/:problemId" element={<AdminPredictOutputEditor />} />
+          <Route path="practice/skills/:skillId/fix-error/new" element={<AdminFixErrorEditor />} />
+          <Route path="practice/skills/:skillId/fix-error/:problemId" element={<AdminFixErrorEditor />} />
           <Route path="comments" element={<AdminComments />} />
           <Route path="annotations" element={<AdminAnnotations />} />
           <Route path="users" element={<AdminUsers />} />
