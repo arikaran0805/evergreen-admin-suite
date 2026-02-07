@@ -1,28 +1,24 @@
 /**
  * PredictEditorPanel
- * Right panel for the Predict workspace — mirrors the solve workspace's editor chrome.
- * Shows: read-only code, output textarea, reveal, submit.
- * Hints moved to description panel. Reveal output shown in Result panel.
+ * Right panel for the Predict workspace.
+ * Shows: output textarea (top) + result (bottom).
+ * Code is now in PredictCodePanel on the left side.
  */
 import { useState, useRef, useMemo, useCallback } from "react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Eye,
-  Braces,
   Expand,
   Shrink,
   PanelTopClose,
   PanelTopOpen,
-  Copy,
-  Check,
   X,
+  Check,
   RotateCcw,
-  Maximize,
+  Terminal,
 } from "lucide-react";
-import Editor from "@monaco-editor/react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -58,13 +54,10 @@ export function PredictEditorPanel({
   expandedPanel,
   onTabSwitchToAttempts,
 }: PredictEditorPanelProps) {
-  const { theme } = useTheme();
-  const monacoTheme = theme === 'dark' ? 'vs-dark' : 'vs';
   const [userOutput, setUserOutput] = useState("");
   const [viewState, setViewState] = useState<ViewState>("answering");
   const [revealed, setRevealed] = useState(false);
   const [startTime] = useState(Date.now());
-  const [copied, setCopied] = useState(false);
   const [isEditorHovered, setIsEditorHovered] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
@@ -82,13 +75,6 @@ export function PredictEditorPanel({
     if (problem.reveal_timing === "after_2") return attemptCount >= 2;
     return false;
   }, [problem, attemptCount]);
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(problem.code);
-    setCopied(true);
-    toast.success("Code copied");
-    setTimeout(() => setCopied(false), 2000);
-  }, [problem.code]);
 
   const handleSubmit = useCallback(async () => {
     if (!userOutput.trim()) return;
@@ -129,7 +115,7 @@ export function PredictEditorPanel({
 
     // Expand result panel
     resultPanelRef.current?.expand();
-    resultPanelRef.current?.resize(45);
+    resultPanelRef.current?.resize(50);
 
     if (result.isCorrect) {
       onTabSwitchToAttempts?.();
@@ -138,9 +124,8 @@ export function PredictEditorPanel({
 
   const handleReveal = useCallback(() => {
     setRevealed(true);
-    // Expand result panel to show revealed output
     resultPanelRef.current?.expand();
-    resultPanelRef.current?.resize(45);
+    resultPanelRef.current?.resize(50);
     submitMutation.mutate({
       problem_id: problem.id,
       user_output: "",
@@ -178,19 +163,7 @@ export function PredictEditorPanel({
     }
   };
 
-  const monacoLanguageMap: Record<string, string> = {
-    python: "python",
-    javascript: "javascript",
-    java: "java",
-    c: "c",
-    cpp: "cpp",
-    sql: "sql",
-  };
-
-  const lineCount = problem.code.split("\n").length;
-  const monacoHeight = lineCount * 20 + 32;
-
-  // Expanded editor only
+  // Expanded editor (output textarea) only
   if (expandedPanel === "editor") {
     return (
       <div className="h-full flex flex-col gap-1.5">
@@ -201,8 +174,8 @@ export function PredictEditorPanel({
         >
           <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
             <div className="flex items-center gap-2">
-              <Braces className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Predict the Output</span>
+              <Terminal className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Your Output</span>
             </div>
             <div className={cn("flex items-center gap-0.5 transition-opacity", isEditorHovered ? "opacity-100" : "opacity-0")}>
               {onExpandEditor && (
@@ -213,42 +186,8 @@ export function PredictEditorPanel({
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="space-y-4">
-              <div style={{ height: monacoHeight }} className="border-b border-border">
-                <Editor
-                  value={problem.code}
-                  language={monacoLanguageMap[problem.language] || problem.language}
-                  theme={monacoTheme}
-                  options={{
-                    readOnly: true,
-                    domReadOnly: true,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    lineNumbers: "on",
-                    lineNumbersMinChars: 1,
-                    lineDecorationsWidth: 8,
-                    glyphMargin: true,
-                    renderLineHighlight: "line",
-                    folding: true,
-                    contextmenu: false,
-                    fontSize: 14,
-                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                    padding: { top: 16, bottom: 16 },
-                    scrollbar: { vertical: "hidden", horizontal: "auto" },
-                    wordWrap: "on",
-                    dragAndDrop: false,
-                    overviewRulerBorder: false,
-                    overviewRulerLanes: 0,
-                    hideCursorInOverviewRuler: true,
-                    bracketPairColorization: { enabled: true },
-                    guides: { indentation: true, bracketPairs: true },
-                    smoothScrolling: true,
-                  }}
-                />
-              </div>
-              <div className="px-4 pb-4">
-                {renderAnswerArea()}
-              </div>
+            <div className="p-4">
+              {renderAnswerArea()}
             </div>
           </ScrollArea>
           {renderFooter()}
@@ -279,24 +218,31 @@ export function PredictEditorPanel({
   }
 
   function renderAnswerArea() {
-    if (viewState !== "answering") return null;
-
-    return (
-      <div className="space-y-4">
+    if (viewState !== "answering") {
+      return (
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">Your Output</label>
-          <Textarea
-            ref={textareaRef}
-            value={userOutput}
-            onChange={(e) => setUserOutput(e.target.value)}
-            placeholder="Type the exact output of the above code"
-            className="font-mono text-sm min-h-[100px]"
-            autoFocus
-          />
-          <p className="text-xs text-muted-foreground">
-            Match line breaks and spacing as shown in output
-          </p>
+          <pre className="font-mono text-sm bg-muted/50 p-3 rounded border border-border whitespace-pre-wrap min-h-[100px]">
+            {userOutput || "(empty)"}
+          </pre>
         </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">Your Output</label>
+        <Textarea
+          ref={textareaRef}
+          value={userOutput}
+          onChange={(e) => setUserOutput(e.target.value)}
+          placeholder="Type the exact output of the code"
+          className="font-mono text-sm min-h-[120px] resize-y"
+          autoFocus
+        />
+        <p className="text-xs text-muted-foreground">
+          Match line breaks and spacing as shown in output
+        </p>
       </div>
     );
   }
@@ -421,7 +367,7 @@ export function PredictEditorPanel({
 
   function renderFooter() {
     return (
-      <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40">
+      <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40 shrink-0">
         <span className="text-xs text-muted-foreground">
           {viewState === "answering"
             ? "Type the output and submit"
@@ -448,15 +394,15 @@ export function PredictEditorPanel({
     );
   }
 
-  // Default: two vertical panels (code+input / result)
+  // Default: two vertical panels (output textarea / result)
   return (
     <div className="h-full min-h-0 flex flex-col gap-1.5">
       <ResizablePanelGroup direction="vertical" className="flex-1 min-h-0">
-        {/* Code + Input Panel */}
+        {/* Output Textarea Panel */}
         <ResizablePanel
           ref={editorPanelRef}
-          defaultSize={65}
-          minSize={30}
+          defaultSize={50}
+          minSize={20}
           collapsible
           collapsedSize={8}
           className="min-h-0"
@@ -469,10 +415,10 @@ export function PredictEditorPanel({
             onMouseLeave={() => setIsEditorHovered(false)}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
+            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
               <div className="flex items-center gap-2">
-                <Braces className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Predict the Output</span>
+                <Terminal className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Your Output</span>
               </div>
               <div
                 className={cn(
@@ -497,73 +443,13 @@ export function PredictEditorPanel({
               </div>
             </div>
 
-            {/* Language bar */}
             {!isEditorPanelCollapsed && (
               <>
-                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-background">
-                  <Badge variant="outline" className="text-xs capitalize h-7">
-                    {problem.language}
-                  </Badge>
-                  <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy} title="Copy code">
-                      {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => document.documentElement.requestFullscreen()}
-                      title="Fullscreen"
-                    >
-                      <Maximize className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Monaco read-only code + answer area */}
                 <ScrollArea className="flex-1">
-                  <div className="space-y-4">
-                    {/* Read-only Monaco editor */}
-                    <div style={{ height: monacoHeight }} className="border-b border-border">
-                      <Editor
-                        value={problem.code}
-                        language={monacoLanguageMap[problem.language] || problem.language}
-                        theme={monacoTheme}
-                        options={{
-                          readOnly: true,
-                          domReadOnly: true,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          lineNumbers: "on",
-                          lineNumbersMinChars: 1,
-                          lineDecorationsWidth: 8,
-                          glyphMargin: true,
-                          renderLineHighlight: "line",
-                          folding: true,
-                          contextmenu: false,
-                          fontSize: 14,
-                          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                          padding: { top: 16, bottom: 16 },
-                          scrollbar: { vertical: "hidden", horizontal: "auto" },
-                          wordWrap: "on",
-                          dragAndDrop: false,
-                          overviewRulerBorder: false,
-                          overviewRulerLanes: 0,
-                          hideCursorInOverviewRuler: true,
-                          bracketPairColorization: { enabled: true },
-                          guides: { indentation: true, bracketPairs: true },
-                          smoothScrolling: true,
-                        }}
-                      />
-                    </div>
-
-                    <div className="px-4 pb-4">
-                      {renderAnswerArea()}
-                    </div>
+                  <div className="p-4">
+                    {renderAnswerArea()}
                   </div>
                 </ScrollArea>
-
-                {/* Footer */}
                 {renderFooter()}
               </>
             )}
@@ -575,7 +461,7 @@ export function PredictEditorPanel({
         {/* Result Panel */}
         <ResizablePanel
           ref={resultPanelRef}
-          defaultSize={35}
+          defaultSize={50}
           minSize={10}
           collapsible
           collapsedSize={8}
@@ -584,7 +470,7 @@ export function PredictEditorPanel({
           onExpand={() => setIsResultPanelCollapsed(false)}
         >
           <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
+            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
               <span className="text-sm font-medium">Result</span>
               <div className="flex items-center gap-0.5">
                 <Button
