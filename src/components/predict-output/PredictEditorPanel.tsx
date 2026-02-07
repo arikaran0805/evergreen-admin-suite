@@ -2,11 +2,10 @@
  * PredictEditorPanel
  * Right panel for the Predict workspace.
  * Shows: output textarea (top) + result (bottom).
- * Code is now in PredictCodePanel on the left side.
+ * Premium design: full-bleed textarea, console-like result view.
  */
 import { useState, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Eye,
@@ -27,12 +26,10 @@ import {
 } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { matchOutput, getLineDiff } from "@/lib/outputMatcher";
 import { useSubmitPredictOutputAttempt } from "@/hooks/usePredictOutputAttempts";
 import type { PredictOutputProblem } from "@/hooks/usePredictOutputProblems";
 import type { PredictOutputAttempt } from "@/hooks/usePredictOutputAttempts";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PredictEditorPanelProps {
   problem: PredictOutputProblem;
@@ -114,7 +111,6 @@ export function PredictEditorPanel({
 
     setViewState(result.isCorrect ? "correct" : "incorrect");
 
-    // Expand result panel
     resultPanelRef.current?.expand();
     resultPanelRef.current?.resize(50);
 
@@ -164,142 +160,173 @@ export function PredictEditorPanel({
     }
   };
 
-  // Expanded editor (output textarea) only
-  if (expandedPanel === "editor") {
+  /* ─── Shared header builder ─── */
+  function renderEditorHeader(opts: { shrinkable?: boolean }) {
     return (
-      <div className="h-full flex flex-col gap-1.5">
+      <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
+        <div className="flex items-center gap-2">
+          <Terminal className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Your Output</span>
+        </div>
         <div
-          className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
-          onMouseEnter={() => setIsEditorHovered(true)}
-          onMouseLeave={() => setIsEditorHovered(false)}
+          className={cn(
+            "flex items-center gap-0.5 transition-opacity",
+            isEditorHovered ? "opacity-100" : "opacity-0"
+          )}
         >
-          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Your Output</span>
-            </div>
-            <div className={cn("flex items-center gap-0.5 transition-opacity", isEditorHovered ? "opacity-100" : "opacity-0")}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => document.documentElement.requestFullscreen()}
-                title="Fullscreen"
-              >
-                <Maximize className="h-4 w-4" />
-              </Button>
-              {onExpandEditor && (
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandEditor} title="Collapse panel">
-                  <Shrink className="h-4 w-4" />
-                </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => document.documentElement.requestFullscreen()}
+            title="Fullscreen"
+          >
+            <Maximize className="h-4 w-4" />
+          </Button>
+          {!opts.shrinkable && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleToggleEditorPanelCollapse}
+              title={isEditorPanelCollapsed ? "Show" : "Hide"}
+            >
+              {isEditorPanelCollapsed ? (
+                <PanelTopOpen className="h-4 w-4" />
+              ) : (
+                <PanelTopClose className="h-4 w-4" />
               )}
-            </div>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-4">
-              {renderAnswerArea()}
-            </div>
-          </ScrollArea>
-          {renderFooter()}
+            </Button>
+          )}
+          {opts.shrinkable && onExpandEditor && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandEditor} title="Collapse panel">
+              <Shrink className="h-4 w-4" />
+            </Button>
+          )}
+          {!opts.shrinkable && onExpandEditor && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandEditor} title="Expand">
+              <Expand className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     );
   }
 
-  // Expanded result only
-  if (expandedPanel === "result") {
-    return (
-      <div className="h-full flex flex-col gap-1.5">
-        <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40">
-            <span className="text-sm font-medium">Result</span>
-            {onExpandResult && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandResult}>
-                <Shrink className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <ScrollArea className="flex-1 h-[calc(100%-44px)]">
-            <div className="p-4">{renderResultContent()}</div>
-          </ScrollArea>
-        </div>
-      </div>
-    );
-  }
-
-  function renderAnswerArea() {
+  /* ─── Editor body: full-bleed textarea or submitted output ─── */
+  function renderEditorBody() {
     if (viewState !== "answering") {
       return (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Your Output</label>
-          <pre className="font-mono text-sm bg-muted/50 p-3 rounded border border-border whitespace-pre-wrap min-h-[100px]">
+        <div className="flex-1 min-h-0 flex flex-col">
+          <pre className="flex-1 font-mono text-sm p-4 whitespace-pre-wrap text-foreground/90 overflow-auto">
             {userOutput || "(empty)"}
           </pre>
+          {renderFooter()}
         </div>
       );
     }
 
     return (
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Your Output</label>
-        <Textarea
+      <div className="flex-1 min-h-0 flex flex-col relative">
+        <textarea
           ref={textareaRef}
           value={userOutput}
           onChange={(e) => setUserOutput(e.target.value)}
-          placeholder="Type the exact output of the code"
-          className="font-mono text-sm min-h-[120px] resize-y"
+          placeholder="Type the exact output of the code…"
           autoFocus
+          className="flex-1 w-full resize-none bg-transparent font-mono text-sm p-4 text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          spellCheck={false}
         />
-        <p className="text-xs text-muted-foreground">
-          Match line breaks and spacing as shown in output
-        </p>
+        <div className="flex items-center justify-between px-4 py-2 shrink-0">
+          <span className="text-[11px] text-muted-foreground/60 tracking-wide">
+            Whitespace and line breaks matter
+          </span>
+          <div className="flex items-center gap-2">
+            {canReveal && !revealed && (
+              <Button variant="ghost" size="sm" onClick={handleReveal} className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                <Eye className="h-3.5 w-3.5" />
+                Reveal
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="h-7"
+              onClick={handleSubmit}
+              disabled={!userOutput.trim() || submitMutation.isPending}
+            >
+              {submitMutation.isPending ? "Checking…" : "Submit"}
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  function renderResultContent() {
-    // Show revealed output in result panel
+  /* ─── Footer for post-submit states ─── */
+  function renderFooter() {
+    return (
+      <div className="flex items-center justify-end px-4 py-2 shrink-0">
+        <div className="flex items-center gap-2">
+          {canReveal && !revealed && viewState !== "answering" && (
+            <Button variant="ghost" size="sm" onClick={handleReveal} className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+              <Eye className="h-3.5 w-3.5" />
+              Reveal
+            </Button>
+          )}
+          {viewState !== "answering" && (
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={handleTryAgain}>
+              <RotateCcw className="h-3.5 w-3.5" />
+              Try Again
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Result panel body: clean console-like view ─── */
+  function renderResultBody() {
+    // Revealed
     if (revealed && viewState === "answering") {
       return (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
-            <Eye className="h-5 w-5 text-amber-600" />
-            <span className="font-semibold text-amber-800 dark:text-amber-300">Expected Output (Revealed)</span>
+        <div className="flex-1 min-h-0 flex flex-col overflow-auto">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
+            <Eye className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Revealed</span>
             {problem.reveal_penalty === "half_xp" && (
-              <Badge className="ml-auto bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                ½ XP penalty
-              </Badge>
+              <Badge variant="outline" className="ml-auto text-[10px] h-5">½ XP penalty</Badge>
             )}
           </div>
-          <pre className="font-mono text-sm bg-muted/50 p-4 rounded-lg border border-border whitespace-pre-wrap">
+          <pre className="flex-1 font-mono text-sm p-4 whitespace-pre-wrap text-foreground/90">
             {problem.expected_output}
           </pre>
         </div>
       );
     }
 
+    // Correct
     if (viewState === "correct") {
       return (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 p-4 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30">
-            <Check className="h-5 w-5 text-green-600" />
-            <span className="font-semibold text-green-800 dark:text-green-300">Correct 🎉</span>
+        <div className="flex-1 min-h-0 flex flex-col overflow-auto">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
+            <Check className="h-4 w-4 text-green-500" />
+            <span className="text-sm font-medium text-green-600 dark:text-green-400">Correct</span>
             {problem.xp_value > 0 && (
-              <Badge className="ml-auto bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              <Badge variant="outline" className="ml-auto text-[10px] h-5">
                 +{revealed && problem.reveal_penalty === "half_xp" ? Math.floor(problem.xp_value / 2) : problem.xp_value} XP
               </Badge>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Your Output</p>
-              <pre className="font-mono text-sm bg-green-50 dark:bg-green-900/10 p-3 rounded border border-green-200 dark:border-green-800/30 whitespace-pre-wrap">
+          <div className="flex-1 grid grid-cols-2 divide-x divide-border/30">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Yours</span>
+              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90">
                 {userOutput}
               </pre>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Expected Output</p>
-              <pre className="font-mono text-sm bg-muted/50 p-3 rounded border border-border whitespace-pre-wrap">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Expected</span>
+              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90">
                 {problem.expected_output}
               </pre>
             </div>
@@ -308,20 +335,21 @@ export function PredictEditorPanel({
       );
     }
 
+    // Incorrect
     if (viewState === "incorrect") {
       return (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 p-4 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30">
-            <X className="h-5 w-5 text-red-600" />
-            <span className="font-semibold text-red-800 dark:text-red-300">Not quite</span>
+        <div className="flex-1 min-h-0 flex flex-col overflow-auto">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
+            <X className="h-4 w-4 text-red-500" />
+            <span className="text-sm font-medium text-red-600 dark:text-red-400">Not quite</span>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Your Output</p>
-              <pre className="font-mono text-sm bg-red-50 dark:bg-red-900/10 p-3 rounded border border-red-200 dark:border-red-800/30 whitespace-pre-wrap">
+          <div className="flex-1 grid grid-cols-2 divide-x divide-border/30">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Yours</span>
+              <pre className="flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap text-foreground/90">
                 {lineDiff
                   ? lineDiff.userLines.map((line: string, i: number) => (
-                      <span key={i} className={cn(lineDiff.mismatches.includes(i) && "bg-red-200 dark:bg-red-800/40")}>
+                      <span key={i} className={cn(lineDiff.mismatches.includes(i) && "bg-red-500/15")}>
                         {line}
                         {i < lineDiff.userLines.length - 1 ? "\n" : ""}
                       </span>
@@ -329,19 +357,19 @@ export function PredictEditorPanel({
                   : userOutput}
               </pre>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Expected Output</p>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-4 pt-3 pb-1">Expected</span>
               <pre
                 className={cn(
-                  "font-mono text-sm p-3 rounded border whitespace-pre-wrap",
-                  revealed ? "bg-muted/50 border-border" : "bg-muted/50 border-border blur-sm select-none"
+                  "flex-1 font-mono text-sm px-4 pb-4 whitespace-pre-wrap",
+                  revealed ? "text-foreground/90" : "text-foreground/90 blur-sm select-none"
                 )}
               >
                 {lineDiff
                   ? lineDiff.expectedLines.map((line: string, i: number) => (
                       <span
                         key={i}
-                        className={cn(revealed && lineDiff.mismatches.includes(i) && "bg-amber-200 dark:bg-amber-800/40")}
+                        className={cn(revealed && lineDiff.mismatches.includes(i) && "bg-amber-500/15")}
                       >
                         {line}
                         {i < lineDiff.expectedLines.length - 1 ? "\n" : ""}
@@ -351,60 +379,54 @@ export function PredictEditorPanel({
               </pre>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleTryAgain} className="flex-1 gap-1.5">
-              <RotateCcw className="h-4 w-4" />
-              Try Again
-            </Button>
-            {canReveal && !revealed && (
-              <Button variant="outline" onClick={handleReveal} className="flex-1 gap-1.5">
-                <Eye className="h-4 w-4" />
-                Reveal Output
-              </Button>
-            )}
-          </div>
         </div>
       );
     }
 
+    // Default empty state
     return (
-      <div className="py-12 text-center text-muted-foreground">
-        <p>Submit your answer to see results.</p>
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground/50">Submit your answer to see results</p>
       </div>
     );
   }
 
-  function renderFooter() {
+  /* ─── Expanded: editor only ─── */
+  if (expandedPanel === "editor") {
     return (
-      <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40 shrink-0">
-        <span className="text-xs text-muted-foreground">
-          {viewState === "answering"
-            ? "Type the output and submit"
-            : viewState === "correct"
-            ? "Great job! 🎉"
-            : "Try again or reveal"}
-        </span>
-        <div className="flex items-center gap-2">
-          {canReveal && !revealed && viewState === "answering" && (
-            <Button variant="outline" size="sm" onClick={handleReveal} className="gap-1.5">
-              <Eye className="h-3.5 w-3.5" />
-              Reveal
-            </Button>
-          )}
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={!userOutput.trim() || submitMutation.isPending || viewState !== "answering"}
-          >
-            {submitMutation.isPending ? "Checking..." : "Submit Answer"}
-          </Button>
+      <div className="h-full flex flex-col gap-1.5">
+        <div
+          className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden"
+          onMouseEnter={() => setIsEditorHovered(true)}
+          onMouseLeave={() => setIsEditorHovered(false)}
+        >
+          {renderEditorHeader({ shrinkable: true })}
+          {renderEditorBody()}
         </div>
       </div>
     );
   }
 
-  // Default: two vertical panels (output textarea / result)
+  /* ─── Expanded: result only ─── */
+  if (expandedPanel === "result") {
+    return (
+      <div className="h-full flex flex-col gap-1.5">
+        <div className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
+            <span className="text-sm font-medium">Result</span>
+            {onExpandResult && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandResult}>
+                <Shrink className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          {renderResultBody()}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Default: two vertical panels ─── */
   return (
     <div className="h-full min-h-0 flex flex-col gap-1.5">
       <ResizablePanelGroup direction="vertical" className="flex-1 min-h-0">
@@ -424,54 +446,8 @@ export function PredictEditorPanel({
             onMouseEnter={() => setIsEditorHovered(true)}
             onMouseLeave={() => setIsEditorHovered(false)}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
-              <div className="flex items-center gap-2">
-                <Terminal className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Your Output</span>
-              </div>
-              <div
-                className={cn(
-                  "flex items-center gap-0.5 transition-opacity",
-                  isEditorHovered ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => document.documentElement.requestFullscreen()}
-                  title="Fullscreen"
-                >
-                  <Maximize className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleToggleEditorPanelCollapse}
-                  title={isEditorPanelCollapsed ? "Show" : "Hide"}
-                >
-                  {isEditorPanelCollapsed ? <PanelTopOpen className="h-4 w-4" /> : <PanelTopClose className="h-4 w-4" />}
-                </Button>
-                {onExpandEditor && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandEditor} title="Expand">
-                    <Expand className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {!isEditorPanelCollapsed && (
-              <>
-                <ScrollArea className="flex-1">
-                  <div className="p-4">
-                    {renderAnswerArea()}
-                  </div>
-                </ScrollArea>
-                {renderFooter()}
-              </>
-            )}
+            {renderEditorHeader({ shrinkable: false })}
+            {!isEditorPanelCollapsed && renderEditorBody()}
           </div>
         </ResizablePanel>
 
@@ -488,7 +464,7 @@ export function PredictEditorPanel({
           onCollapse={() => setIsResultPanelCollapsed(true)}
           onExpand={() => setIsResultPanelCollapsed(false)}
         >
-          <div className="h-full bg-card rounded-lg border border-border shadow-sm overflow-hidden flex flex-col">
+          <div className="h-full flex flex-col bg-card rounded-lg border border-border shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
               <span className="text-sm font-medium">Result</span>
               <div className="flex items-center gap-0.5">
@@ -508,11 +484,7 @@ export function PredictEditorPanel({
                 )}
               </div>
             </div>
-            {!isResultPanelCollapsed && (
-              <ScrollArea className="flex-1">
-                <div className="p-4">{renderResultContent()}</div>
-              </ScrollArea>
-            )}
+            {!isResultPanelCollapsed && renderResultBody()}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
