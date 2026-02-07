@@ -299,7 +299,7 @@ export default function PredictOutputWorkspace() {
                     defaultSize={50}
                     minSize={15}
                     collapsible
-                    collapsedSize={5}
+                    collapsedSize={8}
                     className="min-h-0"
                     onCollapse={() => setIsDescriptionCollapsed(true)}
                     onExpand={() => setIsDescriptionCollapsed(false)}
@@ -326,7 +326,7 @@ export default function PredictOutputWorkspace() {
                     defaultSize={50}
                     minSize={15}
                     collapsible
-                    collapsedSize={5}
+                    collapsedSize={8}
                     className="min-h-0"
                     onCollapse={() => setIsCodeCollapsed(true)}
                     onExpand={() => setIsCodeCollapsed(false)}

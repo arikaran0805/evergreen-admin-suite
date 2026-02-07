@@ -12,6 +12,7 @@ import {
   Eye,
   Expand,
   Shrink,
+  Maximize,
   PanelTopClose,
   PanelTopOpen,
   X,
@@ -178,6 +179,15 @@ export function PredictEditorPanel({
               <span className="text-sm font-medium">Your Output</span>
             </div>
             <div className={cn("flex items-center gap-0.5 transition-opacity", isEditorHovered ? "opacity-100" : "opacity-0")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => document.documentElement.requestFullscreen()}
+                title="Fullscreen"
+              >
+                <Maximize className="h-4 w-4" />
+              </Button>
               {onExpandEditor && (
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpandEditor} title="Collapse panel">
                   <Shrink className="h-4 w-4" />
@@ -426,6 +436,15 @@ export function PredictEditorPanel({
                   isEditorHovered ? "opacity-100" : "opacity-0"
                 )}
               >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => document.documentElement.requestFullscreen()}
+                  title="Fullscreen"
+                >
+                  <Maximize className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
