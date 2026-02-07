@@ -129,6 +129,8 @@ export default function PredictOutputWorkspace() {
   const navigateToProblem = (p: ProblemWithMapping) => {
     if (p.problemType === "predict-output") {
       navigate(`/practice/${skillId}/predict/${p.slug}`);
+    } else if (p.problemType === "fix-error") {
+      navigate(`/practice/${skillId}/fix-error/${p.slug}`);
     } else {
       navigate(`/practice/${skillId}/problem/${p.slug}`);
     }
