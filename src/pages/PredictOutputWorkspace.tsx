@@ -99,6 +99,29 @@ export default function PredictOutputWorkspace() {
     }
   };
 
+  // On submit: expand desc panel and show attempts tab
+  const handleSubmitExpandDescription = () => {
+    setDescriptionActiveTab("attempts");
+    if (isDescriptionCollapsed) {
+      if (isMobile) {
+        setIsDescriptionCollapsed(false);
+      } else {
+        descriptionPanelRef.current?.expand();
+      }
+    }
+  };
+
+  // On retry: collapse desc panel back
+  const handleRetryCollapseDescription = () => {
+    if (!isDescriptionCollapsed) {
+      if (isMobile) {
+        setIsDescriptionCollapsed(true);
+      } else {
+        descriptionPanelRef.current?.collapse();
+      }
+    }
+  };
+
   // Navigation
   const currentIndex = allProblemsInSkill.findIndex((p) => p.slug === problemSlug);
   const prevProblem = currentIndex > 0 ? allProblemsInSkill[currentIndex - 1] : null;
@@ -228,6 +251,8 @@ export default function PredictOutputWorkspace() {
               onExpandEditor={handleExpandEditor}
               onExpandResult={handleExpandResult}
               onTabSwitchToAttempts={() => setDescriptionActiveTab("attempts")}
+              onSubmitExpandDescription={handleSubmitExpandDescription}
+              onRetryCollapseDescription={handleRetryCollapseDescription}
             />
           )}
         </div>
@@ -293,6 +318,8 @@ export default function PredictOutputWorkspace() {
                 onExpandEditor={handleExpandEditor}
                 onExpandResult={handleExpandResult}
                 onTabSwitchToAttempts={() => setDescriptionActiveTab("attempts")}
+                onSubmitExpandDescription={handleSubmitExpandDescription}
+                onRetryCollapseDescription={handleRetryCollapseDescription}
               />
             </div>
           </div>
@@ -364,6 +391,8 @@ export default function PredictOutputWorkspace() {
                   onExpandEditor={handleExpandEditor}
                   onExpandResult={handleExpandResult}
                   onTabSwitchToAttempts={() => setDescriptionActiveTab("attempts")}
+                  onSubmitExpandDescription={handleSubmitExpandDescription}
+                  onRetryCollapseDescription={handleRetryCollapseDescription}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>
