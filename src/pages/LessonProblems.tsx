@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
     hasSolution: boolean;
     slug: string;
    subTopicId?: string;
-   problemType?: "problem-solving" | "predict-output" | "fix-error";
+   problemType?: "problem-solving" | "predict-output" | "fix-error" | "eliminate-wrong";
   }
  
  export default function LessonProblems() {

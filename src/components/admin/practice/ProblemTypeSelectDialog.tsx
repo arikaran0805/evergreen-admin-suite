@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Code2, Eye, Bug, ArrowRight } from "lucide-react";
+import { Code2, Eye, Bug, ArrowRight, ListX } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -18,6 +18,7 @@ interface Props {
   onSelectProblemSolving: () => void;
   onSelectPredictOutput: () => void;
   onSelectFixError?: () => void;
+  onSelectEliminateWrong?: () => void;
 }
 
 const problemTypes = [
@@ -51,6 +52,16 @@ const problemTypes = [
     iconBg: "bg-destructive/10",
     iconColor: "text-destructive",
   },
+  {
+    key: "eliminate-wrong" as const,
+    icon: ListX,
+    title: "Eliminate the Wrong Answer",
+    description: "Reasoning-based questions where learners identify correct answers by eliminating wrong options.",
+    tags: ["Reasoning", "Elimination", "Conceptual"],
+    accentClass: "border-violet-500/20 hover:border-violet-500/50 hover:bg-violet-500/5",
+    iconBg: "bg-violet-500/10",
+    iconColor: "text-violet-500",
+  },
 ];
 
 export function ProblemTypeSelectDialog({
@@ -59,6 +70,7 @@ export function ProblemTypeSelectDialog({
   onSelectProblemSolving,
   onSelectPredictOutput,
   onSelectFixError,
+  onSelectEliminateWrong,
 }: Props) {
   const handleSelect = (key: string) => {
     onOpenChange(false);
@@ -68,6 +80,8 @@ export function ProblemTypeSelectDialog({
       onSelectPredictOutput();
     } else if (key === "fix-error") {
       onSelectFixError?.();
+    } else if (key === "eliminate-wrong") {
+      onSelectEliminateWrong?.();
     }
   };
 

@@ -255,7 +255,7 @@ export default function AdminPracticeProblems() {
     }
   };
 
-  const handleAddProblems = async (selections: { id: string; problemType: "problem-solving" | "predict-output" | "fix-error" }[]) => {
+  const handleAddProblems = async (selections: { id: string; problemType: "problem-solving" | "predict-output" | "fix-error" | "eliminate-wrong" }[]) => {
     if (!addProblemSubTopicId) return;
     for (const sel of selections) {
       if (sel.problemType === "predict-output") {

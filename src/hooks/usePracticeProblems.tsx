@@ -134,7 +134,7 @@ export interface ProblemWithMapping extends PracticeProblem {
   lesson_title?: string;
   sub_topic_id?: string;
   sub_topic_title?: string;
-  problemType?: "problem-solving" | "predict-output" | "fix-error";
+  problemType?: "problem-solving" | "predict-output" | "fix-error" | "eliminate-wrong";
 }
 
 export function usePublishedPracticeProblems(skillSlug: string | undefined) {

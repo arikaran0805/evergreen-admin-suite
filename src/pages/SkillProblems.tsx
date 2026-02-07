@@ -31,7 +31,7 @@ interface DisplayProblem {
   lessonTitle?: string;
   subTopicId?: string;
   subTopicTitle?: string;
-  problemType?: "problem-solving" | "predict-output" | "fix-error";
+  problemType?: "problem-solving" | "predict-output" | "fix-error" | "eliminate-wrong";
 }
 
 export default function SkillProblems() {

@@ -29,6 +29,7 @@ import LessonProblems from "@/pages/LessonProblems";
 import PredictOutputDetail from "@/pages/PredictOutputDetail";
 import PredictOutputWorkspace from "@/pages/PredictOutputWorkspace";
 import FixErrorWorkspace from "@/pages/FixErrorWorkspace";
+import EliminateWrongWorkspace from "@/pages/EliminateWrongWorkspace";
 
 /**
  * Public Routes - No authentication required
@@ -49,6 +50,7 @@ export const publicRoutes = [
   <Route key="predict-output-detail" path="/predict-output/:slug" element={<PredictOutputDetail />} />,
   <Route key="predict-output-workspace" path="/practice/:skillId/predict/:problemSlug" element={<PredictOutputWorkspace />} />,
   <Route key="fix-error-workspace" path="/practice/:skillId/fix-error/:slug" element={<FixErrorWorkspace />} />,
+  <Route key="eliminate-wrong-workspace" path="/practice/:skillId/eliminate/:slug" element={<EliminateWrongWorkspace />} />,
   <Route key="tag-posts" path="/tag/:slug" element={<TagPosts />} />,
   <Route key="tags" path="/tags" element={<Tags />} />,
   <Route key="about" path="/about" element={<About />} />,
