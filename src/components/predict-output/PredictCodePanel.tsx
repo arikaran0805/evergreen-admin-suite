@@ -34,13 +34,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ShareTooltip from "@/components/ShareTooltip";
 import ReportSuggestDialog from "@/components/ReportSuggestDialog";
-import { ProblemCommentsSection } from "@/components/practice/ProblemCommentsSection";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { PredictOutputProblem } from "@/hooks/usePredictOutputProblems";
 
 interface PredictCodePanelProps {
@@ -49,6 +42,7 @@ interface PredictCodePanelProps {
   onToggleExpand?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onCommentClick?: () => void;
 }
 
 const monacoLanguageMap: Record<string, string> = {
@@ -66,6 +60,7 @@ export function PredictCodePanel({
   onToggleExpand,
   isCollapsed = false,
   onToggleCollapse,
+  onCommentClick,
 }: PredictCodePanelProps) {
   const { theme } = useTheme();
   const monacoTheme = theme === "dark" ? "vs-dark" : "vs";
@@ -79,7 +74,6 @@ export function PredictCodePanel({
   const [dislikes, setDislikes] = useState(0);
   const [saved, setSaved] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(problem.code);
@@ -262,7 +256,7 @@ export function PredictCodePanel({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => setCommentDialogOpen(true)}
+                    onClick={onCommentClick}
                   >
                     <MessageSquare className="h-4 w-4" />
                   </Button>
@@ -322,21 +316,6 @@ export function PredictCodePanel({
         contentTitle={problem.title}
         type="report"
       />
-
-      {/* Comment Dialog */}
-      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0">
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Comments
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <ProblemCommentsSection problemId={problem.id} />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -12,12 +12,16 @@ import {
   History,
   Expand,
   Shrink,
-  PanelLeftClose,
+  PanelTopClose,
+  PanelTopOpen,
   Lightbulb,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ProblemCommentsSection } from "@/components/practice/ProblemCommentsSection";
+import { useProblemComments } from "@/hooks/useProblemComments";
 
 import type { PredictOutputProblem } from "@/hooks/usePredictOutputProblems";
 import type { PredictOutputAttempt } from "@/hooks/usePredictOutputAttempts";
@@ -39,6 +43,9 @@ const difficultyColors: Record<string, string> = {
   hard: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
 };
 
+const tabTriggerClass =
+  "h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5";
+
 export function PredictDescriptionPanel({
   problem,
   attempts,
@@ -55,21 +62,72 @@ export function PredictDescriptionPanel({
   const [isHovered, setIsHovered] = useState(false);
   const [hintsShown, setHintsShown] = useState(0);
 
+  const { commentCount } = useProblemComments(problem.id || undefined);
   const alreadySolved = attempts.some((a) => a.is_correct);
 
-  // Collapsed state: show header only
+  // Handle tab click in collapsed state — expand and switch tab
+  const handleCollapsedTabClick = (tab: string) => {
+    setActiveTab(tab);
+    onToggleCollapse?.();
+  };
+
+  // Collapsed state: show all tabs in a header-only bar
   if (isCollapsed && !isExpanded) {
     return (
       <div className="h-full flex flex-col bg-card">
         <div className="flex items-center justify-between px-4 h-11 border-b border-border/50 bg-muted/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Description</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => handleCollapsedTabClick("description")}
+              className={cn(
+                "flex items-center gap-1.5 text-sm transition-colors",
+                activeTab === "description" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FileText className="h-4 w-4" />
+              Description
+            </button>
+            <button
+              onClick={() => handleCollapsedTabClick("explanation")}
+              className={cn(
+                "flex items-center gap-1.5 text-sm transition-colors",
+                activeTab === "explanation" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <BookOpen className="h-4 w-4" />
+              Explanation
+            </button>
+            <button
+              onClick={() => handleCollapsedTabClick("discuss")}
+              className={cn(
+                "flex items-center gap-1.5 text-sm transition-colors",
+                activeTab === "discuss" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MessageSquare className="h-4 w-4" />
+              Comments
+              {commentCount > 0 && (
+                <span className="text-xs text-muted-foreground">({commentCount})</span>
+              )}
+            </button>
+            <button
+              onClick={() => handleCollapsedTabClick("attempts")}
+              className={cn(
+                "flex items-center gap-1.5 text-sm transition-colors",
+                activeTab === "attempts" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <History className="h-4 w-4" />
+              Attempts
+              {attempts.length > 0 && (
+                <span className="text-xs text-muted-foreground">({attempts.length})</span>
+              )}
+            </button>
           </div>
           <div className="flex items-center gap-0.5">
             {onToggleCollapse && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleCollapse} title="Expand panel">
-                <PanelLeftClose className="h-4 w-4" />
+                <PanelTopOpen className="h-4 w-4" />
               </Button>
             )}
             {onToggleExpand && (
@@ -94,24 +152,22 @@ export function PredictDescriptionPanel({
         <div className="flex items-center justify-between">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
             <TabsList className="h-11 bg-transparent p-0 gap-4">
-              <TabsTrigger
-                value="description"
-                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
-              >
+              <TabsTrigger value="description" className={tabTriggerClass}>
                 <FileText className="h-4 w-4" />
                 Description
               </TabsTrigger>
-              <TabsTrigger
-                value="explanation"
-                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
-              >
+              <TabsTrigger value="explanation" className={tabTriggerClass}>
                 <BookOpen className="h-4 w-4" />
                 Explanation
               </TabsTrigger>
-              <TabsTrigger
-                value="attempts"
-                className="h-11 px-0 pb-3 pt-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground flex items-center gap-1.5"
-              >
+              <TabsTrigger value="discuss" className={tabTriggerClass}>
+                <MessageSquare className="h-4 w-4" />
+                Comments
+                {commentCount > 0 && (
+                  <span className="text-xs text-muted-foreground">({commentCount})</span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="attempts" className={tabTriggerClass}>
                 <History className="h-4 w-4" />
                 Attempts
                 {attempts.length > 0 && (
@@ -135,7 +191,7 @@ export function PredictDescriptionPanel({
                 onClick={onToggleCollapse}
                 title={isCollapsed ? "Show panel" : "Hide panel"}
               >
-                <PanelLeftClose className="h-4 w-4" />
+                <PanelTopClose className="h-4 w-4" />
               </Button>
             )}
             {onToggleExpand && (
@@ -294,6 +350,12 @@ export function PredictDescriptionPanel({
           </div>
         )}
 
+        {activeTab === "discuss" && (
+          <div className="p-4">
+            <ProblemCommentsSection problemId={problem.id} />
+          </div>
+        )}
+
         {activeTab === "attempts" && (
           <div className="p-4 space-y-3">
             {attempts.length === 0 ? (
@@ -354,7 +416,6 @@ export function PredictDescriptionPanel({
           </div>
         )}
       </ScrollArea>
-
     </div>
   );
 }
