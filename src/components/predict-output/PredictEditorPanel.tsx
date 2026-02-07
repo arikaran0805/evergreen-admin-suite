@@ -145,7 +145,15 @@ export function PredictEditorPanel({
   const handleTryAgain = useCallback(() => {
     setViewState("answering");
     onRetryCollapseDescription?.();
-    textareaRef.current?.focus();
+    // Place cursor at end of existing text
+    setTimeout(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      }
+    }, 0);
   }, [onRetryCollapseDescription]);
 
   const lineDiff = useMemo(() => {
